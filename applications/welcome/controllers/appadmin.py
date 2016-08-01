@@ -10,7 +10,7 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
-from gluon._compat import iteritems
+from pydal._compat import iteritems
 
 try:
     import pygraphviz as pgv
