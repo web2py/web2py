@@ -14,7 +14,7 @@ Debugger support classes
 import logging
 import pdb
 import sys
-from gluon._compat import Queue
+from pydal._compat import Queue
 
 logger = logging.getLogger("web2py")
 

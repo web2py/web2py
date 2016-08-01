@@ -17,7 +17,7 @@ from gluon.html import STYLE, TABLE, TR, TD, TAG, TBODY, THEAD, TEXTAREA, TFOOT,
 from gluon.storage import Storage
 from gluon.html import XML_pickle, XML_unpickle
 from gluon.html import TAG_pickler, TAG_unpickler
-from gluon._compat import xrange, PY2, to_native
+from pydal._compat import xrange, PY2, to_native
 
 class TestBareHelpers(unittest.TestCase):
 

@@ -21,7 +21,7 @@ from gluon.fileutils import abspath
 from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.storage import Storage
-from gluon._compat import to_bytes
+from pydal._compat import to_bytes
 
 logger = None
 oldcwd = None

@@ -11,7 +11,7 @@ import errno
 import socket
 import logging
 import platform
-from gluon._compat import iteritems, to_bytes, StringIO, urllib_unquote
+from pydal._compat import iteritems, to_bytes, StringIO, urllib_unquote
 
 # Define Constants
 VERSION = '1.2.6'

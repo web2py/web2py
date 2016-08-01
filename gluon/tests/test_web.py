@@ -16,7 +16,7 @@ from .fix_path import fix_sys_path
 fix_sys_path(__file__)
 
 from gluon.contrib.webclient import WebClient
-from gluon._compat import urllib2, PY2
+from pydal._compat import urllib2, PY2
 
 webserverprocess = None
 

@@ -42,7 +42,7 @@ revision3.com
 viddler.com
 """
 from __future__ import print_function
-from gluon._compat import FancyURLopener, urllib_quote
+from pydal._compat import FancyURLopener, urllib_quote
 
 import re
 import cgi

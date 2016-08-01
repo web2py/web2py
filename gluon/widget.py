@@ -13,7 +13,7 @@ from __future__ import print_function
 
 import datetime
 import sys
-from gluon._compat import StringIO, thread, xrange
+from pydal._compat import StringIO, thread, xrange
 import time
 import threading
 import os

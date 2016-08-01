@@ -20,8 +20,8 @@ import urllib
 import base64
 from gluon import sanitizer, decoder
 import itertools
-from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, \
-                          to_native, to_unicode, _local_html_escape, basestring, urlencode, implements_bool
+from pydal._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool
+from local_html_escape import local_html_escape
 import marshal
 
 from gluon.storage import Storage
@@ -129,7 +129,7 @@ def xmlescape(data, quote=True):
 
     
     # ... and do the escaping
-    data = _local_html_escape(data, quote)
+    data = local_html_escape(data, quote)
     return data
 
 

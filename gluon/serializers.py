@@ -10,7 +10,7 @@ from gluon.html import TAG, XmlComponent, xmlescape
 from gluon.languages import lazyT
 import gluon.contrib.rss2 as rss2
 import json as json_parser
-from gluon._compat import long, to_native, unicodeT
+from pydal._compat import long, to_native, unicodeT
 
 have_yaml = True
 try:

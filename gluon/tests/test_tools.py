@@ -22,7 +22,7 @@ from gluon.dal import DAL, Field
 from pydal.objects import Table
 from gluon import tools
 from gluon.tools import Auth, Mail, Recaptcha, Recaptcha2, prettydate, Expose
-from gluon._compat import PY2
+from pydal._compat import PY2
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
 from gluon.languages import translator

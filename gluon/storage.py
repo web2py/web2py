@@ -12,7 +12,7 @@ Provides:
 - Storage; like dictionary allowing also for `obj.foo` for `obj['foo']`
 """
 
-from gluon._compat import copyreg, pickle, PY2
+from pydal._compat import copyreg, pickle, PY2
 import gluon.portalocker as portalocker
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',

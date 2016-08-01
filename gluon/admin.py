@@ -22,7 +22,7 @@ from gluon.fileutils import read_file, write_file, parse_version
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 from gluon.cache import CacheOnDisk
-from gluon._compat import urlopen, to_native
+from pydal._compat import urlopen, to_native
 
 if not global_settings.web2py_runtime_gae:
     import site

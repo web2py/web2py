@@ -23,7 +23,7 @@ import logging
 import socket
 import base64
 import zlib
-from gluon._compat import basestring, pickle, PY2, xrange, to_bytes, to_native
+from pydal._compat import basestring, pickle, PY2, xrange, to_bytes, to_native
 
 _struct_2_long_long = struct.Struct('=QQ')
 

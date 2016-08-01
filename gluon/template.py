@@ -18,7 +18,7 @@ import os
 import cgi
 import logging
 from re import compile, sub, escape, DOTALL
-from gluon._compat import StringIO, unicodeT, to_unicode, to_bytes, to_native
+from pydal._compat import StringIO, unicodeT, to_unicode, to_bytes, to_native
 
 try:
     # have web2py

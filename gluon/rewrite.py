@@ -27,7 +27,7 @@ from gluon.storage import Storage, List
 from gluon.http import HTTP
 from gluon.fileutils import abspath, read_file
 from gluon.settings import global_settings
-from gluon._compat import urllib_unquote, urllib_quote, iteritems, xrange
+from pydal._compat import urllib_unquote, urllib_quote, iteritems, xrange
 
 isdir = os.path.isdir
 isfile = os.path.isfile

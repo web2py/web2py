@@ -15,7 +15,7 @@ from .fix_path import fix_sys_path
 fix_sys_path(__file__)
 
 from gluon import languages
-from gluon._compat import PY2
+from pydal._compat import PY2
 
 MP_WORKING = 0
 try:

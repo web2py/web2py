@@ -11,7 +11,7 @@ HTTP statuses helpers
 """
 
 import re
-from gluon._compat import iteritems
+from pydal._compat import iteritems
 
 __all__ = ['HTTP', 'redirect']
 
