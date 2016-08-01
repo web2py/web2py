@@ -14,8 +14,8 @@ Note:
 """
 
 from os import stat
-from ._compat import thread
 from gluon.fileutils import read_file
+from pydal._compat import thread
 
 cfs = {}  # for speed-up
 cfs_lock = thread.allocate_lock()  # and thread safety

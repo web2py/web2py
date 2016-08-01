@@ -10,7 +10,7 @@ Cross-site scripting (XSS) defense
 -----------------------------------
 """
 
-from ._compat import HTMLParser, urlparse, entitydefs, basestring
+from pydal._compat import HTMLParser, urlparse, entitydefs, basestring
 from cgi import escape
 from formatter import AbstractFormatter
 from xml.sax.saxutils import quoteattr
