@@ -39,7 +39,7 @@ try:
 except ImportError:
     have_settings = False
 
-from pydal import portalocker
+from pydal.contrib import portalocker
 from pydal._compat import pickle, thread, to_bytes, to_native, hashlib_md5
 
 try:

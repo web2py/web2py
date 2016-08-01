@@ -26,7 +26,7 @@ try:
 except:
     import pickle
 from gluon.settings import global_settings
-from pydal import portalocker
+from pydal.contrib import portalocker
 
 logger = logging.getLogger("web2py.cron")
 _cron_stopping = False

@@ -12,7 +12,7 @@ Provides:
 - Storage; like dictionary allowing also for `obj.foo` for `obj['foo']`
 """
 
-from pydal import portalocker
+from pydal.contrib import portalocker
 from pydal._compat import copyreg, pickle, PY2
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',

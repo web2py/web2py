@@ -22,7 +22,7 @@ from gluon.utf8 import Utf8
 from local_html_escape import local_html_escape
 
 from pydal._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
-from pydal.portalocker import read_locked, LockedFile
+from pydal.contrib.portalocker import read_locked, LockedFile
 
 from gluon.fileutils import listdir
 from gluon.cfs import getcfs

@@ -28,7 +28,7 @@ from gluon import recfile
 from gluon.cache import CacheInRam
 from gluon.fileutils import copystream
 import hashlib
-from pydal import portalocker
+from pydal.contrib import portalocker
 from pickle import Pickler, MARK, DICT, EMPTY_DICT
 #from types import DictionaryType
 import datetime
