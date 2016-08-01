@@ -371,16 +371,17 @@ def local_html_escape(data, quote=False):
     """
     if PY2:
         import cgi 
-        s = cgi.escape(data, quote)
-        return s.replace("'", "&#x27;") if quote else s
+        data = cgi.escape(data, quote)
+        return data.replace("'", "&#x27;") if quote else data
     else:
         import html
-        if isinstance(s, str):
-            return html.escape(s, quote=quote)
-        s = s.replace(b"&", b"&amp;") # Must be done first!
-        s = s.replace(b"<", b"&lt;")
-        s = s.replace(b">", b"&gt;")
+        if isinstance(data, str):
+            return html.escape(data, quote=quote)
+        data = data.replace(b"&", b"&amp;") # Must be done first!
+        data = data.replace(b"<", b"&lt;")
+        data = data.replace(b">", b"&gt;")
         if quote:
-            s = s.replace(b'"', b"&quot;")
-            s = s.replace(b'\'', b"&#x27;")
-        return s
+            data = data.replace(b'"', b"&quot;")
+            data = data.replace(b'\'', b"&#x27;")
+        return data
+
