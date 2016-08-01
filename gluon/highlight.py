@@ -7,7 +7,7 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 from __future__ import print_function
-from pydal._compat import xrange, 
+from pydal._compat import xrange 
 from local_html_escape import local_html_escape
 import re
 
