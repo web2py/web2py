@@ -8,7 +8,7 @@
 """
 from __future__ import print_function
 from pydal._compat import xrange 
-from gluon.local_html_escape import local_html_escape
+from pydal.utils import local_html_escape
 import re
 
 __all__ = ['highlight']

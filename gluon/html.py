@@ -21,7 +21,7 @@ import base64
 from gluon import sanitizer, decoder
 import itertools
 from pydal._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool
-from gluon.local_html_escape import local_html_escape
+from pydal.utils import local_html_escape
 import marshal
 
 from gluon.storage import Storage
