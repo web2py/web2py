@@ -30,7 +30,6 @@ import hashlib
 import datetime
 import tempfile
 from gluon import recfile
-from gluon import portalocker
 from collections import defaultdict
 from collections import OrderedDict
 
@@ -40,6 +39,7 @@ try:
 except ImportError:
     have_settings = False
 
+from pydal import portalocker
 from pydal._compat import pickle, thread, to_bytes, to_native, hashlib_md5
 
 try:

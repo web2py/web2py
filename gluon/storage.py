@@ -12,8 +12,8 @@ Provides:
 - Storage; like dictionary allowing also for `obj.foo` for `obj['foo']`
 """
 
+from pydal import portalocker
 from pydal._compat import copyreg, pickle, PY2
-import gluon.portalocker as portalocker
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
