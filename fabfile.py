@@ -17,16 +17,14 @@ applications = '/home/www-data/web2py/applications'
 
 def create_user(username):
     """fab -H root@host create_user:username"""
-    password = getpass.getpass(name+' password for %s> ' % username)
-    run('useradd -m %s' % username)
-    run('usermod --password %s %s' % (crypt.crypt(password, 'salt'), username))
-    run('mkdir -p ~%s/.ssh' % username)
+    password = getpass.getpass('password for %s> ' % username)
+    run('useradd -m -G www-data -s /bin/bash -p %s %s' % (crypt.crypt(password, 'salt'), username))
     run('cp /etc/sudoers /tmp/sudoers.new')
-    append('/tmp/sudoers.new', '%s ALL=NOPASSWD: ALL' % username, use_sudo=True)
+    append('/tmp/sudoers.new', '%s ALL=(ALL) NOPASSWD:ALL' % username, use_sudo=True)
     run('visudo -c -f /tmp/sudoers.new')
     run('EDITOR="cp /tmp/sudoers.new" visudo')
-    uncomment('~%s/.bashrc' % username, '#force_color_prompt=yes')
     local('ssh-copy-id %s' % env.hosts[0])
+    uncomment('~%s/.bashrc' % username, '#force_color_prompt=yes')
 
 def install_web2py():        
     """fab -H username@host install_web2py"""
