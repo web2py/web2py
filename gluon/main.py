@@ -390,7 +390,11 @@ def wsgibase(environ, responder):
                                    % 'invalid request',
                                    web2py_error='invalid application')
                 elif not request.is_local and exists(disabled):
-                    raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
+                    if os.path.exists(os.path.join(request.folder,'static','503.html')):
+                        import urllib
+                        raise HTTP(503, urllib.urlopen(os.path.join(request.folder,'static','503.html')).read())
+                    else:
+                        raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
 
                 # ##################################################
                 # build missing folders
