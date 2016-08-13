@@ -29,7 +29,7 @@ is restarted (or reload=True is passed).
 """
 import os
 import json
-from pydal._compat import thread, configparser
+from gluon._compat import thread, configparser
 from gluon.globals import current
 
 locker = thread.allocate_lock()

@@ -66,7 +66,7 @@ class TestTemplate(unittest.TestCase):
     def testWithDummyFileSystem(self):
         from os.path import join as pjoin
         import contextlib
-        from pydal._compat import StringIO
+        from gluon._compat import StringIO
         from gluon.restricted import RestrictedError
 
         @contextlib.contextmanager

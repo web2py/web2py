@@ -19,7 +19,7 @@ import urllib
 import re
 
 import os
-from pydal._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG

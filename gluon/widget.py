@@ -13,7 +13,7 @@ from __future__ import print_function
 
 import datetime
 import sys
-from pydal._compat import StringIO, thread, xrange
+from gluon._compat import StringIO, thread, xrange
 import time
 import threading
 import os
@@ -935,7 +935,7 @@ def console():
     sys.argv, other_args = sys.argv[:k], sys.argv[k + 1:]
     (options, args) = parser.parse_args()
     options.args = [options.run] + other_args
-    
+
     copy_options = copy.deepcopy(options)
     copy_options.password = '******'
     global_settings.cmd_options = copy_options

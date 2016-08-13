@@ -30,7 +30,7 @@ from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
 from pydal.base import BaseAdapter
-from pydal._compat import iteritems, ClassType
+from gluon._compat import iteritems, ClassType
 
 logger = logging.getLogger("web2py")
 

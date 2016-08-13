@@ -19,7 +19,7 @@ Additions:
  - .pickle: application/python-pickle
  - .w2p': application/w2p
 """
-from pydal._compat import to_native
+from gluon._compat import to_native
 
 __all__ = ['contenttype']
 
