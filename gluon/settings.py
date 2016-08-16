@@ -10,7 +10,7 @@ import os
 import sys
 import platform
 from gluon.storage import Storage
-from pydal._compat import PY2
+from gluon._compat import PY2
 
 global_settings = Storage()
 settings = global_settings  # legacy compatibility
@@ -41,5 +41,5 @@ global_settings.is_jython = \
 
 global_settings.is_source = os.path.exists(os.path.join(
         global_settings.gluon_parent, 'web2py.py'))
-        
+
 global_settings.is_py2 = PY2

@@ -13,7 +13,7 @@ Provides:
 """
 
 from pydal.contrib import portalocker
-from pydal._compat import copyreg, pickle, PY2
+from gluon._compat import copyreg, pickle, PY2
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']

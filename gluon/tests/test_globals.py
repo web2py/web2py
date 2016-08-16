@@ -14,7 +14,7 @@ fix_sys_path(__file__)
 
 from gluon.globals import Request, Response, Session
 from gluon import URL
-from pydal._compat import basestring
+from gluon._compat import basestring
 
 def setup_clean_session():
         request = Request(env={})

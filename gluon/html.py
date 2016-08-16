@@ -20,7 +20,7 @@ import urllib
 import base64
 from gluon import sanitizer, decoder
 import itertools
-from pydal._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool
+from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool
 from gluon.utils import local_html_escape
 import marshal
 
@@ -127,7 +127,7 @@ def xmlescape(data, quote=True):
         data=str(data)
     data = to_bytes(data, 'utf8', 'xmlcharrefreplace')
 
-    
+
     # ... and do the escaping
     data = local_html_escape(data, quote)
     return data
@@ -945,7 +945,7 @@ class DIV(XmlComponent):
         fa = b''
         for name, value in attr:
             fa += (b' %s="%s"') % (to_bytes(name), xmlescape(value, True))
-        
+
         # get the xml for the inner components
         co = b''.join([xmlescape(component) for component in self.components])
         return (fa, co)
@@ -975,7 +975,7 @@ class DIV(XmlComponent):
         """
         # In PY3 __str__ cannot return bytes (TypeError: __str__ returned non-string (type bytes))
         return to_native(self.xml())
-        
+
     def flatten(self, render=None):
         """
         Returns the text stored by the DIV object rendered by the render function
@@ -1440,7 +1440,7 @@ class STYLE(DIV):
 
     def xml(self):
         (fa, co) = self._xml()
-        fa = to_native(fa)        
+        fa = to_native(fa)
         # no escaping of subcomponents
         co = '\n'.join([str(component) for component in
                        self.components])

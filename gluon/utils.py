@@ -23,7 +23,7 @@ import logging
 import socket
 import base64
 import zlib
-from pydal._compat import basestring, pickle, PY2, xrange, to_bytes, to_native
+from gluon._compat import basestring, pickle, PY2, xrange, to_bytes, to_native
 
 _struct_2_long_long = struct.Struct('=QQ')
 
@@ -370,7 +370,7 @@ def local_html_escape(data, quote=False):
     translated.
     """
     if PY2:
-        import cgi 
+        import cgi
         data = cgi.escape(data, quote)
         return data.replace("'", "&#x27;") if quote else data
     else:

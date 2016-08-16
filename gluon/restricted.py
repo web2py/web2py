@@ -10,7 +10,7 @@ Restricted environment to execute application's code
 """
 
 import sys
-from pydal._compat import pickle, ClassType
+from gluon._compat import pickle, ClassType
 import traceback
 import types
 import os

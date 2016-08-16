@@ -21,7 +21,7 @@ import urllib
 import struct
 import decimal
 import unicodedata
-from pydal._compat import StringIO, long, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native
+from gluon._compat import StringIO, long, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce

@@ -29,7 +29,7 @@
 An interactive, stateful AJAX shell that runs Python code on the server.
 """
 from __future__ import print_function
-from pydal._compat import ClassType, pickle, StringIO
+from gluon._compat import ClassType, pickle, StringIO
 import logging
 import new
 import sys

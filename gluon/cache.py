@@ -40,7 +40,7 @@ except ImportError:
     have_settings = False
 
 from pydal.contrib import portalocker
-from pydal._compat import pickle, thread, to_bytes, to_native, hashlib_md5
+from gluon._compat import pickle, thread, to_bytes, to_native, hashlib_md5
 
 try:
     import psutil

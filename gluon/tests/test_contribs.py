@@ -8,7 +8,7 @@ import os
 from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
-from pydal._compat import to_bytes
+from gluon._compat import to_bytes
 from gluon.storage import Storage
 from gluon.contrib import fpdf as fpdf
 from gluon.contrib import pyfpdf as pyfpdf

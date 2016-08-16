@@ -13,7 +13,7 @@ fix_sys_path(__file__)
 
 
 from gluon.validators import *
-from pydal._compat import PY2, to_bytes
+from gluon._compat import PY2, to_bytes
 
 class TestValidators(unittest.TestCase):
 

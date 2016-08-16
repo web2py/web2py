@@ -10,7 +10,7 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
-from pydal._compat import iteritems
+from gluon._compat import iteritems
 
 try:
     import pygraphviz as pgv
@@ -213,7 +213,7 @@ def select():
 
     if is_imap:
         step = 3
- 
+
     stop = start + step
 
     table = None
@@ -421,7 +421,7 @@ def ccache():
         'oldest': time.time(),
         'keys': []
     }
-    
+
     disk = copy.copy(ram)
     total = copy.copy(ram)
     disk['keys'] = []

@@ -21,7 +21,7 @@ import logging
 from gluon.http import HTTP
 from gzip import open as gzopen
 from gluon.recfile import generate
-from pydal._compat import PY2
+from gluon._compat import PY2
 
 __all__ = [
     'parse_version',
