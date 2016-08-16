@@ -21,6 +21,7 @@ from .test_languages import *
 from .test_compileapp import *
 from .test_appadmin import *
 from .test_web import *
+from .test_sqlhtml import *
 
 if sys.version[:3] == '2.7':
     from .test_is_url import *
