@@ -1087,7 +1087,7 @@ def design():
             redirect(URL('design', args=app))
         else:
             session.flash = \
-                T('unable to create application "%s"', request.vars.filename)
+                T('unable to install plugin "%s"', filename)
         redirect(URL(r=request, args=app))
     elif isinstance(request.vars.pluginfile, str):
         session.flash = T('plugin not specified')
