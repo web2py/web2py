@@ -145,7 +145,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(wrong2, None)
         wrong3 = secure_loads(secured, 'wrongkey', 'wronghash')
         self.assertEqual(wrong3, None)
-        wrong4 = secure_loads('abc', 'a', 'b')
+        wrong4 = secure_loads(b'abc', 'a', 'b')
         self.assertEqual(wrong4, None)
 
     # TODO: def test_initialize_urandom(self):
