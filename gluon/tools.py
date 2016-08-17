@@ -4439,6 +4439,10 @@ class Auth(object):
             group_id = self.id_group(group_id)  # interpret group_id as a role
         if not user_id and self.user:
             user_id = self.user.id
+        if not group_id:
+            raise ValueError('group_id not provided or invalid')
+        if not user_id:
+            raise ValueError('user_id not provided or invalid')
         membership = self.table_membership()
         db = membership._db
         record = db((membership.user_id == user_id) &
