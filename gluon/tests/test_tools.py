@@ -887,13 +887,13 @@ class TestAuth(unittest.TestCase):
         self.auth.del_membership(group_id=group_id, user_id=user_id)
         self.assertFalse(self.auth.has_membership(group_id, user_id=user_id))
 
-        with self.assertRaisesRegexp(ValueError, '^group_id not provided or invalid$'):
+        with self.myassertRaisesRegex(ValueError, '^group_id not provided or invalid$'):
             self.auth.add_membership(group_id='not_existing_group_name', user_id=user_id)
-        with self.assertRaisesRegexp(ValueError, '^group_id not provided or invalid$'):
+        with self.myassertRaisesRegex(ValueError, '^group_id not provided or invalid$'):
             self.auth.add_membership(role='not_existing_role_name', user_id=user_id)
-        with self.assertRaisesRegexp(ValueError, '^user_id not provided or invalid$'):
+        with self.myassertRaisesRegex(ValueError, '^user_id not provided or invalid$'):
             self.auth.add_membership(group_id=group_id, user_id=None)
-        with self.assertRaisesRegexp(ValueError, '^user_id not provided or invalid$'):
+        with self.myassertRaisesRegex(ValueError, '^user_id not provided or invalid$'):
             self.auth.add_membership(role=role_name, user_id=None)
 
         self.auth.login_user(user)
@@ -908,9 +908,23 @@ class TestAuth(unittest.TestCase):
         self.auth.del_membership(group_id=group_id)
         self.assertFalse(self.auth.has_membership(group_id))
 
-        with self.assertRaisesRegexp(ValueError, '^group_id not provided or invalid$'):
+        # default usage (group_id=role_name)
+        self.auth.add_membership(role_name)
+        self.assertTrue(self.auth.has_membership(group_id))
+        self.auth.del_membership(group_id=group_id)
+        self.assertFalse(self.auth.has_membership(group_id))
+
+        # re-adding a membership should return the existing membership
+        record0_id = self.auth.add_membership(group_id)
+        self.assertTrue(self.auth.has_membership(group_id))
+        record1_id = self.auth.add_membership(group_id)
+        self.assertEqual(record0_id, record1_id)
+        self.auth.del_membership(group_id=group_id)
+        self.assertFalse(self.auth.has_membership(group_id))
+
+        with self.myassertRaisesRegex(ValueError, '^group_id not provided or invalid$'):
             self.auth.add_membership(group_id='not_existing_group_name')
-        with self.assertRaisesRegexp(ValueError, '^group_id not provided or invalid$'):
+        with self.myassertRaisesRegex(ValueError, '^group_id not provided or invalid$'):
             self.auth.add_membership(role='not_existing_role_name')
 
     def test_del_membership(self):
