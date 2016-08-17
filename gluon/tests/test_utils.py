@@ -121,7 +121,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(isinstance(secured, bytes))
         self.assertTrue(secured.count(b':') == 2)
 
-        secured_deprecated = gluon.utils.__secure_dumps_deprecated(testobj, testkey)
+        secured_deprecated = gluon.utils.secure_dumps_deprecated(testobj, testkey)
         original_deprecated = secure_loads(secured_deprecated, testkey)
         self.assertEqual(testobj, original_deprecated)
         self.assertTrue(isinstance(secured_deprecated, bytes))

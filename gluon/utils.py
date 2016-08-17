@@ -189,7 +189,7 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
 def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     components = data.count(b':')
     if components == 1:
-        return __secure_loads_deprecated(data, encryption_key, hash_key, compression_level)
+        return secure_loads_deprecated(data, encryption_key, hash_key, compression_level)
     if components != 2:
         return None
     version,signature,encrypted_data = data.split(b':', 2)
@@ -224,7 +224,7 @@ def secure_dumps_deprecated(data, encryption_key, hash_key=None, compression_lev
     dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
-    key = pad_deprecated(encryption_key)[:32]
+    key = __pad_deprecated(encryption_key)[:32]
     cipher, IV = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
     signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest())
@@ -243,7 +243,7 @@ def secure_loads_deprecated(data, encryption_key, hash_key=None, compression_lev
     actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest()
     if not compare(signature, actual_signature):
         return None
-    key = pad_deprecated(encryption_key)[:32]
+    key = __pad_deprecated(encryption_key)[:32]
     encrypted_data = base64.urlsafe_b64decode(encrypted_data)
     IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
     cipher, _ = AES_new(key, IV=IV)
