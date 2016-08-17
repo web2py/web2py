@@ -870,13 +870,48 @@ class TestAuth(unittest.TestCase):
         count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
         self.assertEqual(count_log_event_test_after, count_log_event_test_before)
 
-    # Waiting guidance : https://github.com/web2py/web2py/issues/1300
-    # def test_add_membership(self):
-    #     self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
-    #     # failing case
-    #     rtn = self.auth.add_membership('not_existing_role_name')
-    #     # self.assertEqual(rtn, 'test')
-    #     self.assertEqual(self.db(self.db.auth_group.role == 'not_existing_role_name').select().first(), 'test')
+    def test_add_membership(self):
+        user = self.db(self.db.auth_user.username == 'bart').select().first() # bypass login_bare()
+        user_id = user.id
+        role_name = 'test_add_membership_group'
+        group_id = self.auth.add_group(role_name)
+        self.assertFalse(self.auth.has_membership(role_name))
+
+        self.auth.add_membership(group_id=group_id, user_id=user_id)
+        self.assertTrue(self.auth.has_membership(group_id, user_id=user_id))
+        self.auth.del_membership(group_id=group_id, user_id=user_id)
+        self.assertFalse(self.auth.has_membership(group_id, user_id=user_id))
+
+        self.auth.add_membership(role=role_name, user_id=user_id)
+        self.assertTrue(self.auth.has_membership(group_id, user_id=user_id))
+        self.auth.del_membership(group_id=group_id, user_id=user_id)
+        self.assertFalse(self.auth.has_membership(group_id, user_id=user_id))
+
+        with self.assertRaisesRegexp(ValueError, '^group_id not provided or invalid$'):
+            self.auth.add_membership(group_id='not_existing_group_name', user_id=user_id)
+        with self.assertRaisesRegexp(ValueError, '^group_id not provided or invalid$'):
+            self.auth.add_membership(role='not_existing_role_name', user_id=user_id)
+        with self.assertRaisesRegexp(ValueError, '^user_id not provided or invalid$'):
+            self.auth.add_membership(group_id=group_id, user_id=None)
+        with self.assertRaisesRegexp(ValueError, '^user_id not provided or invalid$'):
+            self.auth.add_membership(role=role_name, user_id=None)
+
+        self.auth.login_user(user)
+
+        self.auth.add_membership(group_id=group_id)
+        self.assertTrue(self.auth.has_membership(group_id))
+        self.auth.del_membership(group_id=group_id)
+        self.assertFalse(self.auth.has_membership(group_id))
+
+        self.auth.add_membership(role=role_name)
+        self.assertTrue(self.auth.has_membership(group_id))
+        self.auth.del_membership(group_id=group_id)
+        self.assertFalse(self.auth.has_membership(group_id))
+
+        with self.assertRaisesRegexp(ValueError, '^group_id not provided or invalid$'):
+            self.auth.add_membership(group_id='not_existing_group_name')
+        with self.assertRaisesRegexp(ValueError, '^group_id not provided or invalid$'):
+            self.auth.add_membership(role='not_existing_role_name')
 
     def test_del_membership(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
