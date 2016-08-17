@@ -312,8 +312,8 @@ a:not(.btn):not(.noeffect):after {
 
 /*** accordion ***/
 .accordion>label{cursor:pointer}
-.accordion>input ~ label:before {content:"▲ "; color:#ddd}
-.accordion>input:checked ~ label:before {content:"▼ "; color:#ddd}
+.accordion>input ~ label:before {content:"\25b2"; color:#ddd}
+.accordion>input:checked ~ label:before {content:"\25bc"; color:#ddd}
 .accordion>input {display:none}
 .accordion>input:checked ~ *:not(label) {
   max-height: 1000px !important;
