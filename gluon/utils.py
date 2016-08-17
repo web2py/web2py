@@ -157,25 +157,81 @@ def get_callable_argspec(fn):
     return inspect.getargspec(inspectable)
 
 
-def pad(s, n=32, padchar=b' '):
-    return s + (32 - len(s) % 32) * padchar
+def pad(s, n=32):
+    # PKCS7v1.5 https://www.ietf.org/rfc/rfc2315.txt
+    padlen = n - len(s) % n
+    return s + padlen * chr(padlen)
+
+
+def unpad(s, n=32):
+    padlen = ord(s[-1])
+    if (padlen < 1) | (padlen > n): # avoid short-circuit
+        # return garbage to minimize side channels
+        return '\x00'*len(s)
+    return s[:-padlen]
 
 
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
+    dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+    if compression_level:
+        dump = zlib.compress(dump, compression_level)
+    encryption_key = to_bytes(encryption_key)
+    if not hash_key:
+        hash_key = hashlib.sha256(encryption_key).digest()
+    cipher, IV = AES_new(pad(encryption_key)[:32])
+    encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
+    signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data, hashlib.sha256).hexdigest())
+    return b'hmac256:' + signature + b':' + encrypted_data
+
+
+def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+    data = to_native(data)
+    components = data.count(b':')
+    if components == 1:
+        return __secure_loads_deprecated(data, encryption_key, hash_key, compression_level)
+    if components != 2:
+        return None
+    version,signature,encrypted_data = data.split(b':', 2)
+    if version != b'hmac256':
+        return None
+    encrypted_data = to_bytes(encrypted_data)
+    encryption_key = to_bytes(encryption_key)
+    if not hash_key:
+        hash_key = hashlib.sha256(encryption_key).digest()
+    actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.sha256).hexdigest()
+    if not compare(signature, actual_signature):
+        return None
+    encrypted_data = base64.urlsafe_b64decode(encrypted_data)
+    IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
+    cipher, _ = AES_new(pad(encryption_key)[:32], IV=IV)
+    try:
+        data = unpad(cipher.decrypt(encrypted_data))
+        if compression_level:
+            data = zlib.decompress(data)
+        return pickle.loads(data)
+    except Exception as e:
+        return None
+
+
+def __pad_deprecated(s, n=32, padchar=b' '):
+    return s + (32 - len(s) % 32) * padchar
+
+
+def __secure_dumps_deprecated(data, encryption_key, hash_key=None, compression_level=None):
     encryption_key = to_bytes(encryption_key)
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
     dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
-    key = pad(encryption_key)[:32]
+    key = __pad_deprecated(encryption_key)[:32]
     cipher, IV = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
     signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest())
     return signature + b':' + encrypted_data
 
 
-def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+def __secure_loads_deprecated(data, encryption_key, hash_key=None, compression_level=None):
     encryption_key = to_bytes(encryption_key)
     data = to_native(data)
     if ':' not in data:
@@ -187,7 +243,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest()
     if not compare(signature, actual_signature):
         return None
-    key = pad(encryption_key)[:32]
+    key = __pad_deprecated(encryption_key)[:32]
     encrypted_data = base64.urlsafe_b64decode(encrypted_data)
     IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
     cipher, _ = AES_new(key, IV=IV)
