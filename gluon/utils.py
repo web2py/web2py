@@ -160,14 +160,16 @@ def get_callable_argspec(fn):
 def pad(s, n=32):
     # PKCS7v1.5 https://www.ietf.org/rfc/rfc2315.txt
     padlen = n - len(s) % n
-    return s + padlen * chr(padlen)
+    return s + bytes(bytearray(padlen * [padlen]))
 
 
 def unpad(s, n=32):
-    padlen = ord(s[-1])
+    padlen = s[-1]
+    if isinstance(padlen,str):
+        padlen = ord(padlen) # python2
     if (padlen < 1) | (padlen > n): # avoid short-circuit
         # return garbage to minimize side channels
-        return '\x00'*len(s)
+        return bytes(bytearray(len(s)*[0]))
     return s[:-padlen]
 
 
@@ -185,7 +187,6 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
 
 
 def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
-    data = to_native(data)
     components = data.count(b':')
     if components == 1:
         return __secure_loads_deprecated(data, encryption_key, hash_key, compression_level)
@@ -194,12 +195,11 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     version,signature,encrypted_data = data.split(b':', 2)
     if version != b'hmac256':
         return None
-    encrypted_data = to_bytes(encrypted_data)
     encryption_key = to_bytes(encryption_key)
     if not hash_key:
         hash_key = hashlib.sha256(encryption_key).digest()
     actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.sha256).hexdigest()
-    if not compare(signature, actual_signature):
+    if not compare(to_native(signature), actual_signature):
         return None
     encrypted_data = base64.urlsafe_b64decode(encrypted_data)
     IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
