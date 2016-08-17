@@ -89,11 +89,11 @@ class TestUtils(unittest.TestCase):
 
     def test_pad(self):
         test_cases = [
-            (16, 'mydata'), # verify data padding and unpad identity
-            (32, 'mydata '), # verify space is not stripped
-            (8, 'mydata\x01'), # verify "padding" bytes are ignored
-            (4, 'mydata'), # verify multiblock behavior
-            (2, ''), # verify empty string behavior
+            (16, b'mydata'), # verify data padding and unpad identity
+            (32, b'mydata '), # verify space is not stripped
+            (8, b'mydata\x01'), # verify "padding" bytes are ignored
+            (4, b'mydata'), # verify multiblock behavior
+            (2, b''), # verify empty string behavior
         ]
         for (testlen,teststr) in test_cases:
             padded = gluon.utils.pad(teststr,testlen)
