@@ -15,7 +15,7 @@ from gluon.utils import web2py_uuid
 from gluon.tools import Config
 from gluon.compileapp import find_exposed_functions
 from glob import glob
-from pydal._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native
+from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native
 import shutil
 import platform
 
@@ -1087,11 +1087,11 @@ def design():
             redirect(URL('design', args=app))
         else:
             session.flash = \
-                T('unable to create application "%s"', request.vars.filename)
-        redirect(URL(r=request))
+                T('unable to install plugin "%s"', filename)
+        redirect(URL(r=request, args=app))
     elif isinstance(request.vars.pluginfile, str):
         session.flash = T('plugin not specified')
-        redirect(URL(r=request))
+        redirect(URL(r=request, args=app))
 
     # If we have only pyc files it means that
     # we cannot design

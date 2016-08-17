@@ -16,7 +16,7 @@ mostly for testing purposes
 Some examples at the bottom.
 """
 from __future__ import print_function
-from pydal._compat import urllib2, cookielib, iteritems, to_native, urlencode, to_bytes
+from gluon._compat import urllib2, cookielib, iteritems, to_native, urlencode, to_bytes
 import re
 import time
 

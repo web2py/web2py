@@ -17,7 +17,7 @@ import re
 import errno
 from gluon.http import HTTP
 from gluon.contenttype import contenttype
-from pydal._compat import PY2
+from gluon._compat import PY2
 
 
 regex_start_range = re.compile('\d+(?=\-)')

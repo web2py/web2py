@@ -8,7 +8,7 @@
 Support for smart import syntax for web2py applications
 -------------------------------------------------------
 """
-from pydal._compat import builtin, unicodeT, PY2, to_native
+from gluon._compat import builtin, unicodeT, PY2, to_native
 import os
 import sys
 import threading

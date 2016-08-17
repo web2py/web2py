@@ -11,7 +11,7 @@ from .fix_path import fix_sys_path
 fix_sys_path(__file__)
 
 from gluon.contenttype import contenttype
-from pydal._compat import iteritems
+from gluon._compat import iteritems
 
 class TestContentType(unittest.TestCase):
 

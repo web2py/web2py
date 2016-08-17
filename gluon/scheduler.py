@@ -29,7 +29,7 @@ from json import loads, dumps
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_EMPTY_OR
 from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
 from gluon.utils import web2py_uuid
-from pydal._compat import Queue, long, iteritems
+from gluon._compat import Queue, long, iteritems
 from gluon.storage import Storage
 
 USAGE = """

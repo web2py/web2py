@@ -21,7 +21,7 @@ from threading import RLock
 from gluon.utf8 import Utf8
 from gluon.utils import local_html_escape
 
-from pydal._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
+from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
 from pydal.contrib.portalocker import read_locked, LockedFile
 
 from gluon.fileutils import listdir

@@ -12,7 +12,7 @@ Auth, Mail, PluginManager and various utilities
 
 import base64
 from functools import reduce
-from pydal._compat import pickle, thread, urllib2, Cookie, StringIO, configparser, MIMEBase, MIMEMultipart, \
+from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, configparser, MIMEBase, MIMEMultipart, \
                           MIMEText, Encoders, Charset, long, urllib_quote, iteritems, to_bytes, to_native, add_charset, \
                           charset_QP, basestring, unicodeT, to_unicode
 import datetime
@@ -1193,7 +1193,7 @@ class AuthJWT(object):
                 return '%s$%s' % (request.now, auth.user_id)
 
             return "No auth info!"
-    
+
 
     """
 
@@ -1246,7 +1246,7 @@ class AuthJWT(object):
         self.before_authorization = before_authorization
         self.max_header_length = max_header_length
         self.recvd_token = None
-        
+
     @staticmethod
     def jwt_b64e(string):
         string = to_bytes(string)
@@ -1362,7 +1362,7 @@ class AuthJWT(object):
         """
         The part that issues (and refreshes) tokens.
         Used in a controller, given myjwt is the istantiated class, as
-        
+
             @myjwt.allow_jwt(required=False, verify_expiration=False)
             def api_auth():
                 return myjwt.jwt_token_manager()
@@ -1440,7 +1440,7 @@ class AuthJWT(object):
 
         self.recvd_token = token
         return token
-            
+
     def allows_jwt(self, otherwise=None, required=True, verify_expiration=True, token_param='_token'):
         """
         The decorator that takes care of injecting auth info in the decorated action.
@@ -1832,7 +1832,7 @@ class Auth(object):
         # ## what happens after registration?
 
         settings = self.settings = Settings()
-        settings.update(Auth.default_settings)        
+        settings.update(Auth.default_settings)
         host = self.select_host(request.env.http_host, host_names)
         settings.update(
             cas_domains=[host],

@@ -17,7 +17,7 @@ from gluon.html import STYLE, TABLE, TR, TD, TAG, TBODY, THEAD, TEXTAREA, TFOOT,
 from gluon.storage import Storage
 from gluon.html import XML_pickle, XML_unpickle
 from gluon.html import TAG_pickler, TAG_unpickler
-from pydal._compat import xrange, PY2, to_native
+from gluon._compat import xrange, PY2, to_native
 
 class TestBareHelpers(unittest.TestCase):
 
@@ -676,7 +676,7 @@ class TestBareHelpers(unittest.TestCase):
     # TODO: def test_markdown_serializer(self):
 
     # TODO: def test_markmin_serializer(self):
-    
+
     @unittest.skipIf(not PY2, "Skipping Python 3.x tests for MARKMIN")
     def test_MARKMIN(self):
         # This test pass with python 2.7 but expected to fail under 2.6

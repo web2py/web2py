@@ -10,7 +10,7 @@ fix_sys_path(__file__)
 
 from gluon.storage import Storage, StorageList, List
 from gluon.http import HTTP
-from pydal._compat import pickle
+from gluon._compat import pickle
 
 
 class TestStorage(unittest.TestCase):
