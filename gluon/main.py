@@ -454,7 +454,8 @@ def wsgibase(environ, responder):
                     # ##################################################
                     # on success, try store session in database
                     # ##################################################
-                    session._try_store_in_db(request, response)
+                    if not env.web2py_disable_session:
+                        session._try_store_in_db(request, response)
 
                     # ##################################################
                     # on success, commit database
@@ -471,8 +472,8 @@ def wsgibase(environ, responder):
                     # if session not in db try store session on filesystem
                     # this must be done after trying to commit database!
                     # ##################################################
-
-                    session._try_store_in_cookie_or_file(request, response)
+                    if not env.web2py_disable_session:
+                        session._try_store_in_cookie_or_file(request, response)
 
                     # Set header so client can distinguish component requests.
                     if request.cid:

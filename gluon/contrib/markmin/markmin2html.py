@@ -6,7 +6,8 @@
 from __future__ import print_function
 import re
 import urllib
-from gluon._compat import maketrans, urllib_quote, unicodeT, _local_html_escape, to_bytes, to_native, _local_html_escape as escape, xrange
+from gluon._compat import maketrans, urllib_quote, unicodeT, to_bytes, to_native, xrange
+from gluon.utils import local_html_escape as escape
 from ast import parse as ast_parse
 import ast
 

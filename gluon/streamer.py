@@ -25,22 +25,25 @@ regex_stop_range = re.compile('(?<=\-)\d+')
 
 DEFAULT_CHUNK_SIZE = 64 * 1024
 
-def streamer(stream, chunk_size=DEFAULT_CHUNK_SIZE, bytes=None):
-    offset = 0
-    while bytes is None or offset < bytes:
-        if not bytes is None and bytes - offset < chunk_size:
-            chunk_size = bytes - offset
-        data = stream.read(chunk_size)
-        length = len(data)
-        if not length:
-            break
-        else:
-            yield data
-        if length < chunk_size:
-            break
-        offset += length
-    stream.close()
-
+def streamer(stream, chunk_size=DEFAULT_CHUNK_SIZE, bytes=None, callback=None):
+    try:
+        offset = 0
+        while bytes is None or offset < bytes:
+            if not bytes is None and bytes - offset < chunk_size:
+                chunk_size = bytes - offset
+            data = stream.read(chunk_size)
+            length = len(data)
+            if not length:
+                break
+            else:
+                yield data
+            if length < chunk_size:
+                break
+            offset += length
+    finally:
+        stream.close()
+        if callback:
+            callback()
 
 def stream_file_or_304_or_206(
     static_file,

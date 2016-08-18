@@ -64,9 +64,9 @@
 		{{if request.function!='step6':}}
 		<div class="form row-fluid">
 			{{=form.custom.begin}}
-				{{ for fieldname in form.table.fields: }} 
+				{{ for fieldname in form.table.fields: }}
 					{{if fieldname is not 'id':}}
-						<label>{{=form.custom.label[fieldname]}}:</label> 
+						<label>{{=form.custom.label[fieldname]}}:</label>
 						{{=form.custom.widget[fieldname]}}
 						{{if fieldname=='layout_theme':}}
 						<span class="help-inline">
@@ -129,7 +129,7 @@
 						<li>You can create an app with a name that already exists.</li>
 						<li>If you do not have an email server set email server to "logging".</li>
 						<li>If you want to use Janrain Engage for login: 1) Sign up for a <a href="http://www.janrain.com/products/engage">Janrain Engage</a> account; 2) Register you hostname, domain, and obtain an api key; 3) Set Login Config above to "domain:api_key".</li>
-					<li>ATTENTION: you can use the wizard to download plugins BUT we cannot guarantee the stability or backward compatibility of plugins. Moreover plugins may conflict with each other. Anyway, we do recommend installing plugin "wiki" with adds CMS like capabilities to your app.</li>
+					<li>ATTENTION: you can use the wizard to download plugins BUT we cannot guarantee the stability or backward compatibility of plugins. Moreover plugins may conflict with each other. Anyway, we do recommend installing plugin "wiki" which adds CMS-like capabilities to your app.</li>
 					</ul>
 					{{elif request.function=='step2':}}
 					<ul class="unstyled">

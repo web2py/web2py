@@ -359,3 +359,29 @@ def getipaddrinfo(host):
                 and isinstance(addrinfo[4][0], basestring)]
     except socket.error:
         return []
+
+
+def local_html_escape(data, quote=False):
+    """
+    Works with bytes.
+    Replace special characters "&", "<" and ">" to HTML-safe sequences.
+    If the optional flag quote is true (the default), the quotation mark
+    characters, both double quote (") and single quote (') characters are also
+    translated.
+    """
+    if PY2:
+        import cgi
+        data = cgi.escape(data, quote)
+        return data.replace("'", "&#x27;") if quote else data
+    else:
+        import html
+        if isinstance(data, str):
+            return html.escape(data, quote=quote)
+        data = data.replace(b"&", b"&amp;") # Must be done first!
+        data = data.replace(b"<", b"&lt;")
+        data = data.replace(b">", b"&gt;")
+        if quote:
+            data = data.replace(b'"', b"&quot;")
+            data = data.replace(b'\'', b"&#x27;")
+        return data
+

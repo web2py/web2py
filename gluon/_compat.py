@@ -31,6 +31,7 @@ if PY2:
     from types import ClassType
     import cgi
     import cookielib
+    BytesIO = StringIO
     reduce = reduce
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
@@ -50,6 +51,11 @@ if PY2:
         del cls.__bool__
         return cls
 
+    def implements_iterator(cls):
+        cls.next = cls.__next__
+        del cls.__next__
+        return cls
+
     def to_bytes(obj, charset='utf-8', errors='strict'):
         if obj is None:
             return None
@@ -64,13 +70,10 @@ if PY2:
             return obj
         return obj.encode(charset, errors)
 
-    def _local_html_escape(data, quote=False):
-        s = cgi.escape(data, quote)
-        return s.replace("'", "&#x27;") if quote else s
 
 else:
     import pickle
-    from io import StringIO
+    from io import StringIO, BytesIO
     import copyreg
     from functools import reduce
     from html.parser import HTMLParser
@@ -91,7 +94,7 @@ else:
     from urllib.request import FancyURLopener, urlopen
     from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode
     from http import cookiejar as cookielib
-    import html
+    import html # warning, this is the python3 module and not the web2py html module
     hashlib_md5 = lambda s: hashlib.md5(bytes(s, 'utf8'))
     iterkeys = lambda d: iter(d.keys())
     itervalues = lambda d: iter(d.values())
@@ -124,24 +127,6 @@ else:
             return obj
         return obj.decode(charset, errors)
 
-    def _local_html_escape(s, quote=True):
-        """
-        Works with bytes.
-        Replace special characters "&", "<" and ">" to HTML-safe sequences.
-        If the optional flag quote is true (the default), the quotation mark
-        characters, both double quote (") and single quote (') characters are also
-        translated.
-        """
-        if isinstance(s, str):
-            return html.escape(s, quote=quote)
-
-        s = s.replace(b"&", b"&amp;") # Must be done first!
-        s = s.replace(b"<", b"&lt;")
-        s = s.replace(b">", b"&gt;")
-        if quote:
-            s = s.replace(b'"', b"&quot;")
-            s = s.replace(b'\'', b"&#x27;")
-        return s
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""

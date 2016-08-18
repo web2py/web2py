@@ -1,10 +1,10 @@
 import base64
 import os
 import time
-from gluon import portalocker
 from gluon.admin import apath
 from gluon.fileutils import read_file
 from gluon.utils import web2py_uuid
+from pydal.contrib import portalocker
 # ###########################################################
 # ## make sure administrator is on localhost or https
 # ###########################################################
