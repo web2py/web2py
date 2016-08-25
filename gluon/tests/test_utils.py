@@ -10,7 +10,9 @@ fix_sys_path(__file__)
 
 from gluon.utils import md5_hash, compare, is_valid_ip_address, web2py_uuid
 
+import pickle
 import hashlib
+import gluon.utils
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 from gluon.utils import simple_hash, get_digest, secure_dumps, secure_loads, basestring
 
@@ -85,7 +87,30 @@ class TestUtils(unittest.TestCase):
 
     # TODO: def test_get_callable_argspec(self):
 
-    # TODO: def test_pad(self):
+    def test_pad(self):
+        test_cases = [
+            (16, b'mydata'), # verify data padding and unpad identity
+            (32, b'mydata '), # verify space is not stripped
+            (8, b'mydata\x01'), # verify "padding" bytes are ignored
+            (4, b'mydata'), # verify multiblock behavior
+            (2, b''), # verify empty string behavior
+        ]
+        for (testlen,teststr) in test_cases:
+            padded = gluon.utils.pad(teststr,testlen)
+            unpadded = gluon.utils.unpad(padded,testlen)
+            self.assertTrue(len(padded) > len(teststr))
+            self.assertTrue(len(padded)%testlen == 0)
+            self.assertEqual(teststr, unpadded)
+
+        testobj = {'a': 1, 'b': 2}
+        pickled = pickle.dumps(testobj)
+        padded = gluon.utils.pad(pickled)
+        unpadded = gluon.utils.unpad(padded)
+        unpickled = pickle.loads(unpadded)
+        self.assertEqual(pickled, unpadded)
+        self.assertEqual(testobj, unpickled)
+        self.assertTrue(len(padded) > len(pickled))
+        self.assertTrue(len(padded)%32==0)
 
     def test_secure_dumps_and_loads(self):
         """ Tests secure_dumps and secure_loads"""
@@ -95,7 +120,13 @@ class TestUtils(unittest.TestCase):
         original = secure_loads(secured, testkey)
         self.assertEqual(testobj, original)
         self.assertTrue(isinstance(secured, bytes))
-        self.assertTrue(b':' in secured)
+        self.assertTrue(secured.count(b':') == 2)
+
+        secured_deprecated = gluon.utils.secure_dumps_deprecated(testobj, testkey)
+        original_deprecated = secure_loads(secured_deprecated, testkey)
+        self.assertEqual(testobj, original_deprecated)
+        self.assertTrue(isinstance(secured_deprecated, bytes))
+        self.assertTrue(secured_deprecated.count(b':') == 1)
 
         large_testobj = [x for x in range(1000)]
         secured_comp = secure_dumps(large_testobj, testkey, compression_level=9)
@@ -115,7 +146,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(wrong2, None)
         wrong3 = secure_loads(secured, 'wrongkey', 'wronghash')
         self.assertEqual(wrong3, None)
-        wrong4 = secure_loads('abc', 'a', 'b')
+        wrong4 = secure_loads(b'abc', 'a', 'b')
         self.assertEqual(wrong4, None)
 
     # TODO: def test_initialize_urandom(self):
