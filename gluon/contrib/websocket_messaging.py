@@ -93,6 +93,8 @@ import sys
 import optparse
 import time
 import sys
+import gluon.utils
+
 if (sys.version_info[0] == 2):
     from urllib import urlencode, urlopen
     def to_bytes(obj, charset='utf-8', errors='strict'):
@@ -141,7 +143,8 @@ class PostHandler(tornado.web.RequestHandler):
             print('%s:MESSAGE to %s:%s' % (time.time(), group, message))
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
-                if not to_bytes(hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest()) == signature:
+                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest()
+                if not gluon.utils.compare(to_native(signature), actual_signature):
                     self.send_error(401)
             for client in listeners.get(group, []):
                 client.write_message(message)
@@ -160,13 +163,14 @@ class TokenHandler(tornado.web.RequestHandler):
             message = self.request.arguments['message'][0]
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
-                if not to_bytes(hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest()) == signature:
+                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest()
+                if not gluon.utils.compare(to_native(signature), actual_signature):
                     self.send_error(401)
             tokens[message] = None
 
 
 class DistributeHandler(tornado.websocket.WebSocketHandler):
-   
+
     def check_origin(self, origin):
         return True
 
