@@ -9,11 +9,8 @@ import os
 import unittest
 import subprocess
 import time
-import signal
 
-from .fix_path import fix_sys_path
 
-fix_sys_path(__file__)
 
 from gluon.contrib.webclient import WebClient
 from gluon._compat import urllib2, PY2
@@ -32,7 +29,7 @@ def startwebserver():
                 break
             path = os.path.abspath(os.path.join(path, '..'))
     web2py_exec = os.path.join(path, 'web2py.py')
-    webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a',  'testpass'])
+    webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a', 'testpass'])
     print('Sleeping before web2py starts...')
     for a in range(1, 11):
         time.sleep(1)
@@ -141,7 +138,3 @@ class TestWeb(LiveTest):
         # check internal server error returned (issue 153)
         assert(s.status == 500)
         assert(s.text == xml_response)
-
-
-if __name__ == '__main__':
-    unittest.main()

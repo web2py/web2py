@@ -6,10 +6,6 @@
 """
 import os
 import unittest
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
-
 
 from gluon.storage import Storage
 from gluon.cache import CacheInRam, CacheOnDisk, Cache
@@ -147,8 +143,3 @@ class TestCache(unittest.TestCase):
         db.t_a.drop()
         db.close()
 
-
-if __name__ == '__main__':
-    setUpModule()       # pre-python-2.7
-    unittest.main()
-    tearDownModule()

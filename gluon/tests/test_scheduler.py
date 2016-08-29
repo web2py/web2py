@@ -10,9 +10,6 @@ import glob
 import datetime
 import sys
 
-from .fix_path import fix_sys_path
-fix_sys_path(__file__)
-
 from gluon.storage import Storage
 from gluon.languages import translator
 from gluon.scheduler import JobGraph, Scheduler, CronParser

@@ -10,9 +10,6 @@ import os
 import shutil
 import tempfile
 import unittest
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
 
 from gluon import languages
 from gluon._compat import PY2
@@ -182,9 +179,3 @@ def index():
         for key in ['hello', 'world', '%s %%{shop}', 'ahoy']:
             self.assertTrue(key in en_dict)
             self.assertTrue(key in pt_dict)
-
-
-
-
-if __name__ == '__main__':
-    unittest.main()

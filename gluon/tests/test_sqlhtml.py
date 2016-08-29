@@ -8,11 +8,7 @@ import os
 import sys
 import unittest
 
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
-
-from sqlhtml import safe_int, SQLFORM, SQLTABLE
+from gluon.sqlhtml import safe_int, SQLFORM, SQLTABLE
 
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
@@ -440,7 +436,3 @@ class TestSQLTABLE(unittest.TestCase):
 
 #     def test_represented(self):
 #         pass
-
-
-if __name__ == '__main__':
-    unittest.main()

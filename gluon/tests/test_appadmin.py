@@ -8,11 +8,6 @@ from __future__ import print_function
 import os
 import sys
 import unittest
-import json
-
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
 
 
 from gluon.compileapp import run_controller_in, run_view_in
@@ -165,6 +160,3 @@ class TestAppAdmin(unittest.TestCase):
         request._vars = data
         self.assertRaises(HTTP, self.run_function)
 
-
-if __name__ == '__main__':
-    unittest.main()

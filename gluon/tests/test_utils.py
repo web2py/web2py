@@ -4,17 +4,12 @@
 """ Unit tests for utils.py """
 
 import unittest
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
+import pickle
+from hashlib import md5
 
 from gluon.utils import md5_hash, compare, is_valid_ip_address, web2py_uuid
-
-import pickle
-import hashlib
 import gluon.utils
-from hashlib import md5, sha1, sha224, sha256, sha384, sha512
-from gluon.utils import simple_hash, get_digest, secure_dumps, secure_loads, basestring
+from gluon.utils import simple_hash, get_digest, secure_dumps, secure_loads
 
 
 class TestUtils(unittest.TestCase):
@@ -182,7 +177,3 @@ class TestUtils(unittest.TestCase):
         # TODO: def test_is_loopback_ip_address(self):
 
         # TODO: def test_getipaddrinfo(self):
-
-
-if __name__ == '__main__':
-    unittest.main()
