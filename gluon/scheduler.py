@@ -29,7 +29,7 @@ from json import loads, dumps
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_EMPTY_OR
 from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
 from gluon.utils import web2py_uuid
-from gluon._compat import Queue, long, iteritems
+from gluon._compat import Queue, long, iteritems, PY2
 from gluon.storage import Storage
 
 USAGE = """
@@ -245,7 +245,8 @@ class CronParser(object):
         elif period == 'hr':
             check = all(0 <= i <= 23 for i in values)
         elif period == 'dom':
-            check = all(1 <= i <= 31 or i == 'l' for i in values)
+            domrange = list(range(1, 32)) + ['l']
+            check = all(i in domrange for i in values)
         elif period == 'mon':
             check = all(1 <= i <= 12 for i in values)
         elif period == 'dow':
@@ -412,6 +413,8 @@ class CronParser(object):
 
 
 def _decode_list(lst):
+    if not PY2:
+        return lst
     newlist = []
     for i in lst:
         if isinstance(i, unicode):
@@ -423,6 +426,8 @@ def _decode_list(lst):
 
 
 def _decode_dict(dct):
+    if not PY2:
+        return dct
     newdict = {}
     for k, v in iteritems(dct):
         if isinstance(k, unicode):

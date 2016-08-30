@@ -25,6 +25,7 @@ import logging
 import getpass
 from gluon import main, newcron
 
+
 from gluon.fileutils import read_file, write_file, create_welcome_w2p
 from gluon.settings import global_settings
 from gluon.shell import run, test
@@ -40,8 +41,8 @@ ProgramInfo = '''%s
                  %s
                  %s''' % (ProgramName, ProgramAuthor, ProgramVersion)
 
-if not sys.version[:3] in ['2.7']:
-    msg = 'Warning: web2py requires Python 2.7 but you are running:\n%s'
+if sys.version_info < (2, 7) and (3, 0) < sys.version_info < (3, 5):
+    msg = 'Warning: web2py requires at least Python 2.7/3.5 but you are running:\n%s'
     msg = msg % sys.version
     sys.stderr.write(msg)
 
@@ -56,28 +57,27 @@ def run_system_tests(options):
     major_version = sys.version_info[0]
     minor_version = sys.version_info[1]
     call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
-    if major_version == 2:
-        if minor_version in (7,):
-            if options.with_coverage:
-                try:
-                    import coverage
-                    coverage_config = os.environ.get(
-                        "COVERAGE_PROCESS_START",
-                        os.path.join('gluon', 'tests', 'coverage.ini'))
-
-                    call_args = ['coverage', 'run', '--rcfile=%s' %
-                                 coverage_config,
-                                 '-m', 'unittest', '-v', 'gluon.tests']
-                except:
-                    sys.stderr.write('Coverage was not installed, skipping\n')
+    if options.with_coverage:
+        has_coverage = False
+        coverage_exec = 'coverage2' if major_version == 2 else 'coverage3'
+        try:
+            import coverage
+            has_coverage = True
+        except:
+            sys.stderr.write('Coverage was not installed, skipping\n')
+        coverage_config_file = os.path.join('gluon', 'tests', 'coverage.ini')
+        coverage_config = os.environ.setdefault("COVERAGE_PROCESS_START",
+                                                coverage_config_file)
+        call_args = [coverage_exec, 'run', '--rcfile=%s' %
+                     coverage_config, '-m', 'unittest', '-v', 'gluon.tests']
+        if major_version == 2:
             sys.stderr.write("Python 2.7\n")
+        else:
+            sys.stderr.write("Experimental Python 3.x.\n")
+        if has_coverage:
             ret = subprocess.call(call_args)
         else:
-            sys.stderr.write("unknown python 2.x version\n")
             ret = 256
-    else:
-        sys.stderr.write("Experimental Python 3.x.\n")
-        ret = subprocess.call(call_args)
     sys.exit(ret and 1)
 
 
