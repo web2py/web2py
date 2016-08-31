@@ -8,9 +8,6 @@
 
 import re
 import unittest
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
 
 from gluon.globals import Request, Response, Session
 from gluon import URL
@@ -185,6 +182,3 @@ class testResponse(unittest.TestCase):
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
         self.assertTrue('httponly' not in cookie.lower())
-
-if __name__ == '__main__':
-    unittest.main()

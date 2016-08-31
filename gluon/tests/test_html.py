@@ -6,9 +6,7 @@
 """
 
 import unittest
-from .fix_path import fix_sys_path
 
-fix_sys_path(__file__)
 
 from gluon.html import A, ASSIGNJS, B, BEAUTIFY, P, BODY, BR, BUTTON, CAT, CENTER, CODE, COL, COLGROUP, DIV, SPAN, URL, verifyURL
 from gluon.html import truncate_string, EM, FIELDSET, FORM, H1, H2, H3, H4, H5, H6, HEAD, HR, HTML, I, IFRAME, IMG, INPUT, EMBED
@@ -706,7 +704,3 @@ class TestData(unittest.TestCase):
     def test_Adata(self):
         self.assertEqual(A('<>', data=dict(abc='<def?asd>', cde='standard'), _a='1', _b='2').xml(),
                          b'<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard">&lt;&gt;</a>')
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -9,12 +9,6 @@ import unittest
 import tempfile
 import logging
 
-if os.path.isdir('gluon'):
-    sys.path.insert(0,os.path.realpath('gluon'))  # running from web2py base
-else:
-    sys.path.insert(0,os.path.realpath('../'))  # running from gluon/tests/
-    os.environ['web2py_path'] = os.path.realpath('../../')  # for settings
-
 from gluon.rewrite import load, filter_url, filter_err, get_effective_router, regex_filter_out, regex_select
 from gluon.html import URL
 from gluon.fileutils import abspath
@@ -456,9 +450,3 @@ routes_out = [
         self.assertEqual(
             filter_url('http://domain.com/index/a%20bc', env=True).request_uri,
             "/init/default/index/a bc")
-
-
-if __name__ == '__main__':
-    setUpModule()       # pre-2.7
-    unittest.main()
-    tearDownModule()

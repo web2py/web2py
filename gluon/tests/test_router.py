@@ -3,17 +3,10 @@
 
 """Unit tests for rewrite.py routers option"""
 from __future__ import print_function
-import sys
 import os
 import unittest
 import tempfile
 import logging
-
-if os.path.isdir('gluon'):
-    sys.path.insert(0,os.path.realpath('gluon'))  # running from web2py base
-else:
-    sys.path.insert(0,os.path.realpath('../../'))  # running from gluon/tests/
-    os.environ['web2py_path'] = os.path.realpath('../../')  # for settings
 
 from gluon.rewrite import load, filter_url, filter_err, get_effective_router, map_url_out
 from gluon.html import URL
@@ -21,7 +14,7 @@ from gluon.fileutils import abspath
 from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.storage import Storage
-from gluon._compat import to_bytes, to_native, PY2
+from gluon._compat import to_bytes, PY2
 
 logger = None
 oldcwd = None
@@ -1518,8 +1511,3 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('http://welcome.com/welcome/admin/index',
                          domain='welcome', out=True), "/welcome/admin")
 
-
-if __name__ == '__main__':
-    setUpModule()       # pre-2.7
-    unittest.main()
-    tearDownModule()

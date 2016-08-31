@@ -12,10 +12,6 @@ import smtplib
 import datetime
 import unittest
 
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
-
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
@@ -1362,6 +1358,3 @@ class TestExpose(unittest.TestCase):
         with self.assertRaises(HTTP):
             self.make_expose(base='inside', show='link_to_file3')
 
-
-if __name__ == '__main__':
-    unittest.main()

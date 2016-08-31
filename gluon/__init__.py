@@ -16,8 +16,10 @@ __all__ = ['A', 'B', 'BEAUTIFY', 'BODY', 'BR', 'CAT', 'CENTER', 'CLEANUP', 'CODE
 import os
 import sys
 try:
-    sys.path.insert(1,os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "packages", "dal"))
+    pydalpath = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "packages", "dal")
+    if pydalpath not in sys.path:
+        sys.path.append(pydalpath)
     import pydal
     sys.modules['pydal'] = pydal
 except ImportError:

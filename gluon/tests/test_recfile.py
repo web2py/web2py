@@ -8,9 +8,7 @@ import unittest
 import os
 import shutil
 import uuid
-from .fix_path import fix_sys_path
 
-fix_sys_path(__file__)
 
 from gluon import recfile
 
@@ -74,6 +72,3 @@ class TestRecfile(unittest.TestCase):
         self.assertRaises(IOError, recfile.remove, filename)
         self.assertRaises(IOError, recfile.open, filename, "r")
 
-
-if __name__ == '__main__':
-    unittest.main()
