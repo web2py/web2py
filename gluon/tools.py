@@ -1957,6 +1957,8 @@ class Auth(object):
 
     def table_cas(self):
         return self.db[self.settings.table_cas_name]
+    def table_permission(self):
+        return self.db[self.settings.table_permission_name]
 
     def table_token(self):
         return self.db[self.settings.table_token_name]
