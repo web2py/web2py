@@ -449,7 +449,7 @@ def create_missing_folders():
     """
     paths = (global_settings.gluon_parent, abspath(
         'site-packages', gluon=True), '')
-    [add_path_first(path) for p in paths]
+    [add_path_first(p) for p in paths]
 
 
 def create_missing_app_folders(request):
