@@ -4,6 +4,10 @@
 - py3.5 syntax compatible (see #1353 for details)
 - dropped web shell from admin
 - scheduler new feature: you can now specify intervals with cron
+- gluon/* removed from sys.path. Applications relying on statements like e.g.
+  "from storage import Storage"
+  will need to be rewritten with
+  "from gluon.storage import Storage"
 - tests can only be run with the usual web2py.py --run_system_tests OR with
   python -m unittest -v gluon.tests on the root dir
 
