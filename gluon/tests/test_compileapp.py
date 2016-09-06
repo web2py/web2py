@@ -4,18 +4,19 @@
 """ Unit tests for utils.py """
 
 import unittest
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
+import os
+import shutil
 
 from gluon.compileapp import compile_application, remove_compiled_application
 from gluon.fileutils import w2p_pack, w2p_unpack
 from gluon.globals import Request
-from gluon.admin import app_compile, app_create, app_cleanup, check_new_version, app_uninstall
+from gluon.admin import app_compile, app_create, app_cleanup, check_new_version
+from gluon.admin import app_uninstall
 from gluon.main import global_settings
-import os, shutil
+
 
 WEB2PY_VERSION_URL = "http://web2py.com/examples/default/version"
+
 
 class TestPack(unittest.TestCase):
     """ Tests the compileapp.py module """
@@ -55,6 +56,3 @@ class TestPack(unittest.TestCase):
             self.assertEqual(app_uninstall(new_app, request), True)
         self.assertNotEqual(check_new_version(global_settings.web2py_version, WEB2PY_VERSION_URL), -1)
         return
-
-if __name__ == '__main__':
-    unittest.main()

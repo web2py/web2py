@@ -7,10 +7,6 @@ import unittest
 import datetime
 import decimal
 import re
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
-
 
 from gluon.validators import *
 from gluon._compat import PY2, to_bytes
@@ -1122,7 +1118,3 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', None))
         rtn = IS_IPADDRESS(subnets='invalidsubnet')('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', 'invalid subnet provided'))
-
-
-if __name__ == '__main__':
-    unittest.main()

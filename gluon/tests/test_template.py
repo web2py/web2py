@@ -5,9 +5,6 @@
 """
 
 import unittest
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
 
 from gluon import template
 from gluon.template import render
@@ -136,7 +133,3 @@ class TestTemplate(unittest.TestCase):
                 render(filename=pjoin('views', 'default', 'noescape.html'),
                        context={'NOESCAPE': template.NOESCAPE}),
                 '<script></script>')
-
-
-if __name__ == '__main__':
-    unittest.main()

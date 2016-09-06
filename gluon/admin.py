@@ -140,7 +140,7 @@ def app_compile(app, request, skip_failed_views=False):
         None if everything went ok, traceback text if errors are found
 
     """
-    from compileapp import compile_application, remove_compiled_application
+    from gluon.compileapp import compile_application, remove_compiled_application
     folder = apath(app, request)
     try:
         failed_views = compile_application(folder, skip_failed_views)
@@ -442,9 +442,14 @@ def create_missing_folders():
             path = abspath(path, gluon=True)
             if not os.path.exists(path):
                 os.mkdir(path)
+    """
+    OLD sys.path dance
     paths = (global_settings.gluon_parent, abspath(
         'site-packages', gluon=True), abspath('gluon', gluon=True), '')
-    [add_path_first(path) for path in paths]
+    """
+    paths = (global_settings.gluon_parent, abspath(
+        'site-packages', gluon=True), '')
+    [add_path_first(path) for p in paths]
 
 
 def create_missing_app_folders(request):

@@ -5,10 +5,6 @@ Unit tests for IS_URL()
 """
 
 import unittest
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
-
 
 from gluon.validators import IS_URL, IS_HTTP_URL, IS_GENERIC_URL
 from gluon.validators import unicode_to_ascii_authority
@@ -694,6 +690,3 @@ class TestSimple(unittest.TestCase):
         # mode = 'generic' doesn't consider allowed_tlds
         rtn = IS_URL(mode='generic', allowed_tlds=['com', 'net', 'org'])('domain.ninja')
         self.assertEqual(rtn, ('domain.ninja', None))
-
-if __name__ == '__main__':
-    unittest.main()

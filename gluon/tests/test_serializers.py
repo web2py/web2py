@@ -10,8 +10,6 @@ from .fix_path import fix_sys_path
 import datetime
 import decimal
 
-fix_sys_path(__file__)
-
 from gluon.serializers import *
 from gluon.storage import Storage
 # careful with the import path 'cause of isinstance() checks
@@ -61,7 +59,3 @@ class TestSerializers(unittest.TestCase):
         # if unicode_keys is false, the standard behaviour is assumed
         base_load = loads_json(base_enc, unicode_keys=False)
         self.assertFalse(base == base_load)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -19,7 +19,8 @@ done
 if [ "$nopassword" -eq 0 ]
 then
   echo -e "Web2py Admin Password: \c "
-  read  PW
+  read -s PW
+  printf "\n"  # fix no new line artifact of "read -s" to avoid cleartext password
 fi
 # Upgrade and install needed software
 apt-get update
