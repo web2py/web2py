@@ -27,7 +27,7 @@
 'Author Reference Auth User.username': 'Author Reference Auth User.username',
 'Available Databases and Tables': 'bases de dados e tabelas disponíveis',
 'Buy this book': 'Comprar este Livro',
-"Buy web2py's book": "Comprar Livros web2py",
+"Buy web2py's book": 'Comprar Livros web2py',
 'cache': 'cache',
 'Cache': 'Cache',
 'Cache Cleared': 'Cache Limpo',
@@ -220,4 +220,3 @@
 'You can modify this application and adapt it to your needs': 'You can modify this application and adapt it to your needs',
 'You visited the url %s': 'You visited the url %s',
 }
-

@@ -26,7 +26,7 @@
 'Are you sure you want to delete this object?': 'Você tem certeza que quer apagar este objeto?',
 'Available Databases and Tables': 'Bancos de dados e tabelas disponíveis',
 'Buy this book': 'Compre o livro',
-"Buy web2py's book": "Compre o livro do web2buy",
+"Buy web2py's book": 'Compre o livro do web2buy',
 'cache': 'cache',
 'Cache': 'Cache',
 'Cache Cleared': 'Cache limpo',
@@ -210,4 +210,3 @@
 'You can modify this application and adapt it to your needs': 'Você pode modificar esta aplicação e adaptá-la às suas necessidades',
 'You visited the url %s': 'Você acessou a url %s',
 }
-

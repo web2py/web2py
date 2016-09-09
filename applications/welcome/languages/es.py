@@ -63,7 +63,7 @@
 'Available Databases and Tables': 'Bases de datos y tablas disponibles',
 'Back': 'Atrás',
 'Buy this book': 'Compra este libro',
-"Buy web2py's book": "Compra el libro de web2py",
+"Buy web2py's book": 'Compra el libro de web2py',
 'Cache': 'Caché',
 'cache': 'caché',
 'Cache Cleared': 'Cache Limpiada',
@@ -466,4 +466,3 @@
 'You visited the url %s': 'Usted visitó la url %s',
 'Your username is: %(username)s': 'Su nombre de usuario es: %(username)s',
 }
-
