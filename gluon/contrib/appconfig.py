@@ -27,14 +27,12 @@ Once the value has been fetched (and casted) it won't change until the process
 is restarted (or reload=True is passed).
 
 """
-import thread
 import os
-from ConfigParser import SafeConfigParser
-from gluon import current
-from gluon.serializers import json_parser
+import json
+from gluon._compat import thread, configparser
+from gluon.globals import current
 
 locker = thread.allocate_lock()
-
 
 def AppConfig(*args, **vars):
 
@@ -58,6 +56,27 @@ class AppConfigDict(dict):
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self.int_cache = {}
+
+    def get(self, path, default=None):
+        try:
+            value = self.take(path).strip()
+            if value.lower() in ('none','null',''):
+                return None
+            elif value.lower() == 'true':
+                return True
+            elif value.lower() == 'false':
+                return False
+            elif value.isdigit() or (value[0]=='-' and value[1:].isdigit()):
+                return int(value)
+            elif ',' in value:
+                return map(lambda x:x.strip(),value.split(','))
+            else:
+                try:
+                    return float(value)
+                except:
+                    return value
+        except:
+            return default
 
     def take(self, path, cast=None):
         parts = path.split('.')
@@ -101,7 +120,7 @@ class AppConfigLoader(object):
         self.read_config()
 
     def read_config_ini(self):
-        config = SafeConfigParser()
+        config = configparser.SafeConfigParser()
         config.read(self.file)
         settings = {}
         for section in config.sections():
@@ -112,7 +131,7 @@ class AppConfigLoader(object):
 
     def read_config_json(self):
         with open(self.file, 'r') as c:
-            self.settings = AppConfigDict(json_parser.load(c))
+            self.settings = AppConfigDict(json.load(c))
 
     def read_config(self):
         if self.settings is None:

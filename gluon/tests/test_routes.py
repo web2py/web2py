@@ -9,18 +9,13 @@ import unittest
 import tempfile
 import logging
 
-if os.path.isdir('gluon'):
-    sys.path.insert(0,os.path.realpath('gluon'))  # running from web2py base
-else:
-    sys.path.insert(0,os.path.realpath('../'))  # running from gluon/tests/
-    os.environ['web2py_path'] = os.path.realpath('../../')  # for settings
-
 from gluon.rewrite import load, filter_url, filter_err, get_effective_router, regex_filter_out, regex_select
 from gluon.html import URL
 from gluon.fileutils import abspath
 from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.storage import Storage
+from gluon._compat import to_bytes
 
 logger = None
 oldcwd = None
@@ -65,7 +60,7 @@ def setUpModule():
         if not os.path.isdir('gluon'):
             os.chdir(os.path.realpath(
                 '../../'))    # run from web2py base directory
-        import main   # for initialization after chdir
+        from gluon import main   # for initialization after chdir
         global logger
         logger = logging.getLogger('web2py.rewrite')
         global_settings.applications_parent = tempfile.mkdtemp()
@@ -319,7 +314,9 @@ routes_out = [
         self.assertEqual(str(URL(
             a='welcome', c='default', f='f', args=['årg'])), "/f/%C3%A5rg")
         self.assertEqual(
-            str(URL(a='welcome', c='default', f='fünc')), "/f\xc3\xbcnc")
+            URL(a='welcome', c='default', f='fünc'), "/fünc")
+        self.assertEqual(
+            to_bytes(URL(a='welcome', c='default', f='fünc')), b"/f\xc3\xbcnc")
 
     def test_routes_anchor(self):
         '''
@@ -453,9 +450,3 @@ routes_out = [
         self.assertEqual(
             filter_url('http://domain.com/index/a%20bc', env=True).request_uri,
             "/init/default/index/a bc")
-
-
-if __name__ == '__main__':
-    setUpModule()       # pre-2.7
-    unittest.main()
-    tearDownModule()

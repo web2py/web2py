@@ -5,13 +5,9 @@ Unit tests for IS_URL()
 """
 
 import unittest
-from fix_path import fix_sys_path
 
-fix_sys_path(__file__)
-
-
-from validators import IS_URL, IS_HTTP_URL, IS_GENERIC_URL
-from validators import unicode_to_ascii_authority
+from gluon.validators import IS_URL, IS_HTTP_URL, IS_GENERIC_URL
+from gluon.validators import unicode_to_ascii_authority
 
 
 class TestIsUrl(unittest.TestCase):
@@ -175,7 +171,7 @@ class TestIsUrl(unittest.TestCase):
         try:
             x = IS_URL(mode='ftp')
             x('http://www.google.ca')
-        except Exception, e:
+        except Exception as e:
             if str(e) != "invalid mode 'ftp' in IS_URL":
                 self.fail('Wrong exception: ' + str(e))
         else:
@@ -188,7 +184,7 @@ class TestIsUrl(unittest.TestCase):
                        prepend_scheme='ftp')
             x('http://www.benn.ca')  # we can only reasonably know about the
                                      # error at calling time
-        except Exception, e:
+        except Exception as e:
             if str(e)\
                     != "allowed_scheme value 'ftp' is not in [None, 'http', 'https']":
                 self.fail('Wrong exception: ' + str(e))
@@ -203,7 +199,7 @@ class TestIsUrl(unittest.TestCase):
             x = IS_URL(prepend_scheme='ftp')
             x('http://www.benn.ca')  # we can only reasonably know about the
                                      # error at calling time
-        except Exception, e:
+        except Exception as e:
             if str(e)\
                     != "prepend_scheme='ftp' is not in allowed_schemes=[None, 'http', 'https']":
                 self.fail('Wrong exception: ' + str(e))
@@ -215,7 +211,7 @@ class TestIsUrl(unittest.TestCase):
 
         try:
             x = IS_URL(allowed_schemes=[None, 'https'])
-        except Exception, e:
+        except Exception as e:
             if str(e)\
                     != "prepend_scheme='http' is not in allowed_schemes=[None, 'https']":
                 self.fail('Wrong exception: ' + str(e))
@@ -227,7 +223,7 @@ class TestIsUrl(unittest.TestCase):
         try:
             x = IS_URL(allowed_schemes=[None, 'http'],
                        prepend_scheme='https')
-        except Exception, e:
+        except Exception as e:
             if str(e)\
                     != "prepend_scheme='https' is not in allowed_schemes=[None, 'http']":
                 self.fail('Wrong exception: ' + str(e))
@@ -239,7 +235,7 @@ class TestIsUrl(unittest.TestCase):
         try:
             x = IS_URL(mode='generic', allowed_schemes=[None, 'ftp',
                        'ftps'])
-        except Exception, e:
+        except Exception as e:
             if str(e)\
                     != "prepend_scheme='http' is not in allowed_schemes=[None, 'ftp', 'ftps']":
                 self.fail('Wrong exception: ' + str(e))
@@ -253,7 +249,7 @@ class TestIsUrl(unittest.TestCase):
             x = IS_URL(mode='generic', prepend_scheme='blargg')
             x('http://www.google.ca')
               # we can only reasonably know about the error at calling time
-        except Exception, e:
+        except Exception as e:
             if not str(e).startswith(
                     "prepend_scheme='blargg' is not in allowed_schemes="):
                 self.fail('Wrong exception: ' + str(e))
@@ -265,7 +261,7 @@ class TestIsUrl(unittest.TestCase):
         try:
             x = IS_URL(mode='generic', allowed_schemes=[None, 'http'],
                        prepend_scheme='blargg')
-        except Exception, e:
+        except Exception as e:
             if str(e)\
                     != "prepend_scheme='blargg' is not in allowed_schemes=[None, 'http']":
                 self.fail('Wrong exception: ' + str(e))
@@ -296,7 +292,7 @@ class TestIsGenericUrl(unittest.TestCase):
 
     def testInvalidUrls(self):
         urlsToCheckA = []
-        for i in range(0, 32) + [127]:
+        for i in list(range(0, 32)) + [127]:
 
             # Control characters are disallowed in any part of a URL
 
@@ -567,7 +563,7 @@ class TestIsHttpUrl(unittest.TestCase):
 
         try:
             IS_HTTP_URL(prepend_scheme='mailto')
-        except Exception, e:
+        except Exception as e:
             if str(e)\
                     != "prepend_scheme='mailto' is not in allowed_schemes=[None, 'http', 'https']":
                 self.fail('Wrong exception: ' + str(e))
@@ -694,6 +690,3 @@ class TestSimple(unittest.TestCase):
         # mode = 'generic' doesn't consider allowed_tlds
         rtn = IS_URL(mode='generic', allowed_tlds=['com', 'net', 'org'])('domain.ninja')
         self.assertEqual(rtn, ('domain.ninja', None))
-
-if __name__ == '__main__':
-    unittest.main()

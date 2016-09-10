@@ -1,0 +1,176 @@
+{{extend 'layout.html'}}
+<h2><span style="color:#139FD7">python</span>anywhere {{=T('Deployment Interface')}}</h2>
+
+
+<div id="register_form">
+    <h3>{{=T('Login/Register')}}</h3>
+    <form class="form-horizontal" id="palogin">
+
+    <div class="control-group" id="username__row">
+        <label class="control-label" for="username">{{=T('Username')}}</label>
+        <div class="controls">
+            <input type="text" name="username" id="username"><span class="help-inline">*</span>
+            <span class="help-block"></span>
+        </div>
+    </div>
+
+    <div class="control-group" id="email_address__row">
+        <label class="control-label" for="email_address">{{=T('Email Address')}}</label>
+        <div class="controls">
+            <input type="text" name="email_address" id="email_address">
+            <span class="help-block"></span>
+        </div>
+    </div>
+
+    <div class="control-group" id="pythonanywhere_password__row">
+        <label class="control-label" for="pythonanywhere_password">{{=T('PythonAnywhere Password')}}</label>
+        <div class="controls">
+            <input type="password" name="pythonanywhere_password" id="pythonanywhere_password">
+            <span class="help-block"></span>
+        </div>
+    </div>
+
+    <div class="control-group" id="web2py_admin_password__row">
+        <label class="control-label" for="web2py_admin_password">{{=T('web2py Admin Password')}}</label>
+        <div class="controls">
+            <input type="password" name="web2py_admin_password" id="web2py_admin_password"><span class="help-inline">*</span>
+            <span class="help-block"></span>
+        </div>
+    </div>
+
+    <div class="control-group" id="accepts_terms__row">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" name="accepts_terms" id="accepts_terms"><a target="_blank" href="https://www.pythonanywhere.com/terms/">{{=T('Accept Terms')}}</a>
+            </label>
+            <span class="help-block"></span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <button type="submit" class="btn btn-primary" id="submit_palogin">{{=T('Submit')}}</button>
+        </div>
+    </div>
+
+    </form>
+    <p>* {{=T('You only need these if you have already registered')}}</p>
+</div>
+
+<div class="row-fluid" id="app_manager" style="display:none;">
+    <div class="span6">
+        <h3>{{=T('Local Apps')}}</h3>
+        <form id="apppicker">
+        <select name="apps" class="form-control" id="local" multiple>
+            <option>{{=T('Loading...')}}</option>
+        </select>
+        <input type="submit" value="Deploy" id="deploy_button" class="btn btn-primary">
+        </form>
+
+        <div class="alert alert-info">
+            <strong>{{=T('Warning!')}}</strong> {{=T('if your application uses a database other than sqlite you will then have to configure its DAL in pythonanywhere.')}}
+        </div>
+    </div>
+    <div class="span6">
+        <h3>{{=T('PythonAnywhere Apps')}}</h3>
+        <ul id="pythonanywhere">
+            <li>{{=T('Loading...')}}</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+
+$(document).ready(function() {
+
+    $('#palogin').off('submit');
+    $('#palogin').submit(function(event) {
+        var data = $('#palogin').serialize(); 
+        $.web2py.disableElement($('#submit_palogin'));
+        $.web2py.disableFormElements($('#palogin'));
+        $.ajax({
+                url: '{{=URL("pythonanywhere", "create_account")}}',
+                type: 'POST',
+                data: data,
+                dataType: 'json',
+        }).done(function(data, textStatus, jqXHR) {
+                $('#palogin .error').removeClass('error');
+                $('#palogin .help-block').text('');
+                if(data.status == 'error') {
+                    for(var error in data.errors) {
+                        $('#' + error + '__row').addClass('error');
+                        $('#' + error + '__row .help-block').text(data.errors[error][0]);
+                    }
+                    $.web2py.enableElement($('#submit_palogin'));
+                    $.web2py.enableFormElements($('#palogin'));
+                    $.web2py.flash("{{=T('Form has errors')}}");
+                } else {
+                    $.web2py.flash("{{=T('Login successful')}}");
+                    $('#register_form').hide();
+                    $('#app_manager').show();
+                    refresh_apps();
+                }
+        }).fail(function(){
+            $.web2py.flash("{{=T('Something went wrong please wait a few minutes before retrying')}}");
+            $.web2py.enableElement($('#submit_palogin'));
+            $.web2py.enableFormElements($('#palogin'));
+        });
+        event.preventDefault();
+    });
+
+    $('#apppicker').off('submit');
+    $('#apppicker').submit(function(event) {
+        var data = $('#apppicker').serialize(); 
+        $.web2py.disableElement($('#deploy_button'));
+        $.ajax({
+                url: '{{=URL("pythonanywhere", "bulk_install")}}',
+                type: 'POST',
+                data: {username: $('#username').val(), password: $('#web2py_admin_password').val(), apps: $('#local').val()},
+                dataType: 'json',
+        }).done(function(data, textStatus, jqXHR) {
+                refresh_apps();
+                $.web2py.enableElement($('#deploy_button'));
+        }).fail(function(){
+            $.web2py.flash("{{=T('Something went wrong please wait a few minutes before retrying')}}");
+            $.web2py.enableElement($('#deploy_button'));
+        });
+        event.preventDefault();
+    });
+});
+
+function refresh_apps() {
+    // Refresh List of Apps
+    $('#deploy_button').prop('disabled', true); 
+    $.ajax({
+            url: '{{=URL("pythonanywhere", "list_apps")}}',
+            type: 'GET',
+            data: {username: $('#username').val(), password: $('#web2py_admin_password').val()},
+            dataType: 'json',
+    }).done(function(data, textStatus, jqXHR) {
+            var i = 0;
+            $('#local').html('')
+            for(i = 0; i < data.local.length; i++) {
+                $('#local').append($('<option>', {
+                    value: data.local[i],
+                    text: data.local[i]
+                }));
+            }
+            $('#local').multiSelect('refresh');
+            $('#pythonanywhere').html('')
+            for(i = 0; i < data.pythonanywhere.length; i++) {
+                $('#pythonanywhere').append($('<li>', {
+                    text: data.pythonanywhere[i]
+                }));
+            }
+            $('#deploy_button').prop('disabled', false);
+            $.web2py.hide_flash();
+    }).fail(function(){
+        // Mostly this happens if it's a new account, just waiting a bit should be enough.
+        $.get('http://' + $('#username').val() + '.pythonanywhere.com'); // Kickstart the instance
+        $.web2py.flash("{{=T('Please wait, giving pythonanywhere a moment...')}}");
+        setTimeout(refresh_apps, 30000);
+    });
+}
+
+</script>
+

@@ -1,37 +1,24 @@
 {{extend 'layout.html'}}
-{{
-import random
-quotes = [
-        ("web2py was the life saver today for me, my blog post: Standalone Usage of web2py's", "caglartoklu", "http://twitter.com/#!/caglartoklu/status/84292131707031553"),
-        ("Get Things Done - Faster, Better and More Easily with web2py",
-         "Bruno Rocha",  "http://twitter.com/#!/rochacbruno/status/73583156044890112"),
-        ("Please use www.web2py.com when using MVC , no PHP/SQL stuff please...its 2011 not 1999", "rabblesoft", "http://twitter.com/#!/rabblesoft/status/79189028431343616"),
-        ('web2py rules! as a sysadmin I like the no installation and no configuration approach a lot)', "kjogut", "http://twitter.com/#!/jkogut/status/61414554273447936"),
-        ("web2py it is. Compatible with everything under the sun and great interfaces to googleappengine", "comamitc","http://twitter.com/#!/comamitc/status/51744719071477760"),
-        ("If you are still learning python, web2py is best tool by far", "pbreit", "http://twitter.com/#!/pbreit/status/48260905775017984")
-        ]
-random.shuffle(quotes)
-}}
 
-<div class="row-fluid">
-  <div class="span12">
-    <div class="span8">
-      <h3>web2py<sup>TM</sup> Web Framework</h3>
+<div class="container">
+  <div class="twothirds">
+    <div class="padded">
+      <h3><img src="{{=URL('static/images', 'web2py_logo.png')}}"> Web Framework</h3>
       <p>Free open source full-stack framework for rapid development of fast, scalable, <a href="http://www.web2py.com/book/default/chapter/01#Security" target="_blank">secure</a> and portable database-driven web-based applications. Written and programmable in <a href="http://www.python.org" target="_blank">Python</a>.</p>
       <table width="100%">
 	<tr>
 	  <td>
-	    <a href="http://web2py.com/book">
+	    <a class="noeffect" href="http://web2py.com/book">
 	      <img src="{{=URL('static','images/book-5th.png')}}" />
 	    </a>
 	  </td>
 	  <td>
-	    <a href="https://vimeo.com/album/3016728">
+	    <a class="noeffect" href="https://vimeo.com/album/3016728">
 	      <img src="{{=URL('static','images/videos.png')}}" />
 	    </a>
 	  </td>
 	  <td>
-	    <a href="http://link.packtpub.com/SUlnrN">
+	    <a class="noeffect" href="http://link.packtpub.com/SUlnrN">
 	      <img src="{{=URL('static','images/book-recipes.png')}}" />
 	    </a>
 	  </td>
@@ -39,45 +26,44 @@ random.shuffle(quotes)
       </table>
       <p>Current version: <a href="{{=URL('download')}}">{{=request.env.web2py_version}} (<a href="http://www.gnu.org/licenses/lgpl.html">LGPLv3 License</a>)</p>
     </div>
-    <div class="span4" style="text-align:center">
-      <a href="http://www.infoworld.com/slideshow/24605/infoworlds-2012-technology-of-the-year-award-winners-183313#slide23"><img src="{{=URL('static','images/infoworld2012.jpeg')}}" width="200px"/></a><br/>
-      <a class="btn btn-danger" href="{{=URL('download')}}" style="margin-top:10px; width:180px; color:white">Download Now</a><br/>
-      <a class="btn btn-danger" href="https://www.pythonanywhere.com/try-web2py" style="margin-top:10px; width:180px; color:white">Try it now online</a><br/>
-      <a class="btn btn-danger" href="http://web2py.com/poweredby" style="margin-top:10px; width:180px; color:white">Sites Powered by web2py</a><br/><br/>
-      <a class="coinbase-button" data-code="df71ec5c2d5bc3b1c18139ab645f352b" data-button-style="donation_large" href="https://coinbase.com/checkouts/df71ec5c2d5bc3b1c18139ab645f352b">Donate Bitcoins</a><script src="https://coinbase.com/assets/button.js" type="text/javascript"></script>
+  </div>
+  <div class="third">
+    <div class="padded center">
+      <a class="noeffect" href="http://www.infoworld.com/slideshow/24605/infoworlds-2012-technology-of-the-year-award-winners-183313#slide23">
+        <img class="spaced-vertical" src="{{=URL('static','images/infoworld2012.jpeg')}}">
+      </a>
+      <a class="btn rounded red fill" href="{{=URL('download')}}">
+        Download Now
+      </a>
+      <a class="btn rounded red fill" href="{{=URL('examples')}}">
+        Quick Examples
+      </a>
+      <a class="btn rounded red fill" href="https://www.pythonanywhere.com/try-web2py">
+        Try it now online
+      </a>
+      <a class="btn rounded red fill" href="http://web2py.com/poweredby">
+        Sites Powered by web2py
+      </a>
     </div>
   </div>
 </div>
-<div class="row-fluid">
-  <div class="span12">
-    <div class="span4">
-      <h3><a href="{{=URL('what')}}">Batteries Included</a></h3>
+<div class="container">
+  <div class="third">
+    <div class="padded">
+      <h5><a href="{{=URL('what')}}">Batteries Included</a></h5>
       <p>Everything you need in one package including fast multi-threaded web server, SQL database and web-based interface. No third party dependencies but works with <a href={{=URL('what')}}>third party tools</a>.</p>
     </div>
-    <div class="span4">
-      <h3><a href="http://web2py.com/demo_admin">Web-Based IDE</a></h3>
+  </div>
+  <div class="third">
+    <div class="padded">
+      <h5><a href="http://web2py.com/demo_admin">Web-Based IDE</a></h5>
       <p>Create, modify, deploy and manage application from anywhere using your browser. One web2py instance can run multiple web sites using different databases. Try the <a href="http://www.web2py.com/demo_admin">interactive demo</a>.</p>
     </div>
-    <div class="span4">
-      <h3><a href="{{=URL('documentation')}}">Extensive Docs</a></h3>
-      <p>Start with some <a href="{{=URL('examples')}}">quick examples</a>, then read the <a href="http://www.web2py.com/book" target="_blank">manual</a> and the <a href="http://web2py.readthedocs.org/en/latest/" target="_blank">Sphinx docs</a>, watch <a href="http://vimeo.com/album/178500" target="_blank">videos</a>, and join a <a href="{{=URL('default', 'usergroups')}}">user group</a> for discussion. Take advantage of the <a href="http://www.web2py.com/layouts" target="_blank">layouts</a>, <a href="http://dev.s-cubism.com/web2py_plugins" target="_blank">plugins</a>, <a href="http://www.web2py.com/appliances" target="_blank">appliances</a>, and <a href="http://web2pyslices.com" target="_blank">recipes</a>.</p>
-    </div>
   </div>
-</div>
-<div class="row-fluid">
-  <div class="span12">
-    <img class="scale-with-grid centered" src="/examples/static/images/shadow-bottom.png">
-  </div>
-</div>
-<div class="row-fluid">
-  <div class="span12">
-    {{for k,quote in enumerate(quotes[:3]):}}
-    <div class="span4">
-      <p style="text-align: left"><em>{{=quote[0]}}</em></p>
-      <span class="right">
-	<a href="{{=quote[2]}}">{{=quote[1]}}</a>
-      </span>
+  <div class="third">
+    <div class="padded">
+      <h5><a href="{{=URL('documentation')}}">Extensive Docs</a></h5>
+      <p>Start with some <a href="{{=URL('examples')}}">quick examples</a>, then read the <a href="http://www.web2py.com/book" target="_blank">manual</a> and the <a href="http://web2py.readthedocs.org/en/latest/" target="_blank">Sphinx docs</a>, watch <a href="http://vimeo.com/album/178500" target="_blank">videos</a>, and join a <a href="{{=URL('default', 'usergroups')}}">user group</a> for discussion. Take advantage of the <a href="http://www.web2py.com/layouts" target="_blank">layouts</a>, <a href="http://www.web2pyslices.com/home?content_type=Package" target="_blank">plugins</a>, <a href="http://www.web2py.com/appliances" target="_blank">appliances</a>, and <a href="http://web2pyslices.com" target="_blank">recipes</a>.</p>
     </div>
-    {{pass}}
   </div>
 </div>

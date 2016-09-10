@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-import __builtin__
+from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring, reduce, xrange, long
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -40,20 +40,18 @@ import shutil
 import imp
 import logging
 import types
+from functools import reduce
 logger = logging.getLogger("web2py")
 from gluon import rewrite
-from custom_import import custom_import_install
-
-try:
-    import py_compile
-except:
-    logger.warning('unable to import py_compile')
+from gluon.custom_import import custom_import_install
+import py_compile
 
 is_pypy = settings.global_settings.is_pypy
 is_gae = settings.global_settings.web2py_runtime_gae
 is_jython = settings.global_settings.is_jython
-
 pjoin = os.path.join
+
+marshal_header_size = 8 if PY2 else 12
 
 TEST_CODE = \
     r"""
@@ -116,7 +114,7 @@ class mybuiltin(object):
     #__builtins__
     def __getitem__(self, key):
         try:
-            return getattr(__builtin__, key)
+            return getattr(builtin, key)
         except AttributeError:
             raise KeyError(key)
 
@@ -150,7 +148,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             "infinity" or "continuous" are accepted to reload indefinitely the
             component
     """
-    from html import TAG, DIV, URL, SCRIPT, XML
+    from gluon.html import TAG, DIV, URL, SCRIPT, XML
     if args is None:
         args = []
     vars = Storage(vars or {})
@@ -213,7 +211,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             request.env.path_info
         other_request.cid = target
         other_request.env.http_web2py_component_element = target
-        other_request.restful = types.MethodType(request.restful.im_func, other_request) # A bit nasty but needed to use LOAD on action decorates with @request.restful()
+        other_request.restful = types.MethodType(request.restful.__func__, other_request) # A bit nasty but needed to use LOAD on action decorates with @request.restful()
         other_response.view = '%s/%s.%s' % (c, f, other_request.extension)
 
         other_environment = copy.copy(current.globalenv)  # NASTY
@@ -261,7 +259,7 @@ class LoadFactory(object):
         import globals
         target = target or 'c' + str(random.random())[2:]
         attr['_id'] = target
-        request = self.environment['request']
+        request = current.request
         if '.' in f:
             f, extension = f.rsplit('.', 1)
         if url or ajax:
@@ -394,6 +392,14 @@ _base_environment_['SQLField'] = Field  # for backward compatibility
 _base_environment_['SQLFORM'] = SQLFORM
 _base_environment_['SQLTABLE'] = SQLTABLE
 _base_environment_['LOAD'] = LOAD
+# For an easier PY3 migration
+_base_environment_['PY2'] = PY2
+_base_environment_['to_native'] = to_native
+_base_environment_['to_bytes'] = to_bytes
+_base_environment_['iteritems'] = iteritems
+_base_environment_['reduce'] = reduce
+_base_environment_['xrange'] = xrange
+
 
 def build_environment(request, response, session, store_current=True):
     """
@@ -429,8 +435,8 @@ def build_environment(request, response, session, store_current=True):
         __builtins__ = mybuiltin()
     elif is_pypy:  # apply the same hack to pypy too
         __builtins__ = mybuiltin()
-    else:
-        __builtins__['__import__'] = __builtin__.__import__  # WHY?
+    elif PY2:
+        __builtins__['__import__'] = builtin.__import__  # WHY?
     environment['request'] = request
     environment['response'] = response
     environment['session'] = session
@@ -447,7 +453,8 @@ def save_pyc(filename):
     """
     Bytecode compiles the file `filename`
     """
-    py_compile.compile(filename)
+    cfile = "%sc" % filename
+    py_compile.compile(filename, cfile=cfile)
 
 
 def read_pyc(filename):
@@ -461,25 +468,31 @@ def read_pyc(filename):
     data = read_file(filename, 'rb')
     if not is_gae and data[:4] != imp.get_magic():
         raise SystemError('compiled code is incompatible')
-    return marshal.loads(data[8:])
+    return marshal.loads(data[marshal_header_size:])
 
 
-def compile_views(folder):
+def compile_views(folder, skip_failed_views=False):
     """
     Compiles all the views in the application specified by `folder`
     """
 
     path = pjoin(folder, 'views')
+    failed_views = []
     for fname in listdir(path, '^[\w/\-]+(\.\w+)*$'):
         try:
             data = parse_template(fname, path)
-        except Exception, e:
-            raise Exception("%s in %s" % (e, fname))
-        filename = 'views.%s.py' % fname.replace(os.path.sep, '.')
-        filename = pjoin(folder, 'compiled', filename)
-        write_file(filename, data)
-        save_pyc(filename)
-        os.unlink(filename)
+        except Exception as e:
+            if skip_failed_views:
+                failed_views.append(fname)
+            else:
+                raise Exception("%s in %s" % (e, fname))
+        else:
+            filename = ('views/%s.py' % fname).replace('/', '_').replace('\\', '_')
+            filename = pjoin(folder, 'compiled', filename)
+            write_file(filename, data)
+            save_pyc(filename)
+            os.unlink(filename)
+    return failed_views if failed_views else None
 
 
 def compile_models(folder):
@@ -532,18 +545,26 @@ def run_models_in(environment):
     It tries pre-compiled models first before compiling them.
     """
 
-    folder = environment['request'].folder
-    c = environment['request'].controller
+    request = current.request
+    folder = request.folder
+    c = request.controller
     #f = environment['request'].function
-    response = environment['response']
+    response = current.response
 
     path = pjoin(folder, 'models')
     cpath = pjoin(folder, 'compiled')
     compiled = os.path.exists(cpath)
-    if compiled:
-        models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), model_cmp)
+    if PY2:
+        if compiled:
+            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), model_cmp)
+        else:
+            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
     else:
-        models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
+        if compiled:
+            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), key=lambda f: '{0:03d}'.format(f.count('.')) + f)
+        else:
+            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), key=lambda f: '{0:03d}'.format(f.count(os.path.sep)) + f)
+
     models_to_run = None
     for model in models:
         if response.models_to_run != models_to_run:
@@ -577,7 +598,7 @@ def run_controller_in(controller, function, environment):
     """
 
     # if compiled should run compiled!
-    folder = environment['request'].folder
+    folder = current.request.folder
     path = pjoin(folder, 'compiled')
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
@@ -631,12 +652,12 @@ def run_controller_in(controller, function, environment):
             layer = filename + ':' + function
             code = getcfs(layer, filename, lambda: compile2(code, layer))
         restricted(code, environment, filename)
-    response = environment['response']
+    response = current.response
     vars = response._vars
     if response.postprocessing:
         vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
-    if isinstance(vars, unicode):
-        vars = vars.encode('utf8')
+    if isinstance(vars, unicodeT):
+        vars = to_native(vars)
     elif hasattr(vars, 'xml') and callable(vars.xml):
         vars = vars.xml()
     return vars
@@ -649,9 +670,9 @@ def run_view_in(environment):
     or `view/generic.extension`
     It tries the pre-compiled views_controller_function.pyc before compiling it.
     """
-    request = environment['request']
-    response = environment['response']
-    view = response.view
+    request = current.request
+    response = current.response
+    view = environment['response'].view
     folder = request.folder
     path = pjoin(folder, 'compiled')
     badv = 'invalid view (%s)' % view
@@ -666,32 +687,28 @@ def run_view_in(environment):
         ccode = parse_template(view, pjoin(folder, 'views'),
                                context=environment)
         restricted(ccode, environment, 'file stream')
-    elif os.path.exists(path):
-        x = view.replace('/', '.')
-        files = ['views.%s.pyc' % x]
-        if allow_generic:
-            files.append('views.generic.%s.pyc' % request.extension)
-        # for backward compatibility
-        x = view.replace('/', '_')
-        files.append('views_%s.pyc' % x)
-        if allow_generic:
-            files.append('views_generic.%s.pyc' % request.extension)
-        if request.extension == 'html':
-            files.append('views_%s.pyc' % x[:-5])
-            if allow_generic:
-                files.append('views_generic.pyc')
-        # end backward compatibility code
-        for f in files:
-            filename = pjoin(path, f)
-            if os.path.exists(filename):
-                code = read_pyc(filename)
-                restricted(code, environment, layer=filename)
-                return
-        raise HTTP(404,
-                   rewrite.THREAD_LOCAL.routes.error_message % badv,
-                   web2py_error=badv)
     else:
         filename = pjoin(folder, 'views', view)
+        if os.path.exists(path): # compiled views
+            x = view.replace('/', '_')
+            files = ['views_%s.pyc' % x]
+            is_compiled = os.path.exists(pjoin(path, files[0]))
+            # Don't use a generic view if the non-compiled view exists.
+            if is_compiled or (not is_compiled and not os.path.exists(filename)):
+                if allow_generic:
+                    files.append('views_generic.%s.pyc' % request.extension)
+                # for backward compatibility
+                if request.extension == 'html':
+                    files.append('views_%s.pyc' % x[:-5])
+                    if allow_generic:
+                        files.append('views_generic.pyc')
+                # end backward compatibility code
+                for f in files:
+                    compiled = pjoin(path, f)
+                    if os.path.exists(compiled):
+                        code = read_pyc(compiled)
+                        restricted(code, environment, layer=compiled)
+                        return
         if not os.path.exists(filename) and allow_generic:
             view = 'generic.' + request.extension
             filename = pjoin(folder, 'views', view)
@@ -725,7 +742,7 @@ def remove_compiled_application(folder):
         pass
 
 
-def compile_application(folder):
+def compile_application(folder, skip_failed_views=False):
     """
     Compiles all models, views, controller for the application in `folder`.
     """
@@ -733,7 +750,8 @@ def compile_application(folder):
     os.mkdir(pjoin(folder, 'compiled'))
     compile_models(folder)
     compile_controllers(folder)
-    compile_views(folder)
+    failed_views = compile_views(folder, skip_failed_views)
+    return failed_views
 
 
 def test():

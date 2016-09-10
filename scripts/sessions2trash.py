@@ -104,12 +104,10 @@ class SessionSetDb(SessionSet):
 
     def get(self):
         """Return list of SessionDb instances for existing sessions."""
-        sessions = []
         table = current.response.session_db_table
         if table:
             for row in table._db(table.id > 0).select():
-                sessions.append(SessionDb(row))
-        return sessions
+                yield SessionDb(row)
 
 
 class SessionSetFiles(SessionSet):

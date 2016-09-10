@@ -10,10 +10,7 @@ Restricted environment to execute application's code
 """
 
 import sys
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from gluon._compat import pickle, ClassType
 import traceback
 import types
 import os
@@ -202,11 +199,7 @@ class RestrictedError(Exception):
 
 
 def compile2(code, layer):
-    """
-    The ``+'\\n'`` is necessary else compile fails when code ends in a comment.
-    """
-
-    return compile(code.rstrip().replace('\r\n', '\n') + '\n', layer, 'exec')
+    return compile(code.rstrip(), layer, 'exec')
 
 
 def restricted(code, environment=None, layer='Unknown'):
@@ -224,18 +217,19 @@ def restricted(code, environment=None, layer='Unknown'):
             ccode = code
         else:
             ccode = compile2(code, layer)
-        exec ccode in environment
+        exec(ccode, environment)
     except HTTP:
         raise
     except RestrictedError:
         # do not encapsulate (obfuscate) the original RestrictedError
         raise
-    except Exception, error:
+    except Exception as error:
         # extract the exception type and value (used as output message)
         etype, evalue, tb = sys.exc_info()
         # XXX Show exception in Wing IDE if running in debugger
         if __debug__ and 'WINGDB_ACTIVE' in os.environ:
             sys.excepthook(etype, evalue, tb)
+        del tb
         output = "%s %s" % (etype, evalue)
         raise RestrictedError(layer, code, output, environment)
 
@@ -251,7 +245,7 @@ def snapshot(info=None, context=5, code=None, environment=None):
     # if no exception info given, get current:
     etype, evalue, etb = info or sys.exc_info()
 
-    if isinstance(etype, types.ClassType):
+    if isinstance(etype, ClassType):
         etype = etype.__name__
 
     # create a snapshot dict with some basic information
@@ -261,6 +255,7 @@ def snapshot(info=None, context=5, code=None, environment=None):
 
     # start to process frames
     records = inspect.getinnerframes(etb, context)
+    del etb # Prevent circular references that would cause memory leaks
     s['frames'] = []
     for frame, file, lnum, func, lines, index in records:
         file = file and os.path.abspath(file) or '?'
@@ -319,10 +314,8 @@ def snapshot(info=None, context=5, code=None, environment=None):
     s['exception'] = {}
     if isinstance(evalue, BaseException):
         for name in dir(evalue):
-            # prevent py26 DeprecatedWarning:
-            if name != 'message' or sys.version_info < (2.6):
-                value = pydoc.text.repr(getattr(evalue, name))
-                s['exception'][name] = value
+            value = pydoc.text.repr(getattr(evalue, name))
+            s['exception'][name] = value
 
     # add all local values (of last frame) to the snapshot
     s['locals'] = {}

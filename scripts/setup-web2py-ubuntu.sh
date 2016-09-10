@@ -1,7 +1,8 @@
+#!/bin/bash
 echo "This script will:
 1) install all modules need to run web2py on Ubuntu 14.04
 2) install web2py in /home/www-data/
-3) create a self signed sll certificate
+3) create a self signed ssl certificate
 4) setup web2py with mod_wsgi
 5) overwrite /etc/apache2/sites-available/default
 6) restart apache.
@@ -12,7 +13,7 @@ Press a key to continue...[ctrl+C to abort]"
 
 read CONFIRM
 
-#!/bin/bash
+
 # optional
 # dpkg-reconfigure console-setup
 # dpkg-reconfigure timezoneconf
@@ -84,13 +85,31 @@ openssl x509 -noout -fingerprint -text < /etc/apache2/ssl/self_signed.cert > /et
 echo "rewriting your apache config file to use mod_wsgi"
 echo "================================================="
 echo '
-WSGIDaemonProcess web2py user=www-data group=www-data processes=1 threads=1
+WSGIDaemonProcess web2py user=www-data group=www-data
 
 <VirtualHost *:80>
 
-  RewriteEngine On
-  RewriteCond %{HTTPS} !=on
-  RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
+ WSGIProcessGroup web2py
+  WSGIScriptAlias / /home/www-data/web2py/wsgihandler.py
+  WSGIPassAuthorization On
+
+  <Directory /home/www-data/web2py>
+    AllowOverride None
+    Require all denied
+    <Files wsgihandler.py>
+      Require all granted
+    </Files>
+  </Directory>
+
+  AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) \
+        /home/www-data/web2py/applications/$1/static/$2
+
+  <Directory /home/www-data/web2py/applications/*/static/>
+    Options -Indexes
+    ExpiresActive On
+    ExpiresDefault "access plus 1 hour"
+    Require all granted
+  </Directory>
 
   CustomLog /var/log/apache2/access.log common
   ErrorLog /var/log/apache2/error.log

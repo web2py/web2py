@@ -1,5 +1,6 @@
+from __future__ import print_function
 import urllib
-import simplejson
+import json
 from hashlib import sha1
 
 class Stripe:
@@ -75,17 +76,17 @@ Low level API:
             d.update(mode)
         params = urllib.urlencode(d)
         u = urllib.urlopen(self.URL_CHARGE % self.key, params)
-        return simplejson.loads(u.read())
+        return json.loads(u.read())
 
     def check(self, charge_id):
         u = urllib.urlopen(self.URL_CHECK % (self.key, charge_id))
-        return simplejson.loads(u.read())
+        return json.loads(u.read())
 
     def refund(self, charge_id):
         params = urllib.urlencode({})
         u = urllib.urlopen(self.URL_REFUND % (self.key, charge_id),
                            params)
-        return simplejson.loads(u.read())
+        return json.loads(u.read())
 
 class StripeForm(object):
     def __init__(self,
@@ -244,8 +245,8 @@ jQuery(function(){
 if __name__ == '__main__':
     key = raw_input('user>')
     d = Stripe(key).charge(100)
-    print 'charged', d['paid']
+    print('charged', d['paid'])
     s = Stripe(key).check(d[u'id'])
-    print 'paid', s['paid'], s['amount'], s['currency']
+    print('paid', s['paid'], s['amount'], s['currency'])
     s = Stripe(key).refund(d[u'id'])
-    print 'refunded', s['refunded']
+    print('refunded', s['refunded'])

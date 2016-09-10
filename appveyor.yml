@@ -1,0 +1,34 @@
+build: false
+
+environment:
+  matrix:
+    - PYTHON: "C:/Python27"
+      COVERAGE_PROCESS_START: gluon/tests/coverage.ini
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:/Python35"
+      COVERAGE_PROCESS_START: gluon/tests/coverage.ini
+      PYTHON_ARCH: "64"
+
+clone_depth: 50
+
+init:
+  - "ECHO %PYTHON%"
+  - set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+
+install:
+  - ps: Start-FileDownload https://bootstrap.pypa.io/get-pip.py
+  - python get-pip.py
+  - pip install codecov
+  - git submodule update --init --recursive
+  - pip install pycrypto
+  # Check that we have the expected version and architecture for Python
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+
+test_script:
+  - python web2py.py --run_system_tests --with_coverage
+
+after_test:
+  - coverage combine
+  - codecov

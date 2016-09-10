@@ -1,3 +1,4 @@
+#!/bin/bash
 echo "This script will:
 1) Install modules needed to run web2py on Fedora and CentOS/RHEL
 2) Install Python 2.6 to /opt and recompile wsgi if not provided
@@ -27,7 +28,7 @@ Press ENTER to continue...[ctrl+C to abort]"
 
 read CONFIRM
 
-#!/bin/bash
+
 
 ###
 ###  Phase 0 - This may get messy.  Lets work from a temporary directory
@@ -301,7 +302,7 @@ NameVirtualHost *:80
 NameVirtualHost *:443
 
 <VirtualHost *:80>
-  WSGIDaemonProcess web2py user=apache group=apache processes=1 threads=1
+  WSGIDaemonProcess web2py user=apache group=apache
   WSGIProcessGroup web2py
   WSGIScriptAlias / /opt/web-apps/web2py/wsgihandler.py
   WSGIPassAuthorization On

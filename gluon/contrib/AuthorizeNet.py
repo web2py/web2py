@@ -13,6 +13,7 @@ Modifed by Massimo Di Pierro
 - namedtuple from http://code.activestate.com/recipes/500261/
 
 """
+from __future__ import print_function
 
 __all__ = ['AIM']
 
@@ -248,23 +249,23 @@ def test():
         payment.setParameter('x_email_customer', False)
         payment.process()
         if payment.isApproved():
-            print 'Response Code: ', payment.response.ResponseCode
-            print 'Response Text: ', payment.response.ResponseText
-            print 'Response: ', payment.getResultResponseFull()
-            print 'Transaction ID: ', payment.response.TransactionID
-            print 'CVV Result: ', payment.response.CVVResponse
-            print 'Approval Code: ', payment.response.AuthCode
-            print 'AVS Result: ', payment.response.AVSResponse
+            print('Response Code: ', payment.response.ResponseCode)
+            print('Response Text: ', payment.response.ResponseText)
+            print('Response: ', payment.getResultResponseFull())
+            print('Transaction ID: ', payment.response.TransactionID)
+            print('CVV Result: ', payment.response.CVVResponse)
+            print('Approval Code: ', payment.response.AuthCode)
+            print('AVS Result: ', payment.response.AVSResponse)
         elif payment.isDeclined():
-            print 'Your credit card was declined by your bank'
+            print('Your credit card was declined by your bank')
         elif payment.isError():
             raise AIM.AIMError('An uncaught error occurred')
-    except AIM.AIMError, e:
-        print "Exception thrown:", e
-        print 'An error occured'
-    print 'approved', payment.isApproved()
-    print 'declined', payment.isDeclined()
-    print 'error', payment.isError()
+    except AIM.AIMError as e:
+        print("Exception thrown:", e)
+        print('An error occured')
+    print('approved', payment.isApproved())
+    print('declined', payment.isDeclined())
+    print('error', payment.isError())
 
 if __name__ == '__main__':
     test()

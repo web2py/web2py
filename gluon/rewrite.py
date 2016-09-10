@@ -15,6 +15,7 @@ routes.py supports two styles of URL rewriting, depending on whether 'routers' i
 Refer to router.example.py and routes.example.py for additional documentation.
 
 """
+from __future__ import print_function
 
 import os
 import re
@@ -26,6 +27,7 @@ from gluon.storage import Storage, List
 from gluon.http import HTTP
 from gluon.fileutils import abspath, read_file
 from gluon.settings import global_settings
+from gluon._compat import urllib_unquote, urllib_quote, iteritems, xrange
 
 isdir = os.path.isdir
 isfile = os.path.isfile
@@ -79,7 +81,7 @@ def _router_default():
         #  pathological backtracking from nested patterns.
         #
         file_match = r'([-+=@$%\w]|(?<=[-+=@$%\w])[./])*$', # legal static subpath
-        args_match=r'([\w@ -]|(?<=[\w@ -])[.=])*$',         # legal arg in args
+        args_match=r'([\w@ =-]|(?<=[\w@ -])[.])*$',
     )
     return router
 
@@ -117,7 +119,7 @@ def log_rewrite(string):
     elif params.logging == 'off' or not params.logging:
         pass
     elif params.logging == 'print':
-        print string
+        print(string)
     elif params.logging == 'info':
         logger.info(string)
     elif params.logging == 'warning':
@@ -315,8 +317,8 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
 
         symbols = dict(app=app)
         try:
-            exec (data + '\n') in symbols
-        except SyntaxError, e:
+            exec(data + '\n', symbols)
+        except SyntaxError as e:
             logger.error(
                 '%s has a syntax error and will not be loaded\n' % path
                 + traceback.format_exc())
@@ -512,7 +514,7 @@ def load_routers(all_apps):
     #
     domains = dict()
     if routers.BASE.domains:
-        for (d, a) in routers.BASE.domains.iteritems():
+        for (d, a) in iteritems(routers.BASE.domains):
             (domain, app) = (d.strip(':'), a.strip('/'))
             if ':' in domain:
                 (domain, port) = domain.split(':')
@@ -618,13 +620,13 @@ def regex_url_in(request, environ):
     if routes.routes_in:
         environ = regex_filter_in(environ)
     request.env.update(
-        (k.lower().replace('.', '_'), v) for k, v in environ.iteritems())
+        (k.lower().replace('.', '_'), v) for k, v in iteritems(environ))
 
     # ##################################################
     # serve if a static file
     # ##################################################
 
-    path = urllib.unquote(request.env.path_info) or '/'
+    path = urllib_unquote(request.env.path_info) or '/'
     path = path.replace('\\', '/')
     if path.endswith('/') and len(path) > 1:
         path = path[:-1]
@@ -636,13 +638,14 @@ def regex_url_in(request, environ):
         request.raw_args = request.raw_args[1:]
     if match.group('c') == 'static':
         application = match.group('a')
-        version, filename = None, match.group('z').replace(' ', '_')
+        version, filename = None, match.group('z')
         if not filename:
             raise HTTP(404)
+        filename = filename.replace(' ','_')
         items = filename.split('/', 1)
         if regex_version.match(items[0]):
             version, filename = items
-        static_folder = pjoin(request.env.applications_parent,
+        static_folder = pjoin(global_settings.applications_parent,
                               'applications', application, 'static')
         static_file = os.path.abspath(pjoin(static_folder, filename))
         if not static_file.startswith(static_folder):
@@ -714,7 +717,7 @@ def filter_url(url, method='get', remote='0.0.0.0',
     if isinstance(domain, str):
         domain = (domain, None)
     (path_info, query_string) = (uri[:k], uri[k + 1:])
-    path_info = urllib.unquote(path_info)   # simulate server
+    path_info = urllib_unquote(path_info)   # simulate server
     e = {
         'REMOTE_ADDR': remote,
         'REQUEST_METHOD': method,
@@ -947,7 +950,7 @@ class MapUrlIn(object):
 
         if len(self.args) == 1 and self.arg0 in self.router.root_static:
             self.controller = self.request.controller = 'static'
-            root_static_file = pjoin(self.request.env.applications_parent,
+            root_static_file = pjoin(global_settings.applications_parent,
                                      'applications', self.application,
                                      self.controller, self.arg0)
             log_rewrite("route: root static=%s" % root_static_file)
@@ -1016,11 +1019,11 @@ class MapUrlIn(object):
         #  if language-specific file doesn't exist, try same file in static
         #
         if self.language:
-            static_file = pjoin(self.request.env.applications_parent,
+            static_file = pjoin(global_settings.applications_parent,
                                 'applications', self.application,
                                 'static', self.language, file)
         if not self.language or not isfile(static_file):
-            static_file = pjoin(self.request.env.applications_parent,
+            static_file = pjoin(global_settings.applications_parent,
                                 'applications', self.application,
                                 'static', file)
         self.extension = None
@@ -1072,7 +1075,7 @@ class MapUrlIn(object):
 
     def sluggify(self):
         self.request.env.update(
-            (k.lower().replace('.', '_'), v) for k, v in self.env.iteritems())
+            (k.lower().replace('.', '_'), v) for k, v in iteritems(self.env))
 
     def update_request(self):
         """
@@ -1099,7 +1102,7 @@ class MapUrlIn(object):
         uri = '/%s%s%s%s' % (
             app,
             uri,
-            urllib.quote('/' + '/'.join(
+            urllib_quote('/' + '/'.join(
                 str(x) for x in self.args)) if self.args else '',
             ('?' + self.query) if self.query else '')
         self.env['REQUEST_URI'] = uri

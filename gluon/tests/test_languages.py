@@ -7,27 +7,13 @@
 
 import sys
 import os
+import shutil
 import tempfile
 import unittest
-from fix_path import fix_sys_path
 
-fix_sys_path(__file__)
+from gluon import languages
+from gluon._compat import PY2
 
-#support skipif also in python 2.6
-def _skipIf(cond, message=''):
-    def _decorator(testcase):
-        if cond:
-            return lambda *a, **kw: None
-        else:
-            return testcase
-    return _decorator
-
-if hasattr(unittest, 'skipIf'):
-    skipIf = unittest.skipIf
-else:
-    skipIf = _skipIf
-
-import languages
 MP_WORKING = 0
 try:
     import multiprocessing
@@ -69,7 +55,7 @@ class TestLanguagesParallel(unittest.TestCase):
         except:
             pass
 
-    @skipIf(MP_WORKING == 0, 'multiprocessing tests unavailable')
+    @unittest.skipIf(MP_WORKING == 0, 'multiprocessing tests unavailable')
     def test_reads_and_writes(self):
         readwriters = 10
         pool = multiprocessing.Pool(processes=readwriters)
@@ -77,7 +63,7 @@ class TestLanguagesParallel(unittest.TestCase):
         for result in results:
             self.assertTrue(result)
 
-    @skipIf(MP_WORKING == 1, 'multiprocessing tests available')
+    @unittest.skipIf(MP_WORKING == 1, 'multiprocessing tests available')
     def test_reads_and_writes_no_mp(self):
         results = []
         for i in range(10):
@@ -123,5 +109,73 @@ class TestTranslations(unittest.TestCase):
         self.assertEqual(str(T('Hello World')),
                          'Salve Mondo')
 
-if __name__ == '__main__':
-    unittest.main()
+class TestDummyApp(unittest.TestCase):
+
+    def setUp(self):
+        pjoin = os.path.join
+        self.apppath = os.path.abspath(pjoin(os.path.dirname(os.path.abspath(__file__)), 'dummy'))
+        os.mkdir(self.apppath)
+        os.mkdir(pjoin(self.apppath, 'languages'))
+        os.mkdir(pjoin(self.apppath, 'models'))
+        os.mkdir(pjoin(self.apppath, 'controllers'))
+        os.mkdir(pjoin(self.apppath, 'views'))
+        os.mkdir(pjoin(self.apppath, 'views', 'default'))
+        os.mkdir(pjoin(self.apppath, 'modules'))
+        with open(pjoin(self.apppath, 'languages', 'en.py'), 'w') as testlang:
+            testlang.write(
+"""
+{}
+"""
+            )
+        with open(pjoin(self.apppath, 'languages', 'pt.py'), 'w') as testlang:
+            testlang.write(
+"""
+{}
+"""
+            )
+        with open(pjoin(self.apppath, 'modules', 'test.py'), 'w') as testmodule:
+            testmodule.write(
+"""
+from gluon import current
+
+hello = current.T('hello')
+"""         )
+        with open(pjoin(self.apppath, 'models', 'db.py'), 'w') as testmodel:
+            testmodel.write(
+"""
+world = T("world")
+"""
+            )
+        with open(pjoin(self.apppath, 'controllers', 'default.py'), 'w') as testcontroller:
+            testcontroller.write(
+"""
+def index():
+    message = T('%s %%{shop}', 2)
+    return dict(message=message)
+"""
+            )
+        with open(pjoin(self.apppath, 'views', 'default', 'index.html'), 'w') as testview:
+            testview.write(
+"""
+<html>
+    <head>
+    </head>
+    <body>
+    <h1>{{=T('ahoy')}}</h1>
+    </body>
+</html>
+"""
+            )
+
+    def tearDown(self):
+        shutil.rmtree(self.apppath)
+
+    def test_update_all_languages(self):
+        languages.update_all_languages(self.apppath)
+        en_file = os.path.join(self.apppath, 'languages', 'en.py')
+        pt_file = os.path.join(self.apppath, 'languages', 'pt.py')
+        en_dict = languages.read_dict(en_file)
+        pt_dict = languages.read_dict(pt_file)
+        for key in ['hello', 'world', '%s %%{shop}', 'ahoy']:
+            self.assertTrue(key in en_dict)
+            self.assertTrue(key in pt_dict)

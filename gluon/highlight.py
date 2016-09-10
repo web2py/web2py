@@ -6,9 +6,10 @@
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
-
+from __future__ import print_function
+from gluon._compat import xrange
+from gluon.utils import local_html_escape
 import re
-import cgi
 
 __all__ = ['highlight']
 
@@ -62,7 +63,7 @@ class Highlighter(object):
         Callback for C specific highlighting.
         """
 
-        value = cgi.escape(match.group())
+        value = local_html_escape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
 
@@ -76,7 +77,7 @@ class Highlighter(object):
         Callback for python specific highlighting.
         """
 
-        value = cgi.escape(match.group())
+        value = local_html_escape(match.group(), quote=False)
         if token == 'MULTILINESTRING':
             self.change_style(token, style)
             self.output.append(value)
@@ -113,7 +114,7 @@ class Highlighter(object):
         Callback for HTML specific highlighting.
         """
 
-        value = cgi.escape(match.group())
+        value = local_html_escape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
         if token == 'GOTOPYTHON':
@@ -291,13 +292,13 @@ def highlight(
                                          'WEB2PY']:
         code = Highlighter(language, link, styles).highlight(code)
     else:
-        code = cgi.escape(code)
+        code = local_html_escape(code, quote=False)
     lines = code.split('\n')
 
     if counter is None:
         linenumbers = [''] * len(lines)
     elif isinstance(counter, str):
-        linenumbers = [cgi.escape(counter)] * len(lines)
+        linenumbers = [local_html_escape(counter, quote=False)] * len(lines)
     else:
         linenumbers = [str(i + counter) + '.' for i in
                        xrange(len(lines))]
@@ -341,5 +342,5 @@ if __name__ == '__main__':
     argfp = open(sys.argv[1])
     data = argfp.read()
     argfp.close()
-    print '<html><body>' + highlight(data, sys.argv[2])\
-        + '</body></html>'
+    print('<html><body>' + highlight(data, sys.argv[2])\
+        + '</body></html>')

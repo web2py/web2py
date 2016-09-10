@@ -5,14 +5,12 @@
 """
 
 import unittest
-from fix_path import fix_sys_path
 
-fix_sys_path(__file__)
-
-from template import render
+from gluon import template
+from gluon.template import render
 
 
-class TestVirtualFields(unittest.TestCase):
+class TestTemplate(unittest.TestCase):
 
     def testRun(self):
         self.assertEqual(render(content='{{for i in range(n):}}{{=i}}{{pass}}',
@@ -31,6 +29,7 @@ class TestVirtualFields(unittest.TestCase):
 
     def testEqualWrite(self):
         "test generation of response.write from ="
+        self.assertEqual(render(content='{{=2+2}}'), '4')
         self.assertEqual(render(content='{{="abc"}}'), 'abc')
         # whitespace is stripped
         self.assertEqual(render(content='{{ ="abc"}}'), 'abc')
@@ -61,6 +60,76 @@ class TestVirtualFields(unittest.TestCase):
         self.assertRaises(
             SyntaxError, render, content='{{pass\n=list((1,2,\n3))}}')
 
+    def testWithDummyFileSystem(self):
+        from os.path import join as pjoin
+        import contextlib
+        from gluon._compat import StringIO
+        from gluon.restricted import RestrictedError
 
-if __name__ == '__main__':
-    unittest.main()
+        @contextlib.contextmanager
+        def monkey_patch(module, fn_name, patch):
+            try:
+                unpatch = getattr(module, fn_name)
+            except AttributeError:
+                unpatch = None
+            setattr(module, fn_name, patch)
+            try:
+                yield
+            finally:
+                if unpatch is None:
+                    delattr(module, fn_name)
+                else:
+                    setattr(module, fn_name, unpatch)
+
+        def dummy_open(path, mode):
+            if path == pjoin('views', 'layout.html'):
+                return StringIO("{{block left_sidebar}}left{{end}}"
+                                "{{include}}"
+                                "{{block right_sidebar}}right{{end}}")
+            elif path == pjoin('views', 'layoutbrackets.html'):
+                return StringIO("[[block left_sidebar]]left[[end]]"
+                                "[[include]]"
+                                "[[block right_sidebar]]right[[end]]")
+            elif path == pjoin('views', 'default', 'index.html'):
+                return StringIO("{{extend 'layout.html'}}"
+                                "{{block left_sidebar}}{{super}} {{end}}"
+                                "to"
+                                "{{block right_sidebar}} {{super}}{{end}}")
+            elif path == pjoin('views', 'default', 'indexbrackets.html'):
+                return StringIO("[[extend 'layoutbrackets.html']]"
+                                "[[block left_sidebar]][[super]] [[end]]"
+                                "to"
+                                "[[block right_sidebar]] [[super]][[end]]")
+            elif path == pjoin('views', 'default', 'missing.html'):
+                return StringIO("{{extend 'wut'}}"
+                                "{{block left_sidebar}}{{super}} {{end}}"
+                                "to"
+                                "{{block right_sidebar}} {{super}}{{end}}")
+            elif path == pjoin('views', 'default', 'noescape.html'):
+                return StringIO("""{{=NOESCAPE('<script></script>')}}""")
+            raise IOError
+
+        with monkey_patch(template, 'open', dummy_open):
+            self.assertEqual(
+                render(filename=pjoin('views', 'default', 'index.html'),
+                       path='views'),
+                'left to right')
+            self.assertEqual(
+                render(filename=pjoin('views', 'default', 'indexbrackets.html'),
+                       path='views', delimiters=('[[', ']]')),
+                'left to right')
+            self.assertRaises(
+                RestrictedError,
+                render,
+                filename=pjoin('views', 'default', 'missing.html'),
+                path='views')
+            response = template.DummyResponse()
+            response.delimiters = ('[[', ']]')
+            self.assertEqual(
+                render(filename=pjoin('views', 'default', 'indexbrackets.html'),
+                       path='views', context={'response': response}),
+                'left to right')
+            self.assertEqual(
+                render(filename=pjoin('views', 'default', 'noescape.html'),
+                       context={'NOESCAPE': template.NOESCAPE}),
+                '<script></script>')

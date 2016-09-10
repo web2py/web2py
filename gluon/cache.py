@@ -20,7 +20,6 @@ caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
 import time
-import thread
 import os
 import gc
 import sys
@@ -31,22 +30,17 @@ import hashlib
 import datetime
 import tempfile
 from gluon import recfile
-from gluon import portalocker
 from collections import defaultdict
-try:
-    from collections import OrderedDict
-except ImportError:
-    from gluon.contrib.ordereddict import OrderedDict
+from collections import OrderedDict
+
 try:
     from gluon import settings
     have_settings = True
 except ImportError:
     have_settings = False
 
-try:
-   import cPickle as pickle
-except:
-   import pickle
+from pydal.contrib import portalocker
+from gluon._compat import pickle, thread, to_bytes, to_native, hashlib_md5
 
 try:
     import psutil
@@ -54,11 +48,12 @@ try:
 except ImportError:
     HAVE_PSUTIL = False
 
+
 def remove_oldest_entries(storage, percentage=90):
     # compute current memory usage (%)
     old_mem = psutil.virtual_memory().percent
     # if we have data in storage and utilization exceeds 90%
-    while storage and old_mem > percentage:    
+    while storage and old_mem > percentage:
         # removed oldest entry
         storage.popitem(last=False)
         # garbage collect
@@ -66,7 +61,8 @@ def remove_oldest_entries(storage, percentage=90):
         # comute used memory again
         new_mem = psutil.virtual_memory().percent
         # if the used memory did not decrease stop
-        if new_mem >= old_mem: break
+        if new_mem >= old_mem:
+            break
         # net new measurement for memory usage and loop
         old_mem = new_mem
 
@@ -77,6 +73,7 @@ __all__ = ['Cache', 'lazy_cache']
 
 
 DEFAULT_TIME_EXPIRE = 300
+
 
 class CacheAbstract(object):
     """
@@ -99,7 +96,7 @@ class CacheAbstract(object):
     """
 
     cache_stats_name = 'web2py_cache_statistics'
-    max_ram_utilization = None # percent
+    max_ram_utilization = None  # percent
 
     def __init__(self, request=None):
         """Initializes the object
@@ -158,7 +155,7 @@ class CacheAbstract(object):
         Auxiliary function called by `clear` to search and clear cache entries
         """
         r = re.compile(regex)
-        for key in storage.keys():
+        for key in list(storage.keys()):
             if r.match(str(key)):
                 del storage[key]
         return
@@ -182,13 +179,14 @@ class CacheInRam(CacheAbstract):
         self.request = request
         self.storage = OrderedDict() if HAVE_PSUTIL else {}
         self.app = request.application if request else ''
+
     def initialize(self):
         if self.initialized:
             return
         else:
             self.initialized = True
         self.locker.acquire()
-        if not self.app in self.meta_storage:
+        if self.app not in self.meta_storage:
             self.storage = self.meta_storage[self.app] = \
                 OrderedDict() if HAVE_PSUTIL else {}
             self.stats[self.app] = {'hit_total': 0, 'misses': 0}
@@ -205,7 +203,7 @@ class CacheInRam(CacheAbstract):
         else:
             self._clear(storage, regex)
 
-        if not self.app in self.stats:
+        if self.app not in self.stats:
             self.stats[self.app] = {'hit_total': 0, 'misses': 0}
 
         self.locker.release()
@@ -251,8 +249,8 @@ class CacheInRam(CacheAbstract):
         self.locker.acquire()
         self.storage[key] = (now, value)
         self.stats[self.app]['misses'] += 1
-        if HAVE_PSUTIL and self.max_ram_utilization!=None and random.random()<0.10:
-            remove_oldest_entries(self.storage, percentage = self.max_ram_utilization)
+        if HAVE_PSUTIL and self.max_ram_utilization is not None and random.random() < 0.10:
+            remove_oldest_entries(self.storage, percentage=self.max_ram_utilization)
         self.locker.release()
         return value
 
@@ -263,7 +261,7 @@ class CacheInRam(CacheAbstract):
             if key in self.storage:
                 value = self.storage[key][1] + value
             self.storage[key] = (time.time(), value)
-        except BaseException, e:
+        except BaseException as e:
             self.locker.release()
             raise e
         self.locker.release()
@@ -292,30 +290,30 @@ class CacheOnDisk(CacheAbstract):
             self.folder = folder
             self.key_filter_in = lambda key: key
             self.key_filter_out = lambda key: key
-            self.file_lock_time_wait = file_lock_time_wait # How long we should wait before retrying to lock a file held by another process
+            self.file_lock_time_wait = file_lock_time_wait
+            # How long we should wait before retrying to lock a file held by another process
             # We still need a mutex for each file as portalocker only blocks other processes
             self.file_locks = defaultdict(thread.allocate_lock)
-
 
             # Make sure we use valid filenames.
             if sys.platform == "win32":
                 import base64
+
                 def key_filter_in_windows(key):
                     """
                     Windows doesn't allow \ / : * ? "< > | in filenames.
                     To go around this encode the keys with base32.
                     """
-                    return base64.b32encode(key)
+                    return to_native(base64.b32encode(to_bytes(key)))
 
                 def key_filter_out_windows(key):
                     """
                     We need to decode the keys so regex based removal works.
                     """
-                    return base64.b32decode(key)
+                    return to_native(base64.b32decode(to_bytes(key)))
 
                 self.key_filter_in = key_filter_in_windows
                 self.key_filter_out = key_filter_out_windows
-
 
         def wait_portalock(self, val_file):
             """
@@ -328,14 +326,11 @@ class CacheOnDisk(CacheAbstract):
                 except:
                     time.sleep(self.file_lock_time_wait)
 
-
         def acquire(self, key):
             self.file_locks[key].acquire()
 
-
         def release(self, key):
             self.file_locks[key].release()
-
 
         def __setitem__(self, key, value):
             key = self.key_filter_in(key)
@@ -343,7 +338,6 @@ class CacheOnDisk(CacheAbstract):
             self.wait_portalock(val_file)
             pickle.dump(value, val_file, pickle.HIGHEST_PROTOCOL)
             val_file.close()
-
 
         def __getitem__(self, key):
             key = self.key_filter_in(key)
@@ -357,11 +351,9 @@ class CacheOnDisk(CacheAbstract):
             val_file.close()
             return value
 
-
         def __contains__(self, key):
             key = self.key_filter_in(key)
             return (key in self.file_locks) or recfile.exists(key, path=self.folder)
-
 
         def __delitem__(self, key):
             key = self.key_filter_in(key)
@@ -370,15 +362,13 @@ class CacheOnDisk(CacheAbstract):
             except IOError:
                 raise KeyError
 
-
         def __iter__(self):
             for dirpath, dirnames, filenames in os.walk(self.folder):
                 for filename in filenames:
                     yield self.key_filter_out(filename)
 
-
         def safe_apply(self, key, function, default_value=None):
-            """ 
+            """
             Safely apply a function to the value of a key in storage and set
             the return value of the function to it.
 
@@ -403,10 +393,8 @@ class CacheOnDisk(CacheAbstract):
             val_file.close()
             return new_value
 
-
         def keys(self):
             return list(self.__iter__())
-
 
         def get(self, key, default=None):
             try:
@@ -414,13 +402,11 @@ class CacheOnDisk(CacheAbstract):
             except KeyError:
                 return default
 
-
     def __init__(self, request=None, folder=None):
         self.initialized = False
         self.request = request
         self.folder = folder
         self.storage = None
-
 
     def initialize(self):
         if self.initialized:
@@ -439,7 +425,6 @@ class CacheOnDisk(CacheAbstract):
             os.mkdir(folder)
 
         self.storage = CacheOnDisk.PersistentStorage(folder)
-
 
     def __call__(self, key, f,
                  time_expire=DEFAULT_TIME_EXPIRE):
@@ -473,15 +458,19 @@ class CacheOnDisk(CacheAbstract):
         if item and ((dt is None) or (item[0] > now - dt)):
             value = item[1]
         else:
-            value = f()
+            try:
+                value = f()
+            except:
+                self.storage.release(CacheAbstract.cache_stats_name)
+                self.storage.release(key)
+                raise
             self.storage[key] = (now, value)
-            self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_misses, 
+            self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_misses,
                                     default_value={'hit_total': 0, 'misses': 0})
 
         self.storage.release(CacheAbstract.cache_stats_name)
         self.storage.release(key)
         return value
-
 
     def clear(self, regex=None):
         self.initialize()
@@ -499,14 +488,12 @@ class CacheOnDisk(CacheAbstract):
                 pass
             storage.release(key)
 
-
     def increment(self, key, value=1):
         self.initialize()
         self.storage.acquire(key)
         value = self.storage.safe_apply(key, lambda x: x + value, default_value=0)
         self.storage.release(key)
         return value
-
 
 
 class CacheAction(object):
@@ -567,9 +554,9 @@ class Cache(object):
                 logger.warning('no cache.disk (AttributeError)')
 
     def action(self, time_expire=DEFAULT_TIME_EXPIRE, cache_model=None,
-             prefix=None, session=False, vars=True, lang=True,
-             user_agent=False, public=True, valid_statuses=None,
-             quick=None):
+               prefix=None, session=False, vars=True, lang=True,
+               user_agent=False, public=True, valid_statuses=None,
+               quick=None):
         """Better fit for caching an action
 
         Warning:
@@ -597,28 +584,34 @@ class Cache(object):
         """
         from gluon import current
         from gluon.http import HTTP
+
         def wrap(func):
             def wrapped_f():
                 if current.request.env.request_method != 'GET':
                     return func()
+
+                if quick:
+                    session_ = True if 'S' in quick else False
+                    vars_ = True if 'V' in quick else False
+                    lang_ = True if 'L' in quick else False
+                    user_agent_ = True if 'U' in quick else False
+                    public_ = True if 'P' in quick else False
+                else:
+                    (session_, vars_, lang_, user_agent_, public_) = \
+                        (session, vars, lang, user_agent, public)
+
                 if time_expire:
                     cache_control = 'max-age=%(time_expire)s, s-maxage=%(time_expire)s' % dict(time_expire=time_expire)
-                    if quick:
-                        session_ = True if 'S' in quick else False
-                        vars_ = True if 'V' in quick else False
-                        lang_ = True if 'L' in quick else False
-                        user_agent_ = True if 'U' in quick else False
-                        public_ = True if 'P' in quick else False
-                    else:
-                        session_, vars_, lang_, user_agent_, public_ = session, vars, lang, user_agent, public
                     if not session_ and public_:
                         cache_control += ', public'
-                        expires = (current.request.utcnow + datetime.timedelta(seconds=time_expire)).strftime('%a, %d %b %Y %H:%M:%S GMT')
+                        expires = (current.request.utcnow + datetime.timedelta(seconds=time_expire)
+                                   ).strftime('%a, %d %b %Y %H:%M:%S GMT')
                     else:
                         cache_control += ', private'
                         expires = 'Fri, 01 Jan 1990 00:00:00 GMT'
+
                 if cache_model:
-                    #figure out the correct cache key
+                    # figure out the correct cache key
                     cache_key = [current.request.env.path_info, current.response.view]
                     if session_:
                         cache_key.append(current.response.session_id)
@@ -631,32 +624,32 @@ class Cache(object):
                         cache_key.append(current.request.env.query_string)
                     if lang_:
                         cache_key.append(current.T.accepted_language)
-                    cache_key = hashlib.md5('__'.join(cache_key)).hexdigest()
+                    cache_key = hashlib_md5('__'.join(cache_key)).hexdigest()
                     if prefix:
                         cache_key = prefix + cache_key
                     try:
-                        #action returns something
-                        rtn = cache_model(cache_key, lambda : func(), time_expire=time_expire)
+                        # action returns something
+                        rtn = cache_model(cache_key, lambda: func(), time_expire=time_expire)
                         http, status = None, current.response.status
-                    except HTTP, e:
-                        #action raises HTTP (can still be valid)
-                        rtn = cache_model(cache_key, lambda : e.body, time_expire=time_expire)
+                    except HTTP as e:
+                        # action raises HTTP (can still be valid)
+                        rtn = cache_model(cache_key, lambda: e.body, time_expire=time_expire)
                         http, status = HTTP(e.status, rtn, **e.headers), e.status
                     else:
-                        #action raised a generic exception
+                        # action raised a generic exception
                         http = None
                 else:
-                    #no server-cache side involved
+                    # no server-cache side involved
                     try:
-                        #action returns something
+                        # action returns something
                         rtn = func()
                         http, status = None, current.response.status
-                    except HTTP, e:
-                        #action raises HTTP (can still be valid)
+                    except HTTP as e:
+                        # action raises HTTP (can still be valid)
                         status = e.status
                         http = HTTP(e.status, e.body, **e.headers)
                     else:
-                        #action raised a generic exception
+                        # action raised a generic exception
                         http = None
                 send_headers = False
                 if http and isinstance(valid_statuses, list):
@@ -666,15 +659,13 @@ class Cache(object):
                     if str(status)[0] in '123':
                         send_headers = True
                 if send_headers:
-                    headers = {
-                        'Pragma' : None,
-                        'Expires' : expires,
-                        'Cache-Control' : cache_control
-                        }
+                    headers = {'Pragma': None,
+                               'Expires': expires,
+                               'Cache-Control': cache_control}
                     current.response.headers.update(headers)
                 if cache_model and not send_headers:
-                    #we cached already the value, but the status is not valid
-                    #so we need to delete the cached value
+                    # we cached already the value, but the status is not valid
+                    # so we need to delete the cached value
                     cache_model(cache_key, None)
                 if http:
                     if send_headers:
@@ -731,8 +722,7 @@ class Cache(object):
         allow replacing cache.ram with cache.with_prefix(cache.ram,'prefix')
         it will add prefix to all the cache keys used.
         """
-        return lambda key, f, time_expire=DEFAULT_TIME_EXPIRE, prefix=prefix:\
-            cache_model(prefix + key, f, time_expire)
+        return lambda key, f, time_expire=DEFAULT_TIME_EXPIRE, prefix=prefix: cache_model(prefix + key, f, time_expire)
 
 
 def lazy_cache(key=None, time_expire=None, cache_model='ram'):

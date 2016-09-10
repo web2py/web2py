@@ -12,12 +12,8 @@ Provides:
 - Storage; like dictionary allowing also for `obj.foo` for `obj['foo']`
 """
 
-try:
-    import cPickle as pickle
-except:
-    import pickle
-import copy_reg
-import gluon.portalocker as portalocker
+from pydal.contrib import portalocker
+from gluon._compat import copyreg, pickle, PY2
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
@@ -139,10 +135,11 @@ class Storage(dict):
 def pickle_storage(s):
     return Storage, (dict(s),)
 
-copy_reg.pickle(Storage, pickle_storage)
-
-PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
-
+copyreg.pickle(Storage, pickle_storage)
+if PY2:
+    PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
+else:
+    PICKABLE = (str, int, float, bool, list, dict, tuple, set)
 
 class StorageList(Storage):
     """
@@ -269,31 +266,33 @@ class FastStorage(dict):
 
 
 class List(list):
+
     """
-    Like a regular python list but a[i] if i is out of bounds returns None
-    instead of `IndexOutOfBounds`
+        Like a regular python list but callable.
+        When  a(i) is called if i is out of bounds returns None
+        instead of `IndexError`.
     """
 
     def __call__(self, i, default=DEFAULT, cast=None, otherwise=None):
-        """Allows to use a special syntax for fast-check of `request.args()`
-        validity
-
-        Args:
+        """Allows to use a special syntax for fast-check of
+        `request.args()` validity.
+        :params:
             i: index
             default: use this value if arg not found
             cast: type cast
-            otherwise: can be:
-
-             - None: results in a 404
-             - str: redirect to this address
-             - callable: calls the function (nothing is passed)
-
+            otherwise:
+                will be executed when:
+                    - casts fail
+                    - value not found, dont have default and otherwise is
+                    especified
+                can be:
+                    - None: results in a 404
+                    - str: redirect to this address
+                    - callable: calls the function (nothing is passed)
         Example:
             You can use::
-
                 request.args(0,default=0,cast=int,otherwise='http://error_url')
                 request.args(0,default=0,cast=int,otherwise=lambda:...)
-
         """
         n = len(self)
         if 0 <= i < n or -n <= i < 0:
@@ -301,22 +300,23 @@ class List(list):
         elif default is DEFAULT:
             value = None
         else:
-            value, cast = default, False
-        if cast:
-            try:
+            value, cast, otherwise = default, False, False
+        try:
+            if cast:
                 value = cast(value)
-            except (ValueError, TypeError):
-                from http import HTTP, redirect
-                if otherwise is None:
-                    raise HTTP(404)
-                elif isinstance(otherwise, str):
-                    redirect(otherwise)
-                elif callable(otherwise):
-                    return otherwise()
-                else:
-                    raise RuntimeError("invalid otherwise")
+            if not value and otherwise:
+                raise ValueError('Otherwise will raised.')
+        except (ValueError, TypeError):
+            from gluon.http import HTTP, redirect
+            if otherwise is None:
+                raise HTTP(404)
+            elif isinstance(otherwise, str):
+                redirect(otherwise)
+            elif callable(otherwise):
+                return otherwise()
+            else:
+                raise RuntimeError("invalid otherwise")
         return value
-
 
 if __name__ == '__main__':
     import doctest

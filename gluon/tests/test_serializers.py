@@ -6,14 +6,12 @@
 """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 import datetime
 import decimal
 
-fix_sys_path(__file__)
-
-from serializers import *
-from storage import Storage
+from gluon.serializers import *
+from gluon.storage import Storage
 # careful with the import path 'cause of isinstance() checks
 from gluon.languages import translator
 from gluon.html import SPAN
@@ -43,7 +41,7 @@ class TestSerializers(unittest.TestCase):
         json_web2pyfied = [json(obj) for obj in iso_objs]
         self.assertEqual(json_objs, json_web2pyfied)
         # int or long int()ified
-        self.assertEqual(json(1), json(1L))
+        # self.assertEqual(json(1), json(1))
         # decimal stringified
         obj = {'a': decimal.Decimal('4.312312312312')}
         self.assertEqual(json(obj), u'{"a": "4.312312312312"}')
@@ -61,7 +59,3 @@ class TestSerializers(unittest.TestCase):
         # if unicode_keys is false, the standard behaviour is assumed
         base_load = loads_json(base_enc, unicode_keys=False)
         self.assertFalse(base == base_load)
-
-
-if __name__ == '__main__':
-    unittest.main()

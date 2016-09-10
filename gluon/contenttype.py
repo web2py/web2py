@@ -19,6 +19,7 @@ Additions:
  - .pickle: application/python-pickle
  - .w2p': application/w2p
 """
+from gluon._compat import to_native
 
 __all__ = ['contenttype']
 
@@ -842,7 +843,7 @@ def contenttype(filename, default='text/plain'):
     """
     Returns the Content-Type string matching extension of the given filename.
     """
-
+    filename=to_native(filename)
     i = filename.rfind('.')
     if i >= 0:
         default = CONTENT_TYPE.get(filename[i:].lower(), default)

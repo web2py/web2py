@@ -11,7 +11,7 @@ import urllib
 from gluon.html import *
 from gluon.tools import fetch
 from gluon.storage import Storage
-import gluon.contrib.simplejson as json
+import json
 
 
 class Loginza(object):
@@ -84,15 +84,15 @@ class Loginza(object):
             user = Storage()
             data = urllib.urlencode(dict(token=request.vars.token))
             auth_info_json = fetch(self.auth_url + '?' + data)
-            #print auth_info_json
+            # print auth_info_json
             auth_info = json.loads(auth_info_json)
             if auth_info["identity"] is not None:
                 self.profile = auth_info
                 provider = self.profile["provider"]
                 user = self.mappings.get(
                     provider, self.mappings.default)(self.profile)
-                #user["password"] = ???
-                #user["avatar"] = ???
+                # user["password"] = ???
+                # user["avatar"] = ???
                 return user
             elif self.on_login_failure:
                 redirect(self.on_login_failure)

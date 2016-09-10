@@ -14,8 +14,8 @@ Note:
 """
 
 from os import stat
-import thread
 from gluon.fileutils import read_file
+from gluon._compat import thread
 
 cfs = {}  # for speed-up
 cfs_lock = thread.allocate_lock()  # and thread safety

@@ -8,6 +8,9 @@
 
 #### Learning and Demos
 - [[Intro video http://www.youtube.com/watch?v=BXzqmHx6edY]] and [[code examples https://github.com/mjhea0/web2py]]
+- [[Step by step tutorial https://milesm.pythonanywhere.com/wiki]]
+- [[web2py Reference Project http://www.web2pyref.com/]]
+- [[An advanced tutorial https://milesm.pythonanywhere.com/wiki]]
 - [[Killer Web Development Tutorial http://killer-web-development.com/]]
 - [[Real Python for the Web http://www.realpython.com]] (web development with web2py and more!)
 - [[Admin Demo http://www.web2py.com/demo_admin popup]] (web-based IDE)
@@ -17,10 +20,11 @@
 
 #### Code
 - [[web2pyslices (recipes) http://www.web2pyslices.com popup]]
-- [[Layouts http://www.web2py.com/layouts popup]]
+- [[Dashboard welcome app https://github.com/mjbeller/web2py-starter]]
+- [[stupid.css theme https://github.com/mdipierro/web2py-welcome-theme-stupid]]
 - [[Plugins http://www.web2py.com/plugins popup]]
-- [[More Plugins http://dev.s-cubism.com/web2py_plugins]]
 - [[Appliances http://www.web2py.com/appliances popup]]
 - [[web2py utils http://packages.python.org/web2py_utils/ popup]]
+- [[Sublime text 3 plugin  https://bitbucket.org/kfog/w2p popup]]
 
 #### [[Sites Powered by web2py http://www.web2py.com/poweredby popup]]

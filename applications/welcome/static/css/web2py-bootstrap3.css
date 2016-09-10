@@ -1,4 +1,4 @@
-div.flash {
+div.w2p_flash {
     background-image: none;
     border-radius: 4px;
     -o-border-radius: 4px;
@@ -15,16 +15,18 @@ div.flash {
     margin: 0 0 20px;
     padding: 15px 35px 15px 15px;
 }
-div.flash.alert:hover {
+div.w2p_flash.alert:hover {
     opacity: 1;
 }
-.ie-lte8 div.flash {
+.ie-lte8 div.w2p_flash {
     filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0);
 }
-.ie-lte8 div.flash:hover {
+.ie-lte8 div.w2p_flash:hover {
     filter: alpha(opacity=25);
 }
-
+.main-container {
+    margin-top: 20px;
+}
 
 div.error {
     width: auto;
@@ -35,7 +37,7 @@ div.error {
     display: inline-block;
     padding: 5px;
 }
-div.flash.alert {
+div.w2p_flash.alert {
     display: none;
     position: fixed;
     top: 70px;
@@ -106,7 +108,7 @@ select.autocomplete {
     background: url(../images/background.jpg) no-repeat center center;
 }
 body {
-    padding-top: 50px;
+    padding-top: 60px;
     margin-bottom: 60px;
 }
 header {
@@ -134,7 +136,7 @@ header h1 {
 header .jumbotron {
     background-color: transparent;
 }
-.flash {
+.w2p_flash {
     opacity: 0.9!important;
     right: 100px;
 }
@@ -231,7 +233,7 @@ div.error_wrapper {
     line-height: 20px;
     margin-right: 2px;
     display: inline-block;
-    padding: 3px 5px;
+    padding: 6px 12px;
 }
 .web2py_counter {
     margin-top: 5px;
@@ -268,6 +270,7 @@ li.w2p_grid_breadcrumb_elem {
 .web2py_console select,
 .web2py_console a {
     margin: 2px;
+    padding: 6px 12px;
 }
 #wiki_page_body {
     width: 600px;
@@ -283,6 +286,7 @@ li.w2p_grid_breadcrumb_elem {
 .web2py_console .form-control {
     width: 20%;
     display: inline;
+    height: 32px;
 }
 .web2py_console #w2p_keywords {
     width: 50%;
@@ -310,7 +314,4 @@ td.w2p_fc,
 }
 input[type=checkbox], input[type=radio] {
     margin: 4px 4px 0 0;
-}
-.btn {
-    margin-right: 4px;
 }

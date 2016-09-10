@@ -15,9 +15,9 @@ import stat
 import time
 import re
 import errno
-import rewrite
 from gluon.http import HTTP
 from gluon.contenttype import contenttype
+from gluon._compat import PY2
 
 
 regex_start_range = re.compile('\d+(?=\-)')
@@ -25,23 +25,25 @@ regex_stop_range = re.compile('(?<=\-)\d+')
 
 DEFAULT_CHUNK_SIZE = 64 * 1024
 
-
-def streamer(stream, chunk_size=DEFAULT_CHUNK_SIZE, bytes=None):
-    offset = 0
-    while bytes is None or offset < bytes:
-        if not bytes is None and bytes - offset < chunk_size:
-            chunk_size = bytes - offset
-        data = stream.read(chunk_size)
-        length = len(data)
-        if not length:
-            break
-        else:
-            yield data
-        if length < chunk_size:
-            break
-        offset += length
-    stream.close()
-
+def streamer(stream, chunk_size=DEFAULT_CHUNK_SIZE, bytes=None, callback=None):
+    try:
+        offset = 0
+        while bytes is None or offset < bytes:
+            if not bytes is None and bytes - offset < chunk_size:
+                chunk_size = bytes - offset
+            data = stream.read(chunk_size)
+            length = len(data)
+            if not length:
+                break
+            else:
+                yield data
+            if length < chunk_size:
+                break
+            offset += length
+    finally:
+        stream.close()
+        if callback:
+            callback()
 
 def stream_file_or_304_or_206(
     static_file,
@@ -51,12 +53,16 @@ def stream_file_or_304_or_206(
     status=200,
     error_message=None
     ):
-    if error_message is None:
-        error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
+    # FIX THIS
+    # if error_message is None:
+    #     error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
     try:
-        open = file # this makes no sense but without it GAE cannot open files
-        fp = open(static_file)
-    except IOError, e:
+        if PY2:
+            open_f = file # this makes no sense but without it GAE cannot open files
+        else:
+            open_f = open
+        fp = open_f(static_file,'rb')
+    except IOError as e:
         if e[0] == errno.EISDIR:
             raise HTTP(403, error_message, web2py_error='file is a directory')
         elif e[0] == errno.EACCES:
@@ -90,7 +96,7 @@ def stream_file_or_304_or_206(
             bytes = part[1] - part[0] + 1
             try:
                 stream = open(static_file, 'rb')
-            except IOError, e:
+            except IOError as e:
                 if e[0] in (errno.EISDIR, errno.EACCES):
                     raise HTTP(403)
                 else:
@@ -111,7 +117,7 @@ def stream_file_or_304_or_206(
                 headers['Vary'] = 'Accept-Encoding'
         try:
             stream = open(static_file, 'rb')
-        except IOError, e:
+        except IOError as e:
             # this better does not happer when returning an error page ;-)
             if e[0] in (errno.EISDIR, errno.EACCES):
                 raise HTTP(403)

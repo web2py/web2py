@@ -1,13 +1,11 @@
 import os
 import sys
-import cStringIO
-import gluon.contrib.shell
 import gluon.dal
 import gluon.html
 import gluon.validators
 import code
-import thread
 from gluon.debug import communicate, web_debugger, qdb_debugger
+from gluon._compat import thread
 import pydoc
 
 
@@ -122,7 +120,7 @@ def execute():
         output = web_debugger.do_exec(command)
         if output is None:
             output = ""
-    except Exception, e:
+    except Exception as e:
         output = T("Exception %s") % str(e)
     k = len(session['debug_commands:' + app]) - 1
     return '[%i] %s%s\n' % (k + 1, command, output)
@@ -212,7 +210,7 @@ def toggle_breakpoint():
                 ok = True
         else:
             response.flash = T("Unable to determine the line number!")
-    except Exception, e:
+    except Exception as e:
         session.flash = str(e)
     return response.json({'ok': ok, 'lineno': lineno})
 
@@ -220,7 +218,7 @@ def list_breakpoints():
     "Return a list of linenumbers for current breakpoints"
 
     breakpoints = []
-    ok = None
+    ok = False
     try:
         filename = os.path.join(request.env['applications_parent'],
                                 'applications', request.vars.filename)
@@ -233,7 +231,6 @@ def list_breakpoints():
             if filename == bp_filename:
                 breakpoints.append(bp_lineno)
         ok = True
-    except Exception, e:
+    except Exception as e:
         session.flash = str(e)
-        ok = False
     return response.json({'ok': ok, 'breakpoints': breakpoints})

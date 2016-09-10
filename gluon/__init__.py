@@ -16,8 +16,10 @@ __all__ = ['A', 'B', 'BEAUTIFY', 'BODY', 'BR', 'CAT', 'CENTER', 'CLEANUP', 'CODE
 import os
 import sys
 try:
-    sys.path.append(os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "packages", "dal"))
+    pydalpath = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "packages", "dal")
+    if pydalpath not in sys.path:
+        sys.path.append(pydalpath)
     import pydal
     sys.modules['pydal'] = pydal
 except ImportError:
@@ -29,20 +31,20 @@ except ImportError:
         "You can also download a complete copy from http://www.web2py.com."
     )
 
-from globals import current
-from html import *
-from validators import *
-from http import redirect, HTTP
-from dal import DAL, Field
-from sqlhtml import SQLFORM, SQLTABLE
-from compileapp import LOAD
+from .globals import current
+from .html import *
+from .validators import *
+from .http import redirect, HTTP
+from .dal import DAL, Field
+from .sqlhtml import SQLFORM, SQLTABLE
+from .compileapp import LOAD
 
 # Dummy code to enable code completion in IDE's.
 if 0:
-    from globals import Request, Response, Session
-    from cache import Cache
-    from languages import translator
-    from tools import Auth, Crud, Mail, Service, PluginManager
+    from .globals import Request, Response, Session
+    from .cache import Cache
+    from .languages import translator
+    from .tools import Auth, Crud, Mail, Service, PluginManager
 
     # API objects
     request = Request()

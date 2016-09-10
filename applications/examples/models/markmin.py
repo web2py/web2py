@@ -1,4 +1,5 @@
 import gluon.template
+from gluon.fileutils import open_file
 
 markmin_dict = dict(
     code_python=lambda code: str(CODE(code)),
@@ -24,11 +25,11 @@ def get_content(b=None,
         import os
         path = os.path.join(
             request.folder, 'private', 'content', l, c, f, b + '.' + format)
-        return open(path)
+        return open_file(path, mode='r')
 
     try:
         openedfile = openfile()
-    except Exception, IOError:
+    except (Exception, IOError):
         l = 'en'
         openedfile = openfile()
 

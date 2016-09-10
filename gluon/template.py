@@ -18,10 +18,7 @@ import os
 import cgi
 import logging
 from re import compile, sub, escape, DOTALL
-try:
-    import cStringIO as StringIO
-except:
-    from io import StringIO
+from gluon._compat import StringIO, unicodeT, to_unicode, to_bytes, to_native
 
 try:
     # have web2py
@@ -266,7 +263,6 @@ class TemplateParser(object):
         # This will end up as
         # "%s(%s, escape=False)" % (self.writer, value)
         self.writer = writer
-
         # Dictionary of custom name lexers to use.
         if isinstance(lexers, dict):
             self.lexers = lexers
@@ -279,13 +275,12 @@ class TemplateParser(object):
         self.context = context
 
         # allow optional alternative delimiters
-
         if delimiters != self.default_delimiters:
             escaped_delimiters = (escape(delimiters[0]),
                                   escape(delimiters[1]))
             self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters, DOTALL)
         elif hasattr(context.get('response', None), 'delimiters'):
-            if context['response'].delimiters != self.default_delimiters:
+            if (context['response'].delimiters != self.default_delimiters) and (context['response'].delimiters != None):
                 delimiters = context['response'].delimiters
                 escaped_delimiters = (
                     escape(delimiters[0]),
@@ -452,7 +447,7 @@ class TemplateParser(object):
             fileobj.close()
         except IOError:
             self._raise_error('Unable to open included view file: ' + filepath)
-
+        text = to_native(text)
         return text
 
     def include(self, content, filename):
@@ -792,7 +787,7 @@ def parse_template(filename,
             raise RestrictedError(filename, '', 'Unable to find the file')
     else:
         text = filename.read()
-
+    text = to_native(text)
     # Use the file contents to get a parsed template and return it.
     return str(TemplateParser(text, context=context, path=path, lexers=lexers, delimiters=delimiters))
 
@@ -807,7 +802,7 @@ def get_parsed(text):
 
 class DummyResponse():
     def __init__(self):
-        self.body = StringIO.StringIO()
+        self.body = StringIO()
 
     def write(self, data, escape=True):
         if not escape:
@@ -816,9 +811,9 @@ class DummyResponse():
             self.body.write(data.xml())
         else:
             # make it a string
-            if not isinstance(data, (str, unicode)):
+            if not isinstance(data, (str, unicodeT)):
                 data = str(data)
-            elif isinstance(data, unicode):
+            elif isinstance(data, unicodeT):
                 data = data.encode('utf8', 'xmlcharrefreplace')
             data = cgi.escape(data, True).replace("'", "&#x27;")
             self.body.write(data)
@@ -889,7 +884,7 @@ def render(content="hello world",
     """
     # here to avoid circular Imports
     try:
-        from globals import Response
+        from gluon.globals import Response
     except ImportError:
         # Working standalone. Build a mock Response object.
         Response = DummyResponse
@@ -898,10 +893,13 @@ def render(content="hello world",
         if not 'NOESCAPE' in context:
             context['NOESCAPE'] = NOESCAPE
 
+    if isinstance(content, unicodeT):
+        content = content.encode('utf8')
+
     # save current response class
     if context and 'response' in context:
         old_response_body = context['response'].body
-        context['response'].body = StringIO.StringIO()
+        context['response'].body = StringIO()
     else:
         old_response_body = None
         context['response'] = Response()
@@ -918,13 +916,14 @@ def render(content="hello world",
             stream = open(filename, 'rb')
             close_stream = True
         elif content:
-            stream = StringIO.StringIO(content)
+            stream = StringIO(to_native(content))
 
     # Execute the template.
     code = str(TemplateParser(stream.read(
     ), context=context, path=path, lexers=lexers, delimiters=delimiters, writer=writer))
+
     try:
-        exec(code) in context
+        exec(code, context)
     except Exception:
         # for i,line in enumerate(code.split('\n')): print i,line
         raise

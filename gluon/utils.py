@@ -23,17 +23,11 @@ import logging
 import socket
 import base64
 import zlib
+from gluon._compat import basestring, pickle, PY2, xrange, to_bytes, to_native
 
 _struct_2_long_long = struct.Struct('=QQ')
 
-python_version = sys.version_info[0]
-
-if python_version == 2:
-    import cPickle as pickle
-else:
-    import pickle
-
-import hashlib
+import hashlib, binascii
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 
 try:
@@ -46,9 +40,9 @@ import hmac
 if hasattr(hashlib, "pbkdf2_hmac"):
     def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
         hashfunc = hashfunc or sha1
-        return hashlib.pbkdf2_hmac(hashfunc().name,
-                           data, salt, iterations,
-                           keylen).encode("hex")
+        hmac = hashlib.pbkdf2_hmac(hashfunc().name, to_bytes(data),
+                                   to_bytes(salt), iterations, keylen)
+        return binascii.hexlify(hmac)
     HAVE_PBKDF2 = True
 else:
     try:
@@ -64,6 +58,10 @@ else:
         except (ImportError, ValueError):
             HAVE_PBKDF2 = False
 
+HAVE_COMPARE_DIGEST = False
+if hasattr(hmac, 'compare_digest'):
+    HAVE_COMPARE_DIGEST = True
+
 logger = logging.getLogger("web2py")
 
 
@@ -77,17 +75,17 @@ def AES_new(key, IV=None):
 
 def compare(a, b):
     """ Compares two strings and not vulnerable to timing attacks """
-    if len(a) != len(b):
-        return False
-    result = 0
-    for x, y in zip(a, b):
-        result |= ord(x) ^ ord(y)
+    if HAVE_COMPARE_DIGEST:
+        return hmac.compare_digest(a, b)
+    result = len(a) ^ len(b)
+    for i in xrange(len(b)):
+        result |= ord(a[i%len(a)]) ^ ord(b[i])
     return result == 0
 
 
 def md5_hash(text):
     """ Generates a md5 hash with the given text """
-    return md5(text).hexdigest()
+    return md5(to_bytes(text)).hexdigest()
 
 
 def simple_hash(text, key='', salt='', digest_alg='md5'):
@@ -95,14 +93,17 @@ def simple_hash(text, key='', salt='', digest_alg='md5'):
     Generates hash with the given text using the specified
     digest hashing algorithm
     """
+    text = to_bytes(text)
+    key = to_bytes(key)
+    salt = to_bytes(salt)
     if not digest_alg:
         raise RuntimeError("simple_hash with digest_alg=None")
     elif not isinstance(digest_alg, str):  # manual approach
         h = digest_alg(text + key + salt)
     elif digest_alg.startswith('pbkdf2'):  # latest and coolest!
         iterations, keylen, alg = digest_alg[7:-1].split(',')
-        return pbkdf2_hex(text, salt, int(iterations),
-                          int(keylen), get_digest(alg))
+        return to_native(pbkdf2_hex(text, salt, int(iterations),
+                                    int(keylen), get_digest(alg)))
     elif key:  # use hmac
         digest_alg = get_digest(digest_alg)
         h = hmac.new(key + salt, text, digest_alg)
@@ -143,6 +144,7 @@ DIGEST_ALG_BY_SIZE = {
     512 / 4: 'sha512',
 }
 
+
 def get_callable_argspec(fn):
     if inspect.isfunction(fn) or inspect.ismethod(fn):
         inspectable = fn
@@ -154,43 +156,104 @@ def get_callable_argspec(fn):
         inspectable = fn
     return inspect.getargspec(inspectable)
 
-def pad(s, n=32, padchar=' '):
-    return s + (32 - len(s) % 32) * padchar
+
+def pad(s, n=32):
+    # PKCS7v1.5 https://www.ietf.org/rfc/rfc2315.txt
+    padlen = n - len(s) % n
+    return s + bytes(bytearray(padlen * [padlen]))
+
+
+def unpad(s, n=32):
+    padlen = s[-1]
+    if isinstance(padlen,str):
+        padlen = ord(padlen) # python2
+    if (padlen < 1) | (padlen > n): # avoid short-circuit
+        # return garbage to minimize side channels
+        return bytes(bytearray(len(s)*[0]))
+    return s[:-padlen]
 
 
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
+    dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+    if compression_level:
+        dump = zlib.compress(dump, compression_level)
+    encryption_key = to_bytes(encryption_key)
+    if not hash_key:
+        hash_key = hashlib.sha256(encryption_key).digest()
+    cipher, IV = AES_new(pad(encryption_key)[:32])
+    encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
+    signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data, hashlib.sha256).hexdigest())
+    return b'hmac256:' + signature + b':' + encrypted_data
+
+
+def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+    components = data.count(b':')
+    if components == 1:
+        return secure_loads_deprecated(data, encryption_key, hash_key, compression_level)
+    if components != 2:
+        return None
+    version,signature,encrypted_data = data.split(b':', 2)
+    if version != b'hmac256':
+        return None
+    encryption_key = to_bytes(encryption_key)
+    if not hash_key:
+        hash_key = hashlib.sha256(encryption_key).digest()
+    actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.sha256).hexdigest()
+    if not compare(to_native(signature), actual_signature):
+        return None
+    encrypted_data = base64.urlsafe_b64decode(encrypted_data)
+    IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
+    cipher, _ = AES_new(pad(encryption_key)[:32], IV=IV)
+    try:
+        data = unpad(cipher.decrypt(encrypted_data))
+        if compression_level:
+            data = zlib.decompress(data)
+        return pickle.loads(data)
+    except Exception as e:
+        return None
+
+
+def __pad_deprecated(s, n=32, padchar=b' '):
+    return s + (32 - len(s) % 32) * padchar
+
+
+def secure_dumps_deprecated(data, encryption_key, hash_key=None, compression_level=None):
+    encryption_key = to_bytes(encryption_key)
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
     dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
-    key = pad(encryption_key[:32])
+    key = __pad_deprecated(encryption_key)[:32]
     cipher, IV = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
-    signature = hmac.new(hash_key, encrypted_data).hexdigest()
-    return signature + ':' + encrypted_data
+    signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest())
+    return signature + b':' + encrypted_data
 
 
-def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
-    if not ':' in data:
+def secure_loads_deprecated(data, encryption_key, hash_key=None, compression_level=None):
+    encryption_key = to_bytes(encryption_key)
+    data = to_native(data)
+    if ':' not in data:
         return None
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
     signature, encrypted_data = data.split(':', 1)
-    actual_signature = hmac.new(hash_key, encrypted_data).hexdigest()
+    encrypted_data = to_bytes(encrypted_data)
+    actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest()
     if not compare(signature, actual_signature):
         return None
-    key = pad(encryption_key[:32])
+    key = __pad_deprecated(encryption_key)[:32]
     encrypted_data = base64.urlsafe_b64decode(encrypted_data)
     IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
     cipher, _ = AES_new(key, IV=IV)
     try:
         data = cipher.decrypt(encrypted_data)
-        data = data.rstrip(' ')
+        data = data.rstrip(b' ')
         if compression_level:
             data = zlib.decompress(data)
         return pickle.loads(data)
-    except Exception, e:
+    except Exception as e:
         return None
 
 ### compute constant CTOKENS
@@ -221,7 +284,7 @@ def initialize_urandom():
             # try to add process-specific entropy
             frandom = open('/dev/urandom', 'wb')
             try:
-                if python_version == 2:
+                if PY2:
                     frandom.write(''.join(chr(t) for t in ctokens)) # python 2
                 else:
                     frandom.write(bytes([]).join(bytes([t]) for t in ctokens)) # python 3
@@ -236,7 +299,7 @@ def initialize_urandom():
             """Cryptographically secure session management is not possible on your system because
 your system does not provide a cryptographically secure entropy source.
 This is not specific to web2py; consider deploying on a different operating system.""")
-    if python_version == 2:
+    if PY2:
         packed = ''.join(chr(x) for x in ctokens) # python 2
     else:
         packed = bytes([]).join(bytes([x]) for x in ctokens) # python 3
@@ -352,3 +415,29 @@ def getipaddrinfo(host):
                 and isinstance(addrinfo[4][0], basestring)]
     except socket.error:
         return []
+
+
+def local_html_escape(data, quote=False):
+    """
+    Works with bytes.
+    Replace special characters "&", "<" and ">" to HTML-safe sequences.
+    If the optional flag quote is true (the default), the quotation mark
+    characters, both double quote (") and single quote (') characters are also
+    translated.
+    """
+    if PY2:
+        import cgi
+        data = cgi.escape(data, quote)
+        return data.replace("'", "&#x27;") if quote else data
+    else:
+        import html
+        if isinstance(data, str):
+            return html.escape(data, quote=quote)
+        data = data.replace(b"&", b"&amp;") # Must be done first!
+        data = data.replace(b"<", b"&lt;")
+        data = data.replace(b">", b"&gt;")
+        if quote:
+            data = data.replace(b'"', b"&quot;")
+            data = data.replace(b'\'', b"&#x27;")
+        return data
+

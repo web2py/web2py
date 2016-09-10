@@ -10,6 +10,7 @@
 # for more details.
 
 "Pythonic simple JSON RPC Client implementation"
+from __future__ import print_function
 
 __author__ = "Mariano Reingart (reingart@gmail.com)"
 __copyright__ = "Copyright (C) 2011 Mariano Reingart"
@@ -22,18 +23,12 @@ from xmlrpclib import Transport, SafeTransport
 from cStringIO import StringIO
 import random
 import sys
-try:
-    import gluon.contrib.simplejson as json     # try web2py json serializer
-except ImportError:
-    try:
-        import json                             # try stdlib (py2.6)
-    except:
-        import simplejson as json               # try external module
+import json
 
 
 class JSONRPCError(RuntimeError):
     "Error object for remote procedure call fail"
-    def __init__(self, code, message, data=None):
+    def __init__(self, code, message, data=''):
         value = "%s: %s\n%s" % (code, message, '\n'.join(data))
         RuntimeError.__init__(self, value)
         self.code = code
@@ -111,7 +106,7 @@ class ServerProxy(object):
         "JSON RPC communication (method invocation)"
 
         # build data sent to the service
-        request_id = random.randint(0, sys.maxint)
+        request_id = random.randint(0, sys.maxsize)
         data = {'id': request_id, 'method': method, 'params': args, }
         if self.version:
             data['jsonrpc'] = self.version #mandatory key/value for jsonrpc2 validation else err -32600
@@ -151,4 +146,4 @@ if __name__ == "__main__":
     # basic tests:
     location = "http://www.web2py.com.ar/webservices/sample/call/jsonrpc"
     client = ServerProxy(location, verbose='--verbose' in sys.argv,)
-    print client.add(1, 2)
+    print(client.add(1, 2))

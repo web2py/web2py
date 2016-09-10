@@ -7,24 +7,44 @@ cache:
     - $HOME/.pip-cache/
 
 python:
-  - '2.6'
   - '2.7'
   - 'pypy'
+  - '3.5'
 
 install:
-  - pip install -e .
+  - |
+      if [ "$TRAVIS_PYTHON_VERSION" = "pypy" ]; then
+        export PYENV_ROOT="$HOME/.pyenv"
+        if [ -f "$PYENV_ROOT/bin/pyenv" ]; then
+          pushd "$PYENV_ROOT" && git pull && popd
+        else
+          rm -rf "$PYENV_ROOT" && git clone --depth 1 https://github.com/yyuu/pyenv.git "$PYENV_ROOT"
+        fi
+        export PYPY_VERSION="5.0.1"
+        "$PYENV_ROOT/bin/pyenv" install --skip-existing "pypy-$PYPY_VERSION"
+        virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
+        source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
+      fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then pip install pycrypto pg8000 pymysql; fi;
+  - if [[ $TRAVIS_PYTHON_VERSION != '3.5' ]]; then pip install -e .; fi;
 
 before_script:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --download-cache $HOME/.pip-cache unittest2; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache coverage; fi;
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache python-coveralls; fi
+  - pip install coverage
+  - pip install codecov
+  - mysql -e 'create database pydal;'
+  - psql -c 'create database pydal;' -U postgres
+  - psql -c 'create extension postgis;' -U postgres -d pydal;
+  - psql -c 'SHOW SERVER_VERSION' -U postgres
 
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 
 after_success:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coverage combine; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coveralls --config_file=gluon/tests/coverage.ini; fi
+  - coverage combine;
+  - codecov
 
 notifications:
   email: true
+
+addons:
+  postgresql: "9.4"

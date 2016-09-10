@@ -122,7 +122,7 @@
     {{=XML(snapshot.get('response','no response available in snapshot'))}}
   </div>
 </div>
-{{except Exception, e:}}
+{{except Exception as e:}}
 <!-- this should not happen, just in case... (cannot output normal hmtl as we don't know current open tags) -->
 {{import traceback;tb=traceback.format_exc().replace("\n","\\n") }}
 <script language='javascript'>alert("Exception during snapshot rendering: {{=tb}} ");</script>

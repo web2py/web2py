@@ -80,7 +80,7 @@ def index():
 
 
 def step1():
-    from gluon.contrib.simplejson import loads
+    from json import loads
     import urllib
     if not session.themes:
         #url = LAYOUTS_APP + '/default/layouts.json'
@@ -516,7 +516,7 @@ def create(options):
             plugin_name = 'web2py.plugin.' + plugin + '.w2p'
             stream = urllib.urlopen(PLUGINS_APP + '/static/' + plugin_name)
             plugin_install(app, stream, request, plugin_name)
-        except Exception, e:
+        except Exception as e:
             session.flash = T("unable to download plugin: %s" % plugin)
 
     ### write configuration file into newapp/models/0.py

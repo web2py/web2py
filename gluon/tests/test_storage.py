@@ -4,13 +4,10 @@
 """ Unit tests for storage.py """
 
 import unittest
-from fix_path import fix_sys_path
 
-fix_sys_path(__file__)
-
-from storage import Storage, StorageList, List
-from http import HTTP
-import pickle
+from gluon.storage import Storage, StorageList, List
+from gluon.http import HTTP
+from gluon._compat import pickle
 
 
 class TestStorage(unittest.TestCase):
@@ -67,8 +64,8 @@ class TestStorage(unittest.TestCase):
         #self.assertRaises(KeyError, lambda x: s[x], 'd')   # old Storage
         s.a = 1
         s['a'] = None
-        self.assertEquals(s.a, None)
-        self.assertEquals(s['a'], None)
+        self.assertEqual(s.a, None)
+        self.assertEqual(s['a'], None)
         self.assertTrue('a' in s)
 
     def test_pickling(self):
@@ -120,6 +117,7 @@ class TestStorageList(unittest.TestCase):
 
 
 class TestList(unittest.TestCase):
+
     """ Tests Storage.List (fast-check for request.args()) """
 
     def test_listcall(self):
@@ -134,7 +132,20 @@ class TestList(unittest.TestCase):
         self.assertEqual(a(3, cast=int), 1234)
         a.append('x')
         self.assertRaises(HTTP, a, 4, cast=int)
+        b = List()
+        # default is always returned when especified
+        self.assertEqual(b(0, cast=int, default=None), None)
+        self.assertEqual(b(0, cast=int, default=None, otherwise='teste'), None)
+        self.assertEqual(b(0, cast=int, default='a', otherwise='teste'), 'a')
+        # if don't have value and otherwise is especified it will called
+        self.assertEqual(b(0, otherwise=lambda: 'something'), 'something')
+        self.assertEqual(b(0, cast=int, otherwise=lambda: 'something'),
+                         'something')
+        # except if default is especified
+        self.assertEqual(b(0, default=0, otherwise=lambda: 'something'), 0)
 
-
-if __name__ == '__main__':
-    unittest.main()
+    def test_listgetitem(self):
+        '''Mantains list behaviour.'''
+        a = List((1, 2, 3))
+        self.assertEqual(a[0], 1)
+        self.assertEqual(a[::-1], [3, 2, 1])

@@ -10,6 +10,7 @@
 Web2py environment in the shell
 --------------------------------
 """
+from __future__ import print_function
 
 import os
 import sys
@@ -29,6 +30,7 @@ from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
 from pydal.base import BaseAdapter
+from gluon._compat import iteritems, ClassType
 
 logger = logging.getLogger("web2py")
 
@@ -41,9 +43,7 @@ def enable_autocomplete_and_history(adir, env):
     except ImportError:
         pass
     else:
-        readline.parse_and_bind("bind ^I rl_complete"
-                                if sys.platform == 'darwin'
-                                else "tab: complete")
+        readline.parse_and_bind("tab: complete")
         history_file = os.path.join(adir, '.pythonhistory')
         try:
             readline.read_history_file(history_file)
@@ -87,7 +87,7 @@ def exec_environment(
     if pyfile:
         pycfile = pyfile + 'c'
         if os.path.isfile(pycfile):
-            exec read_pyc(pycfile) in env
+            exec (read_pyc(pycfile), env)
         else:
             execfile(pyfile, env)
     return Storage(env)
@@ -131,6 +131,8 @@ def env(
     if global_settings.cmd_options:
         ip = global_settings.cmd_options.ip
         port = global_settings.cmd_options.port
+        request.is_shell = global_settings.cmd_options.shell is not None
+        request.is_scheduler = global_settings.cmd_options.scheduler is not None
     else:
         ip, port = '127.0.0.1', '8000'
     request.env.http_host = '%s:%s' % (ip, port)
@@ -145,7 +147,7 @@ def env(
         path_info = '%s/%s' % (path_info, '/'.join(request.args))
     if request.vars:
         vars = ['%s=%s' % (k, v) if v else '%s' % k
-                for (k, v) in request.vars.iteritems()]
+                for (k, v) in iteritems(request.vars)]
         path_info = '%s?%s' % (path_info, '&'.join(vars))
     request.env.path_info = path_info
 
@@ -161,7 +163,7 @@ def env(
     if import_models:
         try:
             run_models_in(environment)
-        except RestrictedError, e:
+        except RestrictedError as e:
             sys.stderr.write(e.traceback + '\n')
             sys.exit(1)
 
@@ -242,14 +244,14 @@ def run(
                                  "controllers_%s_%s.pyc" % (c, f))
         if ((cronjob and os.path.isfile(pycfile))
             or not os.path.isfile(pyfile)):
-            exec read_pyc(pycfile) in _env
+            exec(read_pyc(pycfile), _env)
         elif os.path.isfile(pyfile):
             execfile(pyfile, _env)
         else:
             die(errmsg)
 
     if f:
-        exec ('print %s()' % f, _env)
+        exec('print %s()' % f, _env)
         return
 
     _env.update(exec_pythonrc())
@@ -258,14 +260,14 @@ def run(
             ccode = None
             if startfile.endswith('.pyc'):
                 ccode = read_pyc(startfile)
-                exec ccode in _env
+                exec(ccode, _env)
             else:
                 execfile(startfile, _env)
 
             if import_models:
                 BaseAdapter.close_all_instances('commit')
-        except Exception, e:
-            print traceback.format_exc()
+        except Exception as e:
+            print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
     elif python_code:
@@ -273,8 +275,8 @@ def run(
             exec(python_code, _env)
             if import_models:
                 BaseAdapter.close_all_instances('commit')
-        except Exception, e:
-            print traceback.format_exc()
+        except Exception as e:
+            print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
     else:
@@ -347,7 +349,7 @@ def parse_path_info(path_info, av=False):
 
 
 def die(msg):
-    print >> sys.stderr, msg
+    print(msg, file=sys.stderr)
     sys.exit(1)
 
 
@@ -396,8 +398,7 @@ def test(testpath, import_models=True, verbose=False):
         def doctest_object(name, obj):
             """doctest obj and enclosed methods and classes."""
 
-            if type(obj) in (types.FunctionType, types.TypeType,
-                             types.ClassType, types.MethodType,
+            if type(obj) in (types.FunctionType, type, ClassType, types.MethodType,
                              types.UnboundMethodType):
 
                 # Reload environment before each test.
@@ -408,7 +409,7 @@ def test(testpath, import_models=True, verbose=False):
                     obj, globs=globs,
                     name='%s: %s' % (os.path.basename(testfile),
                                      name), verbose=verbose)
-                if type(obj) in (types.TypeType, types.ClassType):
+                if type(obj) in (type, ClassType):
                     for attr_name in dir(obj):
 
                         # Execute . operator so decorators are executed.

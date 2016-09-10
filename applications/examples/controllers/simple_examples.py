@@ -35,12 +35,6 @@ def hello6():
     response.flash = 'Hello World in a flash!'
     return dict(message=T('Hello World'))
 
-
-def status():
-    """ page that shows internal status"""
-    return dict(toolbar=response.toolbar())
-
-
 def redirectme():
     """ redirects to /{{=request.application}}/{{=request.controller}}/hello3 """
 
@@ -62,8 +56,7 @@ def servejs():
     return 'alert("This is a Javascript document, it is not supposed to run!");'
 
 def makejson():
-    import gluon.contrib.simplejson as sj
-    return sj.dumps(['foo', {'bar': ('baz', None, 1.0, 2)}])
+    return response.json(['foo', {'bar': ('baz', None, 1.0, 2)}])
 
 
 def makertf():

@@ -1,3 +1,110 @@
+
+## 2.15.x
+- web2py does not support python 2.6 anymore
+- py3.5 syntax compatible (see #1353 for details)
+- dropped web shell from admin
+- scheduler new feature: you can now specify intervals with cron
+- gluon/* removed from sys.path. Applications relying on statements like e.g.
+  "from storage import Storage"
+  will need to be rewritten with
+  "from gluon.storage import Storage"
+- tests can only be run with the usual web2py.py --run_system_tests OR with
+  python -m unittest -v gluon.tests on the root dir
+
+
+## 2.14.6
+
+- Increased test coverage (thanks Richard)
+- Fixed some newly discovered security issues in admin:
+  CSRF vulnerability in admin that allows disabling apps
+  Brute force password attack vulnerability in admin
+  (thanks Narendra and Leonel)
+
+## 2.14.1-5
+
+- fixed two major security issues that caused the examples app to leak information
+- new Auth(…,host_names=[…]) to prevent host header injection
+- improved scheduler
+- pep8 enhancements
+- many bug fixes
+- restored GAE support that was broken in 2.13.*
+- improved fabfile for deployment
+- refactored examples with stupid.css
+- new JWT implementation (experimental)
+- new gluon.contrib.redis_scheduler
+- myconf.get
+- LDAP groups (experimental)
+- .flash -> .w2p_flash
+- Updated feedparser.py 5.2.1
+- Updated jQuery 1.12.2
+- welcome app now checks for version number
+- Redis improvements. New syntax:
+
+    BEFORE:
+    from gluon.contrib.redis_cache import RedisCache
+    cache.redis = RedisCache('localhost:6379',db=None, debug=True)
+
+    NOW:
+    from gluon.contrib.redis_utils import RConn
+    from gluon.contrib.redis_cache import RedisCache
+    rconn = RConn()
+    # or RConn(host='localhost', port=6379,
+    # db=0, password=None, socket_timeout=None,
+    # socket_connect_timeout=None, .....)
+    # exactly as a redis.StrictRedis instance
+    cache.redis = RedisCache(redis_conn=rconn, debug=True)
+
+    BEFORE:
+    from gluon.contrib.redis_session import RedisSession
+    sessiondb = RedisSession('localhost:6379',db=0, session_expiry=False)
+    session.connect(request, response, db = sessiondb)
+
+    NOW:
+    from gluon.contrib.redis_utils import RConn
+    from gluon.contrib.redis_session import RedisSession
+    rconn = RConn()
+    sessiondb = RedisSession(redis_conn=rconn, session_expiry=False)
+    session.connect(request, response, db = sessiondb)
+
+Many thanks to Richard and Simone for their work and dedication.
+
+## 2.13.*
+
+- fixed a security issue in request_reset_password
+- added fabfile.py
+- fixed oauth2 renew token, thanks dokime7
+- fixed add_membership, del_membership, add_membership IntegrityError (when auth.enable_record_versioning)
+- allow passing unicode to template render
+- allow IS_NOT_IN_DB to work with custom primarykey, thanks timmyborg
+- allow HttpOnly cookies
+- french pluralizaiton rules, thanks Mathieu Clabaut
+- fixed bug in redirect to cas service, thanks Fernando González
+- allow deploying to pythonanywhere from the web2py admin that you're running locally, thanks Leonel
+- better tests
+- many more bug fixes
+
+## 2.12.1-3
+
+- security fix: Validate for open redirect everywhere, not just in login()
+- allow to pack invidual apps and selected files as packed exe files
+- allow bulk user registration with default bulk_register_enabled=False
+- allow unsorted multiword query in grid search
+- better MongoDB support with newer pyDAL
+- enable <app>/appadmin/manage/auth by default for user admin
+- allow mail.settings.server='logging:filename' to log emails to a file
+- better caching logic
+- fixed order of confirm-password field
+- TLS support in ldap
+- prettydate can do UTC
+- jquery 1.11.3
+- bootstrap 3.3.5
+- moved to codecov and enabled appveyor
+- many bug fixes
+
+## 2.11.1
+
+- Many small but significative improvements and bug fixes
+
 ## 2.10.1-2.10.2
 
 - welcome app defaults to Bootstrap 3
@@ -28,7 +135,7 @@
 - Added Portuguese, Catalan, and Burmese translations
 - Allow map_hyphen to work for application names, thanks Tim Nyborg
 - New module appconfig.py, thanks Niphlod
-- Added geospatial support to Teradata adaptor, thanks Andrew Willimott 
+- Added geospatial support to Teradata adaptor, thanks Andrew Willimott
 - Many bug fixes
 
 

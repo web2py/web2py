@@ -10,7 +10,7 @@ File operations
 ---------------
 """
 
-import storage
+from gluon import storage
 import os
 import re
 import tarfile
@@ -18,9 +18,10 @@ import glob
 import time
 import datetime
 import logging
-from http import HTTP
+from gluon.http import HTTP
 from gzip import open as gzopen
-from recfile import generate
+from gluon.recfile import generate
+from gluon._compat import PY2
 
 __all__ = [
     'parse_version',
@@ -96,11 +97,19 @@ def parse_version(version):
     return version_tuple
 
 
+def open_file(filename, mode):
+    if PY2 or 'b' in mode:
+        f = open(filename, mode)
+    else:
+        f = open(filename, mode, encoding="utf8")
+    return f
+
+
 def read_file(filename, mode='r'):
     """Returns content from filename, making sure to close the file explicitly
     on exit.
     """
-    f = open(filename, mode)
+    f = open_file(filename, mode)
     try:
         return f.read()
     finally:
@@ -111,7 +120,7 @@ def write_file(filename, value, mode='w'):
     """Writes <value> to filename, making sure to close the file
     explicitly on exit.
     """
-    f = open(filename, mode)
+    f = open_file(filename, mode)
     try:
         return f.write(value)
     finally:
@@ -362,7 +371,7 @@ def get_session(request, other_application='admin'):
         if not os.path.exists(session_filename):
             session_filename = generate(session_filename)
         osession = storage.load_storage(session_filename)
-    except Exception, e:
+    except Exception as e:
         osession = storage.Storage()
     return osession
 
@@ -449,7 +458,7 @@ def make_fake_file_like_object():
     return LogFile()
 
 
-from settings import global_settings  # we need to import settings here because
+from gluon.settings import global_settings  # we need to import settings here because
                                       # settings imports fileutils too
 
 

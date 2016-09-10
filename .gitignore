@@ -48,6 +48,7 @@ applications/*/sessions/*
 applications/*/errors/*
 applications/*/cache/*
 applications/*/uploads/*
+applications/*/private/*
 applications/*/*.py[oc]
 applications/*/static/temp
 applications/*/progress.log
@@ -58,3 +59,5 @@ HOWTO-web2py-devel
 *.sublime-project
 *.sublime-workspace
 .idea/*
+site-packages/
+logs/

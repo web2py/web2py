@@ -8,6 +8,29 @@
 Background processes made simple
 ---------------------------------
 """
+from __future__ import print_function
+
+import os
+import re
+import time
+import multiprocessing
+import sys
+import threading
+import traceback
+import signal
+import socket
+import datetime
+import logging
+import optparse
+import tempfile
+import types
+from functools import reduce
+from json import loads, dumps
+from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_EMPTY_OR
+from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
+from gluon.utils import web2py_uuid
+from gluon._compat import Queue, long, iteritems, PY2
+from gluon.storage import Storage
 
 USAGE = """
 ## Example
@@ -18,7 +41,7 @@ Create File: app/models/scheduler.py ======
 from gluon.scheduler import Scheduler
 
 def demo1(*args,**vars):
-    print 'you passed args=%s and vars=%s' % (args, vars)
+    print('you passed args=%s and vars=%s' % (args, vars))
     return 'done!'
 
 def demo2():
@@ -48,64 +71,16 @@ http://127.0.0.1:8000/myapp/appadmin/select/db?query=db.scheduler_run.id>0
 ## view workers
 http://127.0.0.1:8000/myapp/appadmin/select/db?query=db.scheduler_worker.id>0
 
-## To install the scheduler as a permanent daemon on Linux (w/ Upstart), put
-## the following into /etc/init/web2py-scheduler.conf:
-## (This assumes your web2py instance is installed in <user>'s home directory,
-## running as <user>, with app <myapp>, on network interface eth0.)
-
-description "web2py task scheduler"
-start on (local-filesystems and net-device-up IFACE=eth0)
-stop on shutdown
-respawn limit 8 60 # Give up if restart occurs 8 times in 60 seconds.
-exec sudo -u <user> python /home/<user>/web2py/web2py.py -K <myapp>
-respawn
-
-## You can then start/stop/restart/check status of the daemon with:
-sudo start web2py-scheduler
-sudo stop web2py-scheduler
-sudo restart web2py-scheduler
-sudo status web2py-scheduler
 """
-
-import os
-import time
-import multiprocessing
-import sys
-import threading
-import traceback
-import signal
-import socket
-import datetime
-import logging
-import optparse
-import types
-import Queue
 
 path = os.getcwd()
 
 if 'WEB2PY_PATH' not in os.environ:
     os.environ['WEB2PY_PATH'] = path
 
-try:
-    # try external module
-    from simplejson import loads, dumps
-except ImportError:
-    try:
-        # try stdlib (Python >= 2.6)
-        from json import loads, dumps
-    except:
-        # fallback to pure-Python module
-        from gluon.contrib.simplejson import loads, dumps
-
 IDENTIFIER = "%s#%s" % (socket.gethostname(), os.getpid())
 
 logger = logging.getLogger('web2py.scheduler.%s' % IDENTIFIER)
-
-from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
-from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
-from gluon.utils import web2py_uuid
-from gluon.storage import Storage
-
 
 QUEUED = 'QUEUED'
 ASSIGNED = 'ASSIGNED'
@@ -168,24 +143,25 @@ class TaskReport(object):
 
 
 class JobGraph(object):
-    """Experimental: with JobGraph you can specify
-    dependencies amongs tasks"""
+    """Experimental: dependencies amongs tasks."""
 
     def __init__(self, db, job_name):
         self.job_name = job_name or 'job_0'
         self.db = db
 
     def add_deps(self, task_parent, task_child):
-        """Creates a dependency between task_parent and task_child"""
+        """Create a dependency between task_parent and task_child."""
         self.db.scheduler_task_deps.insert(task_parent=task_parent,
                                            task_child=task_child,
                                            job_name=self.job_name)
 
-    def validate(self, job_name):
-        """Validates if all tasks job_name can be completed, i.e. there
-        are no mutual dependencies among tasks.
+    def validate(self, job_name=None):
+        """Validate if all tasks job_name can be completed.
+
+        Checks if there are no mutual dependencies among tasks.
         Commits at the end if successfull, or it rollbacks the entire
-        transaction. Handle with care!"""
+        transaction. Handle with care!
+        """
         db = self.db
         sd = db.scheduler_task_deps
         if job_name:
@@ -215,7 +191,7 @@ class JobGraph(object):
                 nested_dict = dict(
                     (item, (dep - ordered)) for item, dep in nested_dict.items()
                     if item not in ordered
-                    )
+                )
             assert not nested_dict, "A cyclic dependency exists amongst %r" % nested_dict
             db.commit()
             return rtn
@@ -224,19 +200,221 @@ class JobGraph(object):
             return None
 
 
-def demo_function(*argv, **kwargs):
-    """ test function """
-    for i in range(argv[0]):
-        print 'click', i
-        time.sleep(1)
-    return 'done'
+class CronParser(object):
+
+    def __init__(self, cronline, base=None):
+        self.cronline = cronline
+        self.sched = base or datetime.datetime.now()
+        self.task = None
+
+    @staticmethod
+    def _rangetolist(s, period='min'):
+        retval = []
+        if s.startswith('*'):
+            if period == 'min':
+                s = s.replace('*', '0-59', 1)
+            elif period == 'hr':
+                s = s.replace('*', '0-23', 1)
+            elif period == 'dom':
+                s = s.replace('*', '1-31', 1)
+            elif period == 'mon':
+                s = s.replace('*', '1-12', 1)
+            elif period == 'dow':
+                s = s.replace('*', '0-6', 1)
+        m = re.compile(r'(\d+)-(\d+)/(\d+)')
+        match = m.match(s)
+        if match:
+            min_, max_ = int(match.group(1)), int(match.group(2)) + 1
+            step_ = int(match.group(3))
+        else:
+            m = re.compile(r'(\d+)/(\d+)')
+            ranges_max = {'min': 59, 'hr': 23, 'mon': 12, 'dom': 31, 'dow': 7}
+            match = m.match(s)
+            if match:
+                min_, max_ = int(match.group(1)), ranges_max[period] + 1
+                step_ = int(match.group(2))
+        if match:
+            for i in range(min_, max_, step_):
+                retval.append(i)
+        return retval
+
+    @staticmethod
+    def _sanitycheck(values, period):
+        if period == 'min':
+            check = all(0 <= i <= 59 for i in values)
+        elif period == 'hr':
+            check = all(0 <= i <= 23 for i in values)
+        elif period == 'dom':
+            domrange = list(range(1, 32)) + ['l']
+            check = all(i in domrange for i in values)
+        elif period == 'mon':
+            check = all(1 <= i <= 12 for i in values)
+        elif period == 'dow':
+            check = all(0 <= i <= 7 for i in values)
+        return check
+
+    def _parse(self):
+        line = self.cronline.lower()
+        task = {}
+        if line.startswith('@yearly'):
+            line = line.replace('@yearly', '0 0 1 1 *')
+        elif line.startswith('@annually'):
+            line = line.replace('@annually', '0 0 1 1 *')
+        elif line.startswith('@monthly'):
+            line = line.replace('@monthly', '0 0 1 * *')
+        elif line.startswith('@weekly'):
+            line = line.replace('@weekly', '0 0 * * 0')
+        elif line.startswith('@daily'):
+            line = line.replace('@daily', '0 0 * * *')
+        elif line.startswith('@midnight'):
+            line = line.replace('@midnight', '0 0 * * *')
+        elif line.startswith('@hourly'):
+            line = line.replace('@hourly', '0 * * * *')
+        params = line.strip().split()
+        if len(params) < 5:
+            raise ValueError('Invalid cron line (too short)')
+        elif len(params) > 5:
+            raise ValueError('Invalid cron line (too long)')
+        daysofweek = {'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4,
+                      'fri': 5, 'sat': 6}
+        monthsofyear = {'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5,
+                        'jun': 6, 'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10,
+                        'nov': 11, 'dec': 12, 'l': 'l'}
+        for (s, i) in zip(params[:5], ['min', 'hr', 'dom', 'mon', 'dow']):
+            if s not in [None, '*']:
+                task[i] = []
+                vals = s.split(',')
+                for val in vals:
+                    if i == 'dow':
+                        refdict = daysofweek
+                    elif i == 'mon':
+                        refdict = monthsofyear
+                    if i in ('dow', 'mon') and '-' in val and '/' not in val:
+                        isnum = val.split('-')[0].isdigit()
+                        if isnum:
+                            val = '%s/1' % val
+                        else:
+                            val = '-'.join([str(refdict[v])
+                                           for v in val.split('-')])
+                    if val != '-1' and '-' in val and '/' not in val:
+                        val = '%s/1' % val
+                    if '/' in val:
+                        task[i] += self._rangetolist(val, i)
+                    elif val.isdigit() or val == '-1':
+                        task[i].append(int(val))
+                    elif i in ('dow', 'mon'):
+                        if val in refdict:
+                            task[i].append(refdict[val])
+                    elif i == 'dom' and val == 'l':
+                        task[i].append(val)
+                if not task[i]:
+                    raise ValueError('Invalid cron value (%s)' % s)
+                if not self._sanitycheck(task[i], i):
+                    raise ValueError('Invalid cron value (%s)' % s)
+                task[i] = sorted(task[i])
+        self.task = task
+
+    @staticmethod
+    def _get_next_dow(sched, task):
+        task_dow = [a % 7 for a in task['dow']]
+        while sched.isoweekday() % 7 not in task_dow:
+            sched += datetime.timedelta(days=1)
+        return sched
+
+    @staticmethod
+    def _get_next_dom(sched, task):
+        if task['dom'] == ['l']:
+            last_feb = 29 if sched.year % 4 == 0 else 28
+            lastdayofmonth = [
+                31, last_feb, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+            ]
+            task_dom = [lastdayofmonth[sched.month - 1]]
+        else:
+            task_dom = task['dom']
+        while sched.day not in task_dom:
+            sched += datetime.timedelta(days=1)
+        return sched
+
+    @staticmethod
+    def _get_next_mon(sched, task):
+        while sched.month not in task['mon']:
+            if sched.month < 12:
+                sched = sched.replace(month=sched.month + 1)
+            else:
+                sched = sched.replace(month=1, year=sched.year + 1)
+        return sched
+
+    @staticmethod
+    def _getnext_hhmm(sched, task, add_to=True):
+        if add_to:
+            sched += datetime.timedelta(minutes=1)
+        if 'min' in task:
+            while sched.minute not in task['min']:
+                sched += datetime.timedelta(minutes=1)
+        if 'hr' in task and sched.hour not in task['hr']:
+            while sched.hour not in task['hr']:
+                sched += datetime.timedelta(hours=1)
+        return sched
+
+    def _getnext_date(self, sched, task):
+        if 'dow' in task and 'dom' in task:
+            dow = self._get_next_dow(sched, task)
+            dom = self._get_next_dom(sched, task)
+            sched = min(dow, dom)
+        elif 'dow' in task:
+            sched = self._get_next_dow(sched, task)
+        elif 'dom' in task:
+            sched = self._get_next_dom(sched, task)
+        if 'mon' in task:
+            sched = self._get_next_mon(sched, task)
+        return sched.replace(hour=0, minute=0)
+
+    def get_next(self):
+        """Get next date according to specs."""
+        if not self.task:
+            self._parse()
+        task = self.task
+        sched = self.sched
+        x = 0
+        while x < 1000:  # avoid potential max recursions
+            x += 1
+            try:
+                next_date = self._getnext_date(sched, task)
+            except (ValueError, OverflowError) as e:
+                raise ValueError('Invalid cron expression (%s)' % e)
+            if next_date.date() > self.sched.date():
+                # we rolled date, check for valid hhmm
+                sched = self._getnext_hhmm(next_date, task, False)
+                break
+            else:
+                # same date, get next hhmm
+                sched_time = self._getnext_hhmm(sched, task, True)
+                if sched_time.date() > sched.date():
+                    # we rolled date again :(
+                    sched = sched_time
+                else:
+                    sched = sched_time
+                    break
+        else:
+            raise ValueError('Potential bug found, please submit your '
+                             'cron expression to the authors')
+        self.sched = sched
+        return sched
+
+    def __iter__(self):
+        """Support iteration."""
+        return self
+
+    __next__ = next = get_next
 
 # the two functions below deal with simplejson decoding as unicode, esp for the dict decode
 # and subsequent usage as function Keyword arguments unicode variable names won't work!
-# borrowed from http://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-unicode-ones-from-json-in-python
+# borrowed from http://stackoverflow.com/questions/956867/
 
 
 def _decode_list(lst):
+    if not PY2:
+        return lst
     newlist = []
     for i in lst:
         if isinstance(i, unicode):
@@ -248,8 +426,10 @@ def _decode_list(lst):
 
 
 def _decode_dict(dct):
+    if not PY2:
+        return dct
     newdict = {}
-    for k, v in dct.iteritems():
+    for k, v in iteritems(dct):
         if isinstance(k, unicode):
             k = k.encode('utf-8')
         if isinstance(v, unicode):
@@ -261,11 +441,12 @@ def _decode_dict(dct):
 
 
 def executor(queue, task, out):
-    """The function used to execute tasks in the background process"""
+    """The function used to execute tasks in the background process."""
     logger.debug('    task started')
 
     class LogOutput(object):
-        """Facility to log output at intervals"""
+        """Facility to log output at intervals."""
+
         def __init__(self, out_queue):
             self.out_queue = out_queue
             self.stdout = sys.stdout
@@ -280,7 +461,11 @@ def executor(queue, task, out):
         def write(self, data):
             self.out_queue.put(data)
 
-    W2P_TASK = Storage({'id': task.task_id, 'uuid': task.uuid})
+    W2P_TASK = Storage({
+                       'id': task.task_id,
+                       'uuid': task.uuid,
+                       'run_id': task.run_id
+                       })
     stdout = LogOutput(out)
     try:
         if task.app:
@@ -297,7 +482,7 @@ def executor(queue, task, out):
             f = task.function
             functions = current._scheduler.tasks
             if not functions:
-                #look into env
+                # look into env
                 _function = _env.get(f)
             else:
                 _function = functions.get(f)
@@ -314,19 +499,24 @@ def executor(queue, task, out):
             vars = loads(task.vars, object_hook=_decode_dict)
             result = dumps(_function(*args, **vars))
         else:
-            ### for testing purpose only
+            # for testing purpose only
             result = eval(task.function)(
                 *loads(task.args, object_hook=_decode_dict),
                 **loads(task.vars, object_hook=_decode_dict))
+        if len(result) >= 1024:
+            fd, temp_path = tempfile.mkstemp(suffix='.w2p_sched')
+            with os.fdopen(fd, 'w') as f:
+                f.write(result)
+            result = 'w2p_special:%s' % temp_path
         queue.put(TaskReport('COMPLETED', result=result))
-    except BaseException, e:
+    except BaseException as e:
         tb = traceback.format_exc()
         queue.put(TaskReport('FAILED', tb=tb))
     del stdout
 
 
 class MetaScheduler(threading.Thread):
-    """Base class documenting scheduler's base methods"""
+    """Base class documenting scheduler's base methods."""
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -335,7 +525,7 @@ class MetaScheduler(threading.Thread):
         self.empty_runs = 0
 
     def async(self, task):
-        """Starts the background process
+        """Start the background process.
 
         Args:
             task : a `Task` object
@@ -382,7 +572,7 @@ class MetaScheduler(threading.Thread):
                 while not out.empty():
                     tout += out.get()
                 if tout:
-                    logger.debug(' partial output: "%s"' % str(tout))
+                    logger.debug(' partial output: "%s"', str(tout))
                     if CLEAROUT in tout:
                         task_output = tout[
                             tout.rfind(CLEAROUT) + len(CLEAROUT):]
@@ -391,7 +581,6 @@ class MetaScheduler(threading.Thread):
         except:
             p.terminate()
             p.join()
-            self.have_heartbeat = False
             logger.debug('    task stopped by general exception')
             tr = TaskReport(STOPPED)
         else:
@@ -406,12 +595,17 @@ class MetaScheduler(threading.Thread):
                 except Queue.Empty:
                     tr = TaskReport(TIMEOUT)
             elif queue.empty():
-                self.have_heartbeat = False
                 logger.debug('    task stopped')
                 tr = TaskReport(STOPPED)
             else:
                 logger.debug('  task completed or failed')
                 tr = queue.get()
+        result = tr.result
+        if result and result.startswith('w2p_special'):
+            temp_path = result.replace('w2p_special:', '', 1)
+            with open(temp_path) as f:
+                tr.result = f.read()
+            os.unlink(temp_path)
         tr.output = task_output
         return tr
 
@@ -429,7 +623,7 @@ class MetaScheduler(threading.Thread):
         self.have_heartbeat = False
 
     def terminate_process(self):
-        """Terminates any running tasks (internal use only)"""
+        """Terminate any running tasks (internal use only)"""
         try:
             self.process.terminate()
         except:
@@ -446,56 +640,45 @@ class MetaScheduler(threading.Thread):
         self.start()
 
     def send_heartbeat(self, counter):
-        print 'thum'
-        time.sleep(1)
+        raise NotImplementedError
 
     def pop_task(self):
         """Fetches a task ready to be executed"""
-        return Task(
-            app=None,
-            function='demo_function',
-            timeout=7,
-            args='[2]',
-            vars='{}')
+        raise NotImplementedError
 
     def report_task(self, task, task_report):
         """Creates a task report"""
-        print 'reporting task'
-        pass
+        raise NotImplementedError
 
     def sleep(self):
-        pass
+        raise NotImplementedError
 
     def loop(self):
         """Main loop, fetching tasks and starting executor's background
         processes"""
-        try:
-            self.start_heartbeats()
-            while True and self.have_heartbeat:
-                logger.debug('looping...')
-                task = self.pop_task()
-                if task:
-                    self.empty_runs = 0
-                    self.report_task(task, self.async(task))
-                else:
-                    self.empty_runs += 1
-                    logger.debug('sleeping...')
-                    if self.max_empty_runs != 0:
-                        logger.debug('empty runs %s/%s',
-                                     self.empty_runs, self.max_empty_runs)
-                        if self.empty_runs >= self.max_empty_runs:
-                            logger.info(
-                                'empty runs limit reached, killing myself')
-                            self.die()
-                    self.sleep()
-        except KeyboardInterrupt:
-            self.die()
+        raise NotImplementedError
 
 
 TASK_STATUS = (QUEUED, RUNNING, COMPLETED, FAILED, TIMEOUT, STOPPED, EXPIRED)
 RUN_STATUS = (RUNNING, COMPLETED, FAILED, TIMEOUT, STOPPED)
 WORKER_STATUS = (ACTIVE, PICK, DISABLED, TERMINATE, KILL, STOP_TASK)
 
+class IS_CRONLINE(object):
+    """
+    Validates cronline
+    """
+    def __init__(self, error_message=None):
+        self.error_message = error_message
+
+    def __call__(self, value):
+        recur = CronParser(value, datetime.datetime.now())
+        try:
+            recur.get_next()
+            return (value, None)
+        except (KeyError, ValueError) as e:
+            if not self.error_message:
+                return (value, e)
+            return (value, self.error_message)
 
 class TYPE(object):
     """
@@ -596,11 +779,11 @@ class Scheduler(MetaScheduler):
         return True
 
     def now(self):
-        """Shortcut that fetches current time based on UTC preferences"""
+        """Shortcut that fetches current time based on UTC preferences."""
         return self.utc_time and datetime.datetime.utcnow() or datetime.datetime.now()
 
     def set_requirements(self, scheduler_task):
-        """Called to set defaults for lazy_tables connections"""
+        """Called to set defaults for lazy_tables connections."""
         from gluon import current
         if hasattr(current, 'request'):
             scheduler_task.application_name.default = '%s/%s' % (
@@ -608,7 +791,7 @@ class Scheduler(MetaScheduler):
             )
 
     def define_tables(self, db, migrate):
-        """Defines Scheduler tables structure"""
+        """Define Scheduler tables structure."""
         from pydal.base import DEFAULT
         logger.debug('defining tables (migrate=%s)', migrate)
         now = self.now
@@ -640,7 +823,10 @@ class Scheduler(MetaScheduler):
             Field('period', 'integer', default=60, comment='seconds',
                   requires=IS_INT_IN_RANGE(0, None)),
             Field('prevent_drift', 'boolean', default=False,
-                  comment='Cron-like start_times between runs'),
+                  comment='Exact start_times between runs'),
+            Field('cronline', default=None,
+                  comment='Discard "period", use this cron expr instead',
+                  requires=IS_EMPTY_OR(IS_CRONLINE())),
             Field('timeout', 'integer', default=60, comment='seconds',
                   requires=IS_INT_IN_RANGE(1, None)),
             Field('sync_output', 'integer', default=0,
@@ -652,7 +838,7 @@ class Scheduler(MetaScheduler):
             Field('assigned_worker_name', default='', writable=False),
             on_define=self.set_requirements,
             migrate=self.__get_migrate('scheduler_task', migrate),
-            format='%(task_name)s')
+            format='(%(id)s) %(task_name)s')
 
         db.define_table(
             'scheduler_run',
@@ -665,7 +851,7 @@ class Scheduler(MetaScheduler):
             Field('traceback', 'text'),
             Field('worker_name', default=self.worker_name),
             migrate=self.__get_migrate('scheduler_run', migrate)
-            )
+        )
 
         db.define_table(
             'scheduler_worker',
@@ -677,25 +863,24 @@ class Scheduler(MetaScheduler):
             Field('group_names', 'list:string', default=self.group_names),
             Field('worker_stats', 'json'),
             migrate=self.__get_migrate('scheduler_worker', migrate)
-            )
+        )
 
         db.define_table(
             'scheduler_task_deps',
             Field('job_name', default='job_0'),
             Field('task_parent', 'integer',
-                requires=IS_IN_DB(db, 'scheduler_task.id',
-                                      '%(task_name)s')
-            ),
+                  requires=IS_IN_DB(db, 'scheduler_task.id', '%(task_name)s')
+                  ),
             Field('task_child', 'reference scheduler_task'),
             Field('can_visit', 'boolean', default=False),
             migrate=self.__get_migrate('scheduler_task_deps', migrate)
-            )
+        )
 
         if migrate is not False:
             db.commit()
 
     def loop(self, worker_name=None):
-        """Main loop
+        """Main loop.
 
         This works basically as a neverending loop that:
 
@@ -715,10 +900,10 @@ class Scheduler(MetaScheduler):
         signal.signal(signal.SIGTERM, lambda signum, stack_frame: sys.exit(1))
         try:
             self.start_heartbeats()
-            while True and self.have_heartbeat:
+            while self.have_heartbeat:
                 if self.w_stats.status == DISABLED:
                     logger.debug('Someone stopped me, sleeping until better'
-                        ' times come (%s)', self.w_stats.sleep)
+                                 ' times come (%s)', self.w_stats.sleep)
                     self.sleep()
                     continue
                 logger.debug('looping...')
@@ -735,7 +920,8 @@ class Scheduler(MetaScheduler):
                     logger.debug('sleeping...')
                     if self.max_empty_runs != 0:
                         logger.debug('empty runs %s/%s',
-                            self.w_stats.empty_runs, self.max_empty_runs)
+                                     self.w_stats.empty_runs,
+                                     self.max_empty_runs)
                         if self.w_stats.empty_runs >= self.max_empty_runs:
                             logger.info(
                                 'empty runs limit reached, killing myself')
@@ -746,7 +932,8 @@ class Scheduler(MetaScheduler):
             self.die()
 
     def wrapped_assign_tasks(self, db):
-        """Commodity function to call `assign_tasks` and trap exceptions
+        """Commodity function to call `assign_tasks` and trap exceptions.
+
         If an exception is raised, assume it happened because of database
         contention and retries `assign_task` after 0.5 seconds
         """
@@ -767,7 +954,8 @@ class Scheduler(MetaScheduler):
                 time.sleep(0.5)
 
     def wrapped_pop_task(self):
-        """Commodity function to call `pop_task` and trap exceptions
+        """Commodity function to call `pop_task` and trap exceptions.
+
         If an exception is raised, assume it happened because of database
         contention and retries `pop_task` after 0.5 seconds
         """
@@ -787,19 +975,19 @@ class Scheduler(MetaScheduler):
                 time.sleep(0.5)
 
     def pop_task(self, db):
-        """Grabs a task ready to be executed from the queue"""
+        """Grab a task ready to be executed from the queue."""
         now = self.now()
         st = self.db.scheduler_task
         if self.is_a_ticker and self.do_assign_tasks:
-            #I'm a ticker, and 5 loops passed without reassigning tasks,
-            #let's do that and loop again
+            # I'm a ticker, and 5 loops passed without reassigning tasks,
+            # let's do that and loop again
             self.wrapped_assign_tasks(db)
             return None
         # ready to process something
         grabbed = db(
             (st.assigned_worker_name == self.worker_name) &
             (st.status == ASSIGNED)
-            )
+        )
 
         task = grabbed.select(limitby=(0, 1), orderby=st.next_run_time).first()
         if task:
@@ -816,14 +1004,21 @@ class Scheduler(MetaScheduler):
                 logger.info('nothing to do')
             return None
         times_run = task.times_run + 1
-        if not task.prevent_drift:
+        if task.cronline:
+            cron_recur = CronParser(task.cronline, now.replace(second=0))
+            next_run_time = cron_recur.get_next()
+        elif not task.prevent_drift:
             next_run_time = task.last_run_time + datetime.timedelta(
                 seconds=task.period
-                )
-        else:
-            next_run_time = task.start_time + datetime.timedelta(
-                seconds=task.period * times_run
             )
+        else:
+            # calc next_run_time based on available slots
+            # see #1191
+            next_run_time = task.start_time
+            secondspassed = (now - next_run_time).total_seconds()
+            steps = secondspassed // task.period + 1
+            next_run_time += datetime.timedelta(seconds=task.period * steps)
+
         if times_run < task.repeats or task.repeats == 0:
             # need to run (repeating task)
             run_again = True
@@ -845,7 +1040,7 @@ class Scheduler(MetaScheduler):
                 time.sleep(0.5)
                 db.rollback()
         logger.info('new task %(id)s "%(task_name)s"'
-            ' %(application_name)s.%(function_name)s' % task)
+                    ' %(application_name)s.%(function_name)s' % task)
         return Task(
             app=task.application_name,
             function=task.function_name,
@@ -864,7 +1059,8 @@ class Scheduler(MetaScheduler):
             uuid=task.uuid)
 
     def wrapped_report_task(self, task, task_report):
-        """Commodity function to call `report_task` and trap exceptions
+        """Commodity function to call `report_task` and trap exceptions.
+
         If an exception is raised, assume it happened because of database
         contention and retries `pop_task` after 0.5 seconds
         """
@@ -881,8 +1077,10 @@ class Scheduler(MetaScheduler):
                 time.sleep(0.5)
 
     def report_task(self, task, task_report):
-        """Takes care of storing the result according to preferences
-        and deals with logic for repeating tasks"""
+        """Take care of storing the result according to preferences.
+
+        Deals with logic for repeating tasks.
+        """
         db = self.db
         now = self.now()
         st = db.scheduler_task
@@ -904,12 +1102,12 @@ class Scheduler(MetaScheduler):
                 logger.debug(' deleting task report in db because of no result')
                 db(sr.id == task.run_id).delete()
         # if there is a stop_time and the following run would exceed it
-        is_expired = (task.stop_time
-                      and task.next_run_time > task.stop_time
-                      and True or False)
-        status = (task.run_again and is_expired and EXPIRED
-                  or task.run_again and not is_expired
-                  and QUEUED or COMPLETED)
+        is_expired = (task.stop_time and
+                      task.next_run_time > task.stop_time and
+                      True or False)
+        status = (task.run_again and is_expired and EXPIRED or
+                  task.run_again and not is_expired and
+                  QUEUED or COMPLETED)
         if task_report.status == COMPLETED:
             d = dict(status=status,
                      next_run_time=task.next_run_time,
@@ -922,40 +1120,39 @@ class Scheduler(MetaScheduler):
         else:
             st_mapping = {'FAILED': 'FAILED',
                           'TIMEOUT': 'TIMEOUT',
-                          'STOPPED': 'QUEUED'}[task_report.status]
+                          'STOPPED': 'FAILED'}[task_report.status]
             status = (task.retry_failed
                       and task.times_failed < task.retry_failed
                       and QUEUED or task.retry_failed == -1
                       and QUEUED or st_mapping)
             db(st.id == task.task_id).update(
-                times_failed=db.scheduler_task.times_failed + 1,
+                times_failed=st.times_failed + 1,
                 next_run_time=task.next_run_time,
                 status=status
             )
         logger.info('task completed (%s)', task_report.status)
 
     def update_dependencies(self, db, task_id):
+        """Unblock execution paths for Jobs."""
         db(db.scheduler_task_deps.task_child == task_id).update(can_visit=True)
 
     def adj_hibernation(self):
-        """Used to increase the "sleep" interval for DISABLED workers"""
+        """Used to increase the "sleep" interval for DISABLED workers."""
         if self.w_stats.status == DISABLED:
             wk_st = self.w_stats.sleep
             hibernation = wk_st + HEARTBEAT if wk_st < MAXHIBERNATION else MAXHIBERNATION
             self.w_stats.sleep = hibernation
 
     def send_heartbeat(self, counter):
-        """This function is vital for proper coordination among available
-        workers.
-        It:
+        """Coordination among available workers.
 
+        It:
         - sends the heartbeat
         - elects a ticker among available workers (the only process that
             effectively dispatch tasks to workers)
         - deals with worker's statuses
         - does "housecleaning" for dead workers
         - triggers tasks assignment to workers
-
         """
         if not self.db_thread:
             logger.debug('thread building own DAL object')
@@ -982,7 +1179,7 @@ class Scheduler(MetaScheduler):
                     # keep sleeping
                     self.w_stats.status = DISABLED
                     logger.debug('........recording heartbeat (%s)',
-                        self.w_stats.status)
+                                 self.w_stats.status)
                     db(sw.worker_name == self.worker_name).update(
                         last_heartbeat=now,
                         worker_stats=self.w_stats)
@@ -999,7 +1196,7 @@ class Scheduler(MetaScheduler):
                         logger.info('Asked to kill the current task')
                         self.terminate_process()
                     logger.debug('........recording heartbeat (%s)',
-                        self.w_stats.status)
+                                 self.w_stats.status)
                     db(sw.worker_name == self.worker_name).update(
                         last_heartbeat=now, status=ACTIVE,
                         worker_stats=self.w_stats)
@@ -1025,7 +1222,7 @@ class Scheduler(MetaScheduler):
                     db(
                         (st.assigned_worker_name.belongs(dead_workers_name)) &
                         (st.status == RUNNING)
-                        ).update(assigned_worker_name='', status=QUEUED)
+                    ).update(assigned_worker_name='', status=QUEUED)
                     dead_workers.delete()
                     try:
                         self.is_a_ticker = self.being_a_ticker()
@@ -1043,7 +1240,8 @@ class Scheduler(MetaScheduler):
         self.sleep()
 
     def being_a_ticker(self):
-        """Elects a TICKER process that assigns tasks to available workers.
+        """Elect a TICKER process that assigns tasks to available workers.
+
         Does its best to elect a worker that is not busy processing other tasks
         to allow a proper distribution of tasks among all active workers ASAP
         """
@@ -1077,7 +1275,7 @@ class Scheduler(MetaScheduler):
             return False
 
     def assign_tasks(self, db):
-        """Assigns task to workers, that can then pop them from the queue
+        """Assign task to workers, that can then pop them from the queue.
 
         Deals with group_name(s) logic, in order to assign linearly tasks
         to available workers for those groups
@@ -1110,31 +1308,27 @@ class Scheduler(MetaScheduler):
             (sd.can_visit == False) &
             (~sd.task_child.belongs(
                 db(sd.can_visit == False)._select(sd.task_parent)
-                )
             )
-            )._select(sd.task_child)
+            )
+        )._select(sd.task_child)
         no_deps = db(
             (st.status.belongs((QUEUED, ASSIGNED))) &
             (
                 (sd.id == None) | (st.id.belongs(deps_with_no_deps))
 
             )
-            )._select(st.id, distinct=True, left=sd.on(
-                    (st.id == sd.task_parent) &
-                    (sd.can_visit == False)
-                    )
-            )
+        )._select(st.id, distinct=True, left=sd.on(
+                 (st.id == sd.task_parent) &
+                 (sd.can_visit == False)
+        )
+        )
 
         all_available = db(
             (st.status.belongs((QUEUED, ASSIGNED))) &
-            ((st.times_run < st.repeats) | (st.repeats == 0)) &
-            (st.start_time <= now) &
-            ((st.stop_time == None) | (st.stop_time > now)) &
             (st.next_run_time <= now) &
             (st.enabled == True) &
             (st.id.belongs(no_deps))
         )
-
 
         limit = len(all_workers) * (50 / (len(wkgroups) or 1))
         # if there are a moltitude of tasks, let's figure out a maximum of
@@ -1142,8 +1336,8 @@ class Scheduler(MetaScheduler):
         # intelligence (like esteeming how many tasks will a worker complete
         # before the ticker reassign them around, but the gain is quite small
         # 50 is a sweet spot also for fast tasks, with sane heartbeat values
-        # NB: ticker reassign tasks every 5 cycles, so if a worker completes its
-        # 50 tasks in less than heartbeat*5 seconds,
+        # NB: ticker reassign tasks every 5 cycles, so if a worker completes
+        # its 50 tasks in less than heartbeat*5 seconds,
         # it won't pick new tasks until heartbeat*5 seconds pass.
 
         # If a worker is currently elaborating a long task, its tasks needs to
@@ -1156,7 +1350,7 @@ class Scheduler(MetaScheduler):
         x = 0
         for group in wkgroups.keys():
             tasks = all_available(st.group_name == group).select(
-                limitby=(0, limit), orderby = st.next_run_time)
+                limitby=(0, limit), orderby=st.next_run_time)
             # let's break up the queue evenly among workers
             for task in tasks:
                 x += 1
@@ -1174,12 +1368,10 @@ class Scheduler(MetaScheduler):
                         status=ASSIGNED,
                         assigned_worker_name=assigned_wn
                     )
-                    if not task.task_name:
-                        d['task_name'] = task.function_name
                     db(
                         (st.id == task.id) &
                         (st.status.belongs((QUEUED, ASSIGNED)))
-                        ).update(**d)
+                    ).update(**d)
                     wkgroups[gname]['workers'][myw]['c'] += 1
             db.commit()
         # I didn't report tasks but I'm working nonetheless!!!!
@@ -1195,14 +1387,13 @@ class Scheduler(MetaScheduler):
         logger.info('TICKER: tasks are %s', x)
 
     def sleep(self):
-        """Calculates the number of seconds to sleep according to worker's
-        status and `heartbeat` parameter"""
+        """Calculate the number of seconds to sleep."""
         time.sleep(self.w_stats.sleep)
         # should only sleep until next available task
 
     def set_worker_status(self, group_names=None, action=ACTIVE,
                           exclude=None, limit=None, worker_name=None):
-        """Internal function to set worker's status"""
+        """Internal function to set worker's status."""
         ws = self.db.scheduler_worker
         if not group_names:
             group_names = self.group_names
@@ -1217,7 +1408,7 @@ class Scheduler(MetaScheduler):
                 self.db(
                     (ws.group_names.contains(group)) &
                     (~ws.status.belongs(exclusion))
-                    ).update(status=action)
+                ).update(status=action)
         else:
             for group in group_names:
                 workers = self.db((ws.group_names.contains(group)) &
@@ -1226,10 +1417,12 @@ class Scheduler(MetaScheduler):
                 self.db(ws.id.belongs(workers)).update(status=action)
 
     def disable(self, group_names=None, limit=None, worker_name=None):
-        """Sets DISABLED on the workers processing `group_names` tasks.
+        """Set DISABLED on the workers processing `group_names` tasks.
+
         A DISABLED worker will be kept alive but it won't be able to process
         any waiting tasks, essentially putting it to sleep.
-        By default, all group_names of Scheduler's instantation are selected"""
+        By default, all group_names of Scheduler's instantation are selected
+        """
         self.set_worker_status(
             group_names=group_names,
             action=DISABLED,
@@ -1274,8 +1467,9 @@ class Scheduler(MetaScheduler):
             pvars: "raw" kwargs to be passed to the function. Automatically
                 jsonified
             kwargs: all the parameters available (basically, every
-                `scheduler_task` column). If args and vars are here, they should
-                be jsonified already, and they will override pargs and pvars
+                `scheduler_task` column). If args and vars are here, they
+                should be jsonified already, and they will override pargs
+                and pvars
 
         Returns:
             a dict just as a normal validate_and_insert(), plus a uuid key
@@ -1290,19 +1484,28 @@ class Scheduler(MetaScheduler):
         tuuid = 'uuid' in kwargs and kwargs.pop('uuid') or web2py_uuid()
         tname = 'task_name' in kwargs and kwargs.pop('task_name') or function
         immediate = 'immediate' in kwargs and kwargs.pop('immediate') or None
-        rtn = self.db.scheduler_task.validate_and_insert(
+        cronline = kwargs.get('cronline')
+        kwargs.update(
             function_name=function,
             task_name=tname,
             args=targs,
             vars=tvars,
             uuid=tuuid,
-            **kwargs)
+            )
+        if cronline:
+            try:
+                start_time = kwargs.get('start_time', self.now)
+                next_run_time = CronParser(cronline, start_time).get_next()
+                kwargs.update(start_time=start_time, next_run_time=next_run_time)
+            except:
+                pass
+        rtn = self.db.scheduler_task.validate_and_insert(**kwargs)
         if not rtn.errors:
             rtn.uuid = tuuid
             if immediate:
                 self.db(
                     (self.db.scheduler_worker.is_ticker == True)
-                    ).update(status=PICK)
+                ).update(status=PICK)
         else:
             rtn.uuid = None
         return rtn
@@ -1352,7 +1555,7 @@ class Scheduler(MetaScheduler):
             **dict(orderby=orderby,
                    left=left,
                    limitby=(0, 1))
-            ).first()
+        ).first()
         if row and output:
             row.result = row.scheduler_run.run_result and \
                 loads(row.scheduler_run.run_result,
@@ -1474,26 +1677,26 @@ def main():
     )
     (options, args) = parser.parse_args()
     if not options.tasks or not options.db_uri:
-        print USAGE
+        print(USAGE)
     if options.tasks:
         path, filename = os.path.split(options.tasks)
         if filename.endswith('.py'):
             filename = filename[:-3]
         sys.path.append(path)
-        print 'importing tasks...'
+        print('importing tasks...')
         tasks = __import__(filename, globals(), locals(), [], -1).tasks
-        print 'tasks found: ' + ', '.join(tasks.keys())
+        print('tasks found: ' + ', '.join(tasks.keys()))
     else:
         tasks = {}
     group_names = [x.strip() for x in options.group_names.split(',')]
 
     logging.getLogger().setLevel(options.logger_level)
 
-    print 'groups for this worker: ' + ', '.join(group_names)
-    print 'connecting to database in folder: ' + options.db_folder or './'
-    print 'using URI: ' + options.db_uri
+    print('groups for this worker: ' + ', '.join(group_names))
+    print('connecting to database in folder: ' + options.db_folder or './')
+    print('using URI: ' + options.db_uri)
     db = DAL(options.db_uri, folder=options.db_folder)
-    print 'instantiating scheduler...'
+    print('instantiating scheduler...')
     scheduler = Scheduler(db=db,
                           worker_name=options.worker_name,
                           tasks=tasks,
@@ -1503,7 +1706,7 @@ def main():
                           max_empty_runs=options.max_empty_runs,
                           utc_time=options.utc_time)
     signal.signal(signal.SIGTERM, lambda signum, stack_frame: sys.exit(1))
-    print 'starting main worker loop...'
+    print('starting main worker loop...')
     scheduler.loop()
 
 if __name__ == '__main__':

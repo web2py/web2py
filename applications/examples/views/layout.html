@@ -1,173 +1,67 @@
-<!--[if HTML5]><![endif]-->
 <!DOCTYPE html>
-<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
-<!--[if lt IE 7]><html class="ie ie6 ie-lte9 ie-lte8 ie-lte7 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
-<!--[if IE 7]><html class="ie ie7 ie-lte9 ie-lte8 ie-lte7 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
-<!--[if IE 8]><html class="ie ie8 ie-lte9 ie-lte8 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
-<!--[if IE 9]><html class="ie9 ie-lte9 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
-<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="{{=T.accepted_language or 'en'}}"> <!--<![endif]-->
-<head>
-<title>{{=response.title or request.application}}</title>
-  <!--[if !HTML5]>
-      <meta http-equiv="X-UA-Compatible" content="IE=edge{{=not request.is_local and ',chrome=1' or ''}}">
-  <![endif]-->
-  <!-- www.phpied.com/conditional-comments-block-downloads/ -->
-  <!-- Always force latest IE rendering engine
-       (even in intranet) & Chrome Frame
-       Remove this if you use the .htaccess -->
-	   
-  <meta charset="utf-8" />
-
-  <!-- http://dev.w3.org/html5/markup/meta.name.html -->
-  <meta name="application-name" content="{{=request.application}}" />
-
-  <!-- Speaking of Google, don't forget to set your site up:
-       http://google.com/webmasters -->
-  <meta name="google-site-verification" content="" />
-
-  <!--  Mobile Viewport Fix
-        j.mp/mobileviewport & davidbcalhoun.com/2010/viewport-metatag
-        device-width: Occupy full width of the screen in its current orientation
-        initial-scale = 1.0 retains dimensions instead of zooming out if page height > device height
-        user-scalable = yes allows the user to zoom in -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="shortcut icon" href="{{=URL('static','images/favicon.ico')}}" type="image/x-icon">
-  <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
-
-  <!-- All JavaScript at the bottom, except for Modernizr which enables
-       HTML5 elements & feature detects -->
-  <script src="{{=URL('static','js/modernizr.custom.js')}}"></script>
-
-  <!-- include stylesheets -->
-  {{  
-  response.files.append(URL('static','css/web2py.css'))
-  response.files.append(URL('static','css/bootstrap.min.css'))
-  response.files.append(URL('static','css/bootstrap-responsive.min.css'))
-  response.files.append(URL('static','css/web2py_bootstrap.css'))
-  response.files.append(URL('static','css/examples.css'))
-  }}
-
-  {{include 'web2py_ajax.html'}}
-
-  {{
-  # using sidebars need to know what sidebar you want to use
-  left_sidebar_enabled = globals().get('left_sidebar_enabled',False)
-  right_sidebar_enabled = globals().get('right_sidebar_enabled',False)
-  middle_columns = {0:'span12',1:'span9',2:'span6'}[
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link href="{{=URL('static','css/calendar.css')}}" rel="stylesheet" type="text/css"/>
+    <link href="{{=URL('static','css/web2py.css')}}" rel="stylesheet" type="text/css"/>
+    <link href="{{=URL('static','css/stupid.css')}}" rel="stylesheet" type="text/css"/>
+    <link href="{{=URL('static','css/examples.css')}}" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <link rel="shortcut icon" href="{{=URL('static','images/favicon.ico')}}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
+    {{
+    left_sidebar_enabled = globals().get('left_sidebar_enabled', False)
+    right_sidebar_enabled = globals().get('right_sidebar_enabled', False)
+    middle_column = {0: 'fill', 1: 'threequarters', 2: 'half'}[
     (left_sidebar_enabled and 1 or 0)+(right_sidebar_enabled and 1 or 0)]
-  }}
-
-  <!-- uncomment here to load jquery-ui
-       <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/base/jquery-ui.css" type="text/css" media="all" />
-       <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" type="text/javascript"></script>
-       uncomment to load jquery-ui //-->
-  <noscript><link href="{{=URL('static', 'css/web2py_bootstrap_nojs.css')}}" rel="stylesheet" type="text/css" /></noscript>
-  {{block head}}{{end}}
-</head>
-
-<body>
-  <!-- Navbar ================================================== -->
-  <div class="navbar navbar-inverse navbar-fixed-top">
-    <div class="flash">{{=response.flash or ''}}</div>
-    <div class="navbar-inner">
-      <div class="container">
-        <!-- the next tag is necessary for bootstrap menus, do not remove -->
-        <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-	{{=response.logo or ''}}
-        <ul id="navbar" class="nav pull-right">{{='auth' in globals() and auth.navbar(mode="dropdown") or ''}}</ul>
-        <div class="nav-collapse">
-          {{is_mobile=request.user_agent().is_mobile}}
-          {{if response.menu:}}
-          {{=MENU(response.menu, _class='mobile-menu nav' if is_mobile else 'nav',mobile=is_mobile,li_class='dropdown',ul_class='dropdown-menu')}}
-          {{pass}}
-        </div><!--/.nav-collapse -->
-      </div>
-    </div>
-  </div><!--/top navbar -->
-
-  <div class="container">
-    <!-- Masthead ================================================== -->
-    <header class="mastheader" id="header">
-      <div class="span4">
-        <div class="page-header">
-	  <img src="{{=URL('static','images/web2py_logo.png')}}" class="logo" alt="web2py logo" />
+    }}
+    {{include "web2py_ajax.html"}}
+  </head>
+  <body class="black">   
+    <header class="black padded">      
+      <div class="container middle max900">
+        <div class="fill middle">                    
+          <label class="ham" for="menu"><i class="fa fa-bars padded"></i></label>
+          <div class="burger accordion">
+            <input type="checkbox" id="menu"/>
+            {{=MENU(response.menu,_class='menu')}}
+          </div>
         </div>
       </div>
     </header>
-  </div>
-  <div class="container">
-
-    <section id="main" class="main row">
-        {{if left_sidebar_enabled:}}
-        <div class="span3 left-sidebar">
-            {{block left_sidebar}}
-            <h3>Left Sidebar</h3>
-            <p></p>
-            {{end}}
-        </div>
-        {{pass}}
-
-        <div class="{{=middle_columns}}">
-            {{block center}}
-            {{include}}
-            {{end}}
-        </div>
-
-        {{if right_sidebar_enabled:}}
-        <div class="span3">
-            {{block right_sidebar}}
-            <h3>Right Sidebar</h3>
-            <p></p>
-            {{end}}
-        </div>
-        {{pass}}
-    </section><!--/main-->
-
-    <!-- Footer ================================================== -->
-    <div class="row">
-        <footer class="footer span12" id="footer">
-            <div class="footer-content">
-                {{block footer}} <!-- this is default footer -->
-                <div id="poweredBy" class="pull-right">
-		  {{=T('Copyright')}} &#169; {{=request.now.year}} -
-                    {{=T('Powered by')}}
-                    <a href="http://www.web2py.com/">web2py</a> -
-		    {{=T('Hosted by')}}
-                    <a href="http://pythonanywhere.com">PythonAnywhere</a>
-                </div>
-                {{end}}
-            </div>
-        </footer>
+    {{if response.flash:}}
+    <div class="w2p_flash">
+      {{=response.flash}}
     </div>
-
-  </div> <!-- /container -->
-
-  <!-- The javascript =============================================
-       (Placed at the end of the document so the pages load faster) -->
-  <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
-  <script src="{{=URL('static','js/web2py_bootstrap.js')}}"></script>
-  <!--[if lt IE 7 ]>
-      <script src="{{=URL('static','js/dd_belatedpng.js')}}"></script>
-      <script> DD_belatedPNG.fix('img, .png_bg'); //fix any <img> or .png_bg background-images </script>
-      <![endif]-->
-  
-  {{if response.google_analytics_id:}}
-  <script src="{{=URL('static','js/analytics.min.js')}}"></script>
-  <script type="text/javascript">
-  analytics.initialize({
-    'Google Analytics':{trackingId:'{{=response.google_analytics_id}}'} 
-  });</script>
-  {{pass}}
-  <script src="{{=URL('static','js/share.js',vars=dict(static=URL('static','images')))}}"></script>
-  <a style="position:fixed;bottom:0;left:0;z-index:1000" href="https://groups.google.com/forum/?fromgroups#!forum/web2py" target="_blank">
-    <img src="{{=URL('static','images/questions.png')}}" />
-  </a>
-
-</body>
+    {{pass}}
+    <main class="white">
+      <div class="container max900">
+        {{if left_sidebar_enabled:}}
+        <div class="quarter padded">{{block left_sidebar}}{{end}}</div>
+        {{pass}}
+        <div class="{{=middle_column}} padded">{{include}}</div>
+        {{if right_sidebar_enabled:}}
+        <div class="quarter padded">{{block right_sidebar}}{{end}}</div>
+        {{pass}}
+      </div>
+      <div class="silver center padded">
+        <a class="fa fa-twitter" href="https://twitter.com/web2py/"></a>
+        <a class="fa fa-facebook" href="https://www.facebook.com/web2py/"></a>
+      </div>
+    </main>
+    <footer class="black">
+      <div class="container padded max900">
+        <div class="fill">
+          Copyright @ 2016 - Powered by Web2py
+        </div>
+      </div>
+    </footer>
+  </body>  
+  <script>
+    // prevent android horizontal scrolling
+    window.addEventListener("scroll", function(){window.scroll(0, window.pageYOffset);}, false);
+  </script>
 </html>
-

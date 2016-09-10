@@ -13,7 +13,7 @@ Learn more at http://web2py.com
     
 Then edit ./app.yaml and replace "yourappname" with yourappname.
 
-## Import about this GIT repo
+## Important reminder about this GIT repo
 
 An important part of web2py is the Database Abstraction Layer (DAL). In early 2015 this was decoupled into a separate code-base (PyDAL). In terms of git, it is a sub-module of the main repository.
 
@@ -38,9 +38,10 @@ PyDAL uses a separate stable release cycle to the rest of web2py. PyDAL releases
 
 ## Tests
 
-[![Build Status](https://img.shields.io/travis/web2py/web2py.svg?style=flat-square)](https://travis-ci.org/web2py/web2py)
+[![Build Status](https://img.shields.io/travis/web2py/web2py/master.svg?style=flat-square&label=Travis-CI)](https://travis-ci.org/web2py/web2py)
+[![MS Build Status](https://img.shields.io/appveyor/ci/web2py/web2py/master.svg?style=flat-square&label=Appveyor-CI)](https://ci.appveyor.com/project/web2py/web2py)
+[![Coverage Status](https://img.shields.io/codecov/c/github/web2py/web2py.svg?style=flat-square)](https://codecov.io/github/web2py/web2py)
 
-[![Coverage Status](https://img.shields.io/coveralls/web2py/web2py.svg?style=flat-square)](https://coveralls.io/r/web2py/web2py)
 
 ## Installation Instructions
 
@@ -63,7 +64,7 @@ That's it!!!
             packages/              > web2py submodules
               dal/
             contrib/               > third party libraries
-            tests/                 > unittests  
+            tests/                 > unittests
         applications/              > are the apps
             admin/                 > web based IDE
                 ...

@@ -83,7 +83,7 @@ Acknowledgements:
 Tornado code inspired by http://thomas.pelletier.im/2010/08/websocket-tornado-redis/
 
 """
-
+from __future__ import print_function
 import tornado.httpserver
 import tornado.websocket
 import tornado.ioloop
@@ -91,17 +91,40 @@ import tornado.web
 import hmac
 import sys
 import optparse
-import urllib
 import time
+import sys
+import gluon.utils
+
+if (sys.version_info[0] == 2):
+    from urllib import urlencode, urlopen
+    def to_bytes(obj, charset='utf-8', errors='strict'):
+        if obj is None:
+            return None
+        if isinstance(obj, (bytes, bytearray, buffer)):
+            return bytes(obj)
+        if isinstance(obj, unicode):
+            return obj.encode(charset, errors)
+        raise TypeError('Expected bytes')
+else:
+    from urllib.request import urlopen
+    from urllib.parse import urlencode
+    def to_bytes(obj, charset='utf-8', errors='strict'):
+        if obj is None:
+            return None
+        if isinstance(obj, (bytes, bytearray, memoryview)):
+            return bytes(obj)
+        if isinstance(obj, str):
+            return obj.encode(charset, errors)
+        raise TypeError('Expected bytes')
 
 listeners, names, tokens = {}, {}, {}
 
 
 def websocket_send(url, message, hmac_key=None, group='default'):
-    sig = hmac_key and hmac.new(hmac_key, message).hexdigest() or ''
-    params = urllib.urlencode(
+    sig = hmac_key and hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest() or ''
+    params = urlencode(
         {'message': message, 'signature': sig, 'group': group})
-    f = urllib.urlopen(url, params)
+    f = urlopen(url, to_bytes(params))
     data = f.read()
     f.close()
     return data
@@ -117,10 +140,11 @@ class PostHandler(tornado.web.RequestHandler):
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             group = self.request.arguments.get('group', ['default'])[0]
-            print '%s:MESSAGE to %s:%s' % (time.time(), group, message)
+            print('%s:MESSAGE to %s:%s' % (time.time(), group, message))
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
-                if not hmac.new(hmac_key, message).hexdigest() == signature:
+                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest()
+                if not gluon.utils.compare(to_native(signature), actual_signature):
                     self.send_error(401)
             for client in listeners.get(group, []):
                 client.write_message(message)
@@ -139,12 +163,17 @@ class TokenHandler(tornado.web.RequestHandler):
             message = self.request.arguments['message'][0]
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
-                if not hmac.new(hmac_key, message).hexdigest() == signature:
+                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest()
+                if not gluon.utils.compare(to_native(signature), actual_signature):
                     self.send_error(401)
             tokens[message] = None
 
 
 class DistributeHandler(tornado.websocket.WebSocketHandler):
+
+    def check_origin(self, origin):
+        return True
+
     def open(self, params):
         group, token, name = params.split('/') + [None, None]
         self.group = group or 'default'
@@ -163,7 +192,7 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
             client.write_message('+' + self.name)
         listeners[self.group].append(self)
         names[self] = self.name
-        print '%s:CONNECT to %s' % (time.time(), self.group)
+        print('%s:CONNECT to %s' % (time.time(), self.group))
 
     def on_message(self, message):
         pass
@@ -175,7 +204,7 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
         # notify clients that a member has left the groups
         for client in listeners.get(self.group, []):
             client.write_message('-' + self.name)
-        print '%s:DISCONNECT from %s' % (time.time(), self.group)
+        print('%s:DISCONNECT from %s' % (time.time(), self.group))
 
 # if your webserver is different from tornado server uncomment this
 # or override using something more restrictive:

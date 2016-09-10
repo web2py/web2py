@@ -9,11 +9,11 @@
 Utility functions for the Admin application
 -------------------------------------------
 """
+from __future__ import print_function
 import os
 import sys
 import traceback
 import zipfile
-import urllib
 from shutil import rmtree
 from gluon.utils import web2py_uuid
 from gluon.fileutils import w2p_pack, w2p_unpack, w2p_pack_plugin, w2p_unpack_plugin
@@ -22,7 +22,7 @@ from gluon.fileutils import read_file, write_file, parse_version
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 from gluon.cache import CacheOnDisk
-
+from gluon._compat import urlopen, to_native
 
 if not global_settings.web2py_runtime_gae:
     import site
@@ -58,7 +58,7 @@ def app_pack(app, request, raise_ex=False, filenames=None):
         filename = apath('../deposit/web2py.app.%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
-    except Exception, e:
+    except Exception as e:
         if raise_ex:
             raise
         return False
@@ -80,7 +80,7 @@ def app_pack_compiled(app, request, raise_ex=False):
         filename = apath('../deposit/%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), compiled=True)
         return filename
-    except Exception, e:
+    except Exception as e:
         if raise_ex:
             raise
         return None
@@ -119,9 +119,8 @@ def app_cleanup(app, request):
 
     # Remove cache files
     path = apath('%s/cache/' % app, request)
-    CacheOnDisk(folder=path).clear()
-    
     if os.path.exists(path):
+        CacheOnDisk(folder=path).clear()
         for f in os.listdir(path):
             try:
                 if f[:1] != '.': recursive_unlink(os.path.join(path, f))
@@ -130,7 +129,7 @@ def app_cleanup(app, request):
     return r
 
 
-def app_compile(app, request):
+def app_compile(app, request, skip_failed_views=False):
     """Compiles the application
 
     Args:
@@ -141,13 +140,13 @@ def app_compile(app, request):
         None if everything went ok, traceback text if errors are found
 
     """
-    from compileapp import compile_application, remove_compiled_application
+    from gluon.compileapp import compile_application, remove_compiled_application
     folder = apath(app, request)
     try:
-        compile_application(folder)
-        return None
+        failed_views = compile_application(folder, skip_failed_views)
+        return failed_views
     except (Exception, RestrictedError):
-        tb = traceback.format_exc(sys.exc_info)
+        tb = traceback.format_exc()
         remove_compiled_application(folder)
         return tb
 
@@ -166,7 +165,7 @@ def app_create(app, request, force=False, key=None, info=False):
             os.mkdir(path)
         except:
             if info:
-                return False, traceback.format_exc(sys.exc_info)
+                return False, traceback.format_exc()
             else:
                 return False
     elif not force:
@@ -196,7 +195,7 @@ def app_create(app, request, force=False, key=None, info=False):
     except:
         rmtree(path)
         if info:
-            return False, traceback.format_exc(sys.exc_info)
+            return False, traceback.format_exc()
         else:
             return False
 
@@ -336,13 +335,12 @@ def check_new_version(myversion, version_url):
 
     """
     try:
-        from urllib import urlopen
-        version = urlopen(version_url).read()
+        version = to_native(urlopen(version_url).read())
         pversion = parse_version(version)
         pmyversion = parse_version(myversion)
     except IOError:
         import traceback
-        print traceback.format_exc()
+        print(traceback.format_exc())
         return -1, myversion
 
     if pversion[:3]+pversion[-6:] > pmyversion[:3]+pmyversion[-6:]:
@@ -421,13 +419,13 @@ def upgrade(request, url='http://web2py.com'):
     full_url = url + '/examples/static/web2py_%s.zip' % version_type
     filename = abspath('web2py_%s_downloaded.zip' % version_type)
     try:
-        write_file(filename, urllib.urlopen(full_url).read(), 'wb')
-    except Exception, e:
+        write_file(filename, urlopen(full_url).read(), 'wb')
+    except Exception as e:
         return False, e
     try:
         unzip(filename, destination, subfolder)
         return True, None
-    except Exception, e:
+    except Exception as e:
         return False, e
 
 
@@ -444,9 +442,14 @@ def create_missing_folders():
             path = abspath(path, gluon=True)
             if not os.path.exists(path):
                 os.mkdir(path)
+    """
+    OLD sys.path dance
     paths = (global_settings.gluon_parent, abspath(
         'site-packages', gluon=True), abspath('gluon', gluon=True), '')
-    [add_path_first(path) for path in paths]
+    """
+    paths = (global_settings.gluon_parent, abspath(
+        'site-packages', gluon=True), '')
+    [add_path_first(path) for p in paths]
 
 
 def create_missing_app_folders(request):

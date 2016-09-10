@@ -13,144 +13,159 @@
 # * NOTE: 'I' and 'D' destinations are disabled, and simply print to STDOUT  *
 # ****************************************************************************
 
+from __future__ import division, with_statement
+
 from datetime import datetime
+from functools import wraps
 import math
 import errno
 import os, sys, zlib, struct, re, tempfile, struct
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
-# Check if PIL is available (tries importing both pypi version and corrected or manually installed versions).
-# Necessary for JPEG and GIF support.
-try:
-    try:
-        import Image
-    except:
-        from PIL import Image
-except ImportError:
-    Image = None
-
-
-from ttfonts import TTFontFile
-from fonts import fpdf_charwidths
-from php import substr, sprintf, print_r, UTF8ToUTF16BE, UTF8StringToArray
-
+from .ttfonts import TTFontFile
+from .fonts import fpdf_charwidths
+from .php import substr, sprintf, print_r, UTF8ToUTF16BE, UTF8StringToArray
+from .py3k import PY3K, pickle, urlopen, BytesIO, Image, basestring, unicode, exception, b, hashpath
 
 # Global variables
-FPDF_VERSION = '1.7.1'
+FPDF_VERSION = '1.7.2'
 FPDF_FONT_DIR = os.path.join(os.path.dirname(__file__),'font')
+FPDF_CACHE_MODE = 0 # 0 - in same folder, 1 - none, 2 - hash
+FPDF_CACHE_DIR = None
 SYSTEM_TTFONTS = None
 
-PY3K = sys.version_info >= (3, 0)
+PAGE_FORMATS = {
+    "a3": (841.89, 1190.55),
+    "a4": (595.28, 841.89),
+    "a5": (420.94, 595.28),
+    "letter": (612, 792),
+    "legal": (612, 1008),
+}
 
 def set_global(var, val):
     globals()[var] = val
 
+def load_cache(filename):
+    """Return unpickled object, or None if cache unavailable"""
+    if not filename:
+        return None
+    try:
+        with open(filename, "rb") as fh:
+            return pickle.load(fh)
+    except (IOError, ValueError):  # File missing, unsupported pickle, etc
+        return None
 
 class FPDF(object):
     "PDF Generation class"
 
-    def __init__(self, orientation='P',unit='mm',format='A4'):
+    def __init__(self, orientation = 'P', unit = 'mm', format = 'A4'):
         # Some checks
         self._dochecks()
         # Initialization of properties
-        self.offsets={}                 # array of object offsets
-        self.page=0                     # current page number
-        self.n=2                        # current object number
-        self.buffer=''                  # buffer holding in-memory PDF
-        self.pages={}                   # array containing pages
-        self.orientation_changes={}     # array indicating orientation changes
-        self.state=0                    # current document state
-        self.fonts={}                   # array of used fonts
-        self.font_files={}              # array of font files
-        self.diffs={}                   # array of encoding differences
-        self.images={}                  # array of used images
-        self.page_links={}              # array of links in pages
-        self.links={}                   # array of internal links
-        self.in_footer=0                # flag set when processing footer
-        self.lastw=0
-        self.lasth=0                    # height of last cell printed
-        self.font_family=''             # current font family
-        self.font_style=''              # current font style
-        self.font_size_pt=12            # current font size in points
-        self.underline=0                # underlining flag
-        self.draw_color='0 G'
-        self.fill_color='0 g'
-        self.text_color='0 g'
-        self.color_flag=0               # indicates whether fill and text colors are different
-        self.ws=0                       # word spacing
-        self.angle=0
+        self.offsets = {}               # array of object offsets
+        self.page = 0                   # current page number
+        self.n = 2                      # current object number
+        self.buffer = ''                # buffer holding in-memory PDF
+        self.pages = {}                 # array containing pages and metadata
+        self.state = 0                  # current document state
+        self.fonts = {}                 # array of used fonts
+        self.font_files = {}            # array of font files
+        self.diffs = {}                 # array of encoding differences
+        self.images = {}                # array of used images
+        self.page_links = {}            # array of links in pages
+        self.links = {}                 # array of internal links
+        self.in_footer = 0              # flag set when processing footer
+        self.lastw = 0
+        self.lasth = 0                  # height of last cell printed
+        self.font_family = ''           # current font family
+        self.font_style = ''            # current font style
+        self.font_size_pt = 12          # current font size in points
+        self.font_stretching = 100      # current font stretching
+        self.underline = 0              # underlining flag
+        self.draw_color = '0 G'
+        self.fill_color = '0 g'
+        self.text_color = '0 g'
+        self.color_flag = 0             # indicates whether fill and text colors are different
+        self.ws = 0                     # word spacing
+        self.angle = 0
         # Standard fonts
-        self.core_fonts={'courier':'Courier','courierB':'Courier-Bold','courierI':'Courier-Oblique','courierBI':'Courier-BoldOblique',
-            'helvetica':'Helvetica','helveticaB':'Helvetica-Bold','helveticaI':'Helvetica-Oblique','helveticaBI':'Helvetica-BoldOblique',
-            'times':'Times-Roman','timesB':'Times-Bold','timesI':'Times-Italic','timesBI':'Times-BoldItalic',
-            'symbol':'Symbol','zapfdingbats':'ZapfDingbats'}
+        self.core_fonts={'courier': 'Courier', 'courierB': 'Courier-Bold',
+            'courierI': 'Courier-Oblique', 'courierBI': 'Courier-BoldOblique',
+            'helvetica': 'Helvetica', 'helveticaB': 'Helvetica-Bold',
+            'helveticaI': 'Helvetica-Oblique', 
+            'helveticaBI': 'Helvetica-BoldOblique',
+            'times': 'Times-Roman', 'timesB': 'Times-Bold',
+            'timesI': 'Times-Italic', 'timesBI': 'Times-BoldItalic',
+            'symbol': 'Symbol', 'zapfdingbats': 'ZapfDingbats'}
+        self.core_fonts_encoding = "latin-1"
         # Scale factor
-        if(unit=='pt'):
-            self.k=1
-        elif(unit=='mm'):
-            self.k=72/25.4
-        elif(unit=='cm'):
-            self.k=72/2.54
-        elif(unit=='in'):
-            self.k=72
+        if unit == "pt":
+            self.k = 1
+        elif unit == "mm":
+            self.k = 72 / 25.4
+        elif unit == "cm":
+            self.k = 72 / 2.54
+        elif unit == 'in':
+            self.k = 72.
         else:
-            self.error('Incorrect unit: '+unit)
+            self.error("Incorrect unit: " + unit)
         # Page format
-        if(isinstance(format,basestring)):
-            format=format.lower()
-            if(format=='a3'):
-                format=(841.89,1190.55)
-            elif(format=='a4'):
-                format=(595.28,841.89)
-            elif(format=='a5'):
-                format=(420.94,595.28)
-            elif(format=='letter'):
-                format=(612,792)
-            elif(format=='legal'):
-                format=(612,1008)
-            else:
-                self.error('Unknown page format: '+format)
-            self.fw_pt=format[0]
-            self.fh_pt=format[1]
-        else:
-            self.fw_pt=format[0]*self.k
-            self.fh_pt=format[1]*self.k
-        self.fw=self.fw_pt/self.k
-        self.fh=self.fh_pt/self.k
+        self.fw_pt, self.fh_pt = self.get_page_format(format, self.k)
+        self.dw_pt = self.fw_pt
+        self.dh_pt = self.fh_pt
+        self.fw = self.fw_pt / self.k
+        self.fh = self.fh_pt / self.k
         # Page orientation
-        orientation=orientation.lower()
-        if(orientation=='p' or orientation=='portrait'):
-            self.def_orientation='P'
-            self.w_pt=self.fw_pt
-            self.h_pt=self.fh_pt
-        elif(orientation=='l' or orientation=='landscape'):
-            self.def_orientation='L'
-            self.w_pt=self.fh_pt
-            self.h_pt=self.fw_pt
+        orientation = orientation.lower()
+        if orientation in ('p', 'portrait'):
+            self.def_orientation = 'P'
+            self.w_pt = self.fw_pt
+            self.h_pt = self.fh_pt
+        elif orientation in ('l', 'landscape'):
+            self.def_orientation = 'L'
+            self.w_pt = self.fh_pt
+            self.h_pt = self.fw_pt
         else:
-            self.error('Incorrect orientation: '+orientation)
-        self.cur_orientation=self.def_orientation
-        self.w=self.w_pt/self.k
-        self.h=self.h_pt/self.k
+            self.error('Incorrect orientation: ' + orientation)
+        self.cur_orientation = self.def_orientation
+        self.w = self.w_pt / self.k
+        self.h = self.h_pt / self.k
         # Page margins (1 cm)
-        margin=28.35/self.k
-        self.set_margins(margin,margin)
+        margin = 28.35 / self.k
+        self.set_margins(margin, margin)
         # Interior cell margin (1 mm)
-        self.c_margin=margin/10.0
+        self.c_margin = margin / 10.0
         # line width (0.2 mm)
-        self.line_width=.567/self.k
+        self.line_width = .567 / self.k
         # Automatic page break
-        self.set_auto_page_break(1,2*margin)
+        self.set_auto_page_break(1, 2 * margin)
         # Full width display mode
         self.set_display_mode('fullwidth')
         # Enable compression
         self.set_compression(1)
         # Set default PDF version number
-        self.pdf_version='1.3'
+        self.pdf_version = '1.3'
+
+    @staticmethod
+    def get_page_format(format, k):
+        "Return scale factor, page w and h size in points"
+        if isinstance(format, basestring):
+            format = format.lower()
+            if format in PAGE_FORMATS:
+                return PAGE_FORMATS[format]
+            else:
+                raise RuntimeError("Unknown page format: " + format)
+        else:
+            return (format[0] * k, format[1] * k)
+
+    def check_page(fn):
+        "Decorator to protect drawing methods"
+        @wraps(fn)
+        def wrapper(self, *args, **kwargs):
+            if not self.page and not kwargs.get('split_only'):
+                self.error("No page open, you need to call add_page() first")
+            else:
+                return fn(self, *args, **kwargs)
+        return wrapper
 
     def set_margins(self, left,top,right=-1):
         "Set left, top and right margins"
@@ -181,7 +196,11 @@ class FPDF(object):
         self.page_break_trigger=self.h-margin
 
     def set_display_mode(self, zoom,layout='continuous'):
-        "Set display mode in viewer"
+        """Set display mode in viewer
+        
+        The "zoom" argument may be 'fullpage', 'fullwidth', 'real',
+        'default', or a number, interpreted as a percentage."""
+        
         if(zoom=='fullpage' or zoom=='fullwidth' or zoom=='real' or zoom=='default' or not isinstance(zoom,basestring)):
             self.zoom_mode=zoom
         else:
@@ -215,6 +234,13 @@ class FPDF(object):
         "Creator of document"
         self.creator=creator
 
+    def set_doc_option(self, opt, value):
+        "Set document option"
+        if opt == "core_fonts_encoding":
+            self.core_fonts_encoding = value
+        else:
+            self.error("Unknown document option \"%s\"" % str(opt))
+
     def alias_nb_pages(self, alias='{nb}'):
         "Define an alias for total number of pages"
         self.str_alias_nb_pages=alias
@@ -243,8 +269,8 @@ class FPDF(object):
         #close document
         self._enddoc()
 
-    def add_page(self, orientation=''):
-        "Start a new page"
+    def add_page(self, orientation = '', format = '', same = False):
+        "Start a new page, if same page format will be same as previous"
         if(self.state==0):
             self.open()
         family=self.font_family
@@ -258,6 +284,7 @@ class FPDF(object):
         fc=self.fill_color
         tc=self.text_color
         cf=self.color_flag
+        stretching=self.font_stretching
         if(self.page>0):
             #Page footer
             self.in_footer=1
@@ -266,7 +293,7 @@ class FPDF(object):
             #close page
             self._endpage()
         #Start new page
-        self._beginpage(orientation)
+        self._beginpage(orientation, format, same)
         #Set line cap style to square
         self._out('2 J')
         #Set line width
@@ -302,6 +329,9 @@ class FPDF(object):
             self._out(fc)
         self.text_color=tc
         self.color_flag=cf
+        #Restore stretching
+        if(stretching != 100):
+            self.set_stretching(stretching)
 
     def header(self):
         "Header to be implemented in your own inherited class"
@@ -342,8 +372,10 @@ class FPDF(object):
             self.text_color=sprintf('%.3f %.3f %.3f rg',r/255.0,g/255.0,b/255.0)
         self.color_flag=(self.fill_color!=self.text_color)
 
-    def get_string_width(self, s):
+    def get_string_width(self, s, normalized = False):
         "Get width of a string in the current font"
+        # normalized is parameter for internal use
+        s = s if normalized else self.normalize_text(s)
         cw=self.current_font['cw']
         w=0
         l=len(s)
@@ -359,9 +391,11 @@ class FPDF(object):
                 else:
                     w += 500
         else:
-            for i in xrange(0, l):
+            for i in range(0, l):
                 w += cw.get(s[i],0)
-        return w*self.font_size/1000.0
+        if self.font_stretching != 100:
+            w = w * self.font_stretching / 100.0
+        return w * self.font_size / 1000.0
 
     def set_line_width(self, width):
         "Set line width"
@@ -369,6 +403,7 @@ class FPDF(object):
         if(self.page>0):
             self._out(sprintf('%.2f w',width*self.k))
 
+    @check_page
     def line(self, x1,y1,x2,y2):
         "Draw a line"
         self._out(sprintf('%.2f %.2f m %.2f %.2f l S',x1*self.k,(self.h-y1)*self.k,x2*self.k,(self.h-y2)*self.k))
@@ -380,6 +415,7 @@ class FPDF(object):
             s = '[] 0 d'
         self._out(s)
 
+    @check_page
     def dashed_line(self, x1,y1,x2,y2, dash_length=1, space_length=1):
         """Draw a dashed line. Same interface as line() except:
            - dash_length: Length of the dash
@@ -388,6 +424,7 @@ class FPDF(object):
         self.line(x1, y1, x2, y2)
         self._set_dash()
 
+    @check_page
     def rect(self, x,y,w,h,style=''):
         "Draw a rectangle"
         if(style=='F'):
@@ -397,6 +434,43 @@ class FPDF(object):
         else:
             op='S'
         self._out(sprintf('%.2f %.2f %.2f %.2f re %s',x*self.k,(self.h-y)*self.k,w*self.k,-h*self.k,op))
+
+    @check_page
+    def ellipse(self, x,y,w,h,style=''):
+        "Draw a ellipse"
+        if(style=='F'):
+            op='f'
+        elif(style=='FD' or style=='DF'):
+            op='B'
+        else:
+            op='S'
+
+        cx = x + w/2.0
+        cy = y + h/2.0
+        rx = w/2.0
+        ry = h/2.0
+
+        lx = 4.0/3.0*(math.sqrt(2)-1)*rx
+        ly = 4.0/3.0*(math.sqrt(2)-1)*ry
+
+        self._out(sprintf('%.2f %.2f m %.2f %.2f %.2f %.2f %.2f %.2f c', 
+            (cx+rx)*self.k, (self.h-cy)*self.k, 
+            (cx+rx)*self.k, (self.h-(cy-ly))*self.k, 
+            (cx+lx)*self.k, (self.h-(cy-ry))*self.k, 
+            cx*self.k, (self.h-(cy-ry))*self.k))
+        self._out(sprintf('%.2f %.2f %.2f %.2f %.2f %.2f c', 
+            (cx-lx)*self.k, (self.h-(cy-ry))*self.k, 
+            (cx-rx)*self.k, (self.h-(cy-ly))*self.k, 
+            (cx-rx)*self.k, (self.h-cy)*self.k))
+        self._out(sprintf('%.2f %.2f %.2f %.2f %.2f %.2f c', 
+            (cx-rx)*self.k, (self.h-(cy+ly))*self.k, 
+            (cx-lx)*self.k, (self.h-(cy+ry))*self.k, 
+            cx*self.k, (self.h-(cy+ry))*self.k))
+        self._out(sprintf('%.2f %.2f %.2f %.2f %.2f %.2f c %s', 
+            (cx+lx)*self.k, (self.h-(cy+ry))*self.k, 
+            (cx+rx)*self.k, (self.h-(cy+ly))*self.k, 
+            (cx+rx)*self.k, (self.h-cy)*self.k, 
+            op))
 
     def add_font(self, family, style='', fname='', uni=False):
         "Add a TrueType or Type1 font"
@@ -413,7 +487,7 @@ class FPDF(object):
             # Font already added!
             return
         if (uni):
-            global SYSTEM_TTFONTS
+            global SYSTEM_TTFONTS, FPDF_CACHE_MODE, FPDF_CACHE_DIR
             if os.path.exists(fname):
                 ttffilename = fname
             elif (FPDF_FONT_DIR and
@@ -424,15 +498,16 @@ class FPDF(object):
                 ttffilename = os.path.join(SYSTEM_TTFONTS, fname)
             else:
                 raise RuntimeError("TTF Font file not found: %s" % fname)
-            unifilename = os.path.splitext(ttffilename)[0] + '.pkl'
             name = ''
-            if os.path.exists(unifilename):
-                fh = open(unifilename)
-                try:
-                    font_dict = pickle.load(fh)
-                finally:
-                    fh.close()
+            if FPDF_CACHE_MODE == 0:
+                unifilename = os.path.splitext(ttffilename)[0] + '.pkl'
+            elif FPDF_CACHE_MODE == 2:                
+                unifilename = os.path.join(FPDF_CACHE_DIR, \
+                    hashpath(ttffilename) + ".pkl")
             else:
+                unifilename = None
+            font_dict = load_cache(unifilename)
+            if font_dict is None:
                 ttf = TTFontFile()
                 ttf.getMetrics(ttffilename)
                 desc = {
@@ -461,18 +536,18 @@ class FPDF(object):
                     'originalsize': os.stat(ttffilename).st_size,
                     'cw': ttf.charWidths,
                     }
-                try:
-                    fh = open(unifilename, "w")
-                    pickle.dump(font_dict, fh)
-                    fh.close()
-                except IOError, e:
-                    if not e.errno == errno.EACCES:
-                        raise  # Not a permission error.
+                if unifilename:
+                    try:
+                        with open(unifilename, "wb") as fh:
+                            pickle.dump(font_dict, fh)
+                    except IOError:
+                        if not exception().errno == errno.EACCES:
+                            raise  # Not a permission error.
                 del ttf
             if hasattr(self,'str_alias_nb_pages'):
-                sbarr = range(0,57)   # include numbers in the subset!
+                sbarr = list(range(0,57))   # include numbers in the subset!
             else:
-                sbarr = range(0,32)
+                sbarr = list(range(0,32))
             self.fonts[fontkey] = {
                 'i': len(self.fonts)+1, 'type': font_dict['type'],
                 'name': font_dict['name'], 'desc': font_dict['desc'],
@@ -485,18 +560,16 @@ class FPDF(object):
                                         'type': "TTF", 'ttffile': ttffilename}
             self.font_files[fname] = {'type': "TTF"}
         else:
-            fontfile = open(fname)
-            try:
+            with open(fname, 'rb') as fontfile:
                 font_dict = pickle.load(fontfile)
-            finally:
-                fontfile.close()
             self.fonts[fontkey] = {'i': len(self.fonts)+1}
             self.fonts[fontkey].update(font_dict)
+            diff = font_dict.get('diff')
             if (diff):
                 #Search existing encodings
                 d = 0
                 nb = len(self.diffs)
-                for i in xrange(1, nb+1):
+                for i in range(1, nb+1):
                     if(self.diffs[i] == diff):
                         d = i
                         break
@@ -506,11 +579,12 @@ class FPDF(object):
                 self.fonts[fontkey]['diff'] = d
             filename = font_dict.get('filename')
             if (filename):
-                if (type == 'TrueType'):
+                if (font_dict['type'] == 'TrueType'):
+                    originalsize = font_dict['originalsize']
                     self.font_files[filename]={'length1': originalsize}
                 else:
-                    self.font_files[filename]={'length1': size1,
-                                               'length2': size2}
+                    self.font_files[filename]={'length1': font_dict['size1'],
+                                               'length2': font_dict['size2']}
 
     def set_font(self, family,style='',size=0):
         "Select a font; size given in points"
@@ -544,7 +618,8 @@ class FPDF(object):
                     name=os.path.join(FPDF_FONT_DIR,family)
                     if(family=='times' or family=='helvetica'):
                         name+=style.lower()
-                    execfile(name+'.font')
+                    with open(name+'.font') as file:
+                        exec(compile(file.read(), name+'.font', 'exec'))
                     if fontkey not in fpdf_charwidths:
                         self.error('Could not include font metric file for'+fontkey)
                 i=len(self.fonts)+1
@@ -570,6 +645,14 @@ class FPDF(object):
         if(self.page>0):
             self._out(sprintf('BT /F%d %.2f Tf ET',self.current_font['i'],self.font_size_pt))
 
+    def set_stretching(self, factor):
+        "Set from stretch factor percents (default: 100.0)"
+        if(self.font_stretching == factor):
+            return
+        self.font_stretching = factor
+        if (self.page > 0):
+            self._out(sprintf('BT %.2f Tz ET', self.font_stretching))
+
     def add_link(self):
         "Create a new internal link"
         n=len(self.links)+1
@@ -590,6 +673,7 @@ class FPDF(object):
             self.page_links[self.page] = []
         self.page_links[self.page] += [(x*self.k,self.h_pt-y*self.k,w*self.k,h*self.k,link),]
 
+    @check_page
     def text(self, x, y, txt=''):
         "Output a string"
         txt = self.normalize_text(txt)
@@ -606,6 +690,7 @@ class FPDF(object):
             s='q '+self.text_color+' '+s+' Q'
         self._out(s)
 
+    @check_page
     def rotate(self, angle, x=None, y=None):
         if x is None:
             x = self.x
@@ -627,6 +712,7 @@ class FPDF(object):
         "Accept automatic page break or not"
         return self.auto_page_break
 
+    @check_page
     def cell(self, w,h=0,txt='',border=0,ln=0,align='',fill=0,link=''):
         "Output a cell"
         txt = self.normalize_text(txt)
@@ -638,7 +724,7 @@ class FPDF(object):
             if(ws>0):
                 self.ws=0
                 self._out('0 Tw')
-            self.add_page(self.cur_orientation)
+            self.add_page(same = True)
             self.x=x
             if(ws>0):
                 self.ws=ws
@@ -668,9 +754,9 @@ class FPDF(object):
                 s+=sprintf('%.2f %.2f m %.2f %.2f l S ',x*k,(self.h-(y+h))*k,(x+w)*k,(self.h-(y+h))*k)
         if(txt!=''):
             if(align=='R'):
-                dx=w-self.c_margin-self.get_string_width(txt)
+                dx=w-self.c_margin-self.get_string_width(txt, True)
             elif(align=='C'):
-                dx=(w-self.get_string_width(txt))/2.0
+                dx=(w-self.get_string_width(txt, True))/2.0
             else:
                 dx=self.c_margin
             if(self.color_flag):
@@ -707,7 +793,7 @@ class FPDF(object):
             if(self.color_flag):
                 s+=' Q'
             if(link):
-                self.link(self.x+dx,self.y+.5*h-.5*self.font_size,self.get_string_width(txt),self.font_size,link)
+                self.link(self.x+dx,self.y+.5*h-.5*self.font_size,self.get_string_width(txt, True),self.font_size,link)
         if(s):
             self._out(s)
         self.lasth=h
@@ -719,6 +805,7 @@ class FPDF(object):
         else:
             self.x+=w
 
+    @check_page
     def multi_cell(self, w, h, txt='', border=0, align='J', fill=0, split_only=False):
         "Output text with automatic or explicit line breaks"
         txt = self.normalize_text(txt)
@@ -780,7 +867,7 @@ class FPDF(object):
                 ls=l
                 ns+=1
             if self.unifontsubset:
-                l += self.get_string_width(c) / self.font_size*1000.0
+                l += self.get_string_width(c, True) / self.font_size*1000.0
             else:
                 l += cw.get(c,0)
             if(l>wmax):
@@ -832,6 +919,7 @@ class FPDF(object):
             ret.append(substr(s,j,i-j))
         return ret
 
+    @check_page
     def write(self, h, txt='', link=''):
         "Output text in flowing mode"
         txt = self.normalize_text(txt)
@@ -864,7 +952,7 @@ class FPDF(object):
             if(c==' '):
                 sep=i
             if self.unifontsubset:
-                l += self.get_string_width(c) / self.font_size*1000.0
+                l += self.get_string_width(c, True) / self.font_size*1000.0
             else:
                 l += cw.get(c,0)
             if(l>wmax):
@@ -899,6 +987,7 @@ class FPDF(object):
         if(i!=j):
             self.cell(l/1000.0*self.font_size,h,substr(s,j),0,0,'',0,link)
 
+    @check_page
     def image(self, name, x=None, y=None, w=0,h=0,type='',link=''):
         "Put an image on the page"
         if not name in self.images:
@@ -955,7 +1044,7 @@ class FPDF(object):
             if (self.y + h > self.page_break_trigger and not self.in_footer and self.accept_page_break()):
                 #Automatic page break
                 x = self.x
-                self.add_page(self.cur_orientation)
+                self.add_page(same = True)
                 self.x = x
             y = self.y
             self.y += h
@@ -965,6 +1054,7 @@ class FPDF(object):
         if(link):
             self.link(x,y,w,h,link)
 
+    @check_page
     def ln(self, h=''):
         "Line Feed; default value is last cell height"
         self.x=self.l_margin
@@ -1002,49 +1092,53 @@ class FPDF(object):
         self.set_x(x)
 
     def output(self, name='',dest=''):
-        "Output PDF to some destination"
+        """Output PDF to some destination
+        
+        By default the PDF is written to sys.stdout. If a name is given, the
+        PDF is written to a new file. If dest='S' is given, the PDF data is
+        returned as a byte string."""
+        
         #Finish document if necessary
         if(self.state<3):
             self.close()
         dest=dest.upper()
         if(dest==''):
             if(name==''):
-                name='doc.pdf'
                 dest='I'
             else:
                 dest='F'
-        if dest=='I':
-            print self.buffer
-        elif dest=='D':
-            print self.buffer
+        if PY3K:
+            # manage binary data as latin1 until PEP461 or similar is implemented
+            buffer = self.buffer.encode("latin1")
+        else:
+            buffer = self.buffer
+        if dest in ('I', 'D'):
+            # Python < 3 writes byte data transparently without "buffer"
+            stdout = getattr(sys.stdout, 'buffer', sys.stdout)
+            stdout.write(buffer)
         elif dest=='F':
             #Save to local file
-            f=open(name,'wb')
-            if(not f):
-                self.error('Unable to create output file: '+name)
-            if PY3K:
-                # TODO: proper unicode support
-                f.write(self.buffer.encode("latin1"))
-            else:
-                f.write(self.buffer)
-            f.close()
+            with open(name,'wb') as f:
+                f.write(buffer)
         elif dest=='S':
-            #Return as a string
-            return self.buffer
+            #Return as a byte string
+            return buffer
         else:
             self.error('Incorrect output destination: '+dest)
-        return ''
 
     def normalize_text(self, txt):
         "Check that text input is in the correct format/encoding"
         # - for TTF unicode fonts: unicode object (utf8 encoding)
-        # - for built-in fonts: string instances (latin 1 encoding)
-        if self.unifontsubset and isinstance(txt, str):
-            txt = txt.decode('utf8')
-        elif not self.unifontsubset and isinstance(txt, unicode) and not PY3K:
-            txt = txt.encode('latin1')
+        # - for built-in fonts: string instances (encoding: latin-1, cp1252)
+        if not PY3K:
+            if self.unifontsubset and isinstance(txt, str):
+                return txt.decode("utf-8")
+            elif not self.unifontsubset and isinstance(txt, unicode):
+                return txt.encode(self.core_fonts_encoding)
+        else:
+            if not self.unifontsubset and self.core_fonts_encoding:
+                return txt.encode(self.core_fonts_encoding).decode("latin-1")
         return txt
-
 
     def _dochecks(self):
         #Check for locale-related bug
@@ -1059,73 +1153,86 @@ class FPDF(object):
         return FPDF_FONT_DIR+'/'
 
     def _putpages(self):
-        nb=self.page
-        if hasattr(self,'str_alias_nb_pages'):
+        nb = self.page
+        if hasattr(self, 'str_alias_nb_pages'):
             # Replace number of pages in fonts using subsets (unicode)
-            alias = UTF8ToUTF16BE(self.str_alias_nb_pages, False);
+            alias = UTF8ToUTF16BE(self.str_alias_nb_pages, False)
             r = UTF8ToUTF16BE(str(nb), False)
-            for n in xrange(1, nb+1):
-                self.pages[n] = self.pages[n].replace(alias, r)
+            for n in range(1, nb + 1):
+                self.pages[n]["content"] = \
+                    self.pages[n]["content"].replace(alias, r)
             # Now repeat for no pages in non-subset fonts
-            for n in xrange(1,nb+1):
-                self.pages[n]=self.pages[n].replace(self.str_alias_nb_pages,str(nb))
-        if(self.def_orientation=='P'):
-            w_pt=self.fw_pt
-            h_pt=self.fh_pt
+            for n in range(1,nb + 1):
+                self.pages[n]["content"] = \
+                    self.pages[n]["content"].replace(self.str_alias_nb_pages,
+                        str(nb))
+        if self.def_orientation == 'P':
+            dw_pt = self.dw_pt
+            dh_pt = self.dh_pt
         else:
-            w_pt=self.fh_pt
-            h_pt=self.fw_pt
+            dw_pt = self.dh_pt
+            dh_pt = self.dw_pt
         if self.compress:
-            filter='/Filter /FlateDecode '
+            filter = '/Filter /FlateDecode '
         else:
-            filter=''
-        for n in xrange(1,nb+1):
-            #Page
+            filter = ''
+        for n in range(1, nb + 1):
+            # Page
             self._newobj()
             self._out('<</Type /Page')
             self._out('/Parent 1 0 R')
-            if n in self.orientation_changes:
-                self._out(sprintf('/MediaBox [0 0 %.2f %.2f]',h_pt,w_pt))
+            w_pt = self.pages[n]["w_pt"]
+            h_pt = self.pages[n]["h_pt"]
+            if w_pt != dw_pt or h_pt != dh_pt:
+                self._out(sprintf('/MediaBox [0 0 %.2f %.2f]', w_pt, h_pt))
             self._out('/Resources 2 0 R')
             if self.page_links and n in self.page_links:
-                #Links
-                annots='/Annots ['
+                # Links
+                annots = '/Annots ['
                 for pl in self.page_links[n]:
-                    rect=sprintf('%.2f %.2f %.2f %.2f',pl[0],pl[1],pl[0]+pl[2],pl[1]-pl[3])
-                    annots+='<</Type /Annot /Subtype /Link /Rect ['+rect+'] /Border [0 0 0] '
-                    if(isinstance(pl[4],basestring)):
-                        annots+='/A <</S /URI /URI '+self._textstring(pl[4])+'>>>>'
+                    rect = sprintf('%.2f %.2f %.2f %.2f', pl[0], pl[1],
+                        pl[0] + pl[2], pl[1] - pl[3])
+                    annots += '<</Type /Annot /Subtype /Link /Rect [' + \
+                        rect + '] /Border [0 0 0] '
+                    if isinstance(pl[4], basestring):
+                        annots += '/A <</S /URI /URI ' + \
+                            self._textstring(pl[4]) + '>>>>'
                     else:
-                        l=self.links[pl[4]]
+                        l = self.links[pl[4]]
                         if l[0] in self.orientation_changes:
-                            h=w_pt
+                            h = w_pt
                         else:
-                            h=h_pt
-                        annots+=sprintf('/Dest [%d 0 R /XYZ 0 %.2f null]>>',1+2*l[0],h-l[1]*self.k)
-                self._out(annots+']')
-            if(self.pdf_version>'1.3'):
-                self._out('/Group <</Type /Group /S /Transparency /CS /DeviceRGB>>')
-            self._out('/Contents '+str(self.n+1)+' 0 R>>')
+                            h = h_pt
+                        annots += sprintf('/Dest [%d 0 R /XYZ 0 %.2f null]>>',
+                            1 + 2 * l[0], h - l[1] * self.k)
+                self._out(annots + ']')
+            if self.pdf_version > '1.3':
+                self._out('/Group <</Type /Group /S /Transparency"\
+                    "/CS /DeviceRGB>>')
+            self._out('/Contents ' + str(self.n + 1) + ' 0 R>>')
             self._out('endobj')
-            #Page content
+            # Page content
+            content = self.pages[n]["content"]
             if self.compress:
-                p = zlib.compress(self.pages[n])
+                # manage binary data as latin1 until PEP461 or similar is implemented
+                p = content.encode("latin1") if PY3K else content
+                p = zlib.compress(p)
             else:
-                p = self.pages[n]
+                p = content
             self._newobj()
-            self._out('<<'+filter+'/Length '+str(len(p))+'>>')
+            self._out('<<' + filter + '/Length ' + str(len(p)) + '>>')
             self._putstream(p)
             self._out('endobj')
-        #Pages root
-        self.offsets[1]=len(self.buffer)
+        # Pages root
+        self.offsets[1] = len(self.buffer)
         self._out('1 0 obj')
         self._out('<</Type /Pages')
-        kids='/Kids ['
-        for i in xrange(0,nb):
-            kids+=str(3+2*i)+' 0 R '
-        self._out(kids+']')
-        self._out('/Count '+str(nb))
-        self._out(sprintf('/MediaBox [0 0 %.2f %.2f]',w_pt,h_pt))
+        kids = '/Kids ['
+        for i in range(0, nb):
+            kids += str(3 + 2 * i) + ' 0 R '
+        self._out(kids + ']')
+        self._out('/Count ' + str(nb))
+        self._out(sprintf('/MediaBox [0 0 %.2f %.2f]', dw_pt, dh_pt))
         self._out('>>')
         self._out('endobj')
 
@@ -1136,17 +1243,13 @@ class FPDF(object):
             self._newobj()
             self._out('<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences ['+self.diffs[diff]+']>>')
             self._out('endobj')
-        for name,info in self.font_files.iteritems():
+        for name,info in self.font_files.items():
             if 'type' in info and info['type'] != 'TTF':
                 #Font file embedding
                 self._newobj()
                 self.font_files[name]['n']=self.n
-                font=''
-                f=open(self._getfontpath()+name,'rb',1)
-                if(not f):
-                    self.error('Font file not found')
-                font=f.read()
-                f.close()
+                with open(self._getfontpath()+name,'rb',1) as f:
+                    font=f.read()
                 compressed=(substr(name,-2)=='.z')
                 if(not compressed and 'length2' in info):
                     header=(ord(font[0])==128)
@@ -1165,7 +1268,9 @@ class FPDF(object):
                 self._out('>>')
                 self._putstream(font)
                 self._out('endobj')
-        for k,font in self.fonts.iteritems():
+        flist = [(x[1]["i"],x[0],x[1]) for x in self.fonts.items()]
+        flist.sort()
+        for idx,k,font in flist:
             #Font objects
             self.fonts[k]['n']=self.n+1
             type=font['type']
@@ -1200,15 +1305,15 @@ class FPDF(object):
                 self._newobj()
                 cw=font['cw']
                 s='['
-                for i in xrange(32,256):
-                    # Get doesn't rise exception; returns 0 instead of None if not set
+                for i in range(32,256):
+                    # Get doesn't raise exception; returns 0 instead of None if not set
                     s+=str(cw.get(chr(i)) or 0)+' '
                 self._out(s+']')
                 self._out('endobj')
                 #Descriptor
                 self._newobj()
                 s='<</Type /FontDescriptor /FontName /'+name
-                for k in ('Ascent', 'Descent', 'CapHeight', 'Falgs', 'FontBBox', 'ItalicAngle', 'StemV', 'MissingWidth'):
+                for k in ('Ascent', 'Descent', 'CapHeight', 'Flags', 'FontBBox', 'ItalicAngle', 'StemV', 'MissingWidth'):
                     s += ' /%s %s' % (k, font['desc'][k])
                 filename=font['file']
                 if(filename):
@@ -1311,7 +1416,11 @@ class FPDF(object):
                 for cc, glyph in codeToGlyph.items():
                     cidtogidmap[cc*2] = chr(glyph >> 8)
                     cidtogidmap[cc*2 + 1] = chr(glyph & 0xFF)
-                cidtogidmap = zlib.compress(''.join(cidtogidmap));
+                cidtogidmap = ''.join(cidtogidmap)
+                if PY3K:
+                    # manage binary data as latin1 until PEP461-like function is implemented
+                    cidtogidmap = cidtogidmap.encode("latin1")
+                cidtogidmap = zlib.compress(cidtogidmap);
                 self._newobj()
                 self._out('<</Length ' + str(len(cidtogidmap)) + '')
                 self._out('/Filter /FlateDecode')
@@ -1336,21 +1445,12 @@ class FPDF(object):
                 self.mtd(font)
 
     def _putTTfontwidths(self, font, maxUni):
-        cw127fname = os.path.splitext(font['unifilename'])[0] + '.cw127.pkl'
-        if (os.path.exists(cw127fname)):
-            fh = open(cw127fname);
-            try:
-                font_dict = pickle.load(fh)
-            finally:
-                fh.close()
-            rangeid = font_dict['rangeid']
-            range_ = font_dict['range']
-            prevcid = font_dict['prevcid']
-            prevwidth = font_dict['prevwidth']
-            interval = font_dict['interval']
-            range_interval = font_dict['range_interval']
-            startcid = 128
+        if font['unifilename']:
+            cw127fname = os.path.splitext(font['unifilename'])[0] + '.cw127.pkl'
         else:
+            cw127fname = None
+        font_dict = load_cache(cw127fname)
+        if font_dict is None:    
             rangeid = 0
             range_ = {}
             range_interval = {}
@@ -1358,31 +1458,39 @@ class FPDF(object):
             prevwidth = -1
             interval = False
             startcid = 1
+        else:
+            rangeid = font_dict['rangeid']
+            range_ = font_dict['range']
+            prevcid = font_dict['prevcid']
+            prevwidth = font_dict['prevwidth']
+            interval = font_dict['interval']
+            range_interval = font_dict['range_interval']
+            startcid = 128
         cwlen = maxUni + 1
 
         # for each character
+        subset = set(font['subset'])
         for cid in range(startcid, cwlen):
-            if (cid==128 and not os.path.exists(cw127fname)):
+            if cid == 128 and cw127fname and not os.path.exists(cw127fname):
                 try:
-                    fh = open(cw127fname, "wb")
-                    font_dict = {}
-                    font_dict['rangeid'] = rangeid
-                    font_dict['prevcid'] = prevcid
-                    font_dict['prevwidth'] = prevwidth
-                    font_dict['interval'] = interval
-                    font_dict['range_interval'] = range_interval
-                    font_dict['range'] = range_
-                    pickle.dump(font_dict, fh)
-                    fh.close()
-                except IOError, e:
-                    if not e.errno == errno.EACCES:
+                    with open(cw127fname, "wb") as fh:
+                        font_dict = {}
+                        font_dict['rangeid'] = rangeid
+                        font_dict['prevcid'] = prevcid
+                        font_dict['prevwidth'] = prevwidth
+                        font_dict['interval'] = interval
+                        font_dict['range_interval'] = range_interval
+                        font_dict['range'] = range_
+                        pickle.dump(font_dict, fh)
+                except IOError:
+                    if not exception().errno == errno.EACCES:
                         raise  # Not a permission error.
-            if (font['cw'][cid] == 0):
+            if cid > 255 and (cid not in subset): #
                 continue
             width = font['cw'][cid]
-            if (width == 65535): width = 0
-            if (cid > 255 and (cid not in font['subset']) or not cid): #
+            if (width == 0):
                 continue
+            if (width == 65535): width = 0
             if ('dw' not in font or (font['dw'] and width != font['dw'])):
                 if (cid == (prevcid + 1)):
                     if (width == prevwidth):
@@ -1439,8 +1547,10 @@ class FPDF(object):
     def _putimages(self):
         filter=''
         if self.compress:
-            filter='/Filter /FlateDecode '
-        for filename,info in self.images.iteritems():
+            filter='/Filter /FlateDecode '            
+        i = [(x[1]["i"],x[1]) for x in self.images.items()]
+        i.sort()
+        for idx,info in i:
             self._putimage(info)
             del info['data']
             if 'smask' in info:
@@ -1455,7 +1565,7 @@ class FPDF(object):
             self._out('/Width '+str(info['w']))
             self._out('/Height '+str(info['h']))
             if(info['cs']=='Indexed'):
-                self._out('/ColorSpace [/Indexed /DeviceRGB '+str(len(info['pal'])/3-1)+' '+str(self.n+1)+' 0 R]')
+                self._out('/ColorSpace [/Indexed /DeviceRGB '+str(len(info['pal'])//3-1)+' '+str(self.n+1)+' 0 R]')
             else:
                 self._out('/ColorSpace /'+info['cs'])
                 if(info['cs']=='DeviceCMYK'):
@@ -1467,7 +1577,7 @@ class FPDF(object):
                 self._out('/DecodeParms <<' + info['dp'] + '>>')
             if('trns' in info and isinstance(info['trns'], list)):
                 trns=''
-                for i in xrange(0,len(info['trns'])):
+                for i in range(0,len(info['trns'])):
                     trns+=str(info['trns'][i])+' '+str(info['trns'][i])+' '
                 self._out('/Mask ['+trns+']')
             if('smask' in info):
@@ -1493,14 +1603,18 @@ class FPDF(object):
                 self._out('endobj')
 
     def _putxobjectdict(self):
-        for image in self.images.values():
-            self._out('/I'+str(image['i'])+' '+str(image['n'])+' 0 R')
+        i = [(x["i"],x["n"]) for x in self.images.values()]
+        i.sort()
+        for idx,n in i:
+            self._out('/I'+str(idx)+' '+str(n)+' 0 R')
 
     def _putresourcedict(self):
         self._out('/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]')
         self._out('/Font <<')
-        for font in self.fonts.values():
-            self._out('/F'+str(font['i'])+' '+str(font['n'])+' 0 R')
+        f = [(x["i"],x["n"]) for x in self.fonts.values()]
+        f.sort()
+        for idx,n in f:
+            self._out('/F'+str(idx)+' '+str(n)+' 0 R')
         self._out('>>')
         self._out('/XObject <<')
         self._putxobjectdict()
@@ -1541,7 +1655,7 @@ class FPDF(object):
         elif(self.zoom_mode=='real'):
             self._out('/OpenAction [3 0 R /XYZ null null 1]')
         elif(not isinstance(self.zoom_mode,basestring)):
-            self._out('/OpenAction [3 0 R /XYZ null null '+(self.zoom_mode/100)+']')
+            self._out(sprintf('/OpenAction [3 0 R /XYZ null null %s]',self.zoom_mode/100))
         if(self.layout_mode=='single'):
             self._out('/PageLayout /SinglePage')
         elif(self.layout_mode=='continuous'):
@@ -1578,7 +1692,7 @@ class FPDF(object):
         self._out('xref')
         self._out('0 '+(str(self.n+1)))
         self._out('0000000000 65535 f ')
-        for i in xrange(1,self.n+1):
+        for i in range(1,self.n+1):
             self._out(sprintf('%010d 00000 n ',self.offsets[i]))
         #Trailer
         self._out('trailer')
@@ -1590,34 +1704,43 @@ class FPDF(object):
         self._out('%%EOF')
         self.state=3
 
-    def _beginpage(self, orientation):
-        self.page+=1
-        self.pages[self.page]=''
-        self.state=2
-        self.x=self.l_margin
-        self.y=self.t_margin
-        self.font_family=''
-        #Page orientation
-        if(not orientation):
-            orientation=self.def_orientation
-        else:
-            orientation=orientation[0].upper()
-            if(orientation!=self.def_orientation):
-                self.orientation_changes[self.page]=1
-        if(orientation!=self.cur_orientation):
-            #Change orientation
-            if(orientation=='P'):
-                self.w_pt=self.fw_pt
-                self.h_pt=self.fh_pt
-                self.w=self.fw
-                self.h=self.fh
+    def _beginpage(self, orientation, format, same):
+        self.page += 1
+        self.pages[self.page] = {"content": ""}
+        self.state = 2
+        self.x = self.l_margin
+        self.y = self.t_margin
+        self.font_family = ''
+        self.font_stretching = 100
+        if not same:
+            # Page format
+            if format:
+                # Change page format
+                self.fw_pt, self.fh_pt = self.get_page_format(format, self.k)
             else:
-                self.w_pt=self.fh_pt
-                self.h_pt=self.fw_pt
-                self.w=self.fh
-                self.h=self.fw
-            self.page_break_trigger=self.h-self.b_margin
-            self.cur_orientation=orientation
+                # Set to default format
+                self.fw_pt = self.dw_pt
+                self.fh_pt = self.dh_pt
+            self.fw = self.fw_pt / self.k
+            self.fh = self.fh_pt / self.k
+            # Page orientation
+            if not orientation:
+                orientation = self.def_orientation
+            else:
+                orientation = orientation[0].upper()
+            if orientation == 'P':
+                self.w_pt = self.fw_pt
+                self.h_pt = self.fh_pt
+            else:                    
+                self.w_pt = self.fh_pt
+                self.h_pt = self.fw_pt
+            self.w = self.w_pt / self.k
+            self.h = self.h_pt / self.k
+            self.cur_orientation = orientation
+            self.page_break_trigger = self.h - self.b_margin
+            self.cur_orientation = orientation
+        self.pages[self.page]["w_pt"] = self.w_pt
+        self.pages[self.page]["h_pt"] = self.h_pt
 
     def _endpage(self):
         #End of page contents
@@ -1629,38 +1752,60 @@ class FPDF(object):
         self.offsets[self.n]=len(self.buffer)
         self._out(str(self.n)+' 0 obj')
 
-    def _dounderline(self, x,y,txt):
+    def _dounderline(self, x, y, txt):
         #Underline text
         up=self.current_font['up']
         ut=self.current_font['ut']
-        w=self.get_string_width(txt)+self.ws*txt.count(' ')
+        w=self.get_string_width(txt, True)+self.ws*txt.count(' ')
         return sprintf('%.2f %.2f %.2f %.2f re f',x*self.k,(self.h-(y-up/1000.0*self.font_size))*self.k,w*self.k,-ut/1000.0*self.font_size_pt)
+
+    def load_resource(self, reason, filename):
+        "Load external file"
+        # by default loading from network is allowed for all images
+        if reason == "image":
+            if filename.startswith("http://") or filename.startswith("https://"):
+                f = BytesIO(urlopen(filename).read())
+            else:
+                f = open(filename, "rb")
+            return f
+        else:
+            self.error("Unknown resource loading reason \"%s\"" % reason)
 
     def _parsejpg(self, filename):
         # Extract info from a JPEG file
-        if Image is None:
-            self.error('PIL not installed')
+        f = None
         try:
-            f = open(filename, 'rb')
-            im = Image.open(f)
-        except Exception, e:
-            self.error('Missing or incorrect image file: %s. error: %s' % (filename, str(e)))
-        else:
-            a = im.size
-        # We shouldn't get into here, as Jpeg is RGB=8bpp right(?), but, just in case...
-        bpc=8
-        if im.mode == 'RGB':
-            colspace='DeviceRGB'
-        elif im.mode == 'CMYK':
-            colspace='DeviceCMYK'
-        else:
-            colspace='DeviceGray'
+            f = self.load_resource("image", filename)
+            while True:
+                markerHigh, markerLow = struct.unpack('BB', f.read(2))
+                if markerHigh != 0xFF or markerLow < 0xC0:
+                    raise SyntaxError('No JPEG marker found')
+                elif markerLow == 0xDA: # SOS
+                    raise SyntaxError('No JPEG SOF marker found')
+                elif (markerLow == 0xC8 or # JPG
+                      (markerLow >= 0xD0 and markerLow <= 0xD9) or # RSTx
+                      (markerLow >= 0xF0 and markerLow <= 0xFD)): # JPGx
+                    pass
+                else:
+                    dataSize, = struct.unpack('>H', f.read(2))
+                    data = f.read(dataSize - 2) if dataSize > 2 else ''
+                    if ((markerLow >= 0xC0 and markerLow <= 0xC3) or # SOF0 - SOF3
+                        (markerLow >= 0xC5 and markerLow <= 0xC7) or # SOF4 - SOF7
+                        (markerLow >= 0xC9 and markerLow <= 0xCB) or # SOF9 - SOF11
+                        (markerLow >= 0xCD and markerLow <= 0xCF)): # SOF13 - SOF15
+                        bpc, height, width, layers = struct.unpack_from('>BHHB', data)
+                        colspace = 'DeviceRGB' if layers == 3 else ('DeviceCMYK' if layers == 4 else 'DeviceGray')
+                        break
+        except Exception:
+            if f:
+                f.close()
+            self.error('Missing or incorrect image file: %s. error: %s' % (filename, str(exception())))
 
-        # Read whole file from the start
-        f.seek(0)
-        data = f.read()
-        f.close()
-        return {'w':a[0],'h':a[1],'cs':colspace,'bpc':bpc,'f':'DCTDecode','data':data}
+        with f:
+            # Read whole file from the start
+            f.seek(0)
+            data = f.read()
+        return {'w':width,'h':height,'cs':colspace,'bpc':bpc,'f':'DCTDecode','data':data}
 
     def _parsegif(self, filename):
         # Extract info from a GIF file (via PNG conversion)
@@ -1668,13 +1813,13 @@ class FPDF(object):
             self.error('PIL is required for GIF support')
         try:
             im = Image.open(filename)
-        except Exception, e:
-            self.error('Missing or incorrect image file: %s. error: %s' % (filename, str(e)))
+        except Exception:
+            self.error('Missing or incorrect image file: %s. error: %s' % (filename, str(exception())))
         else:
             # Use temporary file
-            f = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-            tmp = f.name
-            f.close()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as \
+                    f:
+                tmp = f.name
             if "transparency" in im.info:
                 im.save(tmp, transparency = im.info['transparency'])
             else:
@@ -1683,27 +1828,25 @@ class FPDF(object):
             os.unlink(tmp)
         return info
 
-    def _parsepng(self, name):
+    def _parsepng(self, filename):
         #Extract info from a PNG file
-        if name.startswith("http://") or name.startswith("https://"):
-            import urllib
-            f = urllib.urlopen(name)
-        else:
-            f=open(name,'rb')
-        if(not f):
-            self.error("Can't open image file: "+name)
+        f = self.load_resource("image", filename)
         #Check signature
-        if(f.read(8)!='\x89'+'PNG'+'\r'+'\n'+'\x1a'+'\n'):
-            self.error('Not a PNG file: '+name)
+        magic = f.read(8).decode("latin1")
+        signature = '\x89'+'PNG'+'\r'+'\n'+'\x1a'+'\n'
+        if not PY3K: signature = signature.decode("latin1")
+        if(magic!=signature):
+            self.error('Not a PNG file: ' + filename)
         #Read header chunk
         f.read(4)
-        if(f.read(4)!='IHDR'):
-            self.error('Incorrect PNG file: '+name)
+        chunk = f.read(4).decode("latin1")
+        if(chunk!='IHDR'):
+            self.error('Incorrect PNG file: ' + filename)
         w=self._freadint(f)
         h=self._freadint(f)
         bpc=ord(f.read(1))
         if(bpc>8):
-            self.error('16-bit depth not supported: '+name)
+            self.error('16-bit depth not supported: ' + filename)
         ct=ord(f.read(1))
         if(ct==0 or ct==4):
             colspace='DeviceGray'
@@ -1712,13 +1855,13 @@ class FPDF(object):
         elif(ct==3):
             colspace='Indexed'
         else:
-            self.error('Unknown color type: '+name)
+            self.error('Unknown color type: ' + filename)
         if(ord(f.read(1))!=0):
-            self.error('Unknown compression method: '+name)
+            self.error('Unknown compression method: ' + filename)
         if(ord(f.read(1))!=0):
-            self.error('Unknown filter method: '+name)
+            self.error('Unknown filter method: ' + filename)
         if(ord(f.read(1))!=0):
-            self.error('Interlacing not supported: '+name)
+            self.error('Interlacing not supported: ' + filename)
         f.read(4)
         dp='/Predictor 15 /Colors '
         if colspace == 'DeviceRGB':
@@ -1729,11 +1872,11 @@ class FPDF(object):
         #Scan chunks looking for palette, transparency and image data
         pal=''
         trns=''
-        data=''
+        data=bytes() if PY3K else str()
         n=1
         while n != None:
             n=self._freadint(f)
-            type=f.read(4)
+            type=f.read(4).decode("latin1")
             if(type=='PLTE'):
                 #Read palette
                 pal=f.read(n)
@@ -1746,7 +1889,7 @@ class FPDF(object):
                 elif(ct==2):
                     trns=[ord(substr(t,1,1)),ord(substr(t,3,1)),ord(substr(t,5,1))]
                 else:
-                    pos=t.find('\x00')
+                    pos=t.find('\x00'.encode("latin1"))
                     if(pos!=-1):
                         trns=[pos,]
                 f.read(4)
@@ -1759,34 +1902,38 @@ class FPDF(object):
             else:
                 f.read(n+4)
         if(colspace=='Indexed' and not pal):
-            self.error('Missing palette in '+name)
+            self.error('Missing palette in ' + filename)
         f.close()
         info = {'w':w,'h':h,'cs':colspace,'bpc':bpc,'f':'FlateDecode','dp':dp,'pal':pal,'trns':trns,}
         if(ct>=4):
             # Extract alpha channel
             data = zlib.decompress(data)
-            color = '';
-            alpha = '';
+            color = b('')
+            alpha = b('')
             if(ct==4):
                 # Gray image
                 length = 2*w
                 for i in range(h):
                     pos = (1+length)*i
-                    color += data[pos]
-                    alpha += data[pos]
+                    color += b(data[pos])
+                    alpha += b(data[pos])
                     line = substr(data, pos+1, length)
-                    color += re.sub('(.).',lambda m: m.group(1),line, flags=re.DOTALL)
-                    alpha += re.sub('.(.)',lambda m: m.group(1),line, flags=re.DOTALL)
+                    re_c = re.compile('(.).'.encode("ascii"), flags=re.DOTALL)
+                    re_a = re.compile('.(.)'.encode("ascii"), flags=re.DOTALL)
+                    color += re_c.sub(lambda m: m.group(1), line)
+                    alpha += re_a.sub(lambda m: m.group(1), line)
             else:
                 # RGB image
                 length = 4*w
                 for i in range(h):
                     pos = (1+length)*i
-                    color += data[pos]
-                    alpha += data[pos]
+                    color += b(data[pos])
+                    alpha += b(data[pos])
                     line = substr(data, pos+1, length)
-                    color += re.sub('(.{3}).',lambda m: m.group(1),line, flags=re.DOTALL)
-                    alpha += re.sub('.{3}(.)',lambda m: m.group(1),line, flags=re.DOTALL)
+                    re_c = re.compile('(...).'.encode("ascii"), flags=re.DOTALL)
+                    re_a = re.compile('...(.)'.encode("ascii"), flags=re.DOTALL)
+                    color += re_c.sub(lambda m: m.group(1), line)
+                    alpha += re_a.sub(lambda m: m.group(1), line)
             del data
             data = zlib.compress(color)
             info['smask'] = zlib.compress(alpha)
@@ -1817,11 +1964,19 @@ class FPDF(object):
 
     def _out(self, s):
         #Add a line to the document
-        if(self.state==2):
-            self.pages[self.page]+=s+"\n"
+        if PY3K and isinstance(s, bytes):
+            # manage binary data as latin1 until PEP461-like function is implemented
+            s = s.decode("latin1")          
+        elif not PY3K and isinstance(s, unicode):
+            s = s.encode("latin1")    # default encoding (font name and similar)      
+        elif not isinstance(s, basestring):
+            s = str(s)
+        if(self.state == 2):
+            self.pages[self.page]["content"] += (s + "\n")
         else:
-            self.buffer+=str(s)+"\n"
+            self.buffer += (s + "\n")
 
+    @check_page
     def interleaved2of5(self, txt, x, y, w=1.0, h=10.0):
         "Barcode I2of5 (numeric), adds a 0 if odd lenght"
         narrow = w / 3.0
@@ -1841,7 +1996,7 @@ class FPDF(object):
         # add start and stop codes
         code = 'AA' + code.lower() + 'ZA'
 
-        for i in xrange(0, len(code), 2):
+        for i in range(0, len(code), 2):
             # choose next pair of digits
             char_bar = code[i]
             char_space = code[i+1]
@@ -1853,10 +2008,10 @@ class FPDF(object):
 
             # create a wide/narrow-seq (first digit=bars, second digit=spaces)
             seq = ''
-            for s in xrange(0, len(bar_char[char_bar])):
+            for s in range(0, len(bar_char[char_bar])):
                 seq += bar_char[char_bar][s] + bar_char[char_space][s]
 
-            for bar in xrange(0, len(seq)):
+            for bar in range(0, len(seq)):
                 # set line_width depending on value
                 if seq[bar] == 'n':
                     line_width = narrow
@@ -1870,51 +2025,35 @@ class FPDF(object):
                 x += line_width
 
 
+    @check_page
     def code39(self, txt, x, y, w=1.5, h=5.0):
-        "Barcode 3of9"
-        wide = w
-        narrow = w / 3.0
-        gap = narrow
-
-        bar_char={'0': 'nnnwwnwnn', '1': 'wnnwnnnnw', '2': 'nnwwnnnnw',
-                  '3': 'wnwwnnnnn', '4': 'nnnwwnnnw', '5': 'wnnwwnnnn',
-                  '6': 'nnwwwnnnn', '7': 'nnnwnnwnw', '8': 'wnnwnnwnn',
-                  '9': 'nnwwnnwnn', 'A': 'wnnnnwnnw', 'B': 'nnwnnwnnw',
-                  'C': 'wnwnnwnnn', 'D': 'nnnnwwnnw', 'E': 'wnnnwwnnn',
-                  'F': 'nnwnwwnnn', 'G': 'nnnnnwwnw', 'H': 'wnnnnwwnn',
-                  'I': 'nnwnnwwnn', 'J': 'nnnnwwwnn', 'K': 'wnnnnnnww',
-                  'L': 'nnwnnnnww', 'M': 'wnwnnnnwn', 'N': 'nnnnwnnww',
-                  'O': 'wnnnwnnwn', 'P': 'nnwnwnnwn', 'Q': 'nnnnnnwww',
-                  'R': 'wnnnnnwwn', 'S': 'nnwnnnwwn', 'T': 'nnnnwnwwn',
-                  'U': 'wwnnnnnnw', 'V': 'nwwnnnnnw', 'W': 'wwwnnnnnn',
-                  'X': 'nwnnwnnnw', 'Y': 'wwnnwnnnn', 'Z': 'nwwnwnnnn',
-                  '-': 'nwnnnnwnw', '.': 'wwnnnnwnn', ' ': 'nwwnnnwnn',
-                  '*': 'nwnnwnwnn', '$': 'nwnwnwnnn', '/': 'nwnwnnnwn',
-                  '+': 'nwnnnwnwn', '%': 'nnnwnwnwn'}
-
+        """Barcode 3of9"""
+        dim = {'w': w, 'n': w/3.}
+        chars = {
+            '0': 'nnnwwnwnn', '1': 'wnnwnnnnw', '2': 'nnwwnnnnw',
+            '3': 'wnwwnnnnn', '4': 'nnnwwnnnw', '5': 'wnnwwnnnn',
+            '6': 'nnwwwnnnn', '7': 'nnnwnnwnw', '8': 'wnnwnnwnn',
+            '9': 'nnwwnnwnn', 'A': 'wnnnnwnnw', 'B': 'nnwnnwnnw',
+            'C': 'wnwnnwnnn', 'D': 'nnnnwwnnw', 'E': 'wnnnwwnnn',
+            'F': 'nnwnwwnnn', 'G': 'nnnnnwwnw', 'H': 'wnnnnwwnn',
+            'I': 'nnwnnwwnn', 'J': 'nnnnwwwnn', 'K': 'wnnnnnnww',
+            'L': 'nnwnnnnww', 'M': 'wnwnnnnwn', 'N': 'nnnnwnnww',
+            'O': 'wnnnwnnwn', 'P': 'nnwnwnnwn', 'Q': 'nnnnnnwww',
+            'R': 'wnnnnnwwn', 'S': 'nnwnnnwwn', 'T': 'nnnnwnwwn',
+            'U': 'wwnnnnnnw', 'V': 'nwwnnnnnw', 'W': 'wwwnnnnnn',
+            'X': 'nwnnwnnnw', 'Y': 'wwnnwnnnn', 'Z': 'nwwnwnnnn',
+            '-': 'nwnnnnwnw', '.': 'wwnnnnwnn', ' ': 'nwwnnnwnn',
+            '*': 'nwnnwnwnn', '$': 'nwnwnwnnn', '/': 'nwnwnnnwn',
+            '+': 'nwnnnwnwn', '%': 'nnnwnwnwn',
+        }
         self.set_fill_color(0)
-        code = txt
-
-        code = code.upper()
-        for i in xrange (0, len(code), 2):
-            char_bar = code[i]
-
-            if not char_bar in bar_char.keys():
-                raise RuntimeError ('Char "%s" invalid for Code39' % char_bar)
-
-            seq= ''
-            for s in xrange(0, len(bar_char[char_bar])):
-                seq += bar_char[char_bar][s]
-
-            for bar in xrange(0, len(seq)):
-                if seq[bar] == 'n':
-                    line_width = narrow
-                else:
-                    line_width = wide
-
-                if bar % 2 == 0:
-                    self.rect(x, y, line_width, h, 'F')
-                x += line_width
-        x += gap
+        for c in txt.upper():
+            if c not in chars:
+                raise RuntimeError('Invalid char "%s" for Code39' % c)
+            for i, d in enumerate(chars[c]):
+                if i % 2 == 0:
+                    self.rect(x, y, dim[d], h, 'F')
+                x += dim[d]
+            x += dim['n']
 
 

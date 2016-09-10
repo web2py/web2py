@@ -5,13 +5,11 @@
 
 import unittest
 import os
-from fix_path import fix_sys_path
 
-fix_sys_path(__file__)
-
+from gluon._compat import to_bytes
 from gluon.storage import Storage
-import gluon.contrib.fpdf as fpdf
-import gluon.contrib.pyfpdf as pyfpdf
+from gluon.contrib import fpdf as fpdf
+from gluon.contrib import pyfpdf as pyfpdf
 from gluon.contrib.appconfig import AppConfig
 
 
@@ -42,8 +40,8 @@ class TestContribs(unittest.TestCase):
         pdf.write(5, 'hello world')
         pdf_out = pdf.output('', 'S')
 
-        self.assertTrue(fpdf.FPDF_VERSION in pdf_out, 'version string')
-        self.assertTrue('hello world' in pdf_out, 'sample message')
+        self.assertTrue(to_bytes(fpdf.FPDF_VERSION) in pdf_out, 'version string')
+        self.assertTrue(to_bytes('hello world') in pdf_out, 'sample message')
 
     def test_appconfig(self):
         """
@@ -67,6 +65,3 @@ class TestContribs(unittest.TestCase):
         self.assertEqual(myappconfig.take('config3.key2'), 2)
 
         current.request = {}
-
-if __name__ == '__main__':
-    unittest.main()

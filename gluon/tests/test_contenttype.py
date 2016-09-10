@@ -6,12 +6,10 @@
 """
 
 import unittest
-from fix_path import fix_sys_path
 
-fix_sys_path(__file__)
 
-from contenttype import contenttype
-
+from gluon.contenttype import contenttype
+from gluon._compat import iteritems
 
 class TestContentType(unittest.TestCase):
 
@@ -31,13 +29,9 @@ class TestContentType(unittest.TestCase):
             '.w2p': 'application/w2p',
             '.md': 'text/x-markdown; charset=utf-8'
         }
-        for k, v in mapping.iteritems():
+        for k, v in iteritems(mapping):
             self.assertEqual(contenttype(k), v)
 
         # test without dot extension
         rtn = contenttype('png')
         self.assertEqual(rtn, 'text/plain; charset=utf-8')
-
-
-if __name__ == '__main__':
-    unittest.main()

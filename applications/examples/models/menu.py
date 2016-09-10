@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 response.menu = [
-    (T('Home'), False, URL('default', 'index')),
-    (T('About'), False, URL('default', 'what')),
-    (T('Download'), False, URL('default', 'download')),
-    (T('Docs & Resources'), False, URL('default', 'documentation')),
-    (T('Support'), False, URL('default', 'support')),
-    (T('Contributors'), False, URL('default', 'who'))]
+    (T('Home'), request.controller == 'default' and request.function == 'index', URL('default', 'index')),
+    (T('About'), request.controller == 'default' and request.function == 'what', URL('default', 'what')),
+    (T('Download'), request.controller == 'default' and request.function == 'download', URL('default', 'download')),
+    (T('Docs & Resources'), request.controller == 'default' and request.function == 'documentation', URL('default', 'documentation')),
+    (T('Support'), request.controller == 'default' and request.function == 'support', URL('default', 'support')),
+    (T('Contributors'), request.controller == 'default' and request.function == 'who', URL('default', 'who'))]
 
 #########################################################################
 ## Changes the menu active item

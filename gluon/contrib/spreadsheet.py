@@ -3,11 +3,12 @@
 """
 Developed by Massimo Di Pierro, optional component of web2py, BSDv3 license.
 """
+from __future__ import print_function
 
 import re
 import pickle
 import copy
-import simplejson
+import json
 
 
 def quote(text):
@@ -16,7 +17,7 @@ def quote(text):
 
 class Node:
     def __init__(self, name, value, url='.', readonly=False, active=True,
-                 onchange=None, **kwarg):
+                 onchange=None, select=False, size=4, **kwarg):
         self.url = url
         self.name = name
         self.value = str(value)
@@ -26,11 +27,21 @@ class Node:
         self.readonly = readonly
         self.active = active
         self.onchange = onchange
-        self.size = 4
+        self.size = size
         self.locked = False
+        self.select = value if select and not isinstance(value, str) else False
 
     def xml(self):
-        return """<input name="%s" id="%s" value="%s" size="%s"
+        if self.select:
+            selectAttributes = dict(_name=self.name,_id=self.name,_size=self.size,
+                                    _onblur="ajax('%s/blur',['%s']);"%(self.url,self.name))
+            #                        _onkeyup="ajax('%s/keyup',['%s'], ':eval');"%(self.url,self.name),
+            #                        _onfocus="ajax('%s/focus',['%s'], ':eval');"%(self.url,self.name),
+            for k,v in selectAttributes.items():
+                self.select[k] = v
+            return self.select.xml()
+        else:
+            return """<input name="%s" id="%s" value="%s" size="%s"
         onkeyup="ajax('%s/keyup',['%s'], ':eval');"
         onfocus="ajax('%s/focus',['%s'], ':eval');"
         onblur="ajax('%s/blur',['%s'], ':eval');" %s/>
@@ -245,7 +256,7 @@ class Sheet:
         try:
             r, c = Sheet.pregex.findall(key)
             r, c = int(r), int(c)
-        except (ValueError, IndexError, TypeError), e:
+        except (ValueError, IndexError, TypeError) as e:
             error = "%s. %s" % \
                 ("Unexpected position parameter",
                  "Must be a key of type 'rncn'")
@@ -282,7 +293,7 @@ class Sheet:
         # modified: dict of modified cells for client-side
 
         """
-        data = simplejson.loads(data)
+        data = json.loads(data)
 
         # record update dict
         changes = {}
@@ -371,7 +382,7 @@ class Sheet:
                     result["db_callback"] = db_callback
             else:
                 result["message"] = "Sheet.process Error. No db found."
-            return simplejson.dumps(result)
+            return json.dumps(result)
 
         return jquery
 
@@ -391,7 +402,8 @@ class Sheet:
 
     def __init__(self, rows, cols, url='.', readonly=False,
                  active=True, onchange=None, value=None, data=None,
-                 headers=None, update_button="", **kwarg):
+                 headers=None, update_button="", c_headers=None,
+                 r_headers=None, **kwarg):
 
         """
         Arguments:
@@ -424,6 +436,9 @@ class Sheet:
         self.attributes = self.get_attributes(kwarg)
         self.tr_attributes = {}
         self.td_attributes = {}
+
+        self.c_headers = c_headers
+        self.r_headers = r_headers
 
         self.data = data
         self.readonly = readonly
@@ -505,7 +520,7 @@ class Sheet:
         self.environment[name] = obj
 
     def cell(self, key, value, readonly=False, active=True,
-             onchange=None, **kwarg):
+             onchange=None, select=False, **kwarg):
         """
         key is the name of the cell
         value is the initial value of the cell. It can be a formula "=1+3"
@@ -515,7 +530,7 @@ class Sheet:
         """
 
         if not self.regex.match(key):
-            raise SyntaxError, "Invalid cell name: %s" % key
+            raise SyntaxError("Invalid cell name: %s" % key)
         else:
             attributes = self.get_attributes(kwarg)
             if attributes is not None:
@@ -528,7 +543,7 @@ class Sheet:
             value = value(r, c)
 
         node = Node(key, value, self.url, readonly, active,
-                    onchange, **kwarg)
+                    onchange, select=select, **kwarg)
         self.nodes[key] = node
         self[key] = value
 
@@ -728,7 +743,7 @@ class Sheet:
                 exec('__value__=' + node.value[1:], {}, self.environment)
                 node.computed_value = self.environment['__value__']
                 del self.environment['__value__']
-            except Exception, e:
+            except Exception as e:
                 node.computed_value = self.error % dict(error=str(e))
         self.environment[node.name] = node.computed_value
         if node.onchange:
@@ -781,11 +796,19 @@ class Sheet:
              gluon.html.TH, gluon.html.BR, gluon.html.SCRIPT)
         regex = re.compile('r\d+c\d+')
 
-        header = TR(TH(), *[TH('c%s' % c)
+        if not self.c_headers:
+            header = TR(TH(), *[TH('c%s' % c)
                             for c in range(self.cols)])
+        else:
+            header = TR(TH(), *[TH('%s' % c)
+                            for c in self.c_headers])
+
         rows = []
         for r in range(self.rows):
-            tds = [TH('r%s' % r), ]
+            if not self.r_headers:
+                tds = [TH('r%s' % r), ]
+            else:
+                tds = [TH('%s' % self.r_headers[r]), ]
             for c in range(self.cols):
                 key = 'r%sc%s' % (r, c)
                 attributes = {"_class": "w2p_spreadsheet_col_%s" %
@@ -840,7 +863,7 @@ class Sheet:
                     w2p_spreadsheet_update_db);
               });
             }
-            """ % dict(data=simplejson.dumps(self.client),
+            """ % dict(data=json.dumps(self.client),
                        name=attributes["_class"],
                        url=self.url,
                        update_button=self.update_button))
@@ -878,4 +901,4 @@ if __name__ == '__main__':
     s.cell('a', value="2")
     s.cell('b', value="=sin(a)")
     s.cell('c', value="=cos(a)**2+b*b")
-    print s['c'].computed_value
+    print(s['c'].computed_value)
