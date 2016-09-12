@@ -435,13 +435,20 @@ def add_path_first(path):
     if not global_settings.web2py_runtime_gae:
         site.addsitedir(path)
 
+def try_mkdir(path):
+    if not os.path.exists(path):
+        try:
+            os.mkdir(path)
+        except OSError as e:
+            if e.strerror == 'File exists': # In case of race condition.
+                pass
+            else:
+                raise e
 
 def create_missing_folders():
     if not global_settings.web2py_runtime_gae:
         for path in ('applications', 'deposit', 'site-packages', 'logs'):
-            path = abspath(path, gluon=True)
-            if not os.path.exists(path):
-                os.mkdir(path)
+            try_mkdir(abspath(path, gluon=True))
     """
     OLD sys.path dance
     paths = (global_settings.gluon_parent, abspath(
@@ -458,7 +465,5 @@ def create_missing_app_folders(request):
             for subfolder in ('models', 'views', 'controllers', 'databases',
                               'modules', 'cron', 'errors', 'sessions',
                               'languages', 'static', 'private', 'uploads'):
-                path = os.path.join(request.folder, subfolder)
-                if not os.path.exists(path):
-                    os.mkdir(path)
+                try_mkdir(os.path.join(request.folder, subfolder))
             global_settings.app_folders.add(request.folder)
