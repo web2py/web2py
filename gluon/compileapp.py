@@ -707,7 +707,7 @@ def run_view_in(environment):
                 for f in files:
                     compiled = pjoin(path, f)
                     if os.path.exists(compiled):
-                        code = read_pyc(compiled)
+                        code = getcfs(compiled, compiled, lambda: read_pyc(compiled))
                         restricted(code, environment, layer=compiled)
                         return
         if not os.path.exists(filename) and allow_generic:
