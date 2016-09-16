@@ -581,7 +581,7 @@ def run_models_in(environment):
             if not regex.search(fname) and c != 'appadmin':
                 continue
             elif compiled:
-                code = read_pyc(model)
+                code = getcfs(model, model, lambda: read_pyc(model))
             elif is_gae:
                 code = getcfs(model, model,
                               lambda: compile2(read_file(model), model))
@@ -614,7 +614,8 @@ def run_controller_in(controller, function, environment):
                 raise HTTP(404,
                            rewrite.THREAD_LOCAL.routes.error_message % badf,
                            web2py_error=badf)
-        restricted(read_pyc(filename), environment, layer=filename)
+        code = getcfs(filename, filename, lambda: read_pyc(filename))
+        restricted(code, environment, layer=filename)
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
         from settings import global_settings

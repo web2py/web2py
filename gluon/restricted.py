@@ -199,7 +199,7 @@ class RestrictedError(Exception):
 
 
 def compile2(code, layer):
-    return compile(code.rstrip(), layer, 'exec')
+    return compile(code, layer, 'exec')
 
 
 def restricted(code, environment=None, layer='Unknown'):
