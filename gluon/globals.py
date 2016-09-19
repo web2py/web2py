@@ -13,7 +13,7 @@ Contains the classes for the global used variables:
 - Session
 
 """
-from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, unicodeT
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, unicodeT, long
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
