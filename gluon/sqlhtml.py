@@ -875,7 +875,7 @@ def formstyle_bootstrap(form, fields):
             controls.add_class('span4')
 
         if isinstance(label, LABEL):
-            label['_class'] = add_class(label.get('_class'),'control-label')
+            label['_class'] = add_class(label.get('_class'), 'control-label')
 
         if _submit:
             # submit button has unwrapped label and controls, different class
@@ -925,8 +925,11 @@ def formstyle_bootstrap3_stacked(form, fields):
             for e in controls.elements("input"):
                 e.add_class('form-control')
 
+        elif isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+            controls[0].add_class('form-control')
+
         if isinstance(label, LABEL):
-            label['_class'] = add_class(label.get('_class'),'control-label')
+            label['_class'] = add_class(label.get('_class'), 'control-label')
 
         parent.append(DIV(label, _controls, _class='form-group', _id=id))
     return parent
@@ -975,8 +978,10 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
                     e.add_class('form-control')
+            elif isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+                    controls[0].add_class('form-control')
             if isinstance(label, LABEL):
-                label['_class'] = add_class(label.get('_class'),'control-label %s' % label_col_class)
+                label['_class'] = add_class(label.get('_class'), 'control-label %s' % label_col_class)
 
             parent.append(DIV(label, _controls, _class='form-group', _id=id))
         return parent
