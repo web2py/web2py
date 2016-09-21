@@ -594,7 +594,7 @@ def run_controller_in(controller, function, environment):
     """
     Runs the controller.function() (for the app specified by
     the current folder).
-    It tries pre-compiled controller_function.pyc first before compiling it.
+    It tries pre-compiled controller.function.pyc first before compiling it.
     """
 
     # if compiled should run compiled!
@@ -606,20 +606,15 @@ def run_controller_in(controller, function, environment):
         filename = pjoin(path, 'controllers.%s.%s.pyc'
                          % (controller, function))
         if not os.path.exists(filename):
-            ### for backward compatibility
-            filename = pjoin(path, 'controllers_%s_%s.pyc'
-                             % (controller, function))
-            ### end for backward compatibility
-            if not os.path.exists(filename):
-                raise HTTP(404,
-                           rewrite.THREAD_LOCAL.routes.error_message % badf,
-                           web2py_error=badf)
+            raise HTTP(404,
+                       rewrite.THREAD_LOCAL.routes.error_message % badf,
+                       web2py_error=badf)
         code = getcfs(filename, filename, lambda: read_pyc(filename))
         restricted(code, environment, layer=filename)
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
-        from settings import global_settings
-        from admin import abspath, add_path_first
+        from gluon.settings import global_settings
+        from gluon.admin import abspath, add_path_first
         paths = (global_settings.gluon_parent, abspath(
             'site-packages', gluon=True), abspath('gluon', gluon=True), '')
         [add_path_first(path) for path in paths]
@@ -642,7 +637,7 @@ def run_controller_in(controller, function, environment):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
-        code = read_file(filename)
+        code = getcfs(filename, filename, lambda: read_file(filename))
         exposed = find_exposed_functions(code)
         if not function in exposed:
             raise HTTP(404,
@@ -669,7 +664,7 @@ def run_view_in(environment):
     Executes the view for the requested action.
     The view is the one specified in `response.view` or determined by the url
     or `view/generic.extension`
-    It tries the pre-compiled views_controller_function.pyc before compiling it.
+    It tries the pre-compiled views.controller.function.pyc before compiling it.
     """
     request = current.request
     response = current.response
@@ -691,18 +686,18 @@ def run_view_in(environment):
     else:
         filename = pjoin(folder, 'views', view)
         if os.path.exists(path): # compiled views
-            x = view.replace('/', '_')
-            files = ['views_%s.pyc' % x]
+            x = view.replace('/', '.')
+            files = ['views.%s.pyc' % x]
             is_compiled = os.path.exists(pjoin(path, files[0]))
             # Don't use a generic view if the non-compiled view exists.
             if is_compiled or (not is_compiled and not os.path.exists(filename)):
                 if allow_generic:
-                    files.append('views_generic.%s.pyc' % request.extension)
+                    files.append('views.generic.%s.pyc' % request.extension)
                 # for backward compatibility
                 if request.extension == 'html':
-                    files.append('views_%s.pyc' % x[:-5])
+                    files.append('views.%s.pyc' % x[:-5])
                     if allow_generic:
-                        files.append('views_generic.pyc')
+                        files.append('views.generic.pyc')
                 # end backward compatibility code
                 for f in files:
                     compiled = pjoin(path, f)
