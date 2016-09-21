@@ -10,7 +10,7 @@ import sys
 import unittest
 
 
-from gluon.compileapp import run_controller_in, run_view_in
+from gluon.compileapp import run_controller_in, run_view_in, compile_application, remove_compiled_application
 from gluon.languages import translator
 from gluon.storage import Storage, List
 from gluon import fileutils
@@ -76,7 +76,7 @@ class TestAppAdmin(unittest.TestCase):
     def run_view(self):
         return run_view_in(self.env)
 
-    def test_index(self):
+    def _test_index(self):
         result = self.run_function()
         self.assertTrue('db' in result['databases'])
         self.env.update(result)
@@ -85,6 +85,15 @@ class TestAppAdmin(unittest.TestCase):
         except Exception as e:
             print(e.message)
             self.fail('Could not make the view')
+
+    def test_index(self):
+        self._test_index()
+
+    def test_index_compiled(self):
+        appname_path = os.path.join(os.getcwd(), 'applications', 'welcome')
+        compile_application(appname_path)
+        self._test_index()
+        remove_compiled_application(appname_path)
 
     def test_select(self):
         request = self.env['request']
