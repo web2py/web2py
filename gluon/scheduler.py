@@ -1499,6 +1499,8 @@ class Scheduler(MetaScheduler):
                 kwargs.update(start_time=start_time, next_run_time=next_run_time)
             except:
                 pass
+        if 'start_time' in kwargs and 'next_run_time' not in kwargs:
+            kwargs.update(next_run_time=kwargs['start_time'])
         rtn = self.db.scheduler_task.validate_and_insert(**kwargs)
         if not rtn.errors:
             rtn.uuid = tuuid
