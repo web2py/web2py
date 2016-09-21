@@ -8,9 +8,11 @@ License: LGPL v3
 
 Tinkered by Szabolcs Gyuris < szimszo n @ o regpreshaz dot eu>
 """
+import xml.dom.minidom as dom
+import xml.parsers.expat as expat
 
 from gluon import current, redirect, URL
-
+from gluon._compat import urlopen, to_native
 
 class CasAuth(object):
     """
@@ -59,7 +61,7 @@ class CasAuth(object):
         # vars commented because of
         # https://code.google.com/p/web2py/issues/detail?id=1774
         self.cas_my_url = URL(args=current.request.args,
-                              #vars=current.request.vars, 
+                              #vars=current.request.vars,
                               scheme=True)
 
     def login_url(self, next="/"):
@@ -86,7 +88,6 @@ class CasAuth(object):
         exposed as CAS.login(request)
         returns a token on success, None on failed authentication
         """
-        import urllib
         self.ticket = current.request.vars.ticket
         if not current.request.vars.ticket:
             redirect("%s?service=%s" % (self.cas_login_url,
@@ -95,7 +96,7 @@ class CasAuth(object):
             url = "%s?service=%s&ticket=%s" % (self.cas_check_url,
                                                self.cas_my_url,
                                                self.ticket)
-            data = urllib.urlopen(url).read()
+            data = to_native(urlopen(url).read())
             if data.startswith('yes') or data.startswith('no'):
                 data = data.split('\n')
                 if data[0] == 'yes':
@@ -108,19 +109,16 @@ class CasAuth(object):
                         a = b = c = data[1]
                     return dict(user=a, email=b, username=c)
                 return None
-            import xml.dom.minidom as dom
-            import xml.parsers.expat as expat
             try:
                 dxml = dom.parseString(data)
-                envelop = dxml.getElementsByTagName(
-                    "cas:authenticationSuccess")
+                envelop = dxml.getElementsByTagName("cas:authenticationSuccess")
                 if len(envelop) > 0:
                     res = dict()
                     for x in envelop[0].childNodes:
                         if x.nodeName.startswith('cas:') and len(x.childNodes):
-                            key = x.nodeName[4:].encode('utf8')
-                            value = x.childNodes[0].nodeValue.encode('utf8')
-                            if not key in res:
+                            key = to_native(x.nodeName[4:])
+                            value = to_native(x.childNodes[0].nodeValue)
+                            if key not in res:
                                 res[key] = value
                             else:
                                 if not isinstance(res[key], list):
@@ -136,5 +134,4 @@ class CasAuth(object):
         exposed CAS.logout()
         redirects to the CAS logout page
         """
-        import urllib
         redirect("%s?service=%s" % (self.cas_logout_url, self.cas_my_url))
