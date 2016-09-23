@@ -17,8 +17,7 @@ init:
   - set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
 
 install:
-  - ps: Start-FileDownload https://bootstrap.pypa.io/get-pip.py
-  - python get-pip.py
+  - python -m ensurepip
   - pip install codecov
   - git submodule update --init --recursive
   - pip install pycrypto
