@@ -30,18 +30,14 @@ Typical usage:
 
 from __future__ import with_statement
 
-import sys
-import os
-sys.path.append(os.path.join(*__file__.split(os.sep)[:-2] or ['.']))
-
 from gluon import current
 from gluon.storage import Storage
+from gluon._compat import pickle
 from optparse import OptionParser
-import cPickle
 import datetime
-import os
 import stat
 import time
+import os
 
 EXPIRATION_MINUTES = 60
 SLEEP_MINUTES = 5
@@ -86,12 +82,12 @@ class SessionSet(object):
                 status = 'trashed'
 
             if self.verbose > 1:
-                print 'key: %s' % str(item)
-                print 'expiration: %s seconds' % self.expiration
-                print 'last visit: %s' % str(last_visit)
-                print 'age: %s seconds' % age
-                print 'status: %s' % status
-                print ''
+                print('key: %s' % str(item))
+                print('expiration: %s seconds' % self.expiration)
+                print('last visit: %s' % str(last_visit))
+                print('age: %s seconds' % age)
+                print('status: %s' % status)
+                print('')
             elif self.verbose > 0:
                 print('%s %s' % (str(item), status))
 
@@ -145,7 +141,7 @@ class SessionDb(object):
 
     def get(self):
         session = Storage()
-        session.update(cPickle.loads(self.row.session_data))
+        session.update(pickle.loads(self.row.session_data))
         return session
 
     def last_visit_default(self):
@@ -155,7 +151,7 @@ class SessionDb(object):
             try:
                 return datetime.datetime.strptime(self.row.modified_datetime, '%Y-%m-%d %H:%M:%S.%f')
             except:
-                print 'failed to retrieve last modified time (value: %s)' % self.row.modified_datetime
+                print('failed to retrieve last modified time (value: %s)' % self.row.modified_datetime)
 
     def __str__(self):
         return self.row.unique_key
@@ -248,7 +244,7 @@ def main():
             break
         else:
             if options.verbose:
-                print 'Sleeping %s seconds' % (options.sleep)
+                print('Sleeping %s seconds' % (options.sleep))
             time.sleep(options.sleep)
 
 if __name__ == '__main__':
