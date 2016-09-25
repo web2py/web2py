@@ -441,7 +441,6 @@ def build_environment(request, response, session, store_current=True):
         lambda name, reload=False, app=request.application:\
         local_import_aux(name, reload, app)
     BaseAdapter.set_folder(pjoin(request.folder, 'databases'))
-    response._view_environment = copy.copy(environment)
     custom_import_install()
     return environment
 
