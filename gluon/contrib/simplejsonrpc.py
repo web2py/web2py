@@ -17,12 +17,17 @@ __copyright__ = "Copyright (C) 2011 Mariano Reingart"
 __license__ = "LGPL 3.0"
 __version__ = "0.05"
 
+import sys
+PY2 = sys.version_info[0] == 2
 
 import urllib
-from xmlrpclib import Transport, SafeTransport
-from cStringIO import StringIO
+if PY2:
+    from xmlrpclib import Transport, SafeTransport
+    from cStringIO import StringIO
+else:
+    from xmlrpc.client import Transport, SafeTransport
+    from io import StringIO
 import random
-import sys
 import json
 
 

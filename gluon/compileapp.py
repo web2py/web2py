@@ -430,13 +430,10 @@ def build_environment(request, response, session, store_current=True):
         current.T = t
         current.cache = c
 
-    global __builtins__
     if is_jython:  # jython hack
+        global __builtins__
         __builtins__ = mybuiltin()
-    elif is_pypy:  # apply the same hack to pypy too
-        __builtins__ = mybuiltin()
-    elif PY2:
-        __builtins__['__import__'] = builtin.__import__  # WHY?
+
     environment['request'] = request
     environment['response'] = response
     environment['session'] = session
@@ -444,7 +441,6 @@ def build_environment(request, response, session, store_current=True):
         lambda name, reload=False, app=request.application:\
         local_import_aux(name, reload, app)
     BaseAdapter.set_folder(pjoin(request.folder, 'databases'))
-    response._view_environment = copy.copy(environment)
     custom_import_install()
     return environment
 
@@ -487,7 +483,7 @@ def compile_views(folder, skip_failed_views=False):
             else:
                 raise Exception("%s in %s" % (e, fname))
         else:
-            filename = ('views/%s.py' % fname).replace('/', '_').replace('\\', '_')
+            filename = 'views.%s.py' % fname.replace(os.path.sep, '.')
             filename = pjoin(folder, 'compiled', filename)
             write_file(filename, data)
             save_pyc(filename)
@@ -503,7 +499,7 @@ def compile_models(folder):
     path = pjoin(folder, 'models')
     for fname in listdir(path, '.+\.py$'):
         data = read_file(pjoin(path, fname))
-        modelfile = 'models.'+fname.replace(os.path.sep,'.')
+        modelfile = 'models.'+fname.replace(os.path.sep, '.')
         filename = pjoin(folder, 'compiled', modelfile)
         mktree(filename)
         write_file(filename, data)
@@ -582,11 +578,10 @@ def run_models_in(environment):
                 continue
             elif compiled:
                 code = getcfs(model, model, lambda: read_pyc(model))
-            elif is_gae:
+            else:
                 code = getcfs(model, model,
                               lambda: compile2(read_file(model), model))
-            else:
-                code = getcfs(model, model, None)
+
             restricted(code, environment, layer=model)
 
 
@@ -610,7 +605,6 @@ def run_controller_in(controller, function, environment):
                        rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
         code = getcfs(filename, filename, lambda: read_pyc(filename))
-        restricted(code, environment, layer=filename)
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
         from gluon.settings import global_settings
@@ -629,7 +623,6 @@ def run_controller_in(controller, function, environment):
         environment['__symbols__'] = environment.keys()
         code = read_file(filename)
         code += TEST_CODE
-        restricted(code, environment, layer=filename)
     else:
         filename = pjoin(folder, 'controllers/%s.py'
                                  % controller)
@@ -644,10 +637,10 @@ def run_controller_in(controller, function, environment):
                        rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
         code = "%s\nresponse._vars=response._caller(%s)\n" % (code, function)
-        if is_gae:
-            layer = filename + ':' + function
-            code = getcfs(layer, filename, lambda: compile2(code, layer))
-        restricted(code, environment, filename)
+        layer = filename + ':' + function
+        code = getcfs(layer, filename, lambda: compile2(code, layer))
+
+    restricted(code, environment, layer=filename)
     response = current.response
     vars = response._vars
     if response.postprocessing:
@@ -682,7 +675,7 @@ def run_view_in(environment):
     if not isinstance(view, str):
         ccode = parse_template(view, pjoin(folder, 'views'),
                                context=environment)
-        restricted(ccode, environment, 'file stream')
+        layer = 'file stream'
     else:
         filename = pjoin(folder, 'views', view)
         if os.path.exists(path): # compiled views
@@ -713,16 +706,13 @@ def run_view_in(environment):
                        rewrite.THREAD_LOCAL.routes.error_message % badv,
                        web2py_error=badv)
         layer = filename
-        if is_gae:
-            ccode = getcfs(layer, filename,
-                           lambda: compile2(parse_template(view,
-                                            pjoin(folder, 'views'),
-                                            context=environment), layer))
-        else:
-            ccode = parse_template(view,
-                                   pjoin(folder, 'views'),
-                                   context=environment)
-        restricted(ccode, environment, layer)
+        # Cache the compiled template
+        ccode = getcfs(layer, filename,
+                       lambda: compile2(parse_template(view,
+                                                       pjoin(folder, 'views'),
+                                                       context=environment),
+                                        layer))
+    restricted(ccode, environment, layer=layer)
 
 
 def remove_compiled_application(folder):
@@ -748,26 +738,3 @@ def compile_application(folder, skip_failed_views=False):
     compile_controllers(folder)
     failed_views = compile_views(folder, skip_failed_views)
     return failed_views
-
-
-def test():
-    """
-    Example::
-
-        >>> import traceback, types
-        >>> environment={'x':1}
-        >>> open('a.py', 'w').write('print 1/x')
-        >>> save_pyc('a.py')
-        >>> os.unlink('a.py')
-        >>> if type(read_pyc('a.pyc'))==types.CodeType: print 'code'
-        code
-        >>> exec read_pyc('a.pyc') in environment
-        1
-    """
-
-    return
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

@@ -24,9 +24,6 @@ try:
     # have web2py
     from gluon.restricted import RestrictedError
     from gluon.globals import current
-    from gluon.cfs import getcfs
-    from gluon.fileutils import read_file
-    HAS_CFS = True
 except ImportError:
     # do not have web2py
     current = None
@@ -783,14 +780,11 @@ def parse_template(filename,
     # First, if we have a str try to open the file
     if isinstance(filename, str):
         fname = os.path.join(path, filename)
-        if HAS_CFS:
-            text = getcfs(fname, fname, lambda: read_file(fname))
-        else:
-            try:
-                with open(fname, 'rb') as fp:
-                    text = fp.read()
-            except IOError:
-                raise RestrictedError(filename, '', 'Unable to find the file')
+        try:
+            with open(fname, 'rb') as fp:
+                text = fp.read()
+        except IOError:
+            raise RestrictedError(filename, '', 'Unable to find the file')
     else:
         text = filename.read()
     text = to_native(text)

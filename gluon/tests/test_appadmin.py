@@ -16,6 +16,7 @@ from gluon.storage import Storage, List
 from gluon import fileutils
 from gluon.dal import DAL, Field, Table
 from gluon.http import HTTP
+from gluon.fileutils import open_file
 
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
@@ -76,12 +77,18 @@ class TestAppAdmin(unittest.TestCase):
     def run_view(self):
         return run_view_in(self.env)
 
+    def run_view_file_stream(self):
+        view_path = os.path.join(self.env['request'].folder, 'views', 'appadmin.html')
+        self.env['response'].view = open_file(view_path, 'r')
+        return run_view_in(self.env)
+
     def _test_index(self):
         result = self.run_function()
         self.assertTrue('db' in result['databases'])
         self.env.update(result)
         try:
             self.run_view()
+            self.run_view_file_stream()
         except Exception as e:
             print(e.message)
             self.fail('Could not make the view')
