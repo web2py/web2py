@@ -569,7 +569,7 @@
 'Versioning': 'Kreiranje verzija',
 'views': 'prikazi',
 'Views': 'Prikazi',
-'Warning!':A 'Upozorenje!',
+'Warning!': 'Upozorenje!',
 'WARNING:': 'UPOZORENJE:',
 'WARNING: The following views could not be compiled:': 'WARNING: Sledeći prikazi ne mogu biti kompajlirani:',
 'Web Framework': 'Web Framework',
