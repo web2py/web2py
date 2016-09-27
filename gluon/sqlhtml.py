@@ -657,7 +657,8 @@ class AutocompleteWidget(object):
     def __init__(self, request, field, id_field=None, db=None,
                  orderby=None, limitby=(0, 10), distinct=False,
                  keyword='_autocomplete_%(tablename)s_%(fieldname)s',
-                 min_length=2, help_fields=None, help_string=None, at_beginning = True):
+                 min_length=2, help_fields=None, help_string=None,
+                 at_beginning=True, default_var='ac'):
 
         self.help_fields = help_fields or []
         self.help_string = help_string
@@ -680,7 +681,9 @@ class AutocompleteWidget(object):
         else:
             self.is_reference = False
         if hasattr(request, 'application'):
-            self.url = URL(args=request.args)
+            urlvars = request.vars
+            urlvars[default_var] = 1
+            self.url = URL(args=request.args, vars=urlvars)
             self.callback()
         else:
             self.url = request
@@ -688,35 +691,55 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
+            kword = self.request.vars[self.keyword]
             if isinstance(field, Field.Virtual):
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
                 count = 0
                 for row in table_rows:
                     if self.at_beginning:
-                        if row[field.name].lower().startswith(self.request.vars[self.keyword]):
+                        if row[field.name].lower().startswith(kword):
                             count += 1
                             records.append(row)
                     else:
-                        if self.request.vars[self.keyword] in row[field.name].lower():
+                        if kword in row[field.name].lower():
                             count += 1
                             records.append(row)
                     if count == 10:
                         break
-                rows = Rows(self.db, records, table_rows.colnames, compact=table_rows.compact)
+                rows = Rows(self.db, records, table_rows.colnames,
+                            compact=table_rows.compact)
             elif settings and settings.global_settings.web2py_runtime_gae:
-                rows = self.db(field.__ge__(self.request.vars[self.keyword]) & field.__lt__(self.request.vars[self.keyword] + u'\ufffd')).select(orderby=self.orderby, limitby=self.limitby, *(self.fields+self.help_fields))
+                rows = self.db(field.__ge__(kword) &
+                               field.__lt__(kword + u'\ufffd')
+                               ).select(orderby=self.orderby,
+                                        limitby=self.limitby,
+                                        *(self.fields + self.help_fields))
             elif self.at_beginning:
-                rows = self.db(field.like(self.request.vars[self.keyword] + '%', case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
+                rows = self.db(field.like(kword + '%', case_sensitive=False)
+                               ).select(orderby=self.orderby,
+                                        limitby=self.limitby,
+                                        distinct=self.distinct,
+                                        *(self.fields + self.help_fields))
             else:
-                rows = self.db(field.contains(self.request.vars[self.keyword], case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
+                rows = self.db(field.contains(kword, case_sensitive=False)
+                               ).select(orderby=self.orderby,
+                                        limitby=self.limitby,
+                                        distinct=self.distinct,
+                                        *(self.fields + self.help_fields))
             if rows:
                 if self.is_reference:
                     id_field = self.fields[1]
                     if self.help_fields:
-                        options = [OPTION(
-                            self.help_string % dict([(h.name, s[h.name]) for h in self.fields[:1] + self.help_fields]),
-                                   _value=s[id_field.name], _selected=(k == 0)) for k, s in enumerate(rows)]
+                        options = [
+                            OPTION(
+                                self.help_string % dict(
+                                    [(h.name, s[h.name]) for h
+                                     in self.fields[:1] + self.help_fields]),
+                                                    _value=s[id_field.name],
+                                                    _selected=(k == 0))
+                                            for k, s in enumerate(rows)
+                                    ]
                     else:
                         options = [OPTION(
                             s[field.name], _value=s[id_field.name],
@@ -763,28 +786,100 @@ class AutocompleteWidget(object):
                 record = self.db(
                     self.fields[1] == value).select(self.fields[0]).first()
             attr['value'] = record and record[self.fields[0].name]
-            attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
+            attr['_onblur'] = "jQuery('#%(div_id)s').delay(500).fadeOut('slow');" % \
                 dict(div_id=div_id, u='F' + self.keyword)
-            attr['_onkeyup'] = "jQuery('#%(key3)s').val('');var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s :selected').text());jQuery('#%(key3)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+encodeURIComponent(jQuery('#%(id)s').val()),function(data){if(data=='')jQuery('#%(key3)s').val('');else{jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key3)s').val(jQuery('#%(key)s').val());jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);};}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
+            js = """
+            (function($) {
+                function doit(e_) {
+                    $('#%(key3)s').val('');
+                    var e=e_.which?e_.which:e_.keyCode;
+                    function %(u)s(){
+                        $('#%(id)s').val($('#%(key)s :selected').text());
+                        $('#%(key3)s').val($('#%(key)s').val())
+                    };
+                    if(e==39) %(u)s();
+                    else if(e==40) {
+                        if($('#%(key)s option:selected').next().length)
+                        $('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected');
+                        %(u)s();
+                    }
+                    else if(e==38) {
+                    if($('#%(key)s option:selected').prev().length)
+                        $('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected');
+                        %(u)s();
+                    }
+                    else if($('#%(id)s').val().length>=%(min_length)s)
+                        $.get('%(url)s&%(key)s='+encodeURIComponent($('#%(id)s').val()),
+                            function(data){
+                                if(data=='')$('#%(key3)s').val('');
+                                else{
+                                    $('#%(id)s').next('.error').hide();
+                                    $('#%(div_id)s').html(data).show().focus();
+                                    $('#%(div_id)s select').css('width',$('#%(id)s').css('width'));
+                                    $('#%(key3)s').val($('#%(key)s').val());
+                                    $('#%(key)s').change(%(u)s).click(%(u)s);
+                                };
+                            });
+                    else $('#%(div_id)s').fadeOut('slow');
+                }
+            var tmr = null;
+            $("#%(id)s").on('keyup focus',function(e) {
+                if (tmr) clearTimeout(tmr);
+                if($('#%(id)s').val().length>=%(min_length)s) {
+                    tmr = setTimeout(function() { tmr = null; doit(e); }, 300);
+                }
+            });
+            })(jQuery)""".replace('\n', '').replace(' ' * 4, '') % \
                 dict(url=self.url, min_length=self.min_length,
                      key=self.keyword, id=attr['_id'], key2=key2, key3=key3,
                      name=name, div_id=div_id, u='F' + self.keyword)
-            if self.min_length == 0:
-                attr['_onfocus'] = attr['_onkeyup']
             return CAT(INPUT(**attr),
                        INPUT(_type='hidden', _id=key3, _value=value,
                              _name=name, requires=field.requires),
+                       SCRIPT(js),
                        DIV(_id=div_id, _style='position:absolute;'))
         else:
             attr['_name'] = field.name
-            attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
+            attr['_onblur'] = "jQuery('#%(div_id)s').delay(500).fadeOut('slow');" % \
                 dict(div_id=div_id, u='F' + self.keyword)
-            attr['_onkeyup'] = "var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+encodeURIComponent(jQuery('#%(id)s').val()),function(data){jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
+            js = """
+            (function($) {
+            function doit(e_) {
+                var e=e_.which?e_.which:e_.keyCode;
+                function %(u)s(){
+                    $('#%(id)s').val($('#%(key)s').val())
+                };
+                if(e==39) %(u)s();
+                else if(e==40) {
+                    if($('#%(key)s option:selected').next().length)
+                    $('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected');
+                    %(u)s();
+                } else if(e==38) {
+                if($('#%(key)s option:selected').prev().length)
+                $('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected');
+                %(u)s();
+                } else if($('#%(id)s').val().length>=%(min_length)s)
+                        $.get('%(url)s&%(key)s='+encodeURIComponent($('#%(id)s').val()),
+                            function(data){
+                                $('#%(id)s').next('.error').hide();
+                                $('#%(div_id)s').html(data).show().focus();
+                                $('#%(div_id)s select').css('width',$('#%(id)s').css('width'));
+                                $('#%(key)s').change(%(u)s).click(%(u)s);
+                            }
+                        );
+                else $('#%(div_id)s').fadeOut('slow');
+            }
+            var tmr = null;
+            $("#%(id)s").on('keyup focus',function(e) {
+                if (tmr) clearTimeout(tmr);
+                if($('#%(id)s').val().length>=%(min_length)s) {
+                    tmr = setTimeout(function() { tmr = null; doit(e); }, 300);
+                }
+            });
+            })(jQuery)""".replace('\n', '').replace(' ' * 4, '') % \
                 dict(url=self.url, min_length=self.min_length,
                      key=self.keyword, id=attr['_id'], div_id=div_id, u='F' + self.keyword)
-            if self.min_length == 0:
-                attr['_onfocus'] = attr['_onkeyup']
-            return CAT(INPUT(**attr),
+            return CAT(INPUT(**attr), SCRIPT(js),
                        DIV(_id=div_id, _style='position:absolute;'))
 
 
