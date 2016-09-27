@@ -55,8 +55,11 @@ def run_system_tests(options):
     """
     import subprocess
     major_version = sys.version_info[0]
-    minor_version = sys.version_info[1]
     call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
+    if major_version == 2:
+        sys.stderr.write("Python 2.7\n")
+    else:
+        sys.stderr.write("Experimental Python 3.x.\n")
     if options.with_coverage:
         has_coverage = False
         coverage_exec = 'coverage2' if major_version == 2 else 'coverage3'
@@ -70,14 +73,12 @@ def run_system_tests(options):
                                                 coverage_config_file)
         call_args = [coverage_exec, 'run', '--rcfile=%s' %
                      coverage_config, '-m', 'unittest', '-v', 'gluon.tests']
-        if major_version == 2:
-            sys.stderr.write("Python 2.7\n")
-        else:
-            sys.stderr.write("Experimental Python 3.x.\n")
         if has_coverage:
             ret = subprocess.call(call_args)
         else:
             ret = 256
+    else:
+        ret = subprocess.call(call_args)
     sys.exit(ret and 1)
 
 
