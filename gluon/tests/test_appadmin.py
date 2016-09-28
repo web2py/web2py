@@ -31,6 +31,7 @@ class TestAppAdmin(unittest.TestCase):
     def setUp(self):
         from gluon.globals import Request, Response, Session, current
         from gluon.html import A, DIV, FORM, MENU, TABLE, TR, INPUT, URL, XML
+        from gluon.html import ASSIGNJS
         from gluon.validators import IS_NOT_EMPTY
         from gluon.compileapp import LOAD
         from gluon.http import HTTP, redirect
