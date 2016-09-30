@@ -230,8 +230,8 @@ def LOAD(c=None, f='index', args=None, vars=None,
         if isinstance(page, dict):
             other_response._vars = page
             other_response._view_environment.update(page)
-            run_view_in(other_response._view_environment)
-            page = other_response.body.getvalue()
+            page = run_view_in(other_response._view_environment)
+
         current.request, current.response = original_request, original_response
         js = None
         if ajax_trap:
@@ -309,8 +309,8 @@ class LoadFactory(object):
             if isinstance(page, dict):
                 other_response._vars = page
                 other_response._view_environment.update(page)
-                run_view_in(other_response._view_environment)
-                page = other_response.body.getvalue()
+                page = run_view_in(other_response._view_environment)
+
             current.request, current.response = original_request, original_response
             js = None
             if ajax_trap:
@@ -577,13 +577,11 @@ def run_models_in(environment):
             if not regex.search(fname) and c != 'appadmin':
                 continue
             elif compiled:
-                code = getcfs(model, model, lambda: read_pyc(model))
+                f = lambda: read_pyc(model)
             else:
-                code = getcfs(model, model,
-                              lambda: compile2(read_file(model), model))
-
-            restricted(code, environment, layer=model)
-
+                f = lambda: compile2(read_file(model), model)
+            ccode = getcfs(model, model, f)
+            restricted(ccode, environment, layer=model)
 
 def run_controller_in(controller, function, environment):
     """
@@ -594,17 +592,17 @@ def run_controller_in(controller, function, environment):
 
     # if compiled should run compiled!
     folder = current.request.folder
-    path = pjoin(folder, 'compiled')
+    cpath = pjoin(folder, 'compiled')
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
-    if os.path.exists(path):
-        filename = pjoin(path, 'controllers.%s.%s.pyc'
+    if os.path.exists(cpath):
+        filename = pjoin(cpath, 'controllers.%s.%s.pyc'
                          % (controller, function))
         if not os.path.exists(filename):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
-        code = getcfs(filename, filename, lambda: read_pyc(filename))
+        ccode = getcfs(filename, filename, lambda: read_pyc(filename))
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
         from gluon.settings import global_settings
@@ -623,6 +621,7 @@ def run_controller_in(controller, function, environment):
         environment['__symbols__'] = environment.keys()
         code = read_file(filename)
         code += TEST_CODE
+        ccode = compile2(code, filename)
     else:
         filename = pjoin(folder, 'controllers/%s.py'
                                  % controller)
@@ -636,11 +635,11 @@ def run_controller_in(controller, function, environment):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
-        code = "%s\nresponse._vars=response._caller(%s)\n" % (code, function)
-        layer = filename + ':' + function
-        code = getcfs(layer, filename, lambda: compile2(code, layer))
+        code = "%s\nresponse._vars=response._caller(%s)" % (code, function)
+        layer = "%s:%s" % (filename, function)
+        ccode = getcfs(layer, filename, lambda: compile2(code, layer))
 
-    restricted(code, environment, layer=filename)
+    restricted(ccode, environment, layer=filename)
     response = current.response
     vars = response._vars
     if response.postprocessing:
@@ -663,9 +662,10 @@ def run_view_in(environment):
     response = current.response
     view = environment['response'].view
     folder = request.folder
-    path = pjoin(folder, 'compiled')
+    cpath = pjoin(folder, 'compiled')
     badv = 'invalid view (%s)' % view
     patterns = response.get('generic_patterns')
+    layer = None
     if patterns:
         regex = re_compile('|'.join(map(fnmatch.translate, patterns)))
         short_action = '%(controller)s/%(function)s.%(extension)s' % request
@@ -678,10 +678,10 @@ def run_view_in(environment):
         layer = 'file stream'
     else:
         filename = pjoin(folder, 'views', view)
-        if os.path.exists(path): # compiled views
+        if os.path.exists(cpath): # compiled views
             x = view.replace('/', '.')
             files = ['views.%s.pyc' % x]
-            is_compiled = os.path.exists(pjoin(path, files[0]))
+            is_compiled = os.path.exists(pjoin(cpath, files[0]))
             # Don't use a generic view if the non-compiled view exists.
             if is_compiled or (not is_compiled and not os.path.exists(filename)):
                 if allow_generic:
@@ -693,11 +693,11 @@ def run_view_in(environment):
                         files.append('views.generic.pyc')
                 # end backward compatibility code
                 for f in files:
-                    compiled = pjoin(path, f)
+                    compiled = pjoin(cpath, f)
                     if os.path.exists(compiled):
-                        code = getcfs(compiled, compiled, lambda: read_pyc(compiled))
-                        restricted(code, environment, layer=compiled)
-                        return
+                        ccode = getcfs(compiled, compiled, lambda: read_pyc(compiled))
+                        layer = compiled
+                        break
         if not os.path.exists(filename) and allow_generic:
             view = 'generic.' + request.extension
             filename = pjoin(folder, 'views', view)
@@ -712,7 +712,8 @@ def run_view_in(environment):
                                context=environment)
 
     restricted(ccode, environment, layer=layer)
-
+    # parse_template saves everything in response body
+    return environment['response'].body.getvalue()
 
 def remove_compiled_application(folder):
     """
