@@ -1,13 +1,18 @@
-from pymysql.tests.test_issues import *
-from pymysql.tests.test_example import *
-from pymysql.tests.test_basic import *
+# Sorted by alphabetical order
 from pymysql.tests.test_DictCursor import *
+from pymysql.tests.test_SSCursor import *
+from pymysql.tests.test_basic import *
+from pymysql.tests.test_connection import *
+from pymysql.tests.test_converters import *
+from pymysql.tests.test_cursor import *
+from pymysql.tests.test_err import *
+from pymysql.tests.test_issues import *
+from pymysql.tests.test_load_local import *
+from pymysql.tests.test_nextset import *
+from pymysql.tests.test_optionfile import *
 
-import sys
-if sys.version_info[0] == 2:
-    # MySQLdb tests were designed for Python 3
-    from pymysql.tests.thirdparty import *
+from pymysql.tests.thirdparty import *
 
 if __name__ == "__main__":
-    import unittest
-    unittest.main()
+    import unittest2
+    unittest2.main()
