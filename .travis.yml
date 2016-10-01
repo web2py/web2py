@@ -25,7 +25,7 @@ install:
         virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
         source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
       fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then pip install pycrypto pg8000 pymysql; fi;
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then pip install pycrypto pg8000; fi;
   - if [[ $TRAVIS_PYTHON_VERSION != '3.5' ]]; then pip install -e .; fi;
 
 before_script:
