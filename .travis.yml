@@ -10,8 +10,7 @@ python:
   - '3.5'
 
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then pip install pycrypto; fi;
-  - if [[ $TRAVIS_PYTHON_VERSION != '3.5' ]]; then pip install -e .; fi;
+  - pip install -e .
 
 before_script:
   - pip install coverage
