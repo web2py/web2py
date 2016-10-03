@@ -1,3 +1,23 @@
+import datetime
+from datetime import timedelta
+from warnings import warn
+import socket
+import threading
+from struct import pack
+from hashlib import md5
+from decimal import Decimal
+from collections import deque, defaultdict
+from itertools import count, islice
+from .six.moves import map
+from .six import b, PY2, integer_types, next, text_type, u, binary_type
+from uuid import UUID
+from copy import deepcopy
+from calendar import timegm
+from distutils.version import LooseVersion
+from struct import Struct
+import time
+
+
 # Copyright (c) 2007-2009, Mathieu Fenniak
 # All rights reserved.
 #
@@ -27,34 +47,6 @@
 
 __author__ = "Mathieu Fenniak"
 
-import datetime
-from datetime import timedelta
-from . import (
-    Interval, min_int2, max_int2, min_int4, max_int4, min_int8, max_int8,
-    Bytea, NotSupportedError, ProgrammingError, InternalError, IntegrityError,
-    OperationalError, DatabaseError, InterfaceError, Error,
-    ArrayContentNotHomogenousError, ArrayContentEmptyError,
-    ArrayDimensionsNotConsistentError, ArrayContentNotSupportedError, Warning,
-    i_unpack, ii_unpack, iii_unpack, h_pack, d_unpack, q_unpack, d_pack,
-    f_unpack, q_pack, i_pack, h_unpack, dii_unpack, qii_unpack, ci_unpack,
-    bh_unpack, ihihih_unpack, cccc_unpack, ii_pack, iii_pack, dii_pack,
-    qii_pack)
-from warnings import warn
-import socket
-import threading
-from struct import pack
-from hashlib import md5
-from decimal import Decimal
-from collections import deque, defaultdict
-from itertools import count, islice
-from .six.moves import map
-from .six import b, PY2, integer_types, next, PRE_26, text_type, u
-from sys import exc_info
-from uuid import UUID
-from copy import deepcopy
-from calendar import timegm
-import os
-from distutils.version import LooseVersion
 
 try:
     from json import loads
@@ -78,9 +70,350 @@ class UTC(datetime.tzinfo):
 
 utc = UTC()
 
-if PRE_26:
-    bytearray = list
 
+class Interval(object):
+    """An Interval represents a measurement of time.  In PostgreSQL, an
+    interval is defined in the measure of months, days, and microseconds; as
+    such, the pg8000 interval type represents the same information.
+
+    Note that values of the :attr:`microseconds`, :attr:`days` and
+    :attr:`months` properties are independently measured and cannot be
+    converted to each other.  A month may be 28, 29, 30, or 31 days, and a day
+    may occasionally be lengthened slightly by a leap second.
+
+    .. attribute:: microseconds
+
+        Measure of microseconds in the interval.
+
+        The microseconds value is constrained to fit into a signed 64-bit
+        integer.  Any attempt to set a value too large or too small will result
+        in an OverflowError being raised.
+
+    .. attribute:: days
+
+        Measure of days in the interval.
+
+        The days value is constrained to fit into a signed 32-bit integer.
+        Any attempt to set a value too large or too small will result in an
+        OverflowError being raised.
+
+    .. attribute:: months
+
+        Measure of months in the interval.
+
+        The months value is constrained to fit into a signed 32-bit integer.
+        Any attempt to set a value too large or too small will result in an
+        OverflowError being raised.
+    """
+
+    def __init__(self, microseconds=0, days=0, months=0):
+        self.microseconds = microseconds
+        self.days = days
+        self.months = months
+
+    def _setMicroseconds(self, value):
+        if not isinstance(value, integer_types):
+            raise TypeError("microseconds must be an integer type")
+        elif not (min_int8 < value < max_int8):
+            raise OverflowError(
+                "microseconds must be representable as a 64-bit integer")
+        else:
+            self._microseconds = value
+
+    def _setDays(self, value):
+        if not isinstance(value, integer_types):
+            raise TypeError("days must be an integer type")
+        elif not (min_int4 < value < max_int4):
+            raise OverflowError(
+                "days must be representable as a 32-bit integer")
+        else:
+            self._days = value
+
+    def _setMonths(self, value):
+        if not isinstance(value, integer_types):
+            raise TypeError("months must be an integer type")
+        elif not (min_int4 < value < max_int4):
+            raise OverflowError(
+                "months must be representable as a 32-bit integer")
+        else:
+            self._months = value
+
+    microseconds = property(lambda self: self._microseconds, _setMicroseconds)
+    days = property(lambda self: self._days, _setDays)
+    months = property(lambda self: self._months, _setMonths)
+
+    def __repr__(self):
+        return "<Interval %s months %s days %s microseconds>" % (
+            self.months, self.days, self.microseconds)
+
+    def __eq__(self, other):
+        return other is not None and isinstance(other, Interval) and \
+            self.months == other.months and self.days == other.days and \
+            self.microseconds == other.microseconds
+
+    def __neq__(self, other):
+        return not self.__eq__(other)
+
+
+def pack_funcs(fmt):
+    struc = Struct('!' + fmt)
+    return struc.pack, struc.unpack_from
+
+i_pack, i_unpack = pack_funcs('i')
+h_pack, h_unpack = pack_funcs('h')
+q_pack, q_unpack = pack_funcs('q')
+d_pack, d_unpack = pack_funcs('d')
+f_pack, f_unpack = pack_funcs('f')
+iii_pack, iii_unpack = pack_funcs('iii')
+ii_pack, ii_unpack = pack_funcs('ii')
+qii_pack, qii_unpack = pack_funcs('qii')
+dii_pack, dii_unpack = pack_funcs('dii')
+ihihih_pack, ihihih_unpack = pack_funcs('ihihih')
+ci_pack, ci_unpack = pack_funcs('ci')
+bh_pack, bh_unpack = pack_funcs('bh')
+cccc_pack, cccc_unpack = pack_funcs('cccc')
+
+
+Struct('!i')
+
+
+min_int2, max_int2 = -2 ** 15, 2 ** 15
+min_int4, max_int4 = -2 ** 31, 2 ** 31
+min_int8, max_int8 = -2 ** 63, 2 ** 63
+
+
+class Warning(Exception):
+    """Generic exception raised for important database warnings like data
+    truncations.  This exception is not currently used by pg8000.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class Error(Exception):
+    """Generic exception that is the base exception of all other error
+    exceptions.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class InterfaceError(Error):
+    """Generic exception raised for errors that are related to the database
+    interface rather than the database itself.  For example, if the interface
+    attempts to use an SSL connection but the server refuses, an InterfaceError
+    will be raised.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class DatabaseError(Error):
+    """Generic exception raised for errors that are related to the database.
+    This exception is currently never raised by pg8000.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class DataError(DatabaseError):
+    """Generic exception raised for errors that are due to problems with the
+    processed data.  This exception is not currently raised by pg8000.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class OperationalError(DatabaseError):
+    """
+    Generic exception raised for errors that are related to the database's
+    operation and not necessarily under the control of the programmer. This
+    exception is currently never raised by pg8000.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class IntegrityError(DatabaseError):
+    """
+    Generic exception raised when the relational integrity of the database is
+    affected.  This exception is not currently raised by pg8000.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class InternalError(DatabaseError):
+    """Generic exception raised when the database encounters an internal error.
+    This is currently only raised when unexpected state occurs in the pg8000
+    interface itself, and is typically the result of a interface bug.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class ProgrammingError(DatabaseError):
+    """Generic exception raised for programming errors.  For example, this
+    exception is raised if more parameter fields are in a query string than
+    there are available parameters.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class NotSupportedError(DatabaseError):
+    """Generic exception raised in case a method or database API was used which
+    is not supported by the database.
+
+    This exception is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+    """
+    pass
+
+
+class ArrayContentNotSupportedError(NotSupportedError):
+    """
+    Raised when attempting to transmit an array where the base type is not
+    supported for binary data transfer by the interface.
+    """
+    pass
+
+
+class ArrayContentNotHomogenousError(ProgrammingError):
+    """
+    Raised when attempting to transmit an array that doesn't contain only a
+    single type of object.
+    """
+    pass
+
+
+class ArrayContentEmptyError(ProgrammingError):
+    """Raised when attempting to transmit an empty array. The type oid of an
+    empty array cannot be determined, and so sending them is not permitted.
+    """
+    pass
+
+
+class ArrayDimensionsNotConsistentError(ProgrammingError):
+    """
+    Raised when attempting to transmit an array that has inconsistent
+    multi-dimension sizes.
+    """
+    pass
+
+
+class Bytea(binary_type):
+    """Bytea is a str-derived class that is mapped to a PostgreSQL byte array.
+    This class is only used in Python 2, the built-in ``bytes`` type is used in
+    Python 3.
+    """
+    pass
+
+
+def Date(year, month, day):
+    """Constuct an object holding a date value.
+
+    This function is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+
+    :rtype: :class:`datetime.date`
+    """
+    return datetime.date(year, month, day)
+
+
+def Time(hour, minute, second):
+    """Construct an object holding a time value.
+
+    This function is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+
+    :rtype: :class:`datetime.time`
+    """
+    return datetime.time(hour, minute, second)
+
+
+def Timestamp(year, month, day, hour, minute, second):
+    """Construct an object holding a timestamp value.
+
+    This function is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+
+    :rtype: :class:`datetime.datetime`
+    """
+    return datetime.datetime(year, month, day, hour, minute, second)
+
+
+def DateFromTicks(ticks):
+    """Construct an object holding a date value from the given ticks value
+    (number of seconds since the epoch).
+
+    This function is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+
+    :rtype: :class:`datetime.date`
+    """
+    return Date(*time.localtime(ticks)[:3])
+
+
+def TimeFromTicks(ticks):
+    """Construct an objet holding a time value from the given ticks value
+    (number of seconds since the epoch).
+
+    This function is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+
+    :rtype: :class:`datetime.time`
+    """
+    return Time(*time.localtime(ticks)[3:6])
+
+
+def TimestampFromTicks(ticks):
+    """Construct an object holding a timestamp value from the given ticks value
+    (number of seconds since the epoch).
+
+    This function is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+
+    :rtype: :class:`datetime.datetime`
+    """
+    return Timestamp(*time.localtime(ticks)[:6])
+
+
+def Binary(value):
+    """Construct an object holding binary data.
+
+    This function is part of the `DBAPI 2.0 specification
+    <http://www.python.org/dev/peps/pep-0249/>`_.
+
+    :rtype: :class:`pg8000.types.Bytea` for Python 2, otherwise :class:`bytes`
+    """
+    if PY2:
+        return Bytea(value)
+    else:
+        return value
+
+if PY2:
+    BINARY = Bytea
+else:
+    BINARY = bytes
 
 FC_TEXT = 0
 FC_BINARY = 1
@@ -271,13 +604,13 @@ def timestamp_recv_integer(data, offset, length):
     micros = q_unpack(data, offset)[0]
     try:
         return EPOCH + timedelta(microseconds=micros)
-    except OverflowError:
+    except OverflowError as e:
         if micros == INFINITY_MICROSECONDS:
             return datetime.datetime.max
         elif micros == MINUS_INFINITY_MICROSECONDS:
             return datetime.datetime.min
         else:
-            raise exc_info()[1]
+            raise e
 
 
 # data is double-precision float representing seconds since 2000-01-01
@@ -299,7 +632,7 @@ def timestamp_send_integer(v):
 
 # data is double-precision float representing seconds since 2000-01-01
 def timestamp_send_float(v):
-    return d_pack(timegm(v.timetuple) + v.microsecond / 1e6 - EPOCH_SECONDS)
+    return d_pack(timegm(v.timetuple()) + v.microsecond / 1e6 - EPOCH_SECONDS)
 
 
 def timestamptz_send_integer(v):
@@ -325,13 +658,13 @@ def timestamptz_recv_integer(data, offset, length):
     micros = q_unpack(data, offset)[0]
     try:
         return EPOCH_TZ + timedelta(microseconds=micros)
-    except OverflowError:
+    except OverflowError as e:
         if micros == INFINITY_MICROSECONDS:
             return DATETIME_MAX_TZ
         elif micros == MINUS_INFINITY_MICROSECONDS:
             return DATETIME_MIN_TZ
         else:
-            raise exc_info()[1]
+            raise e
 
 
 def timestamptz_recv_float(data, offset, length):
@@ -565,21 +898,19 @@ class Cursor():
             .. versionadded:: 1.9.11
         """
         try:
-            self._c._lock.acquire()
-            self.stream = stream
+            with self._c._lock:
+                self.stream = stream
 
-            if not self._c.in_transaction and not self._c.autocommit:
-                self._c.execute(self, "begin transaction", None)
-            self._c.execute(self, operation, args)
-        except AttributeError:
+                if not self._c.in_transaction and not self._c.autocommit:
+                    self._c.execute(self, "begin transaction", None)
+                self._c.execute(self, operation, args)
+        except AttributeError as e:
             if self._c is None:
                 raise InterfaceError("Cursor closed")
             elif self._c._sock is None:
                 raise InterfaceError("connection is closed")
             else:
-                raise exc_info()[1]
-        finally:
-            self._c._lock.release()
+                raise e
 
     def executemany(self, operation, param_sets):
         """Prepare a database operation, and then execute it against all
@@ -690,28 +1021,26 @@ class Cursor():
         pass
 
     def __next__(self):
-        try:
-            self._c._lock.acquire()
-            return self._cached_rows.popleft()
-        except IndexError:
-            if self.portal_suspended:
-                self._c.send_EXECUTE(self)
-                self._c._write(SYNC_MSG)
-                self._c._flush()
-                self._c.handle_messages(self)
-                if not self.portal_suspended:
-                    self._c.close_portal(self)
+        with self._c._lock:
             try:
                 return self._cached_rows.popleft()
             except IndexError:
-                if self.ps is None:
-                    raise ProgrammingError("A query hasn't been issued.")
-                elif len(self.ps['row_desc']) == 0:
-                    raise ProgrammingError("no result set")
-                else:
-                    raise StopIteration()
-        finally:
-            self._c._lock.release()
+                if self.portal_suspended:
+                    self._c.send_EXECUTE(self)
+                    self._c._write(SYNC_MSG)
+                    self._c._flush()
+                    self._c.handle_messages(self)
+                    if not self.portal_suspended:
+                        self._c.close_portal(self)
+                try:
+                    return self._cached_rows.popleft()
+                except IndexError:
+                    if self.ps is None:
+                        raise ProgrammingError("A query hasn't been issued.")
+                    elif len(self.ps['row_desc']) == 0:
+                        raise ProgrammingError("no result set")
+                    else:
+                        raise StopIteration()
 
 if PY2:
     Cursor.next = Cursor.__next__
@@ -737,6 +1066,7 @@ COPY_DONE = b("c")
 COPY_DATA = b("d")
 COPY_IN_RESPONSE = b("G")
 COPY_OUT_RESPONSE = b("H")
+EMPTY_QUERY_RESPONSE = b("I")
 
 BIND = b("B")
 PARSE = b("P")
@@ -775,14 +1105,6 @@ IDLE = b("I")
 IDLE_IN_TRANSACTION = b("T")
 IDLE_IN_FAILED_TRANSACTION = b("E")
 
-
-# Byte1('N') - Identifier
-# Int32 - Message length
-# Any number of these, followed by a zero byte:
-#   Byte1 - code identifying the field type (see responseKeys)
-#   String - field value
-def data_into_dict(data):
-    return dict((s[0:1], s[1:]) for s in data.split(NULL_BYTE))
 
 arr_trans = dict(zip(map(ord, u("[] 'u")), list(u('{}')) + [None] * 3))
 
@@ -895,7 +1217,9 @@ class Connection(object):
             error.__name__, stacklevel=3)
         return error
 
-    def __init__(self, user, host, unix_sock, port, database, password, ssl):
+    def __init__(
+            self, user, host, unix_sock, port, database, password, ssl,
+            timeout):
         self._client_encoding = "utf8"
         self._commands_with_count = (
             b("INSERT"), b("DELETE"), b("UPDATE"), b("MOVE"),
@@ -903,23 +1227,19 @@ class Connection(object):
         self._lock = threading.Lock()
 
         if user is None:
-            try:
-                self.user = os.environ['PGUSER']
-            except KeyError:
-                try:
-                    self.user = os.environ['USER']
-                except KeyError:
-                    raise InterfaceError(
-                        "The 'user' connection parameter was omitted, and "
-                        "neither the PGUSER or USER environment variables "
-                        "were set.")
+            raise InterfaceError(
+                "The 'user' connection parameter cannot be None")
+
+        if isinstance(user, text_type):
+            self.user = user.encode('utf8')
         else:
             self.user = user
 
-        if isinstance(self.user, text_type):
-            self.user = self.user.encode('utf8')
+        if isinstance(password, text_type):
+            self.password = password.encode('utf8')
+        else:
+            self.password = password
 
-        self.password = password
         self.autocommit = False
         self._xid = None
 
@@ -939,41 +1259,38 @@ class Connection(object):
             else:
                 raise ProgrammingError(
                     "one of host or unix_sock must be provided")
+            if not PY2 and timeout is not None:
+                self._usock.settimeout(timeout)
+
             if unix_sock is None and host is not None:
                 self._usock.connect((host, port))
             elif unix_sock is not None:
                 self._usock.connect(unix_sock)
 
             if ssl:
-                try:
-                    self._lock.acquire()
-                    import ssl as sslmodule
-                    # Int32(8) - Message length, including self.
-                    # Int32(80877103) - The SSL request code.
-                    self._usock.sendall(ii_pack(8, 80877103))
-                    resp = self._usock.recv(1)
-                    if resp == b('S'):
-                        self._usock = sslmodule.wrap_socket(self._usock)
-                    else:
-                        raise InterfaceError("Server refuses SSL")
-                except ImportError:
-                    raise InterfaceError(
-                        "SSL required but ssl module not available in "
-                        "this python installation")
-                finally:
-                    self._lock.release()
+                with self._lock:
+                    try:
+                        import ssl as sslmodule
+                        # Int32(8) - Message length, including self.
+                        # Int32(80877103) - The SSL request code.
+                        self._usock.sendall(ii_pack(8, 80877103))
+                        resp = self._usock.recv(1)
+                        if resp == b('S'):
+                            self._usock = sslmodule.wrap_socket(self._usock)
+                        else:
+                            raise InterfaceError("Server refuses SSL")
+                    except ImportError:
+                        raise InterfaceError(
+                            "SSL required but ssl module not available in "
+                            "this python installation")
 
             self._sock = self._usock.makefile(mode="rwb")
-        except socket.error:
+        except socket.error as e:
             self._usock.close()
-            raise InterfaceError("communication error", exc_info()[1])
+            raise InterfaceError("communication error", e)
         self._flush = self._sock.flush
         self._read = self._sock.read
-
-        if PRE_26:
-            self._write = self._sock.writelines
-        else:
-            self._write = self._sock.write
+        self._write = self._sock.write
         self._backend_key_data = None
 
         ##
@@ -1182,7 +1499,6 @@ class Connection(object):
             bool: (16, FC_BINARY, bool_send),
             int: (705, FC_TEXT, unknown_out),
             float: (701, FC_BINARY, d_pack),  # float8
-            str: (705, FC_TEXT, text_out),  # unknown
             datetime.date: (1082, FC_TEXT, date_out),  # date
             datetime.time: (1083, FC_TEXT, time_out),  # time
             1114: (1114, FC_BINARY, timestamp_send_integer),  # timestamp
@@ -1203,10 +1519,12 @@ class Connection(object):
         if PY2:
             self.py_types[Bytea] = (17, FC_BINARY, bytea_send)  # bytea
             self.py_types[text_type] = (705, FC_TEXT, text_out)  # unknown
+            self.py_types[str] = (705, FC_TEXT, bytea_send)  # unknown
 
             self.py_types[long] = (705, FC_TEXT, unknown_out)  # noqa
         else:
             self.py_types[bytes] = (17, FC_BINARY, bytea_send)  # bytea
+            self.py_types[str] = (705, FC_TEXT, text_out)  # unknown
 
         try:
             from ipaddress import (
@@ -1240,6 +1558,7 @@ class Connection(object):
             READY_FOR_QUERY: self.handle_READY_FOR_QUERY,
             ROW_DESCRIPTION: self.handle_ROW_DESCRIPTION,
             ERROR_RESPONSE: self.handle_ERROR_RESPONSE,
+            EMPTY_QUERY_RESPONSE: self.handle_EMPTY_QUERY_RESPONSE,
             DATA_ROW: self.handle_DATA_ROW,
             COMMAND_COMPLETE: self.handle_COMMAND_COMPLETE,
             PARSE_COMPLETE: self.handle_PARSE_COMPLETE,
@@ -1272,32 +1591,37 @@ class Connection(object):
         self._flush()
 
         self._cursor = self.cursor()
-        try:
-            self._lock.acquire()
-            code = self.error = None
-            while code not in (READY_FOR_QUERY, ERROR_RESPONSE):
-                code, data_len = ci_unpack(self._read(5))
-                self.message_types[code](self._read(data_len - 4), None)
-            if self.error is not None:
-                raise self.error
-        except:
-            self._close()
-            raise
-        finally:
-            self._lock.release()
+        with self._lock:
+            try:
+                code = self.error = None
+                while code not in (READY_FOR_QUERY, ERROR_RESPONSE):
+                    code, data_len = ci_unpack(self._read(5))
+                    self.message_types[code](self._read(data_len - 4), None)
+                if self.error is not None:
+                    raise self.error
+            except Exception as e:
+                try:
+                    self._close()
+                except Exception:
+                    pass
+                raise e
 
         self.in_transaction = False
         self.notifies = []
         self.notifies_lock = threading.Lock()
 
     def handle_ERROR_RESPONSE(self, data, ps):
-        msg_dict = data_into_dict(data)
+        responses = tuple(
+            (s[0:1], s[1:].decode(self._client_encoding)) for s in
+            data.split(NULL_BYTE))
+        msg_dict = dict(responses)
         if msg_dict[RESPONSE_CODE] == "28000":
             self.error = InterfaceError("md5 password authentication failed")
         else:
-            self.error = ProgrammingError(
-                msg_dict[RESPONSE_SEVERITY], msg_dict[RESPONSE_CODE],
-                msg_dict[RESPONSE_MSG])
+            self.error = ProgrammingError(*tuple(v for k, v in responses))
+
+    def handle_EMPTY_QUERY_RESPONSE(self, data, ps):
+        self.error = ProgrammingError("query was empty")
 
     def handle_CLOSE_COMPLETE(self, data, ps):
         pass
@@ -1391,11 +1715,8 @@ class Connection(object):
         # additional_info = data[idx:idx + null]
 
         # psycopg2 compatible notification interface
-        try:
-            self.notifies_lock.acquire()
+        with self.notifies_lock:
             self.notifies.append((backend_pid, condition))
-        finally:
-            self.notifies_lock.release()
 
     def cursor(self):
         """Creates a :class:`Cursor` object bound to this
@@ -1412,11 +1733,8 @@ class Connection(object):
         This function is part of the `DBAPI 2.0 specification
         <http://www.python.org/dev/peps/pep-0249/>`_.
         """
-        try:
-            self._lock.acquire()
+        with self._lock:
             self.execute(self._cursor, "commit", None)
-        finally:
-            self._lock.release()
 
     def rollback(self):
         """Rolls back the current database transaction.
@@ -1424,11 +1742,8 @@ class Connection(object):
         This function is part of the `DBAPI 2.0 specification
         <http://www.python.org/dev/peps/pep-0249/>`_.
         """
-        try:
-            self._lock.acquire()
+        with self._lock:
             self.execute(self._cursor, "rollback", None)
-        finally:
-            self._lock.release()
 
     def _close(self):
         try:
@@ -1437,12 +1752,15 @@ class Connection(object):
             self._write(TERMINATE_MSG)
             self._flush()
             self._sock.close()
-            self._usock.close()
-            self._sock = None
         except AttributeError:
             raise InterfaceError("connection is closed")
         except ValueError:
             raise InterfaceError("connection is closed")
+        except socket.error as e:
+            raise OperationalError(str(e))
+        finally:
+            self._usock.close()
+            self._sock = None
 
     def close(self):
         """Closes the database connection.
@@ -1450,11 +1768,8 @@ class Connection(object):
         This function is part of the `DBAPI 2.0 specification
         <http://www.python.org/dev/peps/pep-0249/>`_.
         """
-        try:
-            self._lock.acquire()
+        with self._lock:
             self._close()
-        finally:
-            self._lock.release()
 
     def handle_AUTHENTICATION_REQUEST(self, data, cursor):
         assert self._lock.locked()
@@ -1463,7 +1778,7 @@ class Connection(object):
         #               0 = AuthenticationOk
         #               5 = MD5 pwd
         #               2 = Kerberos v5 (not supported by pg8000)
-        #               3 = Cleartext pwd (not supported by pg8000)
+        #               3 = Cleartext pwd
         #               4 = crypt() pwd (not supported by pg8000)
         #               6 = SCM credential (not supported by pg8000)
         #               7 = GSSAPI (not supported by pg8000)
@@ -1480,8 +1795,7 @@ class Connection(object):
                 raise InterfaceError(
                     "server requesting password authentication, but no "
                     "password was provided")
-            self._send_message(
-                PASSWORD, self.password.encode("ascii") + NULL_BYTE)
+            self._send_message(PASSWORD, self.password + NULL_BYTE)
             self._flush()
         elif auth_code == 5:
             ##
@@ -1497,8 +1811,8 @@ class Connection(object):
                     "server requesting MD5 password authentication, but no "
                     "password was provided")
             pwd = b("md5") + md5(
-                md5(self.password.encode("ascii") + self.user).
-                hexdigest().encode("ascii") + salt).hexdigest().encode("ascii")
+                md5(self.password + self.user).hexdigest().encode("ascii") +
+                salt).hexdigest().encode("ascii")
             # Byte1('p') - Identifies the message as a password message.
             # Int32 - Message length including self.
             # String - The password.  Password may be encrypted.
@@ -1536,11 +1850,10 @@ class Connection(object):
             except KeyError:
                 try:
                     params.append(self.inspect_funcs[typ](value))
-                except KeyError:
+                except KeyError as e:
                     raise NotSupportedError(
-                        "type " + str(exc_info()[1]) +
-                        "not mapped to pg type")
-        return params
+                        "type " + str(e) + "not mapped to pg type")
+        return tuple(params)
 
     def handle_ROW_DESCRIPTION(self, data, cursor):
         count = h_unpack(data)[0]
@@ -1572,8 +1885,7 @@ class Connection(object):
 
         args = make_args(vals)
         params = self.make_params(args)
-
-        key = tuple(oid for oid, x, y in params), operation
+        key = operation, params
 
         try:
             ps = cache['ps'][key]
@@ -1617,11 +1929,13 @@ class Connection(object):
 
             try:
                 self._flush()
-            except AttributeError:
+            except AttributeError as e:
                 if self._sock is None:
                     raise InterfaceError("connection is closed")
                 else:
-                    raise exc_info()[1]
+                    raise e
+            except socket.error as e:
+                raise OperationalError(str(e))
 
             self.handle_messages(cursor)
 
@@ -1711,11 +2025,11 @@ class Connection(object):
             self._write(i_pack(len(data) + 4))
             self._write(data)
             self._write(FLUSH_MSG)
-        except ValueError:
-            if str(exc_info()[1]) == "write to closed file":
+        except ValueError as e:
+            if str(e) == "write to closed file":
                 raise InterfaceError("connection is closed")
             else:
-                raise exc_info()[1]
+                raise e
         except AttributeError:
             raise InterfaceError("connection is closed")
 
@@ -1783,8 +2097,13 @@ class Connection(object):
         self._flush()
         self.handle_messages(cursor)
 
+    # Byte1('N') - Identifier
+    # Int32 - Message length
+    # Any number of these, followed by a zero byte:
+    #   Byte1 - code identifying the field type (see responseKeys)
+    #   String - field value
     def handle_NOTICE_RESPONSE(self, data, ps):
-        resp = data_into_dict(data)
+        resp = dict((s[0:1], s[1:]) for s in data.split(NULL_BYTE))
         self.NoticeReceived(resp)
 
     def handle_PARAMETER_STATUS(self, data, ps):
