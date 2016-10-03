@@ -40,26 +40,15 @@
     :copyright: (c) Copyright 2011 by Armin Ronacher.
     :license: BSD, see LICENSE for more details.
 """
-from __future__ import print_function
 import hmac
-try:
-    from hashlib import sha1
-except ImportError:
-    # hashlib not available.  Use the old sha module.
-    import sha as sha1
-
+import hashlib
 from struct import Struct
 from operator import xor
 from itertools import izip, starmap
-from collections import deque
+
 
 _pack_int = Struct('>I').pack
 
-try:
-    from Crypto.Util.strxor import strxor
-except ImportError:
-    def strxor(a, b):
-        return ''.join(chr(xor(ord(x), ord(y))) for x,y in  izip(a, b))
 
 def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
     """Like :func:`pbkdf2_bin` but returns a hex encoded string."""
@@ -72,20 +61,20 @@ def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
     key of `keylen` bytes.  By default SHA-1 is used as hash function,
     a different hashlib `hashfunc` can be provided.
     """
-    hashfunc = hashfunc or sha1
+    hashfunc = hashfunc or hashlib.sha1
     mac = hmac.new(data, None, hashfunc)
     def _pseudorandom(x, mac=mac):
         h = mac.copy()
         h.update(x)
-        return h.digest()
-    buf = deque()
+        return map(ord, h.digest())
+    buf = []
     for block in xrange(1, -(-keylen // mac.digest_size) + 1):
         rv = u = _pseudorandom(salt + _pack_int(block))
         for i in xrange(iterations - 1):
-            u = _pseudorandom(u)
-            rv = strxor(rv, u)
+            u = _pseudorandom(''.join(map(chr, u)))
+            rv = starmap(xor, izip(rv, u))
         buf.extend(rv)
-    return ''.join(buf)[:keylen]
+    return ''.join(map(chr, buf))[:keylen]
 
 
 def test():
@@ -93,14 +82,14 @@ def test():
     def check(data, salt, iterations, keylen, expected):
         rv = pbkdf2_hex(data, salt, iterations, keylen)
         if rv != expected:
-            print('Test failed:')
-            print('  Expected:   %s' % expected)
-            print('  Got:        %s' % rv)
-            print('  Parameters:')
-            print('    data=%s' % data)
-            print('    salt=%s' % salt)
-            print('    iterations=%d' % iterations)
-            print()
+            print 'Test failed:'
+            print '  Expected:   %s' % expected
+            print '  Got:        %s' % rv
+            print '  Parameters:'
+            print '    data=%s' % data
+            print '    salt=%s' % salt
+            print '    iterations=%d' % iterations
+            print
             failed.append(1)
 
     # From RFC 6070
@@ -115,8 +104,9 @@ def test():
     check('pass\x00word', 'sa\x00lt', 4096, 16,
           '56fa6aa75548099dcc37d7f03425e0c3')
     # This one is from the RFC but it just takes for ages
-    check('password', 'salt', 16777216, 20,
-          'eefe3d61cd4da4e4e9945b3d6ba2158c2634e984')
+    ##check('password', 'salt', 16777216, 20,
+    ##      'eefe3d61cd4da4e4e9945b3d6ba2158c2634e984')
+
     # From Crypt-PBKDF2
     check('password', 'ATHENA.MIT.EDUraeburn', 1, 16,
           'cdedb5281bb2f801565a1122b2563515')
