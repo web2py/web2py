@@ -310,12 +310,13 @@ def site():
     regex = re.compile('^\w+$')
 
     if is_manager():
-        apps = [f for f in os.listdir(apath(r=request)) if regex.match(f)]
+        apps = [a for a in os.listdir(apath(r=request)) if regex.match(f) and
+                a != '__pycache__']
     else:
-        apps = [f.name for f in db(db.app.owner == auth.user_id).select()]
+        apps = [a.name for a in db(db.app.owner == auth.user_id).select()]
 
     if FILTER_APPS:
-        apps = [f for f in apps if f in FILTER_APPS]
+        apps = [a for a in apps if a in FILTER_APPS]
 
     apps = sorted(apps, key=lambda a: a.upper())
     myplatform = platform.python_version()
