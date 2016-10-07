@@ -213,7 +213,7 @@ def select():
 
     if is_imap:
         step = 3
- 
+
     stop = start + step
 
     table = None
@@ -409,7 +409,7 @@ def ccache():
     import copy
     import time
     import math
-    from gluon import portalocker
+    from pydal.contrib import portalocker
 
     ram = {
         'entries': 0,
@@ -421,7 +421,7 @@ def ccache():
         'oldest': time.time(),
         'keys': []
     }
-    
+
     disk = copy.copy(ram)
     total = copy.copy(ram)
     disk['keys'] = []
@@ -465,8 +465,7 @@ def ccache():
             ram['keys'].append((key, GetInHMS(time.time() - value[0])))
 
         for key in cache.disk.storage:
-            value = cache.disk.storage[key]
-            if isinstance(value[1], dict):
+            if key == 'web2py_cache_statistics' and isinstance(value[1], dict):
                 disk['hits'] = value[1]['hit_total'] - value[1]['misses']
                 disk['misses'] = value[1]['misses']
                 try:
