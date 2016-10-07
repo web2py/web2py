@@ -310,7 +310,7 @@ def site():
     regex = re.compile('^\w+$')
 
     if is_manager():
-        apps = [a for a in os.listdir(apath(r=request)) if regex.match(f) and
+        apps = [a for a in os.listdir(apath(r=request)) if regex.match(a) and
                 a != '__pycache__']
     else:
         apps = [a.name for a in db(db.app.owner == auth.user_id).select()]
