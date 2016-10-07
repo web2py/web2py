@@ -601,13 +601,20 @@ class testForSchedulerRunnerBase(BaseTestScheduler):
         fdest = os.path.join(current.request.folder, 'models', 'scheduler.py')
         os.unlink(fdest)
         additional_files = [
-            os.path.join(current.request.folder, 'private', 'demo8.pholder')
+            os.path.join(current.request.folder, 'private', 'demo8.pholder'),
+            os.path.join(current.request.folder, 'views', 'issue_1485_2.html'),
         ]
         for f in additional_files:
             try:
                 os.unlink(f)
             except:
                 pass
+
+    def writeview(self, content, dest=None):
+        from gluon import current
+        fdest = os.path.join(current.request.folder, 'views', dest)
+        with open(fdest, 'w') as q:
+            q.write(content)
 
     def writefunction(self, content, initlines=None):
         from gluon import current
@@ -620,6 +627,9 @@ from gluon.scheduler import Scheduler
 db_dal = os.path.abspath(os.path.join(request.folder, '..', '..', 'dummy2.db'))
 sched_dal = DAL('sqlite://%s' % db_dal, folder=os.path.dirname(db_dal))
 sched = Scheduler(sched_dal, max_empty_runs=15, migrate=False, heartbeat=1)
+def termination():
+    sched.terminate()
+    sched_dal.commit()
             """
         with open(fdest, 'w') as q:
             q.write(initlines)
@@ -699,10 +709,11 @@ def demo4():
         timeout1 = s.queue_task('demo4', timeout=5)
         timeout2 = s.queue_task('demo4')
         progress = s.queue_task('demo6', sync_output=2)
+        termination = s.queue_task('termination')
         self.db.commit()
         self.writefunction(r"""
 def demo3():
-    time.sleep(15)
+    time.sleep(3)
     print(1/0)
     return None
 
@@ -712,7 +723,7 @@ def demo4():
     return dict(a=1, b=2)
 
 def demo5():
-    time.sleep(15)
+    time.sleep(3)
     print("I'm printing something")
     rtn = dict(a=1, b=2)
 
@@ -758,6 +769,7 @@ def demo6():
         immediate = s.queue_task('demo1', ['a', 'b'], dict(c=1, d=2), immediate=True)
         env = s.queue_task('demo7')
         drift = s.queue_task('demo1', ['a', 'b'], dict(c=1, d=2), period=93, prevent_drift=True)
+        termination = s.queue_task('termination')
         self.db.commit()
         self.writefunction(r"""
 def demo1(*args,**vars):
@@ -844,26 +856,40 @@ def demo8():
         ]
         self.exec_asserts(res, 'FAILED_CONSECUTIVE')
 
-    def testHugeResult(self):
+    def testRegressions(self):
         s = Scheduler(self.db)
         huge_result = s.queue_task('demo10', retry_failed=1, period=1)
+        issue_1485 = s.queue_task('issue_1485')
+        termination = s.queue_task('termination')
         self.db.commit()
         self.writefunction(r"""
 def demo10():
     res = 'a' * 99999
     return dict(res=res)
+
+def issue_1485():
+    return response.render('issue_1485.html', dict(variable='abc'))
 """)
+        self.writeview(r"""<span>{{=variable}}</span>""", 'issue_1485.html')
         ret = self.exec_sched()
         # process finished just fine
         self.assertEqual(ret, 0)
         # huge_result - checks
-        task = s.task_status(huge_result.id, output=True)
+        task_huge = s.task_status(huge_result.id, output=True)
         res = [
-            ("task status completed", task.scheduler_task.status == 'COMPLETED'),
-            ("task times_run is 1", task.scheduler_task.times_run == 1),
-            ("result is the correct one", task.result == dict(res='a' * 99999))
+            ("task status completed", task_huge.scheduler_task.status == 'COMPLETED'),
+            ("task times_run is 1", task_huge.scheduler_task.times_run == 1),
+            ("result is the correct one", task_huge.result == dict(res='a' * 99999))
         ]
         self.exec_asserts(res, 'HUGE_RESULT')
+
+        task_issue_1485 = s.task_status(issue_1485.id, output=True)
+        res = [
+            ("task status completed", task_issue_1485.scheduler_task.status == 'COMPLETED'),
+            ("task times_run is 1", task_issue_1485.scheduler_task.times_run == 1),
+            ("result is the correct one", task_issue_1485.result == '<span>abc</span>')
+        ]
+        self.exec_asserts(res, 'issue_1485')
 
 
 if __name__ == '__main__':
