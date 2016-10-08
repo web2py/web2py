@@ -153,7 +153,10 @@ class WebClient(object):
         self.cookies = {}
         if 'set-cookie' in self.headers:
             for item in self.headers['set-cookie'].split(','):
-                key, value = item[:item.find(';')].split('=')
+                cookie = item[:item.find(';')]
+                pos = cookie.find('=')
+                key = cookie[:pos]
+                vaue = cookie[pos:]
                 self.cookies[key.strip()] = value.strip()
 
         # check is a new session id has been issued, symptom of broken session
