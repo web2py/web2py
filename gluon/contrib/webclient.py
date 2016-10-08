@@ -156,7 +156,7 @@ class WebClient(object):
                 cookie = item[:item.find(';')]
                 pos = cookie.find('=')
                 key = cookie[:pos]
-                value = cookie[pos:]
+                value = cookie[pos+1:]
                 self.cookies[key.strip()] = value.strip()
 
         # check is a new session id has been issued, symptom of broken session
