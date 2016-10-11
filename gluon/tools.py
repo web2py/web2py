@@ -12,9 +12,11 @@ Auth, Mail, PluginManager and various utilities
 
 import base64
 from functools import reduce
-from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, configparser, MIMEBase, MIMEMultipart, \
-                          MIMEText, Encoders, Charset, long, urllib_quote, iteritems, to_bytes, to_native, add_charset, \
-                          charset_QP, basestring, unicodeT, to_unicode
+from gluon._compat import pickle, thread, urllib2, Cookie, StringIO
+from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText
+from gluon._compat import Encoders, Charset, long, urllib_quote, iteritems
+from gluon._compat import to_bytes, to_native, add_charset
+from gluon._compat import charset_QP, basestring, unicodeT, to_unicode
 import datetime
 import logging
 import sys
@@ -40,8 +42,9 @@ from gluon.utils import web2py_uuid, compare
 from gluon.fileutils import read_file, check_credentials
 from gluon import *
 from gluon.contrib.autolinks import expand_one
-from gluon.contrib.markmin.markmin2html import \
-    replace_at_urls, replace_autolinks, replace_components
+from gluon.contrib.markmin.markmin2html import replace_at_urls
+from gluon.contrib.markmin.markmin2html import replace_autolinks
+from gluon.contrib.markmin.markmin2html import replace_components
 from pydal.objects import Row, Set, Query
 
 import gluon.serializers as serializers
@@ -1578,7 +1581,6 @@ class Auth(object):
         logged_out='Logged out',
         registration_successful='Registration successful',
         invalid_email='Invalid email',
-        unable_send_email='Unable to send email',
         invalid_login='Invalid login',
         invalid_user='Invalid user',
         invalid_password='Invalid password',
@@ -3633,7 +3635,7 @@ class Auth(object):
                                          message=self.messages.retrieve_password % dict(password=password)):
                 session.flash = self.messages.email_sent
             else:
-                session.flash = self.messages.unable_to_send_email
+                session.flash = self.messages.unable_send_email
             self.log_event(log, user)
             callback(onaccept, form)
             if not next:
@@ -3930,7 +3932,7 @@ class Auth(object):
             if self.email_reset_password(user):
                 session.flash = self.messages.email_sent
             else:
-                session.flash = self.messages.unable_to_send_email
+                session.flash = self.messages.unable_send_email
             self.log_event(log, user)
             callback(onaccept, form)
             if not next:

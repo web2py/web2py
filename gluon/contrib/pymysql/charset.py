@@ -5,10 +5,27 @@ MBLENGTH = {
         91:2
         }
 
-class Charset:
+
+class Charset(object):
     def __init__(self, id, name, collation, is_default):
         self.id, self.name, self.collation = id, name, collation
         self.is_default = is_default == 'Yes'
+
+    def __repr__(self):
+        return "Charset(id=%s, name=%r, collation=%r)" % (
+                self.id, self.name, self.collation)
+
+    @property
+    def encoding(self):
+        name = self.name
+        if name == 'utf8mb4':
+            return 'utf8'
+        return name
+
+    @property
+    def is_binary(self):
+        return self.id == 63
+
 
 class Charsets:
     def __init__(self):
@@ -21,6 +38,7 @@ class Charsets:
         return self._by_id[id]
 
     def by_name(self, name):
+        name = name.lower()
         for c in self._by_id.values():
             if c.name == name and c.is_default:
                 return c
@@ -92,13 +110,11 @@ _charsets.add(Charset(52, 'cp1251', 'cp1251_general_cs', ''))
 _charsets.add(Charset(53, 'macroman', 'macroman_bin', ''))
 _charsets.add(Charset(54, 'utf16', 'utf16_general_ci', 'Yes'))
 _charsets.add(Charset(55, 'utf16', 'utf16_bin', ''))
-_charsets.add(Charset(56, 'utf16le', 'utf16le_general_ci', 'Yes'))
 _charsets.add(Charset(57, 'cp1256', 'cp1256_general_ci', 'Yes'))
 _charsets.add(Charset(58, 'cp1257', 'cp1257_bin', ''))
 _charsets.add(Charset(59, 'cp1257', 'cp1257_general_ci', 'Yes'))
 _charsets.add(Charset(60, 'utf32', 'utf32_general_ci', 'Yes'))
 _charsets.add(Charset(61, 'utf32', 'utf32_bin', ''))
-_charsets.add(Charset(62, 'utf16le', 'utf16le_bin', ''))
 _charsets.add(Charset(63, 'binary', 'binary', 'Yes'))
 _charsets.add(Charset(64, 'armscii8', 'armscii8_bin', ''))
 _charsets.add(Charset(65, 'ascii', 'ascii_bin', ''))
@@ -155,10 +171,6 @@ _charsets.add(Charset(117, 'utf16', 'utf16_persian_ci', ''))
 _charsets.add(Charset(118, 'utf16', 'utf16_esperanto_ci', ''))
 _charsets.add(Charset(119, 'utf16', 'utf16_hungarian_ci', ''))
 _charsets.add(Charset(120, 'utf16', 'utf16_sinhala_ci', ''))
-_charsets.add(Charset(121, 'utf16', 'utf16_german2_ci', ''))
-_charsets.add(Charset(122, 'utf16', 'utf16_croatian_ci', ''))
-_charsets.add(Charset(123, 'utf16', 'utf16_unicode_520_ci', ''))
-_charsets.add(Charset(124, 'utf16', 'utf16_vietnamese_ci', ''))
 _charsets.add(Charset(128, 'ucs2', 'ucs2_unicode_ci', ''))
 _charsets.add(Charset(129, 'ucs2', 'ucs2_icelandic_ci', ''))
 _charsets.add(Charset(130, 'ucs2', 'ucs2_latvian_ci', ''))
@@ -179,10 +191,6 @@ _charsets.add(Charset(144, 'ucs2', 'ucs2_persian_ci', ''))
 _charsets.add(Charset(145, 'ucs2', 'ucs2_esperanto_ci', ''))
 _charsets.add(Charset(146, 'ucs2', 'ucs2_hungarian_ci', ''))
 _charsets.add(Charset(147, 'ucs2', 'ucs2_sinhala_ci', ''))
-_charsets.add(Charset(148, 'ucs2', 'ucs2_german2_ci', ''))
-_charsets.add(Charset(149, 'ucs2', 'ucs2_croatian_ci', ''))
-_charsets.add(Charset(150, 'ucs2', 'ucs2_unicode_520_ci', ''))
-_charsets.add(Charset(151, 'ucs2', 'ucs2_vietnamese_ci', ''))
 _charsets.add(Charset(159, 'ucs2', 'ucs2_general_mysql500_ci', ''))
 _charsets.add(Charset(160, 'utf32', 'utf32_unicode_ci', ''))
 _charsets.add(Charset(161, 'utf32', 'utf32_icelandic_ci', ''))
@@ -204,10 +212,6 @@ _charsets.add(Charset(176, 'utf32', 'utf32_persian_ci', ''))
 _charsets.add(Charset(177, 'utf32', 'utf32_esperanto_ci', ''))
 _charsets.add(Charset(178, 'utf32', 'utf32_hungarian_ci', ''))
 _charsets.add(Charset(179, 'utf32', 'utf32_sinhala_ci', ''))
-_charsets.add(Charset(180, 'utf32', 'utf32_german2_ci', ''))
-_charsets.add(Charset(181, 'utf32', 'utf32_croatian_ci', ''))
-_charsets.add(Charset(182, 'utf32', 'utf32_unicode_520_ci', ''))
-_charsets.add(Charset(183, 'utf32', 'utf32_vietnamese_ci', ''))
 _charsets.add(Charset(192, 'utf8', 'utf8_unicode_ci', ''))
 _charsets.add(Charset(193, 'utf8', 'utf8_icelandic_ci', ''))
 _charsets.add(Charset(194, 'utf8', 'utf8_latvian_ci', ''))
@@ -228,10 +232,6 @@ _charsets.add(Charset(208, 'utf8', 'utf8_persian_ci', ''))
 _charsets.add(Charset(209, 'utf8', 'utf8_esperanto_ci', ''))
 _charsets.add(Charset(210, 'utf8', 'utf8_hungarian_ci', ''))
 _charsets.add(Charset(211, 'utf8', 'utf8_sinhala_ci', ''))
-_charsets.add(Charset(212, 'utf8', 'utf8_german2_ci', ''))
-_charsets.add(Charset(213, 'utf8', 'utf8_croatian_ci', ''))
-_charsets.add(Charset(214, 'utf8', 'utf8_unicode_520_ci', ''))
-_charsets.add(Charset(215, 'utf8', 'utf8_vietnamese_ci', ''))
 _charsets.add(Charset(223, 'utf8', 'utf8_general_mysql500_ci', ''))
 _charsets.add(Charset(224, 'utf8mb4', 'utf8mb4_unicode_ci', ''))
 _charsets.add(Charset(225, 'utf8mb4', 'utf8mb4_icelandic_ci', ''))
@@ -258,9 +258,13 @@ _charsets.add(Charset(245, 'utf8mb4', 'utf8mb4_croatian_ci', ''))
 _charsets.add(Charset(246, 'utf8mb4', 'utf8mb4_unicode_520_ci', ''))
 _charsets.add(Charset(247, 'utf8mb4', 'utf8mb4_vietnamese_ci', ''))
 
-def charset_by_name(name):
-    return _charsets.by_name(name)
 
-def charset_by_id(id):
-    return _charsets.by_id(id)
+charset_by_name = _charsets.by_name
+charset_by_id = _charsets.by_id
 
+
+def charset_to_encoding(name):
+    """Convert MySQL's charset name to Python's codec name"""
+    if name == 'utf8mb4':
+        return 'utf8'
+    return name

@@ -180,8 +180,8 @@ def serve_controller(request, response, session):
     if isinstance(page, dict):
         response._vars = page
         response._view_environment.update(page)
-        run_view_in(response._view_environment)
-        page = response.body.getvalue()
+        page = run_view_in(response._view_environment)
+
     # logic to garbage collect after exec, not always, once every 100 requests
     global requests
     requests = ('requests' in globals()) and (requests + 1) % 100 or 0

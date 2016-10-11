@@ -409,7 +409,7 @@ def ccache():
     import copy
     import time
     import math
-    from gluon import portalocker
+    from pydal.contrib import portalocker
 
     ram = {
         'entries': 0,

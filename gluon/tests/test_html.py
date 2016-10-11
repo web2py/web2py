@@ -253,6 +253,7 @@ class TestBareHelpers(unittest.TestCase):
 
         # test .get('attrib')
         self.assertEqual(DIV('<p>Test</p>', _class="class_test").get('_class'), 'class_test')
+        self.assertEqual(DIV(b'a').xml(), b'<div>a</div>')
 
     def test_CAT(self):
         # Empty CAT()

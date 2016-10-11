@@ -13,7 +13,7 @@ Contains the classes for the global used variables:
 - Session
 
 """
-from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, unicodeT
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, unicodeT, long
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -439,13 +439,11 @@ class Response(Storage):
             from gluon._compat import StringIO
             (obody, oview) = (self.body, self.view)
             (self.body, self.view) = (StringIO(), view)
-            run_view_in(self._view_environment)
-            page = self.body.getvalue()
+            page = run_view_in(self._view_environment)
             self.body.close()
             (self.body, self.view) = (obody, oview)
         else:
-            run_view_in(self._view_environment)
-            page = self.body.getvalue()
+            page = run_view_in(self._view_environment)
         return page
 
     def include_meta(self):

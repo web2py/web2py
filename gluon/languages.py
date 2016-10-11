@@ -962,7 +962,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
             + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
         data = to_native(read_locked(filename))
         items = regex_translate.findall(data)
-        items += regex_translate_m.findall(data)
+        items += ["@markmin\x01%s" %x for x in regex_translate_m.findall(data)]
         for item in items:
             try:
                 message = safe_eval(item)
@@ -976,7 +976,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
             if len(tokens) == 2:
                 message = tokens[0].strip() + '##' + tokens[1].strip()
             if message and not message in sentences:
-                sentences[message] = message
+                sentences[message] = message.replace("@markmin\x01", "")
     if not '!langcode!' in sentences:
         sentences['!langcode!'] = (
             DEFAULT_LANGUAGE if language in ('default', DEFAULT_LANGUAGE) else language)
