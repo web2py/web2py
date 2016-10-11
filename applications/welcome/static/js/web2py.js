@@ -201,7 +201,7 @@
                         showsTime: true,
                         timeFormat: '24'
                     });
-                    $(this).prop('autocomplete', 'off');
+                    $(this).attr('autocomplete', 'off');
                     $(this).data('w2p_datetime', 1);
                     $(this).trigger('click');
                 }
@@ -218,7 +218,7 @@
                         showsTime: false
                     });
                     $(this).data('w2p_date', 1);
-                    $(this).prop('autocomplete', 'off');
+                    $(this).attr('autocomplete', 'off');
                     $(this).trigger('click');
                 }
             });
@@ -227,7 +227,7 @@
                 if (web2py.isUndefined(active)) {
                     $(this).timeEntry({
                         spinnerImage: ''
-                    }).prop('autocomplete', 'off');
+                    }).attr('autocomplete', 'off');
                     $(this).data('w2p_time', 1);
                 }
             });
@@ -617,8 +617,8 @@
             }
             if (confirm_message) {
                 if (confirm_message == 'default') {
-                    confirm_message = w2p_ajax_confirm_message ||
-                        'Are you sure you want to delete this object?';
+                    confirm_message = !web2py.isUndefined(w2p_ajax_confirm_message) ?  
+                    w2p_ajax_confirm_message : 'Are you sure you want to delete this object?';
                 }
                 if (!web2py.confirm(confirm_message)) {
                     web2py.stopEverything(e);

@@ -54,8 +54,8 @@ header, main, footer {display:block; with:100%} /* IE fix */
 .right {right:0; text-align:right}
 .middle div {vertical-align:middle}
 .bottom div {vertical-align:bottom}
-.xscroll {overflow-x:scroll}
-.yscroll {overflow-y:scroll}
+.xscroll {overflow-x:scroll !important}
+.yscroll {overflow-y:scroll !important}
 .nowrap {white-space:nowrap; overflow-x:hidden}
 .fill {width:100%}
 .lifted {box-shadow:5px 5px 10px #666}
@@ -75,7 +75,7 @@ input:invalid, input.error, textarea:invalid, textarea.error {background: #ffdfd
 /*** grid ***/
 .container {margin-right:-20px}
 .container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters {display:inline-block; padding: 0 20px 0 0; vertical-align:top}
-.container>.fill{display: inline-block}
+.container>.fill{display: inline-block; padding-right: 20px; margin-right:-10px}
 .container img, .container video {max-width:100%}
 .max900 {margin-left:auto; margin-right:auto}
 

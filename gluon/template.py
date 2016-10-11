@@ -426,7 +426,7 @@ class TemplateParser(object):
 
         # Allow Views to include other views dynamically
         context = self.context
-        if current and not "response" in context:
+        if current and "response" not in context:
             context["response"] = getattr(current, 'response', None)
 
         # Get the filename; filename looks like ``"template.html"``.
@@ -779,10 +779,10 @@ def parse_template(filename,
 
     # First, if we have a str try to open the file
     if isinstance(filename, str):
+        fname = os.path.join(path, filename)
         try:
-            fp = open(os.path.join(path, filename), 'rb')
-            text = fp.read()
-            fp.close()
+            with open(fname, 'rb') as fp:
+                text = fp.read()
         except IOError:
             raise RestrictedError(filename, '', 'Unable to find the file')
     else:
@@ -890,7 +890,7 @@ def render(content="hello world",
         Response = DummyResponse
 
         # Add it to the context so we can use it.
-        if not 'NOESCAPE' in context:
+        if 'NOESCAPE' not in context:
             context['NOESCAPE'] = NOESCAPE
 
     if isinstance(content, unicodeT):
@@ -936,8 +936,3 @@ def render(content="hello world",
     if old_response_body is not None:
         context['response'].body = old_response_body
     return text
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

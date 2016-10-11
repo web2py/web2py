@@ -617,8 +617,8 @@
             }
             if (confirm_message) {
                 if (confirm_message == 'default') {
-                    confirm_message = w2p_ajax_confirm_message ||
-                        'Are you sure you want to delete this object?';
+                    confirm_message = !web2py.isUndefined(w2p_ajax_confirm_message) ?  
+                    w2p_ajax_confirm_message : 'Are you sure you want to delete this object?';
                 }
                 if (!web2py.confirm(confirm_message)) {
                     web2py.stopEverything(e);

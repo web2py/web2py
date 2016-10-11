@@ -136,6 +136,26 @@ def deploy(appname=None, all=False):
                
     if backup:
         print 'TO RESTORE: fab restore:%s' % backup
+
+def deploynobackup(appname=None):
+    """fab -H username@host deploy:appname,all"""
+    appname = appname or os.path.split(os.getcwd())[-1]
+    appfolder = applications+'/'+appname
+    zipfile = os.path.join(appfolder, '_update.zip')
+    if os.path.exists(zipfile):
+        os.unlink(zipfile)
+
+    local('zip -r _update.zip */*.py */*/*.py views/*.html views/*/*.html static/*')
+
+    put('_update.zip','/tmp/_update.zip')
+    try:
+        with cd(appfolder):
+            sudo('unzip -o /tmp/_update.zip')
+            sudo('chown -R www-data:www-data *')
+            sudo('echo "%s" > DATE_DEPLOYMENT' % now)
+    
+    finally:
+        sudo('rm /tmp/_update.zip')
              
 def restore(backup):
     """fab -H username@host restore:backupfilename"""

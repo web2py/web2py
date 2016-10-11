@@ -230,8 +230,8 @@ def LOAD(c=None, f='index', args=None, vars=None,
         if isinstance(page, dict):
             other_response._vars = page
             other_response._view_environment.update(page)
-            run_view_in(other_response._view_environment)
-            page = other_response.body.getvalue()
+            page = run_view_in(other_response._view_environment)
+
         current.request, current.response = original_request, original_response
         js = None
         if ajax_trap:
@@ -309,8 +309,8 @@ class LoadFactory(object):
             if isinstance(page, dict):
                 other_response._vars = page
                 other_response._view_environment.update(page)
-                run_view_in(other_response._view_environment)
-                page = other_response.body.getvalue()
+                page = run_view_in(other_response._view_environment)
+
             current.request, current.response = original_request, original_response
             js = None
             if ajax_trap:
@@ -430,13 +430,10 @@ def build_environment(request, response, session, store_current=True):
         current.T = t
         current.cache = c
 
-    global __builtins__
     if is_jython:  # jython hack
+        global __builtins__
         __builtins__ = mybuiltin()
-    elif is_pypy:  # apply the same hack to pypy too
-        __builtins__ = mybuiltin()
-    elif PY2:
-        __builtins__['__import__'] = builtin.__import__  # WHY?
+
     environment['request'] = request
     environment['response'] = response
     environment['session'] = session
@@ -444,7 +441,6 @@ def build_environment(request, response, session, store_current=True):
         lambda name, reload=False, app=request.application:\
         local_import_aux(name, reload, app)
     BaseAdapter.set_folder(pjoin(request.folder, 'databases'))
-    response._view_environment = copy.copy(environment)
     custom_import_install()
     return environment
 
@@ -487,7 +483,7 @@ def compile_views(folder, skip_failed_views=False):
             else:
                 raise Exception("%s in %s" % (e, fname))
         else:
-            filename = ('views/%s.py' % fname).replace('/', '_').replace('\\', '_')
+            filename = 'views.%s.py' % fname.replace(os.path.sep, '.')
             filename = pjoin(folder, 'compiled', filename)
             write_file(filename, data)
             save_pyc(filename)
@@ -503,7 +499,7 @@ def compile_models(folder):
     path = pjoin(folder, 'models')
     for fname in listdir(path, '.+\.py$'):
         data = read_file(pjoin(path, fname))
-        modelfile = 'models.'+fname.replace(os.path.sep,'.')
+        modelfile = 'models.'+fname.replace(os.path.sep, '.')
         filename = pjoin(folder, 'compiled', modelfile)
         mktree(filename)
         write_file(filename, data)
@@ -581,44 +577,36 @@ def run_models_in(environment):
             if not regex.search(fname) and c != 'appadmin':
                 continue
             elif compiled:
-                code = read_pyc(model)
-            elif is_gae:
-                code = getcfs(model, model,
-                              lambda: compile2(read_file(model), model))
+                f = lambda: read_pyc(model)
             else:
-                code = getcfs(model, model, None)
-            restricted(code, environment, layer=model)
-
+                f = lambda: compile2(read_file(model), model)
+            ccode = getcfs(model, model, f)
+            restricted(ccode, environment, layer=model)
 
 def run_controller_in(controller, function, environment):
     """
     Runs the controller.function() (for the app specified by
     the current folder).
-    It tries pre-compiled controller_function.pyc first before compiling it.
+    It tries pre-compiled controller.function.pyc first before compiling it.
     """
 
     # if compiled should run compiled!
     folder = current.request.folder
-    path = pjoin(folder, 'compiled')
+    cpath = pjoin(folder, 'compiled')
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
-    if os.path.exists(path):
-        filename = pjoin(path, 'controllers.%s.%s.pyc'
+    if os.path.exists(cpath):
+        filename = pjoin(cpath, 'controllers.%s.%s.pyc'
                          % (controller, function))
         if not os.path.exists(filename):
-            ### for backward compatibility
-            filename = pjoin(path, 'controllers_%s_%s.pyc'
-                             % (controller, function))
-            ### end for backward compatibility
-            if not os.path.exists(filename):
-                raise HTTP(404,
-                           rewrite.THREAD_LOCAL.routes.error_message % badf,
-                           web2py_error=badf)
-        restricted(read_pyc(filename), environment, layer=filename)
+            raise HTTP(404,
+                       rewrite.THREAD_LOCAL.routes.error_message % badf,
+                       web2py_error=badf)
+        ccode = getcfs(filename, filename, lambda: read_pyc(filename))
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
-        from settings import global_settings
-        from admin import abspath, add_path_first
+        from gluon.settings import global_settings
+        from gluon.admin import abspath, add_path_first
         paths = (global_settings.gluon_parent, abspath(
             'site-packages', gluon=True), abspath('gluon', gluon=True), '')
         [add_path_first(path) for path in paths]
@@ -633,7 +621,7 @@ def run_controller_in(controller, function, environment):
         environment['__symbols__'] = environment.keys()
         code = read_file(filename)
         code += TEST_CODE
-        restricted(code, environment, layer=filename)
+        ccode = compile2(code, filename)
     else:
         filename = pjoin(folder, 'controllers/%s.py'
                                  % controller)
@@ -641,17 +629,17 @@ def run_controller_in(controller, function, environment):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
-        code = read_file(filename)
+        code = getcfs(filename, filename, lambda: read_file(filename))
         exposed = find_exposed_functions(code)
         if not function in exposed:
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
-        code = "%s\nresponse._vars=response._caller(%s)\n" % (code, function)
-        if is_gae:
-            layer = filename + ':' + function
-            code = getcfs(layer, filename, lambda: compile2(code, layer))
-        restricted(code, environment, filename)
+        code = "%s\nresponse._vars=response._caller(%s)" % (code, function)
+        layer = "%s:%s" % (filename, function)
+        ccode = getcfs(layer, filename, lambda: compile2(code, layer))
+
+    restricted(ccode, environment, layer=filename)
     response = current.response
     vars = response._vars
     if response.postprocessing:
@@ -668,15 +656,16 @@ def run_view_in(environment):
     Executes the view for the requested action.
     The view is the one specified in `response.view` or determined by the url
     or `view/generic.extension`
-    It tries the pre-compiled views_controller_function.pyc before compiling it.
+    It tries the pre-compiled views.controller.function.pyc before compiling it.
     """
     request = current.request
     response = current.response
     view = environment['response'].view
     folder = request.folder
-    path = pjoin(folder, 'compiled')
+    cpath = pjoin(folder, 'compiled')
     badv = 'invalid view (%s)' % view
     patterns = response.get('generic_patterns')
+    layer = None
     if patterns:
         regex = re_compile('|'.join(map(fnmatch.translate, patterns)))
         short_action = '%(controller)s/%(function)s.%(extension)s' % request
@@ -686,29 +675,29 @@ def run_view_in(environment):
     if not isinstance(view, str):
         ccode = parse_template(view, pjoin(folder, 'views'),
                                context=environment)
-        restricted(ccode, environment, 'file stream')
+        layer = 'file stream'
     else:
         filename = pjoin(folder, 'views', view)
-        if os.path.exists(path): # compiled views
-            x = view.replace('/', '_')
-            files = ['views_%s.pyc' % x]
-            is_compiled = os.path.exists(pjoin(path, files[0]))
+        if os.path.exists(cpath): # compiled views
+            x = view.replace('/', '.')
+            files = ['views.%s.pyc' % x]
+            is_compiled = os.path.exists(pjoin(cpath, files[0]))
             # Don't use a generic view if the non-compiled view exists.
             if is_compiled or (not is_compiled and not os.path.exists(filename)):
                 if allow_generic:
-                    files.append('views_generic.%s.pyc' % request.extension)
+                    files.append('views.generic.%s.pyc' % request.extension)
                 # for backward compatibility
                 if request.extension == 'html':
-                    files.append('views_%s.pyc' % x[:-5])
+                    files.append('views.%s.pyc' % x[:-5])
                     if allow_generic:
-                        files.append('views_generic.pyc')
+                        files.append('views.generic.pyc')
                 # end backward compatibility code
                 for f in files:
-                    compiled = pjoin(path, f)
+                    compiled = pjoin(cpath, f)
                     if os.path.exists(compiled):
-                        code = read_pyc(compiled)
-                        restricted(code, environment, layer=compiled)
-                        return
+                        ccode = getcfs(compiled, compiled, lambda: read_pyc(compiled))
+                        layer = compiled
+                        break
         if not os.path.exists(filename) and allow_generic:
             view = 'generic.' + request.extension
             filename = pjoin(folder, 'views', view)
@@ -717,17 +706,14 @@ def run_view_in(environment):
                        rewrite.THREAD_LOCAL.routes.error_message % badv,
                        web2py_error=badv)
         layer = filename
-        if is_gae:
-            ccode = getcfs(layer, filename,
-                           lambda: compile2(parse_template(view,
-                                            pjoin(folder, 'views'),
-                                            context=environment), layer))
-        else:
-            ccode = parse_template(view,
-                                   pjoin(folder, 'views'),
-                                   context=environment)
-        restricted(ccode, environment, layer)
+        # Compile the template
+        ccode = parse_template(view,
+                               pjoin(folder, 'views'),
+                               context=environment)
 
+    restricted(ccode, environment, layer=layer)
+    # parse_template saves everything in response body
+    return environment['response'].body.getvalue()
 
 def remove_compiled_application(folder):
     """
@@ -752,26 +738,3 @@ def compile_application(folder, skip_failed_views=False):
     compile_controllers(folder)
     failed_views = compile_views(folder, skip_failed_views)
     return failed_views
-
-
-def test():
-    """
-    Example::
-
-        >>> import traceback, types
-        >>> environment={'x':1}
-        >>> open('a.py', 'w').write('print 1/x')
-        >>> save_pyc('a.py')
-        >>> os.unlink('a.py')
-        >>> if type(read_pyc('a.pyc'))==types.CodeType: print 'code'
-        code
-        >>> exec read_pyc('a.pyc') in environment
-        1
-    """
-
-    return
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
