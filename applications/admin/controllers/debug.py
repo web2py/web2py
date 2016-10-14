@@ -4,7 +4,7 @@ import gluon.dal
 import gluon.html
 import gluon.validators
 import code
-from gluon.debug import communicate, web_debugger, qdb_debugger
+from gluon.debug import communicate, web_debugger, dbg_debugger
 from gluon._compat import thread
 import pydoc
 
@@ -39,7 +39,7 @@ def reset():
     return 'done'
 
 
-# new implementation using qdb
+# new implementation using dbg
 
 def interact():
     app = request.args(0) or 'admin'
@@ -149,7 +149,7 @@ def breakpoints():
     if form.accepts(request.vars, session):
         filename = os.path.join(request.env['applications_parent'],
                                 'applications', form.vars.filename)
-        err = qdb_debugger.do_set_breakpoint(filename,
+        err = dbg_debugger.do_set_breakpoint(filename,
                                              form.vars.lineno,
                                              form.vars.temporary,
                                              form.vars.condition)
@@ -158,13 +158,13 @@ def breakpoints():
 
     for item in request.vars:
         if item[:7] == 'delete_':
-            qdb_debugger.do_clear(item[7:])
+            dbg_debugger.do_clear(item[7:])
 
     breakpoints = [{'number': bp[0], 'filename': os.path.basename(bp[1]),
                     'path': bp[1], 'lineno': bp[2],
                     'temporary': bp[3], 'enabled': bp[4], 'hits': bp[5],
                     'condition': bp[6]}
-                   for bp in qdb_debugger.do_list_breakpoint()]
+                   for bp in dbg_debugger.do_list_breakpoint()]
 
     return dict(breakpoints=breakpoints, form=form)
 
@@ -193,18 +193,18 @@ def toggle_breakpoint():
             else:
                 lineno = None
         if lineno is not None:
-            for bp in qdb_debugger.do_list_breakpoint():
+            for bp in dbg_debugger.do_list_breakpoint():
                 no, bp_filename, bp_lineno, temporary, enabled, hits, cond = bp
                 # normalize path name: replace slashes, references, etc...
                 bp_filename = os.path.normpath(os.path.normcase(bp_filename))
                 if filename == bp_filename and lineno == bp_lineno:
-                    err = qdb_debugger.do_clear_breakpoint(filename, lineno)
+                    err = dbg_debugger.do_clear_breakpoint(filename, lineno)
                     response.flash = T("Removed Breakpoint on %s at line %s", (
                         filename, lineno))
                     ok = False
                     break
             else:
-                err = qdb_debugger.do_set_breakpoint(filename, lineno)
+                err = dbg_debugger.do_set_breakpoint(filename, lineno)
                 response.flash = T("Set Breakpoint on %s at line %s: %s") % (
                     filename, lineno, err or T('successful'))
                 ok = True
@@ -224,7 +224,7 @@ def list_breakpoints():
                                 'applications', request.vars.filename)
         # normalize path name: replace slashes, references, etc...
         filename = os.path.normpath(os.path.normcase(filename))
-        for bp in qdb_debugger.do_list_breakpoint():
+        for bp in dbg_debugger.do_list_breakpoint():
             no, bp_filename, bp_lineno, temporary, enabled, hits, cond = bp
             # normalize path name: replace slashes, references, etc...
             bp_filename = os.path.normpath(os.path.normcase(bp_filename))
