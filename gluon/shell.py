@@ -254,7 +254,7 @@ def run(
             die(errmsg)
 
     if f:
-        exec('print %s()' % f, _env)
+        exec('print( %s())' % f, _env)
         return
 
     _env.update(exec_pythonrc())
