@@ -338,6 +338,7 @@
                         web2py.trap_form(action, target);
                         web2py.ajax_init('#' + target);
                         web2py.after_ajax(xhr);
+                        web2py.fire(element, 'w2p:componentComplete', [xhr, status], target); // Let us know the component is finished loading
                     }
                 });
             }
