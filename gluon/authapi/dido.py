@@ -214,9 +214,6 @@ class DIDO(AuthAPI):
     def profile(self, log=DEFAULT, **kwargs):
         """
         Lets the user change his/her profile
-
-        Keyword Args:
-            delete_this_record (boolean) - delete the record
         """
 
         table_user = self.auth().table_user()
@@ -235,9 +232,10 @@ class DIDO(AuthAPI):
 
         if result.errors:
             return {'errors': result.errors, 'message': None, 'user': {k: user[k] for k in user.as_dict() if table_user[k].readable}}
-        
+
         if log is DEFAULT:
-            log = self.messages['profile_log']
+            log = self.messages['profile_log']        
+
         self.auth().log_event(log, user)
         self.auth().user.update(**kwargs)
         return {'errors': None, 'message': self.messages.profile_updated, 'user': {k: user[k] for k in user.as_dict() if table_user[k].readable}}

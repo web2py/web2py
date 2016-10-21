@@ -39,13 +39,13 @@ class TestDIDO(unittest.TestCase):
         self.auth.enable_record_versioning(self.db)
         # Create a user
         self.auth.table_user().validate_and_insert(first_name='Bart',
-                                          last_name='Simpson',
-                                          username='bart',
-                                          email='bart@simpson.com',
-                                          password='bart_password',
-                                          registration_key='',
-                                          registration_id=''      
-                                    )
+                                                   last_name='Simpson',
+                                                   username='bart',
+                                                   email='bart@simpson.com',
+                                                   password='bart_password',
+                                                   registration_key='',
+                                                   registration_id=''
+                                                   )
         self.db.commit()
         self.assertFalse(self.auth.is_logged_in())
 
@@ -65,12 +65,12 @@ class TestDIDO(unittest.TestCase):
 
     def test_register(self):
         result = self.auth.register(**{
-                                     'username': 'lisa',
-                                     'first_name': 'Lisa', 
-                                     'last_name': 'Simpson',
-                                     'email': 'lisa@simpson.com',
-                                     'password': 'lisa_password'
-                                     })
+            'username': 'lisa',
+            'first_name': 'Lisa',
+            'last_name': 'Simpson',
+            'email': 'lisa@simpson.com',
+            'password': 'lisa_password'
+        })
         self.assertTrue(result['user']['email'] == 'lisa@simpson.com')
         self.assertTrue(self.auth.is_logged_in())
 

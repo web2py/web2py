@@ -1,8 +1,11 @@
 from .base import AuthAPI
 from .base import DEFAULT
 from gluon import current
+from gluon import redirect
+from gluon.sqlhtml import SQLFORM
+from gluon.validators import IS_NOT_IN_DB, IS_NOT_EMPTY, IS_LOWER, IS_EMAIL, IS_EQUAL_TO
 from gluon.utils import web2py_uuid
-from pydal.objects import Row
+from pydal.objects import Row, Field
 
 
 def callback(actions, form, tablename=None):
