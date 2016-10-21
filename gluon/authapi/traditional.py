@@ -639,7 +639,7 @@ class Traditional(AuthAPI):
             self.auth().log_event(log, self.auth().user)
             callback(onaccept, form)
             if form.deleted:
-                return self.auth().logout()
+                return self.logout()
             if not next:
                 next = self.auth().url(args=request.args)
             else:

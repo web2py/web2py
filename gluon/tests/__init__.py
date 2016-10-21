@@ -14,6 +14,7 @@ from .test_routes import *
 from .test_router import *
 from .test_validators import *
 from .test_tools import *
+from .test_authapi import *
 from .test_utils import *
 from .test_serializers import *
 from .test_languages import *

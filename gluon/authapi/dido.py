@@ -2,16 +2,17 @@ from .base import AuthAPI
 from .base import DEFAULT
 from gluon import current
 from gluon.utils import web2py_uuid
+from gluon.validators import IS_NOT_IN_DB, IS_NOT_EMPTY, IS_LOWER, IS_EMAIL
 
 
 class DIDO(AuthAPI):
     """
     Dict In -> Dict Out
 
-    NOTES: It does not support all the callbacks Traditional Auth does yet.
-           Some of the callbacks will not be supported.
-           Check the method signatures to find out which ones are supported.
-           register_fields and profile_fields settings are ignored.
+    NOTES: * It does not support all the callbacks Traditional Auth does yet.
+             Some of the callbacks will not be supported.
+             Check the method signatures to find out which ones are supported.
+           * register_fields and profile_fields settings are ignored for now.
 
     WARNING: No builtin CSRF protection whatsoever.
     """
@@ -47,7 +48,6 @@ class DIDO(AuthAPI):
         user = None
 
         # Setup the default field used for the userfield
-        multi_login = False
         if self.settings.login_userfield:
             userfield = self.settings.login_userfield
         else:
@@ -55,8 +55,6 @@ class DIDO(AuthAPI):
                 userfield = 'username'
             else:
                 userfield = 'email'
-            if self.settings.multi_login:
-                multi_login = True
 
         # Get the userfield from kwargs and validate it
         userfield_value = kwargs.get(userfield)
@@ -173,7 +171,7 @@ class DIDO(AuthAPI):
 
         result = table_user.validate_and_insert(**kwargs)
         if result.errors:
-            return {'errors': result.errors, 'message': None, 'user': None}
+            return {'errors': result.errors.as_dict(), 'message': None, 'user': None}
 
         user = table_user[result.id]
 
@@ -216,6 +214,9 @@ class DIDO(AuthAPI):
     def profile(self, log=DEFAULT, **kwargs):
         """
         Lets the user change his/her profile
+
+        Keyword Args:
+            delete_this_record (boolean) - delete the record
         """
 
         table_user = self.auth().table_user()
@@ -229,7 +230,7 @@ class DIDO(AuthAPI):
             user = table_user[self.auth().user.id]
             return {'errors': None, 'message': None, 'user': {k: user[k] for k in user.as_dict() if table_user[k].readable}}
 
-        result = db(table_user.id == self.auth().user.id).validate_and_update(**kwargs)
+        result = self.auth().db(table_user.id == self.auth().user.id).validate_and_update(**kwargs)
         user = table_user[self.auth().user.id]
 
         if result.errors:
