@@ -2881,11 +2881,15 @@ class Auth(object):
     def logout(self, *args, **kwargs):
         return self.api.logout(*args, **kwargs)
 
-    def logout_bare(self):
-        self.logout(next=None, onlogout=None, log=None)
-
     def register(self, *args, **kwargs):
         return self.api.register(*args, **kwargs)
+
+    def profile(self, *args, **kwargs):
+        return self.api.profile(*args, **kwargs)
+
+
+    def logout_bare(self):
+        self.logout(next=None, onlogout=None, log=None)
 
     def is_logged_in(self):
         """
@@ -3478,9 +3482,6 @@ class Auth(object):
                     next = replace_id(next, form)
                 redirect(next, client_side=self.settings.client_side)
         return form
-
-    def profile(self, *args, **kwargs):
-        return self.api.profile(*args, **kwargs)
 
     def run_login_onaccept(self):
         onaccept = self.settings.login_onaccept

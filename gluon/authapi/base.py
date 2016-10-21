@@ -8,3 +8,15 @@ class AuthAPI(object):
         self.auth = weakref.ref(auth)
         self.settings = weakref.proxy(auth.settings)
         self.messages = weakref.proxy(auth.messages)
+
+    def login(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def logout(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def register(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def profile(self, *args, **kwargs):
+        raise NotImplementedError
