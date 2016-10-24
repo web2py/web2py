@@ -2,7 +2,7 @@ from .base import AuthAPI
 from .base import DEFAULT
 from gluon import current
 from gluon.utils import web2py_uuid
-from gluon.validators import IS_NOT_IN_DB, IS_NOT_EMPTY, IS_LOWER, IS_EMAIL
+from gluon.validators import IS_NOT_IN_DB, IS_NOT_EMPTY, IS_LOWER, IS_EMAIL, IS_EQUAL_TO, CRYPT
 
 
 class DIDO(AuthAPI):
@@ -16,6 +16,14 @@ class DIDO(AuthAPI):
 
     WARNING: No builtin CSRF protection whatsoever.
     """
+    def validate(self, value, requires):
+        if not isinstance(requires, (list, tuple)):
+            requires = [requires]
+        for validator in requires:
+            (value, error) = validator(value)
+            if error:
+                return (value, error)
+        return (value , None)        
 
     def login(self, log=DEFAULT, **kwargs):
         """
@@ -61,13 +69,13 @@ class DIDO(AuthAPI):
         if userfield_value is None:
             raise KeyError('%s not found in kwargs' % userfield)
 
-        validated, error = userfield_validator(userfield_value)
-
+        validated, error = self.validate(userfield_value, userfield_validator)
+        
         if error:
             return {'errors': {userfield: error}, 'message': self.messages.invalid_login, 'user': None}
 
         # Get the user for this userfield and check it
-        user = table_user(**{userfield: userfield_value})
+        user = table_user(**{userfield: validated})
 
         if user is None:
             return {'errors': {userfield: self.messages.invalid_user}, 'message': self.messages.invalid_login, 'user': None}
@@ -157,7 +165,7 @@ class DIDO(AuthAPI):
         table_user[userfield].requires = userfield_validator
 
         passfield = settings.password_field
-        formstyle = self.settings.formstyle
+
         try:  # Make sure we have our original minimum length
             table_user[passfield].requires[-1].min_length = settings.password_min_length
         except:
@@ -239,3 +247,64 @@ class DIDO(AuthAPI):
         self.auth().log_event(log, user)
         self.auth().user.update(**kwargs)
         return {'errors': None, 'message': self.messages.profile_updated, 'user': {k: user[k] for k in user.as_dict() if table_user[k].readable}}
+
+    def change_password(self, log=DEFAULT, **kwargs):
+        """
+        Lets the user change password
+
+        Keyword Args:
+            old_password (string) - User's current password
+            new_password (string) - User's new password
+            new_password2 (string) - Verify the new password
+        """
+        settings = self.settings
+        messages = self.messages
+
+        if not self.auth().is_logged_in():
+            raise AssertionError('User is not logged in')
+
+        db = self.auth().db
+        table_user = self.auth().table_user()
+        s = db(table_user.id == self.auth().user.id)
+
+        request = current.request
+        session = current.session
+        passfield = settings.password_field
+
+        requires = table_user[passfield].requires
+        if not isinstance(requires, (list, tuple)):
+            requires = [requires]
+        requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
+        if requires:
+            requires[0].min_length = 0
+        
+        old_password = kwargs.get('old_password', '')
+        new_password = kwargs.get('new_password', '')
+        new_password2 = kwargs.get('new_password2', '')
+
+        validator_old =  requires
+        validator_pass2 = IS_EQUAL_TO(new_password, error_message=messages.mismatched_password)
+
+        old_password, error_old = self.validate(old_password, validator_old)
+        new_password2, error_new2 = self.validate(new_password2, validator_pass2)
+
+        errors = {}
+        if error_old:
+            errors['old_password'] = error_old
+        if error_new2:
+            errors['new_password2'] = error_new2
+        if errors:
+            return {'errors': errors, 'message': None}
+
+        current_user = s.select(limitby=(0, 1), orderby_on_limitby=False).first()
+        if not old_password == current_user[passfield]:
+            return {'errors': {'old_password': messages.invalid_password}, 'message': None}
+        else:
+            d = {passfield: new_password }
+            resp = s.validate_and_update(**d)
+            if resp.errors:
+                return {'errors': {'new_password': resp.errors[passfield]}, 'message': None}
+            if log is DEFAULT:
+                log = messages['change_password_log']
+            self.auth().log_event(log, self.auth().user)
+            return {'errors': None, 'message': messages.password_changed}

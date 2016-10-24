@@ -20,3 +20,6 @@ class AuthAPI(object):
 
     def profile(self, *args, **kwargs):
         raise NotImplementedError
+
+    def change_password(self, *args, **kwargs):
+        raise NotImplementedError

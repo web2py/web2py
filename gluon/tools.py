@@ -2887,6 +2887,8 @@ class Auth(object):
     def profile(self, *args, **kwargs):
         return self.api.profile(*args, **kwargs)
 
+    def change_password(self, *args, **kwargs):
+        return self.api.change_password(*args, **kwargs)
 
     def logout_bare(self):
         self.logout(next=None, onlogout=None, log=None)
@@ -3412,76 +3414,6 @@ class Auth(object):
             return self.request_reset_password(next, onvalidation, onaccept, log)
         else:
             return self.reset_password_deprecated(next, onvalidation, onaccept, log)
-
-    def change_password(self,
-                        next=DEFAULT,
-                        onvalidation=DEFAULT,
-                        onaccept=DEFAULT,
-                        log=DEFAULT,
-                        ):
-        """
-        Returns a form that lets the user change password
-        """
-
-        if not self.is_logged_in():
-            redirect(self.settings.login_url,
-                     client_side=self.settings.client_side)
-        db = self.db
-        table_user = self.table_user()
-        s = db(table_user.id == self.user.id)
-
-        request = current.request
-        session = current.session
-        if next is DEFAULT:
-            next = self.get_vars_next() or self.settings.change_password_next
-        if onvalidation is DEFAULT:
-            onvalidation = self.settings.change_password_onvalidation
-        if onaccept is DEFAULT:
-            onaccept = self.settings.change_password_onaccept
-        if log is DEFAULT:
-            log = self.messages['change_password_log']
-        passfield = self.settings.password_field
-        requires = table_user[passfield].requires
-        if not isinstance(requires, (list, tuple)):
-            requires = [requires]
-        requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
-        if requires:
-            requires[0].min_length = 0
-        form = SQLFORM.factory(
-            Field('old_password', 'password', requires=requires,
-                  label=self.messages.old_password),
-            Field('new_password', 'password',
-                  label=self.messages.new_password,
-                  requires=table_user[passfield].requires),
-            Field('new_password2', 'password',
-                  label=self.messages.verify_password,
-                  requires=[IS_EXPR('value==%s' % repr(request.vars.new_password),
-                                    self.messages.mismatched_password)]),
-            submit_button=self.messages.password_change_button,
-            hidden=dict(_next=next),
-            formstyle=self.settings.formstyle,
-            separator=self.settings.label_separator
-        )
-        if form.accepts(request, session,
-                        formname='change_password',
-                        onvalidation=onvalidation,
-                        hideerror=self.settings.hideerror):
-
-            current_user = s.select(limitby=(0, 1), orderby_on_limitby=False).first()
-            if not form.vars['old_password'] == current_user[passfield]:
-                form.errors['old_password'] = self.messages.invalid_password
-            else:
-                d = {passfield: str(form.vars.new_password)}
-                s.update(**d)
-                session.flash = self.messages.password_changed
-                self.log_event(log, self.user)
-                callback(onaccept, form)
-                if not next:
-                    next = self.url(args=request.args)
-                else:
-                    next = replace_id(next, form)
-                redirect(next, client_side=self.settings.client_side)
-        return form
 
     def run_login_onaccept(self):
         onaccept = self.settings.login_onaccept

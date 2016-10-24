@@ -3,7 +3,7 @@ from .base import DEFAULT
 from gluon import current
 from gluon import redirect
 from gluon.sqlhtml import SQLFORM
-from gluon.validators import IS_NOT_IN_DB, IS_NOT_EMPTY, IS_LOWER, IS_EMAIL, IS_EQUAL_TO
+from gluon.validators import IS_NOT_IN_DB, IS_NOT_EMPTY, IS_LOWER, IS_EMAIL, IS_EQUAL_TO, IS_EXPR, CRYPT
 from gluon.utils import web2py_uuid
 from pydal.objects import Row, Field
 
@@ -16,12 +16,14 @@ def callback(actions, form, tablename=None):
             actions = [actions]
         [action(form) for action in actions]
 
+
 def replace_id(url, form):
     if url:
         url = url.replace('[id]', str(form.vars.id))
         if url[0] == '/' or url[:4] == 'http':
             return url
     return URL(url)
+
 
 class Traditional(AuthAPI):
 
@@ -220,7 +222,7 @@ class Traditional(AuthAPI):
                                     break
                     if not user:
                         self.auth().log_event(self.messages['login_failed_log'],
-                                       request.post_vars)
+                                              request.post_vars)
                         # invalid login
                         session.flash = self.messages.invalid_login
                         callback(onfail, None)
@@ -515,7 +517,7 @@ class Traditional(AuthAPI):
             if self.settings.register_fields is None:
                 self.settings.register_fields = [f.name for f in table_user if f.writable]
                 k = self.settings.register_fields.index(passfield)
-                self.settings.register_fields.insert(k+1, "password_two")
+                self.settings.register_fields.insert(k + 1, "password_two")
             extra_fields = [
                 Field("password_two", "password",
                       requires=IS_EQUAL_TO(request.post_vars.get(passfield, None),
@@ -632,7 +634,7 @@ class Traditional(AuthAPI):
             formstyle=self.settings.formstyle,
             separator=self.settings.label_separator,
             deletable=self.settings.allow_delete_accounts,
-            )
+        )
         if form.accepts(request, session,
                         formname='profile',
                         onvalidation=onvalidation,
@@ -648,4 +650,77 @@ class Traditional(AuthAPI):
             else:
                 next = replace_id(next, form)
             redirect(next, client_side=self.settings.client_side)
+        return form
+
+    def change_password(self,
+                        next=DEFAULT,
+                        onvalidation=DEFAULT,
+                        onaccept=DEFAULT,
+                        log=DEFAULT,
+                        ):
+        """
+        Returns a form that lets the user change password
+        """
+        settings = self.settings
+        messages = self.messages
+
+        if not self.auth().is_logged_in():
+            redirect(settings.login_url,
+                     client_side=settings.client_side)
+        db = self.auth().db
+        table_user = self.auth().table_user()
+        s = db(table_user.id == self.auth().user.id)
+
+        request = current.request
+        session = current.session
+
+        if next is DEFAULT:
+            next = self.auth().get_vars_next() or settings.change_password_next
+        if onvalidation is DEFAULT:
+            onvalidation = settings.change_password_onvalidation
+        if onaccept is DEFAULT:
+            onaccept = settings.change_password_onaccept
+        if log is DEFAULT:
+            log = messages['change_password_log']
+        passfield = settings.password_field
+        requires = table_user[passfield].requires
+        if not isinstance(requires, (list, tuple)):
+            requires = [requires]
+        requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
+        if requires:
+            requires[0].min_length = 0
+        form = SQLFORM.factory(
+            Field('old_password', 'password', requires=requires,
+                  label=messages.old_password),
+            Field('new_password', 'password',
+                  label=messages.new_password,
+                  requires=table_user[passfield].requires),
+            Field('new_password2', 'password',
+                  label=messages.verify_password,
+                  requires=[IS_EXPR('value==%s' % repr(request.vars.new_password),
+                                    messages.mismatched_password)]),
+            submit_button=messages.password_change_button,
+            hidden=dict(_next=next),
+            formstyle=settings.formstyle,
+            separator=settings.label_separator
+        )
+        if form.accepts(request, session,
+                        formname='change_password',
+                        onvalidation=onvalidation,
+                        hideerror=settings.hideerror):
+
+            current_user = s.select(limitby=(0, 1), orderby_on_limitby=False).first()
+            if not form.vars['old_password'] == current_user[passfield]:
+                form.errors['old_password'] = messages.invalid_password
+            else:
+                d = {passfield: str(form.vars.new_password)}
+                s.update(**d)
+                session.flash = messages.password_changed
+                self.auth().log_event(log, self.auth().user)
+                callback(onaccept, form)
+                if not next:
+                    next = self.auth().url(args=request.args)
+                else:
+                    next = replace_id(next, form)
+                redirect(next, client_side=settings.client_side)
         return form
