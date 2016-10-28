@@ -2470,7 +2470,7 @@ class IS_LIST_OF(Validator):
 
 class IS_LOWER(Validator):
     """
-    Converts to lower case::
+    Converts to lowercase::
 
         >>> IS_LOWER()('ABC')
         ('abc', None)
@@ -2485,7 +2485,7 @@ class IS_LOWER(Validator):
 
 class IS_UPPER(Validator):
     """
-    Converts to upper case::
+    Converts to uppercase::
 
         >>> IS_UPPER()('abc')
         ('ABC', None)
@@ -3025,22 +3025,22 @@ class IS_STRONG(object):
             all_upper = re.findall("[A-Z]", value)
             if self.upper > 0:
                 if not len(all_upper) >= self.upper:
-                    failures.append(translate("Must include at least %s upper case")
+                    failures.append(translate("Must include at least %s uppercase")
                                     % str(self.upper))
             else:
                 if len(all_upper) > 0:
                     failures.append(
-                        translate("May not include any upper case letters"))
+                        translate("May not include any uppercase letters"))
         if isinstance(self.lower, int):
             all_lower = re.findall("[a-z]", value)
             if self.lower > 0:
                 if not len(all_lower) >= self.lower:
-                    failures.append(translate("Must include at least %s lower case")
+                    failures.append(translate("Must include at least %s lowercase")
                                     % str(self.lower))
             else:
                 if len(all_lower) > 0:
                     failures.append(
-                        translate("May not include any lower case letters"))
+                        translate("May not include any lowercase letters"))
         if isinstance(self.number, int):
             all_number = re.findall("[0-9]", value)
             if self.number > 0:
