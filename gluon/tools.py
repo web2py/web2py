@@ -3670,7 +3670,12 @@ class Auth(object):
                 key = request.args[-1]
             if key:
                 session._reset_password_key = key
-                redirect(self.url(args='confirm_registration'))
+                if next:
+                    redirect_vars = {'_next': next}
+                else:
+                    redirect_vars = {}
+                redirect(self.url(args='confirm_registration',
+                                  vars=redirect_vars))
             else:
                 key = session._reset_password_key
         else:
