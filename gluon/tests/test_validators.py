@@ -702,15 +702,19 @@ class TestValidators(unittest.TestCase):
 
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
+        self.assertEqual(rtn, ('abc', None))
+        rtn = IS_LOWER()(b'ABC')
         self.assertEqual(rtn, (b'abc', None))
         rtn = IS_LOWER()('Ñ')
-        self.assertEqual(rtn, (b'\xc3\xb1', None))
+        self.assertEqual(rtn, ('ñ', None))
 
     def test_IS_UPPER(self):
         rtn = IS_UPPER()('abc')
+        self.assertEqual(rtn, ('ABC', None))
+        rtn = IS_UPPER()(b'abc')
         self.assertEqual(rtn, (b'ABC', None))
         rtn = IS_UPPER()('ñ')
-        self.assertEqual(rtn, (b'\xc3\x91', None))
+        self.assertEqual(rtn, ('Ñ', None))
 
     def test_IS_SLUG(self):
         rtn = IS_SLUG()('abc123')

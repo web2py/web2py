@@ -2478,9 +2478,14 @@ class IS_LOWER(Validator):
         ('\\xc3\\xb1', None)
 
     """
-
     def __call__(self, value):
-        return (to_bytes(to_unicode(value).lower()), None)
+        cast_back = lambda x: x
+        if isinstance(value, str):
+            cast_back = to_native
+        elif isinstance(value, bytes):
+            cast_back = to_bytes
+        value = to_unicode(value).lower()
+        return (cast_back(value), None)
 
 
 class IS_UPPER(Validator):
@@ -2495,7 +2500,13 @@ class IS_UPPER(Validator):
     """
 
     def __call__(self, value):
-        return (to_bytes(to_unicode(value).upper()), None)
+        cast_back = lambda x: x
+        if isinstance(value, str):
+            cast_back = to_native
+        elif isinstance(value, bytes):
+            cast_back = to_bytes
+        value = to_unicode(value).upper()
+        return (cast_back(value), None)
 
 
 def urlify(s, maxlen=80, keep_underscores=False):
