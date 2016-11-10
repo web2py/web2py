@@ -1960,7 +1960,7 @@ def git_push():
 
 def plugins():
     app = request.args(0)
-    from serializers import loads_json
+    from gluon.serializers import loads_json
     if not session.plugins:
         try:
             rawlist = urlopen("http://www.web2pyslices.com/" +
