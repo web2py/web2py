@@ -962,7 +962,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
             + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
         data = to_native(read_locked(filename))
         items = regex_translate.findall(data)
-        items += ["@markmin\x01%s" %x for x in regex_translate_m.findall(data)]
+        for x in regex_translate_m.findall(data): items.append("%s@markmin\x01%s" %(x[0], x[1:]))
         for item in items:
             try:
                 message = safe_eval(item)
