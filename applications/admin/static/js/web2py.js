@@ -563,7 +563,7 @@
             var flash = $('.w2p_flash');
             web2py.hide_flash();
             flash.html(message).addClass(status);
-            if (flash.html()) flash.append('<a id="closeflash" href="#" style="text-decoration: inherit; color: inherit;"> &times; </a>').slideDown();
+            if (flash.html()) flash.append('<a id="closeflash" href="javascript:null;" style="text-decoration: inherit; color: inherit;"> &times; </a>').slideDown();
         },
         hide_flash: function () {
             $('.w2p_flash').fadeOut(0).html('');
