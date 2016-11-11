@@ -11,7 +11,8 @@ import errno
 import socket
 import logging
 import platform
-from gluon._compat import iteritems, to_bytes, StringIO, urllib_unquote
+from gluon._compat import iteritems, to_bytes, StringIO
+from gluon._compat import urllib_unquote, to_native
 
 # Define Constants
 VERSION = '1.2.6'
@@ -1661,7 +1662,7 @@ class WSGIWorker(Worker):
             try:
                 peercert = conn.socket.getpeercert(binary_form=True)
                 environ['SSL_CLIENT_RAW_CERT'] = \
-                    peercert and ssl.DER_cert_to_PEM_cert(peercert)
+                    peercert and to_native(ssl.DER_cert_to_PEM_cert(peercert))
             except Exception:
                 print(sys.exc_info()[1])
         else:

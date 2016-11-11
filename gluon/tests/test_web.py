@@ -49,6 +49,24 @@ def stopwebserver():
     webserverprocess.terminate()
 
 
+class Cookie(unittest.TestCase):
+    def testParseMultipleEquals(self):
+        """ Test for issue #1500.
+        Ensure that a cookie containing one or more '=' is correctly parsed
+        """
+        client = WebClient()
+        client.headers['set-cookie'] = "key = value with one =;"
+        client._parse_headers_in_cookies()
+        self.assertIn("key", client.cookies)
+        self.assertEqual(client.cookies['key'], "value with one =")
+
+        client.headers['set-cookie'] = "key = value with one = and another one =;"
+        client._parse_headers_in_cookies()
+        client._parse_headers_in_cookies()
+        self.assertIn("key", client.cookies)
+        self.assertEqual(client.cookies['key'], "value with one = and another one =")
+
+
 class LiveTest(unittest.TestCase):
 
     @classmethod
