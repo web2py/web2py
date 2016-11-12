@@ -168,7 +168,8 @@
              * and require no dom manipulations
              */
             var doc = $(document);
-            doc.on('click', '.w2p_flash', function () {
+            doc.on('click', '.w2p_flash', function (event) {
+                event.preventDefault();
                 var t = $(this);
                 if (t.css('top') == '0px') t.slideUp('slow');
                 else t.fadeOut();
@@ -563,7 +564,7 @@
             var flash = $('.w2p_flash');
             web2py.hide_flash();
             flash.html(message).addClass(status);
-            if (flash.html()) flash.append('<a id="closeflash" href="javascript:null;" style="text-decoration: inherit; color: inherit;"> &times; </a>').slideDown();
+            if (flash.html()) flash.append('<span id="closeflash"> &times; </span>').slideDown();
         },
         hide_flash: function () {
             $('.w2p_flash').fadeOut(0).html('');
