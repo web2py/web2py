@@ -3417,7 +3417,9 @@ class Auth(object):
                 link = self.url(
                     self.settings.function, args=('verify_email', key), scheme=True)
                 d = dict(form.vars)
-                d.update(dict(key=key, link=link, username=form.vars[username]))
+                d.update(dict(key=key, link=link, username=form.vars[username],
+                              firstname=form.vars['firstname'],
+                              lastname=form.vars['lastname']))
                 if not (self.settings.mailer and self.settings.mailer.send(
                         to=form.vars.email,
                         subject=self.messages.verify_email_subject,
