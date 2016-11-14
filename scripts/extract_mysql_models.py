@@ -18,7 +18,7 @@ legacy_db(legacy_db.mytable.id>0).select()
 If the script crashes this is might be due to that fact that the data_type_map dictionary below is incomplete.
 Please complete it, improve it and continue.
 
-Created by Falko Krause, minor modifications by Massimo Di Pierro and Ron McOuat
+Created by Falko Krause, minor modifications by Massimo Di Pierro, Ron McOuat and Marvi Benedet
 '''
 import subprocess
 import re
@@ -52,10 +52,11 @@ data_type_map = dict(
 )
 
 
-def mysql(database_name, username, password):
+def mysql(database_name, username, password, host):
     p = subprocess.Popen(['mysql',
                           '--user=%s' % username,
                           '--password=%s' % password,
+                          '--host=%s' % host,
                           '--execute=show tables;',
                           database_name],
                          stdin=subprocess.PIPE,
@@ -64,14 +65,15 @@ def mysql(database_name, username, password):
     sql_showtables, stderr = p.communicate()
     tables = [re.sub(
         '\|\s+([^\|*])\s+.*', '\1', x) for x in sql_showtables.split()[1:]]
-    connection_string = "legacy_db = DAL('mysql://%s:%s@localhost/%s')" % (
-        username, password, database_name)
+    connection_string = "legacy_db = DAL('mysql://%s:%s@%s/%s')" % (
+        username, password, host, database_name)
     legacy_db_table_web2py_code = []
     for table_name in tables:
         #get the sql create statement
         p = subprocess.Popen(['mysqldump',
                               '--user=%s' % username,
                               '--password=%s' % password,
+                              '--host=%s' % host,
                               '--skip-add-drop-table',
                               '--no-data', database_name,
                               table_name], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -106,9 +108,13 @@ def mysql(database_name, username, password):
         legacy_db_table_web2py_code)
     return legacy_db_web2py_code
 
-regex = re.compile('(.*?):(.*?)@(.*)')
+regex = re.compile('(.*):(.*)@((.*)/)?(.*)')
 if len(sys.argv) < 2 or not regex.match(sys.argv[1]):
-    print 'USAGE:\n\n    extract_mysql_models.py username:password@data_basename\n\n'
+    print 'USAGE:\n\n    extract_mysql_models.py username:password@[host/]data_basename\n\n'
 else:
     m = regex.match(sys.argv[1])
-    print mysql(m.group(3), m.group(1), m.group(2))
+    username = m.group(1)
+    password = m.group(2)
+    host     = m.group(4) or 'localhost'
+    db_name  = m.group(5)
+    print mysql(database_name = db_name, username = username, password = password, host = host)
