@@ -843,7 +843,7 @@ class TestValidators(unittest.TestCase):
                           '|'.join(['Minimum length is 8',
                                     'Maximum length is 4',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 uppercase',
                                     'Must include at least 1 number']))
                          )
         rtn = IS_STRONG(es=True)('abcde')
@@ -851,7 +851,7 @@ class TestValidators(unittest.TestCase):
                          ('abcde',
                           '|'.join(['Minimum length is 8',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 uppercase',
                                     'Must include at least 1 number']))
                          )
         rtn = IS_STRONG(upper=0, lower=0, number=0, es=True)('Abcde1')
@@ -859,8 +859,8 @@ class TestValidators(unittest.TestCase):
                          ('Abcde1',
                           '|'.join(['Minimum length is 8',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'May not include any upper case letters',
-                                    'May not include any lower case letters',
+                                    'May not include any uppercase letters',
+                                    'May not include any lowercase letters',
                                     'May not include any numbers']))
                          )
 
