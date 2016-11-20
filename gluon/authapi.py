@@ -135,10 +135,10 @@ class AuthAPI(object):
         messages = self.messages = Messages(current.T)
         messages.update(self.default_messages)
         messages.lock_keys = True
-        if signature:
+        if signature is True:
             self.define_signature()
         else:
-            self.signature = None
+            self.signature = signature or None
 
     def __validate(self, value, requires):
         if not isinstance(requires, (list, tuple)):
@@ -251,7 +251,7 @@ class AuthAPI(object):
             settings.use_username = username
         if not self.signature:
             self.define_signature()
-        if signature:
+        if signature is True:
             signature_list = [self.signature]
         elif not signature:
             signature_list = []
