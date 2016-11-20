@@ -698,6 +698,10 @@ class AuthAPI(object):
                 value = user[key]
                 if callable(value) or key == self.settings.password_field:
                     delattr(user, key)
+        current.session.auth = Storage(user=user,
+                                       last_visit=current.request.now,
+                                       expiration=self.settings.expiration,
+                                       hmac_key=web2py_uuid())
         return user
 
     def login_user(self, user):
@@ -707,10 +711,6 @@ class AuthAPI(object):
         user = self._update_session_user(user)
         if self.settings.renew_session_onlogin:
             current.session.renew(clear_session=not self.settings.keep_session_onlogin)
-        current.session.auth = Storage(user=user,
-                                       last_visit=current.request.now,
-                                       expiration=self.settings.expiration,
-                                       hmac_key=web2py_uuid())
         self.user = user
         self.update_groups()
 
