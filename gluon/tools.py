@@ -3734,7 +3734,14 @@ class Auth(AuthAPI):
                         formname='profile',
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
-            self.user.update(table_user._filter_fields(form.vars))
+            extra_fields = self.settings.extra_fields.get(self.settings.table_user_name, [])
+            if any(f.compute for f in extra_fields):
+                user = table_user[self.user.id]
+                self._update_session_user(user) 
+            else:
+                self.user.update(table_user._filter_fields(form.vars))
+
+            
             session.flash = self.messages.profile_updated
             self.log_event(log, self.user)
             callback(onaccept, form)

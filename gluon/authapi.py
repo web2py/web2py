@@ -688,19 +688,22 @@ class AuthAPI(object):
             return True
         return False
 
-    def login_user(self, user):
-        """
-        Logins the `user = db.auth_user(id)`
-        """
+    def _update_session_user(self, user):
         if global_settings.web2py_runtime_gae:
             user = Row(self.table_user()._filter_fields(user, id=True))
-            delattr(user, 'password')
+            delattr(user, self.settings.password_field)
         else:
             user = Row(user)
             for key in list(user.keys()):
                 value = user[key]
-                if callable(value) or key == 'password':
+                if callable(value) or key == self.settings.password_field:
                     delattr(user, key)
+
+    def login_user(self, user):
+        """
+        Logins the `user = db.auth_user(id)`
+        """
+        self._update_session_user(user)
         if self.settings.renew_session_onlogin:
             current.session.renew(clear_session=not self.settings.keep_session_onlogin)
         current.session.auth = Storage(user=user,
@@ -924,7 +927,7 @@ class AuthAPI(object):
             log = self.messages['profile_log']
 
         self.log_event(log, user)
-        self.user.update(**kwargs)
+        self._update_session_user(user)
         return {'errors': None, 'message': self.messages.profile_updated, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
     def change_password(self, log=DEFAULT, **kwargs):
