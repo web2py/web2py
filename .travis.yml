@@ -1,6 +1,6 @@
 language: python
 
-sudo: required
+sudo: false
 
 cache: pip
 
