@@ -2005,6 +2005,12 @@ class Auth(object):
                 return self.cas_validate(version=2, proxy=False)
             elif args(1) == self.settings.cas_actions['proxyvalidate']:
                 return self.cas_validate(version=2, proxy=True)
+            elif (args(1) == 'p3'
+                  and args(2) == self.settings.cas_actions['servicevalidate']):
+                return self.cas_validate(version=3, proxy=False)
+            elif (args(1) == 'p3'
+                  and args(2) == self.settings.cas_actions['proxyvalidate']):
+                return self.cas_validate(version=3, proxy=True)
             elif args(1) == self.settings.cas_actions['logout']:
                 return self.logout(next=request.vars.service or DEFAULT)
         else:
@@ -2830,6 +2836,15 @@ class Auth(object):
         if success:
             if version == 1:
                 message = 'yes\n%s' % user[userfield]
+            elif version == 3:
+                username = user.get('username', user[userfield])
+                message = build_response(
+                    TAG['cas:authenticationSuccess'](
+                        TAG['cas:user'](username),
+                        TAG['cas:attributes'](
+                            *[TAG['cas:' + field.name](user[field.name])
+                              for field in self.table_user()
+                              if field.readable])))
             else:  # assume version 2
                 username = user.get('username', user[userfield])
                 message = build_response(
@@ -3417,7 +3432,9 @@ class Auth(object):
                 link = self.url(
                     self.settings.function, args=('verify_email', key), scheme=True)
                 d = dict(form.vars)
-                d.update(dict(key=key, link=link, username=form.vars[username]))
+                d.update(dict(key=key, link=link, username=form.vars[username],
+                              firstname=form.vars['firstname'],
+                              lastname=form.vars['lastname']))
                 if not (self.settings.mailer and self.settings.mailer.send(
                         to=form.vars.email,
                         subject=self.messages.verify_email_subject,
@@ -3670,7 +3687,12 @@ class Auth(object):
                 key = request.args[-1]
             if key:
                 session._reset_password_key = key
-                redirect(self.url(args='confirm_registration'))
+                if next:
+                    redirect_vars = {'_next': next}
+                else:
+                    redirect_vars = {}
+                redirect(self.url(args='confirm_registration',
+                                  vars=redirect_vars))
             else:
                 key = session._reset_password_key
         else:
