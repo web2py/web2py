@@ -317,6 +317,7 @@
                     'beforeSend': function (xhr, settings) {
                         xhr.setRequestHeader('web2py-component-location', document.location);
                         xhr.setRequestHeader('web2py-component-element', target);
+                        web2py.fire(element, 'w2p:componentBegin', [xhr, settings], target);
                         return web2py.fire(element, 'ajax:beforeSend', [xhr, settings], target); //test a usecase, should stop here if returns false
                     },
                     'success': function (data, status, xhr) {
