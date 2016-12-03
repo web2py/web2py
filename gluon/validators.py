@@ -3505,10 +3505,7 @@ class IS_IPV6(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        try:
-            import ipaddress
-        except ImportError:
-            from gluon.contrib import ipaddr as ipaddress
+        from gluon._compat import ipaddress
 
         try:
             ip = ipaddress.IPv6Address(to_unicode(value))
@@ -3732,12 +3729,10 @@ class IS_IPADDRESS(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        try:
-            from ipaddress import ip_address as IPAddress
-            from ipaddress import IPv6Address, IPv4Address
-        except ImportError:
-            from gluon.contrib.ipaddr import (IPAddress, IPv4Address,
-                                              IPv6Address)
+        from gluon._compat import ipaddress
+        IPAddress = ipaddress.ip_address
+        IPv6Address = ipaddress.IPv6Address
+        IPv4Address = ipaddress.IPv4Address
 
         try:
             ip = IPAddress(to_unicode(value))
