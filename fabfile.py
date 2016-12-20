@@ -1,7 +1,8 @@
 from fabric.api import *
 from fabric.operations import put, get
-from fabric.contrib.files import exists
+from fabric.contrib.files import exists, append, uncomment
 import os
+import crypt
 import datetime
 import getpass
 
@@ -19,11 +20,11 @@ def create_user(username):
     """fab -H root@host create_user:username"""
     password = getpass.getpass('password for %s> ' % username)
     run('useradd -m -G www-data -s /bin/bash -p %s %s' % (crypt.crypt(password, 'salt'), username))
+    local('ssh-copy-id %s' % env.hosts[0])
     run('cp /etc/sudoers /tmp/sudoers.new')
     append('/tmp/sudoers.new', '%s ALL=(ALL) NOPASSWD:ALL' % username, use_sudo=True)
     run('visudo -c -f /tmp/sudoers.new')
     run('EDITOR="cp /tmp/sudoers.new" visudo')
-    local('ssh-copy-id %s' % env.hosts[0])
     uncomment('~%s/.bashrc' % username, '#force_color_prompt=yes')
 
 def install_web2py():        
