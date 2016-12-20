@@ -438,7 +438,11 @@ def add_path_first(path):
 def try_mkdir(path):
     if not os.path.exists(path):
         try:
-            os.mkdir(path)
+            if os.path.islink(path):
+                # path is a broken link, try to mkdir the target of the link instead of the link itself.
+                os.mkdir(os.path.realpath(path))
+            else:
+                os.mkdir(path)
         except OSError as e:
             if e.strerror == 'File exists': # In case of race condition.
                 pass

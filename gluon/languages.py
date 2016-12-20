@@ -951,12 +951,23 @@ def findT(path, language=DEFAULT_LANGUAGE):
     Note:
         Must be run by the admin app
     """
+    from gluon.tools import Auth, Crud
     lang_file = pjoin(path, 'languages', language + '.py')
     sentences = read_dict(lang_file)
     mp = pjoin(path, 'models')
     cp = pjoin(path, 'controllers')
     vp = pjoin(path, 'views')
     mop = pjoin(path, 'modules')
+    def add_message(message):
+        if not message.startswith('#') and not '\n' in message:
+            tokens = message.rsplit('##', 1)
+        else:
+            # this allows markmin syntax in translations
+            tokens = [message]
+        if len(tokens) == 2:
+            message = tokens[0].strip() + '##' + tokens[1].strip()
+        if message and not message in sentences:
+            sentences[message] = message.replace("@markmin\x01", "")
     for filename in \
             listdir(mp, '^.+\.py$', 0) + listdir(cp, '^.+\.py$', 0)\
             + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
@@ -970,15 +981,10 @@ def findT(path, language=DEFAULT_LANGUAGE):
                 message = safe_eval(item)
             except:
                 continue  # silently ignore inproperly formatted strings
-            if not message.startswith('#') and not '\n' in message:
-                tokens = message.rsplit('##', 1)
-            else:
-                # this allows markmin syntax in translations
-                tokens = [message]
-            if len(tokens) == 2:
-                message = tokens[0].strip() + '##' + tokens[1].strip()
-            if message and not message in sentences:
-                sentences[message] = message.replace("@markmin\x01", "")
+            add_message(message)
+    gluon_msg = [Auth.default_messages, Crud.default_messages]
+    for item in [x for m in gluon_msg for x in m.values() if x is not None]:
+        add_message(item)
     if not '!langcode!' in sentences:
         sentences['!langcode!'] = (
             DEFAULT_LANGUAGE if language in ('default', DEFAULT_LANGUAGE) else language)

@@ -4798,6 +4798,18 @@ class Auth(object):
 
 class Crud(object): # pragma: no cover
 
+    default_messages = dict(
+        submit_button = 'Submit',
+        delete_label = 'Check to delete',
+        record_created = 'Record Created',
+        record_updated = 'Record Updated',
+        record_deleted = 'Record Deleted',
+        update_log = 'Record %(id)s updated',
+        create_log = 'Record %(id)s created',
+        read_log = 'Record %(id)s read',
+        delete_log = 'Record %(id)s deleted',
+    )
+
     def url(self, f=None, args=None, vars=None):
         """
         This should point to the controller that exposes
@@ -4846,17 +4858,7 @@ class Crud(object): # pragma: no cover
         settings.lock_keys = True
 
         messages = self.messages = Messages(current.T)
-        messages.submit_button = 'Submit'
-        messages.delete_label = 'Check to delete'
-        messages.record_created = 'Record Created'
-        messages.record_updated = 'Record Updated'
-        messages.record_deleted = 'Record Deleted'
-
-        messages.update_log = 'Record %(id)s updated'
-        messages.create_log = 'Record %(id)s created'
-        messages.read_log = 'Record %(id)s read'
-        messages.delete_log = 'Record %(id)s deleted'
-
+        messages.update(Crud.default_messages)
         messages.lock_keys = True
 
     def __call__(self):
