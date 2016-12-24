@@ -1029,12 +1029,11 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', 'Enter valid IPv6 address'))
         rtn = IS_IPV6(is_multicast=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', None))
-        # TODO:
         # with py3.ipaddress '2001::126c:8ffa:fe22:b3af' is considered private
         # with py2.ipaddress '2001::126c:8ffa:fe22:b3af' is considered private
         # with gluon.contrib.ipaddr(both current and trunk) is not considered private
-        # rtn = IS_IPV6(is_routeable=True)('2001::126c:8ffa:fe22:b3af')
-        # self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', None))
+        rtn = IS_IPV6(is_routeable=False)('2001::126c:8ffa:fe22:b3af')
+        self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', None))
         rtn = IS_IPV6(is_routeable=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', 'Enter valid IPv6 address'))
         rtn = IS_IPV6(subnets='2001::/32')('2001::8ffa:fe22:b3af')
