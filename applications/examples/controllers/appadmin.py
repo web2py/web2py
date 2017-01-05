@@ -465,6 +465,7 @@ def ccache():
             ram['keys'].append((key, GetInHMS(time.time() - value[0])))
 
         for key in cache.disk.storage:
+            value = cache.disk.storage[key]
             if key == 'web2py_cache_statistics' and isinstance(value[1], dict):
                 disk['hits'] = value[1]['hit_total'] - value[1]['misses']
                 disk['misses'] = value[1]['misses']
