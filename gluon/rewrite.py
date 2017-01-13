@@ -1040,7 +1040,7 @@ class MapUrlIn(object):
         else:
             default_function = self.router.default_function  # str or None
         default_function = self.domain_function or default_function
-        if not arg0 or functions and arg0 not in functions:
+        if not arg0 or functions and arg0.split('.')[0] not in functions:
             self.function = default_function or ""
             self.pop_arg_if(arg0 and self.function == arg0)
         else:
