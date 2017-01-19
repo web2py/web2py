@@ -873,6 +873,27 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(str(URL(a='app2', c='default', f='index',
                          args=['ctr'])), "/app2/index/ctr")
 
+        # outbound - with extensions
+        self.assertEqual(
+            str(URL(a='app', c='default', f='index.json')), "/index.json")
+        self.assertEqual(
+            str(URL(a='app', c='default', f='index.json', args=['arg1'])), "/index.json/arg1")
+        self.assertEqual(str(
+            URL(a='app', c='default', f='user.json')), "/user.json")
+        self.assertEqual(str(
+            URL(a='app', c='default', f='user.json', args=['arg1'])), "/user.json/arg1")
+        self.assertEqual(str(URL(
+            a='app', c='default', f='user.json', args=['index'])), "/user.json/index")
+        self.assertEqual(str(
+            URL(a='app', c='default', f='index.json', args=['ctr'])), "/index.json/ctr")
+        self.assertEqual(
+            str(URL(a='app', c='ctr', f='ctrf1.json', args=['arg'])), "/ctr/ctrf1.json/arg")
+
+        self.assertEqual(str(URL(
+            a='app2', c='default', f='index.json', args=['arg1'])), "/app2/index.json/arg1")
+        self.assertEqual(str(URL(
+            a='app2', c='ctr', f='index.json', args=['arg1'])), "/app2/ctr/index.json/arg1")
+
         # inbound
         self.assertEqual(
             filter_url('http://d.com/arg'), "/app/default/index ['arg']")
@@ -893,6 +914,30 @@ class TestRouter(unittest.TestCase):
             filter_url('http://d.com/app2/ctr'), "/app2/ctr/index")
         self.assertEqual(filter_url(
             'http://d.com/app2/ctr/index/arg'), "/app2/ctr/index ['arg']")
+        self.assertEqual(
+            filter_url('http://d.com/app2/ctr/arg'), "/app2/ctr/arg")
+
+        # inbound - with extensions
+        self.assertEqual(
+            filter_url('http://d.com/index.json'), "/app/default/index.json")
+        self.assertEqual(filter_url('http://d.com/user.json'), "/app/default/user.json")
+        self.assertEqual(
+            filter_url('http://d.com/user.json/arg'), "/app/default/user.json ['arg']")
+        self.assertEqual(
+            filter_url('http://d.com/user.json/index'), "/app/default/user.json ['index']")
+        self.assertEqual(
+            filter_url('http://d.com/index.json/ctr'), "/app/default/index.json ['ctr']")
+        self.assertEqual(
+            filter_url('http://d.com/ctr/ctrf1.json/arg'), "/app/ctr/ctrf1.json ['arg']")
+
+        self.assertEqual(filter_url(
+            'http://d.com/app2/index.json/arg'), "/app2/default/index.json ['arg']")
+        self.assertEqual(
+            filter_url('http://d.com/app2/user.json'), "/app2/default/user.json")
+        self.assertEqual(filter_url(
+            'http://d.com/app2/user.json/arg'), "/app2/default/user.json ['arg']")
+        self.assertEqual(filter_url(
+            'http://d.com/app2/ctr/index.json/arg'), "/app2/ctr/index.json ['arg']")
         self.assertEqual(
             filter_url('http://d.com/app2/ctr/arg'), "/app2/ctr/arg")
 
