@@ -6053,6 +6053,396 @@ class Service(object):
     def error(self):
         raise HTTP(404, "Object does not exist")
 
+class FlexibleService(Service):
+    # __init__ inherited
+    
+    # we override csv and xml to fix a bug that caused these procedures to be stored under run_procedures instead of csv_procedures or xml_procedures
+    # other service decorators (run, json, etc.) are inherited
+
+    def csv(self, f):
+        """
+        Example:
+            Use as::
+
+                service = Service()
+                @service.csv
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
+
+            Then call it with::
+
+                wget http://..../app/default/call/csv/myfunction?a=3&b=4
+
+        """
+        self.csv_procedures[f.__name__] = f
+        return f
+
+    # fix bug where stuff was put in run_procedures instead of xml_procedures
+    def xml(self, f):
+        """
+        Example:
+            Use as::
+
+                service = Service()
+                @service.xml
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
+
+            Then call it with::
+
+                wget http://..../app/default/call/xml/myfunction?a=3&b=4
+
+        """
+        self.xml_procedures[f.__name__] = f
+        return f
+
+    def serve_run(self, args=None):
+        request = current.request
+        if not args:
+            args = request.args
+        if args and args[0] in self.run_procedures:
+            return str(self.call_service_function(self.run_procedures[args[0]],
+                                        *args[1:], **dict(request.vars)))
+        self.error()
+
+    def serve_csv(self, args=None):
+        request = current.request
+        response = current.response
+        response.headers['Content-Type'] = 'text/x-csv'
+        if not args:
+            args = request.args
+
+        def none_exception(value):
+            if isinstance(value, unicodeT):
+                return value.encode('utf8')
+            if hasattr(value, 'isoformat'):
+                return value.isoformat()[:19].replace('T', ' ')
+            if value is None:
+                return '<NULL>'
+            return value
+        if args and args[0] in self.csv_procedures:
+            import types
+            r = self.call_service_function(self.csv_procedures[args[0]],
+                                 *args[1:], **dict(request.vars))
+            s = StringIO()
+            if hasattr(r, 'export_to_csv_file'):
+                r.export_to_csv_file(s)
+            elif r and not isinstance(r, types.GeneratorType) and isinstance(r[0], (dict, Storage)):
+                import csv
+                writer = csv.writer(s)
+                writer.writerow(r[0].keys())
+                for line in r:
+                    writer.writerow([none_exception(v)
+                                     for v in line.values()])
+            else:
+                import csv
+                writer = csv.writer(s)
+                for line in r:
+                    writer.writerow(line)
+            return s.getvalue()
+        self.error()
+
+    def serve_xml(self, args=None):
+        request = current.request
+        response = current.response
+        response.headers['Content-Type'] = 'text/xml'
+        if not args:
+            args = request.args
+        if args and args[0] in self.xml_procedures:
+            s = self.call_service_function(self.xml_procedures[args[0]],
+                                 *args[1:], **dict(request.vars))
+            if hasattr(s, 'as_list'):
+                s = s.as_list()
+            return serializers.xml(s, quote=False)
+        self.error()
+
+    def serve_rss(self, args=None):
+        request = current.request
+        response = current.response
+        if not args:
+            args = request.args
+        if args and args[0] in self.rss_procedures:
+            feed = self.call_service_function(self.rss_procedures[args[0]],
+                                    *args[1:], **dict(request.vars))
+        else:
+            self.error()
+        response.headers['Content-Type'] = 'application/rss+xml'
+        return serializers.rss(feed)
+
+    def serve_json(self, args=None):
+        request = current.request
+        response = current.response
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        if not args:
+            args = request.args
+        d = dict(request.vars)
+        if args and args[0] in self.json_procedures:
+            s = self.call_service_function(self.json_procedures[args[0]], *args[1:], **d)
+            if hasattr(s, 'as_list'):
+                s = s.as_list()
+            return response.json(s)
+        self.error()
+
+    def serve_jsonrpc(self):
+        def return_response(id, result):
+            return serializers.json({'version': '1.1', 'id': id, 'result': result, 'error': None})
+
+        def return_error(id, code, message, data=None):
+            error = {'name': 'JSONRPCError',
+                     'code': code, 'message': message}
+            if data is not None:
+                error['data'] = data
+            return serializers.json({'id': id,
+                                     'version': '1.1',
+                                     'error': error,
+                                     })
+
+        request = current.request
+        response = current.response
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        methods = self.jsonrpc_procedures
+        data = json.loads(request.body.read())
+        jsonrpc_2 = data.get('jsonrpc')
+        if jsonrpc_2:  # hand over to version 2 of the protocol
+            return self.serve_jsonrpc2(data)
+        id, method, params = data.get('id'), data.get('method'), data.get('params', [])
+        if id is None:
+            return return_error(0, 100, 'missing id')
+        if method not in methods:
+            return return_error(id, 100, 'method "%s" does not exist' % method)
+        try:
+            if isinstance(params, dict):
+                s = methods[method](**params)
+            else:
+                s = methods[method](*params)
+            if hasattr(s, 'as_list'):
+                s = s.as_list()
+            return return_response(id, s)
+        except Service.JsonRpcException as e:
+            return return_error(id, e.code, e.info)
+        except:
+            etype, eval, etb = sys.exc_info()
+            message = '%s: %s' % (etype.__name__, eval)
+            data = request.is_local and traceback.format_tb(etb)
+            logger.warning('jsonrpc exception %s\n%s' % (message, traceback.format_tb(etb)))
+            return return_error(id, 100, message, data)
+
+    def serve_jsonrpc2(self, data=None, batch_element=False):
+
+        def return_response(id, result):
+            if not must_respond:
+                return None
+            return serializers.json({'jsonrpc': '2.0', 'id': id, 'result': result})
+
+        def return_error(id, code, message=None, data=None):
+            error = {'code': code}
+            if code in Service.jsonrpc_errors:
+                error['message'] = Service.jsonrpc_errors[code][0]
+                error['data'] = Service.jsonrpc_errors[code][1]
+            if message is not None:
+                error['message'] = message
+            if data is not None:
+                error['data'] = data
+            return serializers.json({'jsonrpc': '2.0', 'id': id, 'error': error})
+
+        def validate(data):
+            """
+            Validate request as defined in: http://www.jsonrpc.org/specification#request_object.
+
+            Args:
+                data(str): The json object.
+
+            Returns:
+                - True -- if successful
+                - False -- if no error should be reported (i.e. data is missing 'id' member)
+
+            Raises:
+                JsonRPCException
+
+            """
+
+            iparms = set(data.keys())
+            mandatory_args = set(['jsonrpc', 'method'])
+            missing_args = mandatory_args - iparms
+
+            if missing_args:
+                raise Service.JsonRpcException(-32600, 'Missing arguments %s.' % list(missing_args))
+            if data['jsonrpc'] != '2.0':
+                raise Service.JsonRpcException(-32603, 'Unsupported jsonrpc version "%s"' % data['jsonrpc'])
+            if 'id' not in iparms:
+                return False
+
+            return True
+
+        request = current.request
+        response = current.response
+        if not data:
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
+            try:
+                data = json.loads(request.body.read())
+            except ValueError:  # decoding error in json lib
+                return return_error(None, -32700)
+
+        # Batch handling
+        if isinstance(data, list) and not batch_element:
+            retlist = []
+            for c in data:
+                retstr = self.serve_jsonrpc2(c, batch_element=True)
+                if retstr:  # do not add empty responses
+                    retlist.append(retstr)
+            if len(retlist) == 0:  # return nothing
+                return ''
+            else:
+                return "[" + ','.join(retlist) + "]"
+        methods = self.jsonrpc2_procedures
+        methods.update(self.jsonrpc_procedures)
+
+        try:
+            must_respond = validate(data)
+        except Service.JsonRpcException as e:
+            return return_error(None, e.code, e.info)
+
+        id, method, params = data.get('id'), data['method'], data.get('params', '')
+        if method not in methods:
+            return return_error(id, -32601, data='Method "%s" does not exist' % method)
+        try:
+            if isinstance(params, dict):
+                s = methods[method](**params)
+            else:
+                s = methods[method](*params)
+            if hasattr(s, 'as_list'):
+                s = s.as_list()
+            if must_respond:
+                return return_response(id, s)
+            else:
+                return ''
+        except HTTP as e:
+            raise e
+        except Service.JsonRpcException as e:
+            return return_error(id, e.code, e.info)
+        except:
+            etype, eval, etb = sys.exc_info()
+            data = '%s: %s\n' % (etype.__name__, eval) + str(request.is_local and traceback.format_tb(etb))
+            logger.warning('%s: %s\n%s' % (etype.__name__, eval, traceback.format_tb(etb)))
+            return return_error(id, -32099, data=data)
+
+    def serve_xmlrpc(self):
+        request = current.request
+        response = current.response
+        services = self.xmlrpc_procedures.values()
+        return response.xmlrpc(request, services)
+
+    def serve_amfrpc(self, version=0):
+        try:
+            import pyamf
+            import pyamf.remoting.gateway
+        except:
+            return "pyamf not installed or not in Python sys.path"
+        request = current.request
+        response = current.response
+        if version == 3:
+            services = self.amfrpc3_procedures
+            base_gateway = pyamf.remoting.gateway.BaseGateway(services)
+            pyamf_request = pyamf.remoting.decode(request.body)
+        else:
+            services = self.amfrpc_procedures
+            base_gateway = pyamf.remoting.gateway.BaseGateway(services)
+            context = pyamf.get_context(pyamf.AMF0)
+            pyamf_request = pyamf.remoting.decode(request.body, context)
+        pyamf_response = pyamf.remoting.Envelope(pyamf_request.amfVersion)
+        for name, message in pyamf_request:
+            pyamf_response[name] = base_gateway.getProcessor(message)(message)
+        response.headers['Content-Type'] = pyamf.remoting.CONTENT_TYPE
+        if version == 3:
+            return pyamf.remoting.encode(pyamf_response).getvalue()
+        else:
+            return pyamf.remoting.encode(pyamf_response, context).getvalue()
+
+    def serve_soap(self, version="1.1"):
+        try:
+            from gluon.contrib.pysimplesoap.server import SoapDispatcher
+        except:
+            return "pysimplesoap not installed in contrib"
+        request = current.request
+        response = current.response
+        procedures = self.soap_procedures
+
+        location = "%s://%s%s" % (request.env.wsgi_url_scheme,
+                                  request.env.http_host,
+                                  URL(r=request, f="call/soap", vars={}))
+        namespace = 'namespace' in response and response.namespace or location
+        documentation = response.description or ''
+        dispatcher = SoapDispatcher(
+            name=response.title,
+            location=location,
+            action=location,  # SOAPAction
+            namespace=namespace,
+            prefix='pys',
+            documentation=documentation,
+            ns=True)
+        for method, (function, returns, args, doc) in iteritems(procedures):
+            dispatcher.register_function(method, function, returns, args, doc)
+        if request.env.request_method == 'POST':
+            fault = {}
+            # Process normal Soap Operation
+            response.headers['Content-Type'] = 'text/xml'
+            xml = dispatcher.dispatch(request.body.read(), fault=fault)
+            if fault:
+                # May want to consider populating a ticket here...
+                response.status = 500
+            # return the soap response
+            return xml
+        elif 'WSDL' in request.vars:
+            # Return Web Service Description
+            response.headers['Content-Type'] = 'text/xml'
+            return dispatcher.wsdl()
+        elif 'op' in request.vars:
+            # Return method help webpage
+            response.headers['Content-Type'] = 'text/html'
+            method = request.vars['op']
+            sample_req_xml, sample_res_xml, doc = dispatcher.help(method)
+            body = [H1("Welcome to Web2Py SOAP webservice gateway"),
+                    A("See all webservice operations",
+                      _href=URL(r=request, f="call/soap", vars={})),
+                    H2(method),
+                    P(doc),
+                    UL(LI("Location: %s" % dispatcher.location),
+                       LI("Namespace: %s" % dispatcher.namespace),
+                       LI("SoapAction: %s" % dispatcher.action),
+                       ),
+                    H3("Sample SOAP XML Request Message:"),
+                    CODE(sample_req_xml, language="xml"),
+                    H3("Sample SOAP XML Response Message:"),
+                    CODE(sample_res_xml, language="xml"),
+                    ]
+            return {'body': body}
+        else:
+            # Return general help and method list webpage
+            response.headers['Content-Type'] = 'text/html'
+            body = [H1("Welcome to Web2Py SOAP webservice gateway"),
+                    P(response.description),
+                    P("The following operations are available"),
+                    A("See WSDL for webservice description",
+                      _href=URL(r=request, f="call/soap", vars={"WSDL": None})),
+                    UL([LI(A("%s: %s" % (method, doc or ''),
+                             _href=URL(r=request, f="call/soap", vars={'op': method})))
+                        for method, doc in dispatcher.list_methods()]),
+                    ]
+            return {'body': body}
+
+    # inherited __call__ method
+
+    # inherited error() method
+
+    # we make this a method so that subclasses can override it if they want to do more specific argument-checking
+    # but the default implmentation is the simplest: just pass the arguments we got, with no checking
+    def call_service_function(self, f, *a, **b):
+        return f(*a, **b)
+
 
 def completion(callback):
     """
