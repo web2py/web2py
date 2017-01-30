@@ -640,7 +640,7 @@ def run_controller_in(controller, function, environment):
         ccode = getcfs(layer, filename, lambda: compile2(code, layer))
 
     restricted(ccode, environment, layer=filename)
-    response = current.response
+    response = environment["response"]
     vars = response._vars
     if response.postprocessing:
         vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
