@@ -17,6 +17,7 @@ import random
 import inspect
 import time
 import os
+import sys
 import re
 import logging
 import socket
@@ -299,19 +300,20 @@ def initialize_urandom():
     try:
         os.urandom(1)
         have_urandom = True
-        try:
-            # try to add process-specific entropy
-            frandom = open('/dev/urandom', 'wb')
+        if sys.platform != 'win32':
             try:
-                if PY2:
-                    frandom.write(''.join(chr(t) for t in ctokens))
-                else:
-                    frandom.write(bytes([]).join(bytes([t]) for t in ctokens))
-            finally:
-                frandom.close()
-        except IOError:
-            # works anyway
-            pass
+                # try to add process-specific entropy
+                frandom = open('/dev/urandom', 'wb')
+                try:
+                    if PY2:
+                        frandom.write(''.join(chr(t) for t in ctokens))
+                    else:
+                        frandom.write(bytes([]).join(bytes([t]) for t in ctokens))
+                finally:
+                    frandom.close()
+            except IOError:
+                # works anyway
+                pass
     except NotImplementedError:
         have_urandom = False
         logger.warning(
