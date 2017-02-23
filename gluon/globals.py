@@ -638,6 +638,7 @@ class Response(Storage):
         if download_filename is None:
             download_filename = filename
         if attachment:
+            download_filename =download_filename.encode("utf-8")
             headers['Content-Disposition'] = \
                 'attachment; filename="%s"' % download_filename.replace('"', '\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
