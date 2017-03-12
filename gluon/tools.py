@@ -1346,7 +1346,7 @@ class AuthJWT(object):
             exp=expires,
             hmac_key=web2py_uuid()
         )
-        self.alter_payload(orig_payload)
+        orig_payload = self.alter_payload(orig_payload)
         return orig_payload
 
     def alter_payload(self, payload):
@@ -1398,7 +1398,7 @@ class AuthJWT(object):
             self.auth.login_user(valid_user)
         if valid_user:
             payload = self.serialize_auth_session(session.auth)
-            self.alter_payload(payload)
+            payload = self.alter_payload(payload)
             ret = {'token': self.generate_token(payload)}
         elif ret is None:
             raise HTTP(401,
