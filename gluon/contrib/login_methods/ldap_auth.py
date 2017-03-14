@@ -506,7 +506,7 @@ def ldap_auth(server='ldap',
                 l = []
                 for group in ldap_groups_of_the_user:
                     if group in group_mapping:
-                        l += group_mapping[group]
+                        l.append(group_mapping[group])
                 ldap_groups_of_the_user = l
                 logging.info("User groups after remapping: %s" % str(l))
 
