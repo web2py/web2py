@@ -115,7 +115,8 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
 
     def test_insert(self):
