@@ -2153,7 +2153,8 @@ class SQLFORM(FORM):
              ignore_common_filters=None,
              auto_pagination=True,
              use_cursor=False,
-             represent_none=None):
+             represent_none=None,
+             showblobs=False):
 
         formstyle = formstyle or current.response.formstyle
         if isinstance(query, Set):
@@ -2194,7 +2195,7 @@ class SQLFORM(FORM):
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
                       buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
                       buttontable='icon rightarrow icon-arrow-right glyphicon glyphicon-arrow-right',
-                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-zoom-in',
+                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-zoom-in'
                       )
         elif not isinstance(ui, dict):
             raise RuntimeError('SQLFORM.grid ui argument must be a dictionary')
@@ -2340,11 +2341,10 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
-            filter1 = lambda f: isinstance(f, Field) and f.type != 'blob'
-            filter2 = lambda f: isinstance(f, Field) and f.readable
+            filter1 = lambda f: isinstance(f, Field) and f.readable and (f.type!='blob' or showblobs)
             for table in tables:
                 fields += filter(filter1, table)
-                columns += filter(filter2, table)
+                columns += filter(filter1, table)
                 for k, f in iteritems(table):
                     if not k.startswith('_'):
                         if isinstance(f, Field.Virtual) and f.readable:
@@ -2862,7 +2862,7 @@ class SQLFORM(FORM):
                 for field in columns:
                     if not field.readable:
                         continue
-                    if field.type == 'blob':
+                    elif field.type == 'blob' and not showblobs:
                         continue
                     if isinstance(field, Field.Virtual) and field.tablename in row:
                         try:
