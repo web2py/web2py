@@ -317,7 +317,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
 
         symbols = dict(app=app)
         try:
-            exec(data + '\n', symbols)
+            exec(data, symbols)
         except SyntaxError as e:
             logger.error(
                 '%s has a syntax error and will not be loaded\n' % path
