@@ -5386,7 +5386,9 @@ def universal_caller(f, *a, **b):
 
 class Service(object):
 
-    def __init__(self, environment=None):
+    def __init__(self, environment=None, check_args=False):
+        self.check_args = check_args
+        
         self.run_procedures = {}
         self.csv_procedures = {}
         self.xml_procedures = {}
@@ -5436,7 +5438,7 @@ class Service(object):
                 wget http://..../app/default/call/csv/myfunction?a=3&b=4
 
         """
-        self.run_procedures[f.__name__] = f
+        self.csv_procedures[f.__name__] = f
         return f
 
     def xml(self, f):
@@ -5456,7 +5458,7 @@ class Service(object):
                 wget http://..../app/default/call/xml/myfunction?a=3&b=4
 
         """
-        self.run_procedures[f.__name__] = f
+        self.xml_procedures[f.__name__] = f
         return f
 
     def rss(self, f):
@@ -5643,7 +5645,7 @@ class Service(object):
         if not args:
             args = request.args
         if args and args[0] in self.run_procedures:
-            return str(universal_caller(self.run_procedures[args[0]],
+            return str(self.call_service_function(self.run_procedures[args[0]],
                                         *args[1:], **dict(request.vars)))
         self.error()
 
@@ -5662,9 +5664,9 @@ class Service(object):
             if value is None:
                 return '<NULL>'
             return value
-        if args and args[0] in self.run_procedures:
+        if args and args[0] in self.csv_procedures:
             import types
-            r = universal_caller(self.run_procedures[args[0]],
+            r = self.call_service_function(self.csv_procedures[args[0]],
                                  *args[1:], **dict(request.vars))
             s = StringIO()
             if hasattr(r, 'export_to_csv_file'):
@@ -5690,8 +5692,8 @@ class Service(object):
         response.headers['Content-Type'] = 'text/xml'
         if not args:
             args = request.args
-        if args and args[0] in self.run_procedures:
-            s = universal_caller(self.run_procedures[args[0]],
+        if args and args[0] in self.xml_procedures:
+            s = self.call_service_function(self.xml_procedures[args[0]],
                                  *args[1:], **dict(request.vars))
             if hasattr(s, 'as_list'):
                 s = s.as_list()
@@ -5704,7 +5706,7 @@ class Service(object):
         if not args:
             args = request.args
         if args and args[0] in self.rss_procedures:
-            feed = universal_caller(self.rss_procedures[args[0]],
+            feed = self.call_service_function(self.rss_procedures[args[0]],
                                     *args[1:], **dict(request.vars))
         else:
             self.error()
@@ -5719,7 +5721,7 @@ class Service(object):
             args = request.args
         d = dict(request.vars)
         if args and args[0] in self.json_procedures:
-            s = universal_caller(self.json_procedures[args[0]], *args[1:], **d)
+            s = self.call_service_function(self.json_procedures[args[0]], *args[1:], **d)
             if hasattr(s, 'as_list'):
                 s = s.as_list()
             return response.json(s)
@@ -6052,8 +6054,15 @@ class Service(object):
 
     def error(self):
         raise HTTP(404, "Object does not exist")
-
-
+    
+    # we make this a method so that subclasses can override it if they want to do more specific argument-checking
+    # but the default implmentation is the simplest: just pass the arguments we got, with no checking
+    def call_service_function(self, f, *a, **b):
+        if self.check_args:
+            return universal_caller(f, *a, **b)
+        else:
+            return f(*a, **b)
+  
 def completion(callback):
     """
     Executes a task on completion of the called action.
