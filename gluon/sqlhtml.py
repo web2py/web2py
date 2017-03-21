@@ -2203,6 +2203,8 @@ class SQLFORM(FORM):
         db = query._db
         T = current.T
         request = current.request
+        if(isinstance(request.vars.keywords, list)):
+            request.vars.keywords = request.vars.keywords[1]
         session = current.session
         response = current.response
         logged = session.auth and session.auth.user
