@@ -21,7 +21,7 @@ from .test_compileapp import *
 from .test_appadmin import *
 from .test_web import *
 from .test_sqlhtml import *
-from .test_scheduler import *
+# from .test_scheduler import *
 
 if sys.version[:3] == '2.7':
     from .test_is_url import *

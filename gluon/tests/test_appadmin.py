@@ -107,7 +107,7 @@ class TestAppAdmin(unittest.TestCase):
     def test_select(self):
         request = self.env['request']
         request.args = List(['db'])
-        request.env.query_string = 'query=db.auth_user.id>0'
+        request.env.query_string = 'db.auth_user.id>0'
         result = self.run_function()
         self.assertTrue('table' in result and 'query' in result)
         self.assertTrue(result['table'] == 'auth_user')
