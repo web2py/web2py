@@ -3311,23 +3311,28 @@ class SQLTABLE(TABLE):
         if not sqlrows:
             return
         REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
+        fieldmap = dict(zip(sqlrows.colnames, sqlrows.fields))
+        tablemap = dict(((f.tablename, f.table) for f in fieldmap.values()))
+        for table in tablemap.values():
+            pref = table._tablename + '.'
+            fieldmap.update(((pref+f.name, f) for f in table._virtual_fields))
+            fieldmap.update(((pref+f.name, f) for f in table._virtual_methods))
+        field_types = (Field, Field.Virtual, Field.Method)
         if not columns:
             columns = list(sqlrows.colnames)
-        if headers == 'fieldname:capitalize':
+        header_func = {
+            'fieldname:capitalize': lambda f: f.name.replace('_', ' ').title(),
+            'labels': lambda f: f.label
+        }
+        if isinstance(headers, str) and headers in header_func:
+            make_name = header_func[headers]
             headers = {}
             for c in columns:
-                tfmatch = REGEX_TABLE_DOT_FIELD.match(c)
-                if tfmatch:
-                    (t, f) = REGEX_TABLE_DOT_FIELD.match(c).groups()
-                    headers[t + '.' + f] = f.replace('_', ' ').title()
+                f = fieldmap.get(c)
+                if isinstance(f, field_types):
+                    headers[c] = make_name(f)
                 else:
                     headers[c] = REGEX_ALIAS_MATCH.sub(r'\2', c)
-        elif headers == 'labels':
-            headers = {}
-            for c in columns:
-                (t, f) = c.split('.')
-                field = sqlrows.db[t][f]
-                headers[c] = field.label
         if colgroup:
             cols = [COL(_id=c.replace('.', '-'), data={'column': i + 1})
                     for i, c in enumerate(columns)]
@@ -3380,9 +3385,8 @@ class SQLTABLE(TABLE):
                     _class += ' rowselected'
 
             for colname in columns:
-                matched_column_field = \
-                    sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD.match(colname)
-                if not matched_column_field:
+                field = fieldmap.get(colname)
+                if not isinstance(field, field_types):
                     if "_extra" in record and colname in record._extra:
                         r = record._extra[colname]
                         row.append(TD(r))
@@ -3390,12 +3394,9 @@ class SQLTABLE(TABLE):
                     else:
                         raise KeyError(
                             "Column %s not found (SQLTABLE)" % colname)
-                (tablename, fieldname) = matched_column_field.groups()
-                colname = tablename + '.' + fieldname
-                try:
-                    field = sqlrows.db[tablename][fieldname]
-                except (KeyError, AttributeError):
-                    field = None
+                # Virtual fields don't have parent table name...
+                tablename = colname.split('.', 1)[0]
+                fieldname = field.name
                 if tablename in record \
                         and isinstance(record, Row) \
                         and isinstance(record[tablename], Row):
