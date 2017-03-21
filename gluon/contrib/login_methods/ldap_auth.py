@@ -506,9 +506,9 @@ def ldap_auth(server='ldap',
                 l = []
                 for group in ldap_groups_of_the_user:
                     if group in group_mapping:
-                        l += group_mapping[group]
+                        l.append(group_mapping[group])
                 ldap_groups_of_the_user = l
-                logging.info("User groups after remapping: %s" % str(l))
+                logger.info("User groups after remapping: %s" % str(l))
 
             #
             # Get all group name where the user is in actually in local db
@@ -528,7 +528,7 @@ def ldap_auth(server='ldap',
                     except AttributeError as e:
                         db_user_id = db.auth_user.insert(email=username, first_name=username)
             if not db_user_id:
-                logging.error(
+                logger.error(
                     'There is no username or email for %s!' % username)
                 raise
             # if old pydal version, assume this is a relational database which can do joins
@@ -550,7 +550,7 @@ def ldap_auth(server='ldap',
                 for group in db_group_search.select(db.auth_group.id, db.auth_group.role, distinct=True):
                     db_group_id[group.role] = group.id
                     db_groups_of_the_user.append(group.role)
-            logging.debug('db groups of user %s: %s' % (username, str(db_groups_of_the_user)))
+            logger.debug('db groups of user %s: %s' % (username, str(db_groups_of_the_user)))
 
             auth_membership_changed = False
             #
