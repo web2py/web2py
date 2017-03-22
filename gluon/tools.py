@@ -24,6 +24,7 @@ import glob
 import os
 import re
 import time
+import calendar
 import fnmatch
 import traceback
 import smtplib
@@ -1303,12 +1304,22 @@ class AuthJWT(object):
             # signature verification failed
             raise HTTP(400, u'Token signature is invalid')
         if self.verify_expiration:
-            now = time.mktime(datetime.datetime.utcnow().timetuple())
+            now = self.get_epochtime()
             if tokend['exp'] + self.leeway < now:
                 raise HTTP(400, u'Token is expired')
         if callable(self.before_authorization):
             self.before_authorization(tokend)
         return tokend
+
+    def get_epochtime(self):
+        """
+        Return number of seconds since the epoch UTC (see RFC 7519)
+        only calendar.timegm() guarantees an epoch of 1970. The epoch
+        in the time module is system dependant.
+        """
+        dt = datetime.datetime.utcnow()
+        epochtime = calendar.timegm(dt.utctimetuple()) + dt.microsecond * 1e-6
+        return epochtime
 
     def serialize_auth_session(self, session_auth):
         """
@@ -1317,11 +1328,7 @@ class AuthJWT(object):
         We (mis)use the heavy default auth mechanism to avoid any further computation,
         while sticking to a somewhat-stable Auth API.
         """
-        # TODO: Check the following comment
-        ## is the following safe or should we use
-        ## calendar.timegm(datetime.datetime.utcnow().timetuple())
-        ## result seem to be the same (seconds since epoch, in UTC)
-        now = time.mktime(datetime.datetime.now().timetuple())
+        now = self.get_epochtime()
         expires = now + self.expiration
         payload = dict(
             hmac_key=session_auth['hmac_key'],
@@ -1333,7 +1340,7 @@ class AuthJWT(object):
         return payload
 
     def refresh_token(self, orig_payload):
-        now = time.mktime(datetime.datetime.now().timetuple())
+        now = self.get_epochtime()
         if self.verify_expiration:
             orig_exp = orig_payload['exp']
             if orig_exp + self.leeway < now:
@@ -1350,7 +1357,7 @@ class AuthJWT(object):
             exp=expires,
             hmac_key=web2py_uuid()
         )
-        self.alter_payload(orig_payload)
+        orig_payload = self.alter_payload(orig_payload)
         return orig_payload
 
     def alter_payload(self, payload):
@@ -1402,7 +1409,7 @@ class AuthJWT(object):
             self.auth.login_user(valid_user)
         if valid_user:
             payload = self.serialize_auth_session(session.auth)
-            self.alter_payload(payload)
+            payload = self.alter_payload(payload)
             ret = {'token': self.generate_token(payload)}
         elif ret is None:
             raise HTTP(401,
