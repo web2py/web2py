@@ -1881,7 +1881,9 @@ class Connection(object):
             statement, make_args = cache['statement'][operation]
         except KeyError:
             statement, make_args = convert_paramstyle(paramstyle, operation)
-            cache['statement'][operation] = statement, make_args
+            # FIXME: Rewrite PyDAL to generate query strings with placeholders,
+            # then uncomment the line below
+            #cache['statement'][operation] = statement, make_args
 
         args = make_args(vals)
         params = self.make_params(args)
@@ -1968,7 +1970,9 @@ class Connection(object):
             ps['bind_2'] = h_pack(len(output_fc)) + \
                 pack("!" + "h" * len(output_fc), *output_fc)
 
-            cache['ps'][key] = ps
+            # FIXME: Rewrite PyDAL to generate query strings with placeholders,
+            # then uncomment the line below
+            #cache['ps'][key] = ps
 
         cursor._cached_rows.clear()
         cursor._row_count = -1
