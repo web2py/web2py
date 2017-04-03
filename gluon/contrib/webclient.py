@@ -43,6 +43,7 @@ class WebClient(object):
         self.forms = {}
         self.history = []
         self.cookies = {}
+        self.cookiejar = cookielib.CookieJar()
         self.default_headers = default_headers
         self.sessions = {}
         self.session_regex = session_regex and re.compile(session_regex)
@@ -79,9 +80,8 @@ class WebClient(object):
         cookies = cookies or {}
         headers = headers or {}
 
-        cj = cookielib.CookieJar()
         args = [
-            urllib2.HTTPCookieProcessor(cj),
+            urllib2.HTTPCookieProcessor(self.cookiejar),
             urllib2.HTTPHandler(debuglevel=0)
             ]
         # if required do basic auth
