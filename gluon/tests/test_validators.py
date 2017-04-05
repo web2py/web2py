@@ -531,6 +531,11 @@ class TestValidators(unittest.TestCase):
         rtn = IS_EMAIL(error_message='oops')(42)
         self.assertEqual(rtn, (42, 'oops'))
 
+        # test for Internationalized Domain Names, see https://docs.python.org/2/library/codecs.html#module-encodings.idna
+        rtn = IS_EMAIL()('web2py@Alliancefrançaise.nu')
+        self.assertEqual(rtn, ('web2py@Alliancefrançaise.nu', None))
+
+
     def test_IS_LIST_OF_EMAILS(self):
         emails = ['localguy@localhost', '_Yosemite.Sam@example.com']
         rtn = IS_LIST_OF_EMAILS()(','.join(emails))

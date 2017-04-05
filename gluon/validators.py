@@ -21,7 +21,7 @@ import urllib
 import struct
 import decimal
 import unicodedata
-from gluon._compat import StringIO, long, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native
+from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce
@@ -1156,15 +1156,16 @@ class IS_EMAIL(Validator):
 
     """
 
-    regex = re.compile('''
+    body_regex = re.compile('''
         ^(?!\.)                            # name may not begin with a dot
         (
           [-a-z0-9!\#$%&'*+/=?^_`{|}~]     # all legal characters except dot
           |
           (?<!\.)\.                        # single dots only
         )+
-        (?<!\.)                            # name may not end with a dot
-        @
+        (?<!\.)$                            # name may not end with a dot
+    ''', re.VERBOSE | re.IGNORECASE)
+    domain_regex = re.compile('''
         (
           localhost
           |
@@ -1183,6 +1184,7 @@ class IS_EMAIL(Validator):
 
     regex_proposed_but_failed = re.compile('^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$', re.VERBOSE | re.IGNORECASE)
 
+
     def __init__(self,
                  banned=None,
                  forced=None,
@@ -1196,14 +1198,27 @@ class IS_EMAIL(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
+        if not(isinstance(value, (basestring, unicodeT))) or not value or '@' not in value:
+          return (value, translate(self.error_message))
+
+        body, domain = value.rsplit('@', 1)
+
         try:
-            match = self.regex.match(value)
-        except TypeError:
+            match_body = self.body_regex.match(body)
+            match_domain = self.domain_regex.match(domain)
+
+            if not match_domain:
+                # check for Internationalized Domain Names
+                # see https://docs.python.org/2/library/codecs.html#module-encodings.idna
+                domain_encoded = to_unicode(domain).encode('idna').decode('ascii')
+                match_domain = self.domain_regex.match(domain_encoded)
+
+            match = (match_body != None) and (match_domain != None)
+        except (TypeError, UnicodeError):
             # Value may not be a string where we can look for matches.
             # Example: we're calling ANY_OF formatter and IS_EMAIL is asked to validate a date.
             match = None
         if match:
-            domain = value.split('@')[1]
             if (not self.banned or not self.banned.match(domain)) \
                     and (not self.forced or self.forced.match(domain)):
                 return (value, None)
