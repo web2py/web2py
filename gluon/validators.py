@@ -989,14 +989,15 @@ class IS_DECIMAL_IN_RANGE(Validator):
 
 
 def is_empty(value, empty_regex=None):
+    _value = value
     """test empty field"""
     if isinstance(value, (str, unicodeT)):
         value = value.strip()
         if empty_regex is not None and empty_regex.match(value):
             value = ''
     if value is None or value == '' or value == []:
-        return (value, True)
-    return (value, False)
+        return (_value, True)
+    return (_value, False)
 
 
 class IS_NOT_EMPTY(Validator):
