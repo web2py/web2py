@@ -73,6 +73,13 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
         import_tb = None
         try:
             try:
+                if (not name.startswith(('gluon.', '.'))
+                   and 'direct_import' not in locals):
+                    try:  # Try to load a gluon class
+                        oname = 'gluon.%s' % name
+                        return NATIVE_IMPORTER(oname, globals, locals, fromlist, level)
+                    except:
+                        pass
                 oname = name if not name.startswith('.') else '.'+name
                 return NATIVE_IMPORTER(oname, globals, locals, fromlist, level)
             except ImportError:
@@ -108,6 +115,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             if import_tb:
                 import_tb = None
 
+    locals['direct_import']=True
     return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
 
 
