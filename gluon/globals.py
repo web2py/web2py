@@ -899,7 +899,7 @@ class Session(Storage):
                     Field('created_datetime', 'datetime',
                           default=request.now),
                     Field('modified_datetime', 'datetime'),
-                    Field('unique_key', length=64),
+                    Field('unique_key', length=64, unique=True),
                     Field('session_data', 'blob'),
                     migrate=table_migrate,
                 )
