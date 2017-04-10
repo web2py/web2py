@@ -38,7 +38,7 @@
             if (value > 0) $('#' + id).hide().fadeIn('slow');
             else $('#' + id).show().fadeOut('slow');
         },
-        ajax: function (u, s, t) {
+        ajax: function (u, s, t, options) {
             /*simple ajax function*/
             var query = '';
             if (typeof s == 'string') {
@@ -59,7 +59,9 @@
                     query = pcs.join('&');
                 }
             }
-            $.ajax({
+
+            // default options for jquery ajax function
+            var ajax_options = {
                 type: 'POST',
                 url: u,
                 data: query,
@@ -69,8 +71,23 @@
                         else if (typeof t == 'string') $('#' + t).html(msg);
                         else t(msg);
                     }
+                    // trigger on_success
+                    if (options.on_success){
+                        options.on_success();
+                    }
                 }
-            });
+            };
+
+            // merge default ajax options with user custom options
+            for (var attrname in options) {
+                // not merge custom on_success option
+                if(attrname != "on_success"){
+                    ajax_options[attrname] = options[attrname];
+                }
+            }
+
+            // call ajax function
+            $.ajax(ajax_options);
         },
         ajax_fields: function (target) {
             /*
