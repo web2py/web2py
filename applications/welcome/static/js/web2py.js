@@ -40,6 +40,10 @@
         },
         ajax: function (u, s, t, options) {
             /*simple ajax function*/
+
+            // set options default value
+            options = typeof options !== 'undefined' ? options : {};
+
             var query = '';
             if (typeof s == 'string') {
                 var d = $(s).serialize();
@@ -60,30 +64,39 @@
                 }
             }
 
-            // default options for jquery ajax function
+            // default success action
+            var success_function = function (msg) {
+                if (t) {
+                    if (t == ':eval') eval(msg);
+                    else if (typeof t == 'string') $('#' + t).html(msg);
+                    else t(msg);
+                }
+            };
+
+            // declare success actions as array
+            var success = [success_function];
+
+            // add user success actions
+            if ($.isArray(options.done)){
+                success = $.merge(success, options.done);
+            } else {
+                success.push(options.done);
+            }
+
+            // default jquery ajax options
             var ajax_options = {
                 type: 'POST',
                 url: u,
                 data: query,
-                success: function (msg) {
-                    if (t) {
-                        if (t == ':eval') eval(msg);
-                        else if (typeof t == 'string') $('#' + t).html(msg);
-                        else t(msg);
-                    }
-                    // trigger on_success
-                    if (options.on_success){
-                        options.on_success();
-                    }
-                }
+                success: success
             };
+
+            //remove custom "done" option if exists
+            delete options.done;
 
             // merge default ajax options with user custom options
             for (var attrname in options) {
-                // not merge custom on_success option
-                if(attrname != "on_success"){
                     ajax_options[attrname] = options[attrname];
-                }
             }
 
             // call ajax function
