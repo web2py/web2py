@@ -21,6 +21,9 @@ def MemcacheClient(*a, **b):
 
 class MemcacheClientObj(Client):
 
+    def initialize(self):
+        pass
+
     meta_storage = {}
     max_time_expire = 24*3600
 
