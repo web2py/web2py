@@ -95,14 +95,14 @@ class TestRouter(unittest.TestCase):
         """ Test router syntax error """
         level = logger.getEffectiveLevel()
         logger.setLevel(logging.CRITICAL)  # disable logging temporarily
-        self.assertRaises(SyntaxError, load, data='x:y')
+        self.assertRaises(SyntaxError, load, data='x::y')
         self.assertRaises(
             SyntaxError, load, rdict=dict(BASE=dict(badkey="value")))
         self.assertRaises(SyntaxError, load, rdict=dict(
             BASE=dict(), app=dict(default_application="name")))
 
         self.myassertRaisesRegex(SyntaxError, "invalid syntax",
-                                load, data='x:y')
+                                load, data='x::y')
         self.myassertRaisesRegex(SyntaxError, "unknown key",
                                 load, rdict=dict(BASE=dict(badkey="value")))
         self.myassertRaisesRegex(SyntaxError, "BASE-only key",

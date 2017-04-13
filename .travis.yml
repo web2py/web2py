@@ -8,6 +8,7 @@ python:
   - '2.7'
   - 'pypy'
   - '3.5'
+  - '3.6'
 
 install:
   - pip install -e .

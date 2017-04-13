@@ -91,7 +91,8 @@ class TestAppAdmin(unittest.TestCase):
             self.run_view()
             self.run_view_file_stream()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
 
     def test_index(self):
@@ -115,7 +116,8 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
 
     def test_insert(self):
@@ -129,7 +131,8 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
 
     def test_insert_submit(self):
@@ -151,7 +154,8 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
         db = self.env['db']
         lisa_record = db(db.auth_user.username == 'lisasimpson').select().first()
