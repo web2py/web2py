@@ -12,9 +12,11 @@ Auth, Mail, PluginManager and various utilities
 
 import base64
 from functools import reduce
-from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, configparser, MIMEBase, MIMEMultipart, \
-                          MIMEText, Encoders, Charset, long, urllib_quote, iteritems, to_bytes, to_native, add_charset, \
-                          charset_QP, basestring, unicodeT, to_unicode
+from gluon._compat import pickle, thread, urllib2, Cookie, StringIO
+from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText
+from gluon._compat import Encoders, Charset, long, urllib_quote, iteritems
+from gluon._compat import to_bytes, to_native, add_charset
+from gluon._compat import charset_QP, basestring, unicodeT, to_unicode
 import datetime
 import logging
 import sys
@@ -40,8 +42,9 @@ from gluon.utils import web2py_uuid, compare
 from gluon.fileutils import read_file, check_credentials
 from gluon import *
 from gluon.contrib.autolinks import expand_one
-from gluon.contrib.markmin.markmin2html import \
-    replace_at_urls, replace_autolinks, replace_components
+from gluon.contrib.markmin.markmin2html import replace_at_urls
+from gluon.contrib.markmin.markmin2html import replace_autolinks
+from gluon.contrib.markmin.markmin2html import replace_components
 from pydal.objects import Row, Set, Query
 
 import gluon.serializers as serializers
@@ -1578,7 +1581,6 @@ class Auth(object):
         logged_out='Logged out',
         registration_successful='Registration successful',
         invalid_email='Invalid email',
-        unable_send_email='Unable to send email',
         invalid_login='Invalid login',
         invalid_user='Invalid user',
         invalid_password='Invalid password',
@@ -2003,6 +2005,12 @@ class Auth(object):
                 return self.cas_validate(version=2, proxy=False)
             elif args(1) == self.settings.cas_actions['proxyvalidate']:
                 return self.cas_validate(version=2, proxy=True)
+            elif (args(1) == 'p3'
+                  and args(2) == self.settings.cas_actions['servicevalidate']):
+                return self.cas_validate(version=3, proxy=False)
+            elif (args(1) == 'p3'
+                  and args(2) == self.settings.cas_actions['proxyvalidate']):
+                return self.cas_validate(version=3, proxy=True)
             elif args(1) == self.settings.cas_actions['logout']:
                 return self.logout(next=request.vars.service or DEFAULT)
         else:
@@ -2828,6 +2836,15 @@ class Auth(object):
         if success:
             if version == 1:
                 message = 'yes\n%s' % user[userfield]
+            elif version == 3:
+                username = user.get('username', user[userfield])
+                message = build_response(
+                    TAG['cas:authenticationSuccess'](
+                        TAG['cas:user'](username),
+                        TAG['cas:attributes'](
+                            *[TAG['cas:' + field.name](user[field.name])
+                              for field in self.table_user()
+                              if field.readable])))
             else:  # assume version 2
                 username = user.get('username', user[userfield])
                 message = build_response(
@@ -3415,7 +3432,9 @@ class Auth(object):
                 link = self.url(
                     self.settings.function, args=('verify_email', key), scheme=True)
                 d = dict(form.vars)
-                d.update(dict(key=key, link=link, username=form.vars[username]))
+                d.update(dict(key=key, link=link, username=form.vars[username],
+                              firstname=form.vars['firstname'],
+                              lastname=form.vars['lastname']))
                 if not (self.settings.mailer and self.settings.mailer.send(
                         to=form.vars.email,
                         subject=self.messages.verify_email_subject,
@@ -3633,7 +3652,7 @@ class Auth(object):
                                          message=self.messages.retrieve_password % dict(password=password)):
                 session.flash = self.messages.email_sent
             else:
-                session.flash = self.messages.unable_to_send_email
+                session.flash = self.messages.unable_send_email
             self.log_event(log, user)
             callback(onaccept, form)
             if not next:
@@ -3668,7 +3687,12 @@ class Auth(object):
                 key = request.args[-1]
             if key:
                 session._reset_password_key = key
-                redirect(self.url(args='confirm_registration'))
+                if next:
+                    redirect_vars = {'_next': next}
+                else:
+                    redirect_vars = {}
+                redirect(self.url(args='confirm_registration',
+                                  vars=redirect_vars))
             else:
                 key = session._reset_password_key
         else:
@@ -3930,7 +3954,7 @@ class Auth(object):
             if self.email_reset_password(user):
                 session.flash = self.messages.email_sent
             else:
-                session.flash = self.messages.unable_to_send_email
+                session.flash = self.messages.unable_send_email
             self.log_event(log, user)
             callback(onaccept, form)
             if not next:
@@ -4774,6 +4798,18 @@ class Auth(object):
 
 class Crud(object): # pragma: no cover
 
+    default_messages = dict(
+        submit_button = 'Submit',
+        delete_label = 'Check to delete',
+        record_created = 'Record Created',
+        record_updated = 'Record Updated',
+        record_deleted = 'Record Deleted',
+        update_log = 'Record %(id)s updated',
+        create_log = 'Record %(id)s created',
+        read_log = 'Record %(id)s read',
+        delete_log = 'Record %(id)s deleted',
+    )
+
     def url(self, f=None, args=None, vars=None):
         """
         This should point to the controller that exposes
@@ -4822,17 +4858,7 @@ class Crud(object): # pragma: no cover
         settings.lock_keys = True
 
         messages = self.messages = Messages(current.T)
-        messages.submit_button = 'Submit'
-        messages.delete_label = 'Check to delete'
-        messages.record_created = 'Record Created'
-        messages.record_updated = 'Record Updated'
-        messages.record_deleted = 'Record Deleted'
-
-        messages.update_log = 'Record %(id)s updated'
-        messages.create_log = 'Record %(id)s created'
-        messages.read_log = 'Record %(id)s read'
-        messages.delete_log = 'Record %(id)s deleted'
-
+        messages.update(Crud.default_messages)
         messages.lock_keys = True
 
     def __call__(self):

@@ -216,6 +216,7 @@ fi
 
 /etc/init.d/nginx start
 systemctl start emperor.uwsgi.service
+systemctl enable emperor.uwsgi.service
 
 echo <<EOF
 you can stop uwsgi and nginx with

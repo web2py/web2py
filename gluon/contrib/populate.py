@@ -1,6 +1,7 @@
 from __future__ import print_function
+from gluon._compat import pickle, unicodeT
+from gluon.fileutils import open_file
 import re
-import cPickle
 import random
 import datetime
 
@@ -32,10 +33,10 @@ class Learner:
                 self.db[item][nextitem] += 1
 
     def save(self, filename):
-        cPickle.dump(self.db, open(filename, 'wb'))
+        pickle.dump(self.db, open_file(filename, 'wb'))
 
     def load(self, filename):
-        self.loadd(cPickle.load(open(filename, 'rb')))
+        self.loadd(pickle.load(open_file(filename, 'rb')))
 
     def loadd(self, db):
         self.db = db
@@ -43,7 +44,7 @@ class Learner:
     def generate(self, length=10000, prefix=False):
         replacements2 = {' ,': ',', ' \.': '.\n', ' :': ':', ' ;':
                          ';', '\n\s+': '\n'}
-        keys = self.db.keys()
+        keys = list(self.db.keys())
         key = keys[random.randint(0, len(keys) - 1)]
         words = key
         words = words.capitalize()
@@ -130,7 +131,7 @@ def populate_generator(table, default=True, compute=False, contents={}):
                 continue # if user supplied it, let it be.
 
             field = table[fieldname]
-            if not isinstance(field.type, (str, unicode)):
+            if not isinstance(field.type, (str, unicodeT)):
                 continue
             elif field.type == 'id':
                 continue

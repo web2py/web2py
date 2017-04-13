@@ -2470,7 +2470,7 @@ class IS_LIST_OF(Validator):
 
 class IS_LOWER(Validator):
     """
-    Converts to lower case::
+    Converts to lowercase::
 
         >>> IS_LOWER()('ABC')
         ('abc', None)
@@ -2485,7 +2485,7 @@ class IS_LOWER(Validator):
 
 class IS_UPPER(Validator):
     """
-    Converts to upper case::
+    Converts to uppercase::
 
         >>> IS_UPPER()('abc')
         ('ABC', None)
@@ -3025,22 +3025,22 @@ class IS_STRONG(object):
             all_upper = re.findall("[A-Z]", value)
             if self.upper > 0:
                 if not len(all_upper) >= self.upper:
-                    failures.append(translate("Must include at least %s upper case")
+                    failures.append(translate("Must include at least %s uppercase")
                                     % str(self.upper))
             else:
                 if len(all_upper) > 0:
                     failures.append(
-                        translate("May not include any upper case letters"))
+                        translate("May not include any uppercase letters"))
         if isinstance(self.lower, int):
             all_lower = re.findall("[a-z]", value)
             if self.lower > 0:
                 if not len(all_lower) >= self.lower:
-                    failures.append(translate("Must include at least %s lower case")
+                    failures.append(translate("Must include at least %s lowercase")
                                     % str(self.lower))
             else:
                 if len(all_lower) > 0:
                     failures.append(
-                        translate("May not include any lower case letters"))
+                        translate("May not include any lowercase letters"))
         if isinstance(self.number, int):
             all_number = re.findall("[0-9]", value)
             if self.number > 0:
@@ -3505,10 +3505,7 @@ class IS_IPV6(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        try:
-            import ipaddress
-        except ImportError:
-            from gluon.contrib import ipaddr as ipaddress
+        from gluon._compat import ipaddress
 
         try:
             ip = ipaddress.IPv6Address(to_unicode(value))
@@ -3732,12 +3729,10 @@ class IS_IPADDRESS(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        try:
-            from ipaddress import ip_address as IPAddress
-            from ipaddress import IPv6Address, IPv4Address
-        except ImportError:
-            from gluon.contrib.ipaddr import (IPAddress, IPv4Address,
-                                              IPv6Address)
+        from gluon._compat import ipaddress
+        IPAddress = ipaddress.ip_address
+        IPv6Address = ipaddress.IPv6Address
+        IPv4Address = ipaddress.IPv4Address
 
         try:
             ip = IPAddress(to_unicode(value))

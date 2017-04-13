@@ -168,7 +168,8 @@
              * and require no dom manipulations
              */
             var doc = $(document);
-            doc.on('click', '.w2p_flash', function () {
+            doc.on('click', '.w2p_flash', function (event) {
+                event.preventDefault();
                 var t = $(this);
                 if (t.css('top') == '0px') t.slideUp('slow');
                 else t.fadeOut();
@@ -316,6 +317,7 @@
                     'beforeSend': function (xhr, settings) {
                         xhr.setRequestHeader('web2py-component-location', document.location);
                         xhr.setRequestHeader('web2py-component-element', target);
+                        web2py.fire(element, 'w2p:componentBegin', [xhr, settings], target);
                         return web2py.fire(element, 'ajax:beforeSend', [xhr, settings], target); //test a usecase, should stop here if returns false
                     },
                     'success': function (data, status, xhr) {
@@ -338,6 +340,7 @@
                         web2py.trap_form(action, target);
                         web2py.ajax_init('#' + target);
                         web2py.after_ajax(xhr);
+                        web2py.fire(element, 'w2p:componentComplete', [xhr, status], target); // Let us know the component is finished loading
                     }
                 });
             }
@@ -617,8 +620,8 @@
             }
             if (confirm_message) {
                 if (confirm_message == 'default') {
-                    confirm_message = w2p_ajax_confirm_message ||
-                        'Are you sure you want to delete this object?';
+                    confirm_message = !web2py.isUndefined(w2p_ajax_confirm_message) ?  
+                    w2p_ajax_confirm_message : 'Are you sure you want to delete this object?';
                 }
                 if (!web2py.confirm(confirm_message)) {
                     web2py.stopEverything(e);

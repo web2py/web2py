@@ -20,7 +20,7 @@ import urllib
 import base64
 from gluon import sanitizer, decoder
 import itertools
-from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool
+from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool, text_type
 from gluon.utils import local_html_escape
 import marshal
 
@@ -122,7 +122,7 @@ def xmlescape(data, quote=True):
     if hasattr(data, 'xml') and callable(data.xml):
         return to_bytes(data.xml())
 
-    if not(isinstance(data, basestring)):
+    if not(isinstance(data, (text_type, bytes))):
         # i.e., integers
         data=str(data)
     data = to_bytes(data, 'utf8', 'xmlcharrefreplace')
@@ -1040,7 +1040,7 @@ class DIV(XmlComponent):
         hello
         >>> a.elements('a[u:v=$]')[0].xml()
         '<a id="1-1" u:v="$">hello</a>'
-        >>> a=FORM( INPUT(_type='text'), SELECT(range(1)), TEXTAREA() )
+        >>> a=FORM( INPUT(_type='text'), SELECT(list(range(1))), TEXTAREA() )
         >>> for c in a.elements('input, select, textarea'): c['_disabled'] = 'disabled'
         >>> a.xml()
         '<form action="#" enctype="multipart/form-data" method="post"><input disabled="disabled" type="text" /><select disabled="disabled"><option value="0">0</option></select><textarea cols="40" disabled="disabled" rows="10"></textarea></form>'

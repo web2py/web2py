@@ -843,7 +843,7 @@ class TestValidators(unittest.TestCase):
                           '|'.join(['Minimum length is 8',
                                     'Maximum length is 4',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 uppercase',
                                     'Must include at least 1 number']))
                          )
         rtn = IS_STRONG(es=True)('abcde')
@@ -851,7 +851,7 @@ class TestValidators(unittest.TestCase):
                          ('abcde',
                           '|'.join(['Minimum length is 8',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 uppercase',
                                     'Must include at least 1 number']))
                          )
         rtn = IS_STRONG(upper=0, lower=0, number=0, es=True)('Abcde1')
@@ -859,8 +859,8 @@ class TestValidators(unittest.TestCase):
                          ('Abcde1',
                           '|'.join(['Minimum length is 8',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'May not include any upper case letters',
-                                    'May not include any lower case letters',
+                                    'May not include any uppercase letters',
+                                    'May not include any lowercase letters',
                                     'May not include any numbers']))
                          )
 
@@ -1029,12 +1029,11 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', 'Enter valid IPv6 address'))
         rtn = IS_IPV6(is_multicast=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', None))
-        # TODO:
         # with py3.ipaddress '2001::126c:8ffa:fe22:b3af' is considered private
         # with py2.ipaddress '2001::126c:8ffa:fe22:b3af' is considered private
         # with gluon.contrib.ipaddr(both current and trunk) is not considered private
-        # rtn = IS_IPV6(is_routeable=True)('2001::126c:8ffa:fe22:b3af')
-        # self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', None))
+        rtn = IS_IPV6(is_routeable=False)('2001::126c:8ffa:fe22:b3af')
+        self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', None))
         rtn = IS_IPV6(is_routeable=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', 'Enter valid IPv6 address'))
         rtn = IS_IPV6(subnets='2001::/32')('2001::8ffa:fe22:b3af')

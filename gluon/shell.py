@@ -15,6 +15,7 @@ from __future__ import print_function
 import os
 import sys
 import code
+import copy
 import logging
 import types
 import re
@@ -167,6 +168,8 @@ def env(
             sys.stderr.write(e.traceback + '\n')
             sys.exit(1)
 
+    response._view_environment = copy.copy(environment)
+
     environment['__name__'] = '__main__'
     return environment
 
@@ -251,7 +254,7 @@ def run(
             die(errmsg)
 
     if f:
-        exec('print %s()' % f, _env)
+        exec('print( %s())' % f, _env)
         return
 
     _env.update(exec_pythonrc())
