@@ -258,6 +258,19 @@
   {{pass}}
 {{pass}}
 
+{{if request.function=='d3_graph_model':}}
+<h2>{{=T("Graph Model")}}</h2>
+<div id="vis"></div>
+<link rel="stylesheet" href="{{=URL('static','css/d3_graph.css')}}"/>
+<script>
+    // Define the d3 input data
+    {{from gluon.serializers import json }}
+    var nodes = {{=XML(json(nodes))}};
+    var links = {{=XML(json(links))}};
+    d3_graph();
+</script>
+{{pass}}
+
 {{if request.function == 'manage':}}
 <h2>{{=heading}}</h2>
 <ul class="nav nav-tabs">
