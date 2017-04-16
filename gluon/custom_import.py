@@ -80,6 +80,14 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                 if not items[-1]:
                     items = items[:-1]
                 modules_prefix = '.'.join(items[-2:]) + '.modules'
+                pname = modules_prefix + "." + name
+
+                # if the module has been loaded, just return it to break
+                # circular imports.
+                old_mod = sys.modules.get(pname)
+                if old_mod:
+                    return old_mod
+
                 if not fromlist:
                     # import like "import x" or "import x.y"
                     result = None
@@ -94,7 +102,6 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                     return result
                 else:
                     # import like "from x import a, b, ..."
-                    pname = modules_prefix + "." + name
                     return base_importer(pname, globals, locals, fromlist, level)
         except ImportError as e1:
             import_tb = sys.exc_info()[2]
