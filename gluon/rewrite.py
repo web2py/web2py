@@ -1263,9 +1263,9 @@ class MapUrlOut(object):
         "Builds a/c/f from components"
         acf = ''
         if self.map_hyphen:
-            self.controller = self.controller.replace('_', '-')
             if self.controller != 'static' and not self.controller.startswith('static/'):
                 self.application = self.application.replace('_', '-')
+                self.controller = self.controller.replace('_', '-')
                 self.function = self.function.replace('_', '-')
         if not self.omit_application:
             acf += '/' + self.application
