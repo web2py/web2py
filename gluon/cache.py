@@ -419,7 +419,7 @@ class CacheOnDisk(CacheAbstract):
 
         # Lets test if the cache folder exists, if not
         # we are going to create it
-        folder = os.path.join(folder or request.folder, 'cache')
+        folder = os.path.join(folder or (request.folder, 'cache'))
 
         if not os.path.exists(folder):
             os.mkdir(folder)
