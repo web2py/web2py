@@ -51,11 +51,29 @@ def _default_validators(db, field):
         if hasattr(referenced, '_format') and referenced._format:
             requires = validators.IS_IN_DB(db, referenced._id,
                                            referenced._format)
-            if field.unique:
-                requires._and = validators.IS_NOT_IN_DB(db, field)
-            if field.tablename == field_type[10:]:
-                return validators.IS_EMPTY_OR(requires)
-            return requires
+        else:
+            requires = validators.IS_IN_DB(db, referenced._id)
+        if field.unique:
+            requires._and = validators.IS_NOT_IN_DB(db, field)
+        if field.tablename == field_type[10:]:
+            return validators.IS_EMPTY_OR(requires)
+        return requires
+    elif db and field_type.startswith('reference') and \
+            field_type.find('.') > 0 and \
+            field_type[10:].split('.')[0] in db.tables:
+        table_name=field_type[10:].split('.')[0]
+        field_name=field_type[10:].split('.')[1]
+        referenced = db[table_name]
+        if hasattr(referenced, '_format') and referenced._format:
+            requires = validators.IS_IN_DB(db, referenced[field_name],
+                                           referenced._format)
+        else:
+            requires = validators.IS_IN_DB(db, referenced[field_name])
+        if field.unique:
+            requires._and = validators.IS_NOT_IN_DB(db, field)
+        if field.tablename == table_name:
+            return validators.IS_EMPTY_OR(requires)
+        return requires
     elif db and field_type.startswith('list:reference') and \
             field_type.find('.') < 0 and \
             field_type[15:] in db.tables:
@@ -65,6 +83,23 @@ def _default_validators(db, field):
                                            referenced._format, multiple=True)
         else:
             requires = validators.IS_IN_DB(db, referenced._id,
+                                           multiple=True)
+        if field.unique:
+            requires._and = validators.IS_NOT_IN_DB(db, field)
+        if not field.notnull:
+            requires = validators.IS_EMPTY_OR(requires)
+        return requires
+    elif db and field_type.startswith('list:reference') and \
+            field_type.find('.') > 0 and \
+            field_type[15:].split('.')[0] in db.tables:
+        table_name=field_type[15:].split('.')[0]
+        field_name=field_type[15:].split('.')[1]
+        referenced = db[table_name]
+        if hasattr(referenced, '_format') and referenced._format:
+            requires = validators.IS_IN_DB(db, referenced[field_name],
+                                           referenced._format, multiple=True)
+        else:
+            requires = validators.IS_IN_DB(db, referenced[field_name],
                                            multiple=True)
         if field.unique:
             requires._and = validators.IS_NOT_IN_DB(db, field)
