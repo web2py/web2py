@@ -38,8 +38,12 @@
             if (value > 0) $('#' + id).hide().fadeIn('slow');
             else $('#' + id).show().fadeOut('slow');
         },
-        ajax: function (u, s, t) {
+        ajax: function (u, s, t, options) {
             /*simple ajax function*/
+
+            // set options default value
+            options = typeof options !== 'undefined' ? options : {};
+
             var query = '';
             if (typeof s == 'string') {
                 var d = $(s).serialize();
@@ -59,18 +63,44 @@
                     query = pcs.join('&');
                 }
             }
-            $.ajax({
+
+            // default success action
+            var success_function = function (msg) {
+                if (t) {
+                    if (t == ':eval') eval(msg);
+                    else if (typeof t == 'string') $('#' + t).html(msg);
+                    else t(msg);
+                }
+            };
+
+            // declare success actions as array
+            var success = [success_function];
+
+            // add user success actions
+            if ($.isArray(options.done)){
+                success = $.merge(success, options.done);
+            } else {
+                success.push(options.done);
+            }
+
+            // default jquery ajax options
+            var ajax_options = {
                 type: 'POST',
                 url: u,
                 data: query,
-                success: function (msg) {
-                    if (t) {
-                        if (t == ':eval') eval(msg);
-                        else if (typeof t == 'string') $('#' + t).html(msg);
-                        else t(msg);
-                    }
-                }
-            });
+                success: success
+            };
+
+            //remove custom "done" option if exists
+            delete options.done;
+
+            // merge default ajax options with user custom options
+            for (var attrname in options) {
+                    ajax_options[attrname] = options[attrname];
+            }
+
+            // call ajax function
+            $.ajax(ajax_options);
         },
         ajax_fields: function (target) {
             /*
