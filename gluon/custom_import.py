@@ -75,7 +75,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             try:
                 oname = name if not name.startswith('.') else '.'+name
                 return NATIVE_IMPORTER(oname, globals, locals, fromlist, level)
-            except ImportError:
+            except (ImportError, KeyError):
                 items = current.request.folder.split(os.path.sep)
                 if not items[-1]:
                     items = items[:-1]
@@ -100,7 +100,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             import_tb = sys.exc_info()[2]
             try:
                 return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
-            except ImportError as e3:
+            except (ImportError, KeyError) as e3:
                 raise ImportError(e1, import_tb)  # there an import error in the module
         except Exception as e2:
             raise  # there is an error in the module
