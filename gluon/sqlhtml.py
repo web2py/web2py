@@ -769,7 +769,7 @@ class AutocompleteWidget(object):
         if self.is_reference:
             key2 = self.keyword + '_aux'
             key3 = self.keyword + '_auto'
-            attr['_class'] = 'string'
+            attr['_class'] = 'string form-control'
             name = attr['_name']
             if 'requires' in attr:
                 del attr['requires']
