@@ -12,6 +12,7 @@ import gluon.contenttype
 import gluon.fileutils
 from gluon._compat import iteritems
 
+# d3_graph_model added but leaving pygraphviz code as is for initial tests.
 try:
     import pygraphviz as pgv
 except ImportError:
@@ -566,6 +567,9 @@ def table_template(table):
                              ).xml()
 
 
+# d3_graph_model added but leaving pygraphviz code as is for initial tests.
+# The Graph Model button in admin app  views/default/design.html has been redirected 
+# to the d3_graph_model function.
 def bg_graph_model():
     graph = pgv.AGraph(layout='dot',  directed=True,  strict=False,  rankdir='LR')
 
@@ -700,3 +704,52 @@ def hooks():
             ul_t.append(UL([LI(A(f['funcname'], _class="editor_filelink", _href=f['url']if 'url' in f else None, **{'_data-lineno':f['lineno']-1})) for f in op['functions']]))
         ul_main.append(ul_t)
     return ul_main
+
+
+# ##########################################################
+# d3 based model visualizations
+# ###########################################################
+
+def d3_graph_model():
+    """ See https://www.facebook.com/web2py/posts/145613995589010 from Bruno Rocha
+    and also the app_admin bg_graph_model function
+    
+    Create a list of table dicts, called "nodes"
+    """
+    
+    data = {}
+    nodes = []
+    links = []
+
+    subgraphs = dict()
+
+    for tablename in db.tables:
+        fields = []
+        for field in db[tablename]:
+            f_type = field.type
+            if not isinstance(f_type,str):
+                disp = ' '
+            elif f_type == 'string':
+                disp =  field.length
+            elif f_type == 'id':
+                disp =  "PK"
+            elif f_type.startswith('reference') or \
+                f_type.startswith('list:reference'):
+                disp = "FK"
+            else:
+                disp = ' '
+            fields.append(dict(name= field.name, type=field.type, disp = disp))
+
+            if isinstance(f_type,str) and (
+                f_type.startswith('reference') or
+                f_type.startswith('list:reference')):
+                referenced_table = f_type.split()[1].split('.')[0]
+
+                links.append(dict(source=tablename, target = referenced_table))
+
+        nodes.append(dict(name=tablename, type="table", fields = fields))
+
+    # d3 v4 allows individual modules to be specified.  The complete d3 library is included below.
+    response.files.append(URL('static','js/d3.min.js'))
+    response.files.append(URL('static','js/d3_graph.js'))
+    return dict(nodes=nodes, links=links)
