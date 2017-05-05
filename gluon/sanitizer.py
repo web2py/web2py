@@ -11,7 +11,7 @@ Cross-site scripting (XSS) defense
 """
 
 from gluon._compat import HTMLParser, urlparse, entitydefs, basestring
-from cgi import escape
+from gluon.utils import local_html_escape
 from formatter import AbstractFormatter
 from xml.sax.saxutils import quoteattr
 
@@ -21,7 +21,7 @@ __all__ = ['sanitize']
 def xssescape(text):
     """Gets rid of < and > and & and, for good measure, :"""
 
-    return escape(text, quote=True).replace(':', '&#58;')
+    return local_html_escape(text, quote=True).replace(':', '&#58;')
 
 
 class XssCleaner(HTMLParser):

@@ -20,7 +20,7 @@ import urllib
 import base64
 from gluon import sanitizer, decoder
 import itertools
-from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool, text_type
+from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool, text_type, long
 from gluon.utils import local_html_escape
 import marshal
 
@@ -998,9 +998,9 @@ class DIV(XmlComponent):
             if isinstance(c, XmlComponent):
                 s = c.flatten(render)
             elif render:
-                s = render(str(c))
+                s = render(to_native(c))
             else:
-                s = str(c)
+                s = to_native(c)
             text += s
         if render:
             text = render(text, self.tag, self.attributes)
@@ -1281,7 +1281,6 @@ class __TAG__(XmlComponent):
     def __getattr__(self, name):
         if name[-1:] == '_':
             name = name[:-1] + '/'
-        name=to_bytes(name)
         return lambda *a, **b: __tag_div__(name, *a, **b)
 
     def __call__(self, html):
@@ -2376,17 +2375,17 @@ class FORM(DIV):
 
     def as_json(self, sanitize=True):
         d = self.as_dict(flat=True, sanitize=sanitize)
-        from serializers import json
+        from gluon.serializers import json
         return json(d)
 
     def as_yaml(self, sanitize=True):
         d = self.as_dict(flat=True, sanitize=sanitize)
-        from serializers import yaml
+        from gluon.serializers import yaml
         return yaml(d)
 
     def as_xml(self, sanitize=True):
         d = self.as_dict(flat=True, sanitize=sanitize)
-        from serializers import xml
+        from gluon.serializers import xml
         return xml(d)
 
 
@@ -2655,36 +2654,24 @@ class web2pyHTMLParser(HTMLParser):
     """
     obj = web2pyHTMLParser(text) parses and html/xml text into web2py helpers.
     obj.tree contains the root of the tree, and tree can be manipulated
-
-    >>> str(web2pyHTMLParser('hello<div a="b" c=3>wor&lt;ld<span>xxx</span>y<script/>yy</div>zzz').tree)
-    'hello<div a="b" c="3">wor&lt;ld<span>xxx</span>y<script></script>yy</div>zzz'
-    >>> str(web2pyHTMLParser('<div>a<span>b</div>c').tree)
-    '<div>a<span>b</span></div>c'
-    >>> tree = web2pyHTMLParser('hello<div a="b">world</div>').tree
-    >>> tree.element(_a='b')['_c']=5
-    >>> str(tree)
-    'hello<div a="b" c="5">world</div>'
     """
+
     def __init__(self, text, closed=('input', 'link')):
         HTMLParser.__init__(self)
         self.tree = self.parent = TAG['']()
         self.closed = closed
-        self.tags = [x for x in __all__ if isinstance(eval(x), DIV)]
         self.last = None
         self.feed(text)
 
     def handle_starttag(self, tagname, attrs):
-        if tagname.upper() in self.tags:
-            tag = eval(tagname.upper())
-        else:
-            if tagname in self.closed:
-                tagname += '/'
-            tag = TAG[tagname]()
+        if tagname in self.closed:
+            tagname += '/'
+        tag = TAG[tagname]()
         for key, value in attrs:
             tag['_' + key] = value
         tag.parent = self.parent
         self.parent.append(tag)
-        if not tag.tag.endswith(b'/'):
+        if not tag.tag.endswith('/'):
             self.parent = tag
         else:
             self.last = tag.tag[:-1]
@@ -2707,7 +2694,6 @@ class web2pyHTMLParser(HTMLParser):
         self.parent.append(entitydefs[name])
 
     def handle_endtag(self, tagname):
-        tagname = to_bytes(tagname)
         # this deals with unbalanced tags
         if tagname == self.last:
             return
