@@ -1,5 +1,5 @@
 {{left_sidebar_enabled,right_sidebar_enabled=False,('message' in globals())}}
-{{extend 'layout.html'}}
+{{extend response.layout or 'layout.html'}}
 
 {{block header}}
     <header class="container-fluid background">
