@@ -692,4 +692,4 @@ def d3_graph_model():
     # d3 v4 allows individual modules to be specified.  The complete d3 library is included below.
     response.files.append(URL('static','js/d3.min.js'))
     response.files.append(URL('static','js/d3_graph.js'))
-    return dict(nodes=nodes, links=links)
+    return dict(databases=databases, nodes=nodes, links=links)
