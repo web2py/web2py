@@ -12,12 +12,6 @@ import gluon.contenttype
 import gluon.fileutils
 from gluon._compat import iteritems
 
-# d3_graph_model added but leaving pygraphviz code as is for initial tests.
-try:
-    import pygraphviz as pgv
-except ImportError:
-    pgv = None
-
 is_gae = request.env.web2py_runtime_gae or False
 
 # ## critical --- make a copy of the environment
@@ -565,60 +559,6 @@ def table_template(table):
     return "< %s >" % TABLE(*rows, **dict(_bgcolor=bgcolor, _border=1,
                                           _cellborder=0, _cellspacing=0)
                              ).xml()
-
-
-# d3_graph_model added but leaving pygraphviz code as is for initial tests.
-# The Graph Model button in admin app  views/default/design.html has been redirected 
-# to the d3_graph_model function.
-def bg_graph_model():
-    graph = pgv.AGraph(layout='dot',  directed=True,  strict=False,  rankdir='LR')
-
-    subgraphs = dict()
-    for tablename in db.tables:
-        if hasattr(db[tablename],'_meta_graphmodel'):
-            meta_graphmodel = db[tablename]._meta_graphmodel
-        else:
-            meta_graphmodel = dict(group=request.application, color='#ECECEC')
-
-        group = meta_graphmodel['group'].replace(' ', '')
-        if group not in subgraphs:
-            subgraphs[group] = dict(meta=meta_graphmodel, tables=[])
-        subgraphs[group]['tables'].append(tablename)
-
-        graph.add_node(tablename, name=tablename, shape='plaintext',
-                       label=table_template(tablename))
-
-    for n, key in enumerate(subgraphs.iterkeys()):
-        graph.subgraph(nbunch=subgraphs[key]['tables'],
-                    name='cluster%d' % n,
-                    style='filled',
-                    color=subgraphs[key]['meta']['color'],
-                    label=subgraphs[key]['meta']['group'])
-
-    for tablename in db.tables:
-        for field in db[tablename]:
-            f_type = field.type
-            if isinstance(f_type,str) and (
-                f_type.startswith('reference') or
-                f_type.startswith('list:reference')):
-                referenced_table = f_type.split()[1].split('.')[0]
-                n1 = graph.get_node(tablename)
-                n2 = graph.get_node(referenced_table)
-                graph.add_edge(n1, n2, color="#4C4C4C", label='')
-
-    graph.layout()
-    if not request.args:
-        response.headers['Content-Type'] = 'image/png'
-        return graph.draw(format='png', prog='dot')
-    else:
-        response.headers['Content-Disposition']='attachment;filename=graph.%s'%request.args(0)
-        if request.args(0) == 'dot':
-            return graph.string()
-        else:
-            return graph.draw(format=request.args(0), prog='dot')
-
-def graph_model():
-    return dict(databases=databases, pgv=pgv)
 
 def manage():
     tables = manager_action['tables']
