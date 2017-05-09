@@ -195,9 +195,9 @@ def total_seconds(delta):
 
 def single_loop(expiration=None, force=False, verbose=False):
     if expiration is None:
-        try:
-            expiration = auth.settings.expiration
-        except:
+        if current.session.auth:
+            expiration = current.session.auth.settings.expiration
+        else:
             expiration = EXPIRATION_MINUTES * 60
 
     set_files = SessionSetFiles(expiration, force, verbose)
