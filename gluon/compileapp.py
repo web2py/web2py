@@ -637,7 +637,7 @@ def run_controller_in(controller, function, environment):
                        web2py_error=badf)
         code = "%s\nresponse._vars=response._caller(%s)" % (code, function)
         layer = "%s:%s" % (filename, function)
-        ccode = getcfs(layer, filename, lambda: compile2(code, layer))
+        ccode = getcfs(layer, filename, lambda: compile2(code, filename))
 
     restricted(ccode, environment, layer=filename)
     response = environment["response"]
