@@ -2214,7 +2214,19 @@ class Auth(AuthAPI):
             fake_migrate = db._fake_migrate
         settings = self.settings
         settings.enable_tokens = enable_tokens
-        super(Auth, self).define_tables(username, signature, migrate, fake_migrate)
+
+        if not self.signature:
+            self.define_signature()
+        if signature is True:
+            signature_list = [self.signature]
+        elif not signature:
+            signature_list = []
+        elif isinstance(signature, Table):
+            signature_list = [signature]
+        else:
+            signature_list = signature
+
+        super(Auth, self).define_tables(username, signature_list, migrate, fake_migrate)
 
         now = current.request.now
         reference_table_user = 'reference %s' % settings.table_user_name
