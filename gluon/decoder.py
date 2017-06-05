@@ -9,7 +9,7 @@ Based on http://code.activestate.com/recipes/52257/
 
 Licensed under the PSF License
 """
-
+from gluon._compat import to_unicode
 import codecs
 
 # None represents a potentially variable byte. "##" in the XML spec...
@@ -77,4 +77,4 @@ def autoDetectXMLEncoding(buffer):
 
 def decoder(buffer):
     encoding = autoDetectXMLEncoding(buffer)
-    return buffer.decode(encoding).encode('utf8')
+    return to_unicode(buffer, charset=encoding)
