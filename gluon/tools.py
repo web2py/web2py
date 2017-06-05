@@ -2214,7 +2214,7 @@ class Auth(AuthAPI):
             fake_migrate = db._fake_migrate
         settings = self.settings
         settings.enable_tokens = enable_tokens
-        super(Auth, self).define_tables(username, signature, migrate, fake_migrate)
+        signature_list = super(Auth, self).define_tables(username, signature, migrate, fake_migrate)._table_signature_list
 
         now = current.request.now
         reference_table_user = 'reference %s' % settings.table_user_name
@@ -3759,11 +3759,10 @@ class Auth(AuthAPI):
             extra_fields = self.settings.extra_fields.get(self.settings.table_user_name, [])
             if any(f.compute for f in extra_fields):
                 user = table_user[self.user.id]
-                self._update_session_user(user) 
+                self._update_session_user(user)
             else:
                 self.user.update(table_user._filter_fields(form.vars))
 
-            
             session.flash = self.messages.profile_updated
             self.log_event(log, self.user)
             callback(onaccept, form)
@@ -4220,15 +4219,15 @@ class Auth(AuthAPI):
 class Crud(object):  # pragma: no cover
 
     default_messages = dict(
-        submit_button = 'Submit',
-        delete_label = 'Check to delete',
-        record_created = 'Record Created',
-        record_updated = 'Record Updated',
-        record_deleted = 'Record Deleted',
-        update_log = 'Record %(id)s updated',
-        create_log = 'Record %(id)s created',
-        read_log = 'Record %(id)s read',
-        delete_log = 'Record %(id)s deleted',
+        submit_button='Submit',
+        delete_label='Check to delete',
+        record_created='Record Created',
+        record_updated='Record Updated',
+        record_deleted='Record Deleted',
+        update_log='Record %(id)s updated',
+        create_log='Record %(id)s created',
+        read_log='Record %(id)s read',
+        delete_log='Record %(id)s deleted',
     )
 
     def url(self, f=None, args=None, vars=None):
@@ -4809,7 +4808,7 @@ class Service(object):
 
     def __init__(self, environment=None, check_args=False):
         self.check_args = check_args
-        
+
         self.run_procedures = {}
         self.csv_procedures = {}
         self.xml_procedures = {}
@@ -5067,7 +5066,7 @@ class Service(object):
             args = request.args
         if args and args[0] in self.run_procedures:
             return str(self.call_service_function(self.run_procedures[args[0]],
-                                        *args[1:], **dict(request.vars)))
+                                                  *args[1:], **dict(request.vars)))
         self.error()
 
     def serve_csv(self, args=None):
@@ -5088,7 +5087,7 @@ class Service(object):
         if args and args[0] in self.csv_procedures:
             import types
             r = self.call_service_function(self.csv_procedures[args[0]],
-                                 *args[1:], **dict(request.vars))
+                                           *args[1:], **dict(request.vars))
             s = StringIO()
             if hasattr(r, 'export_to_csv_file'):
                 r.export_to_csv_file(s)
@@ -5115,7 +5114,7 @@ class Service(object):
             args = request.args
         if args and args[0] in self.xml_procedures:
             s = self.call_service_function(self.xml_procedures[args[0]],
-                                 *args[1:], **dict(request.vars))
+                                           *args[1:], **dict(request.vars))
             if hasattr(s, 'as_list'):
                 s = s.as_list()
             return serializers.xml(s, quote=False)
@@ -5128,7 +5127,7 @@ class Service(object):
             args = request.args
         if args and args[0] in self.rss_procedures:
             feed = self.call_service_function(self.rss_procedures[args[0]],
-                                    *args[1:], **dict(request.vars))
+                                              *args[1:], **dict(request.vars))
         else:
             self.error()
         response.headers['Content-Type'] = 'application/rss+xml'
@@ -5476,7 +5475,7 @@ class Service(object):
 
     def error(self):
         raise HTTP(404, "Object does not exist")
-    
+
     # we make this a method so that subclasses can override it if they want to do more specific argument-checking
     # but the default implmentation is the simplest: just pass the arguments we got, with no checking
     def call_service_function(self, f, *a, **b):
@@ -5484,7 +5483,8 @@ class Service(object):
             return universal_caller(f, *a, **b)
         else:
             return f(*a, **b)
-  
+
+
 def completion(callback):
     """
     Executes a task on completion of the called action.

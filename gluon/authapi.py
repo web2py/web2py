@@ -244,11 +244,13 @@ class AuthAPI(object):
             migrate = db._migrate
         if fake_migrate is None:
             fake_migrate = db._fake_migrate
+        
         settings = self.settings
         if username is None:
             username = settings.use_username
         else:
             settings.use_username = username
+        
         if not self.signature:
             self.define_signature()
         if signature is True:
@@ -259,6 +261,8 @@ class AuthAPI(object):
             signature_list = [signature]
         else:
             signature_list = signature
+        self._table_signature_list = signature_list
+
         is_not_empty = IS_NOT_EMPTY(error_message=self.messages.is_empty)
         is_crypted = CRYPT(key=settings.hmac_key,
                            min_length=settings.password_min_length)
