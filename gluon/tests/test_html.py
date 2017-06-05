@@ -170,6 +170,8 @@ class TestBareHelpers(unittest.TestCase):
         # seams that __repr__ is no longer enough
         ##self.assertEqual(XML('1.3'), '1.3')
         self.assertEqual(XML(u'<div>è</div>').xml(), b'<div>\xc3\xa8</div>')
+        # make sure unicode works with sanitize
+        self.assertEqual(XML(u'<div>è</div>', sanitize=True).xml(), b'<div>\xc3\xa8</div>')
         # you can calc len on the class, that equals the xml() and the str()
         ##self.assertEqual(len(XML('1.3')), len('1.3'))
         self.assertEqual(len(XML('1.3').xml()), len('1.3'))

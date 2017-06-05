@@ -596,10 +596,10 @@ class XML(XmlComponent):
                 for A, IMG and BlockQuote).
                 The key is the tag; the value is a list of allowed attributes.
         """
-        if sanitize:
-            text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
         if isinstance(text, unicodeT):
             text = to_native(text.encode('utf8', 'xmlcharrefreplace'))
+        if sanitize:
+            text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
         elif isinstance(text, bytes):
             text = to_native(text)
         elif not isinstance(text, str):
