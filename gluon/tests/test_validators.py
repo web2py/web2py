@@ -235,6 +235,11 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
         rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
         self.assertEqual(rtn, [('', ''), ('%d' % costanza_id, 'costanza'), ('%d' % george_id, 'george')])
+        # Test None
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
+        rtn = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
         # Test using the set it made for options
         vldtr = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')
         vldtr.options()
