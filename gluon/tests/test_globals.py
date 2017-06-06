@@ -10,27 +10,76 @@ import re
 import unittest
 
 from gluon.globals import Request, Response, Session
+from gluon.rewrite import regex_url_in
 from gluon import URL
 from gluon._compat import basestring
 
+
 def setup_clean_session():
-        request = Request(env={})
-        request.application = 'a'
-        request.controller = 'c'
-        request.function = 'f'
-        request.folder = 'applications/admin'
-        response = Response()
-        session = Session()
-        session.connect(request, response)
+    request = Request(env={})
+    request.application = 'a'
+    request.controller = 'c'
+    request.function = 'f'
+    request.folder = 'applications/admin'
+    response = Response()
+    session = Session()
+    session.connect(request, response)
+    from gluon.globals import current
+    current.request = request
+    current.response = response
+    current.session = session
+    return current
+
+
+class testRequest(unittest.TestCase):
+
+    def setUp(self):
         from gluon.globals import current
-        current.request = request
-        current.response = response
-        current.session = session
-        return current
+        current.response = Response()
+
+    def test_restful_simple(self):
+        env = {'request_method': 'GET', 'PATH_INFO': '/welcome/default/index/1.pdf'}
+        r = Request(env)
+        regex_url_in(r, env)
+
+        @r.restful()
+        def simple_rest():
+            def GET(*args, **vars):
+                return args[0]
+            return locals()
+
+        self.assertEqual(simple_rest(), '1')
+
+    def test_restful_calls_post(self):
+        env = {'request_method': 'POST', 'PATH_INFO': '/welcome/default/index'}
+        r = Request(env)
+        regex_url_in(r, env)
+
+        @r.restful()
+        def post_rest():
+            def POST(*args, **vars):
+                return 'I posted'
+            return locals()
+
+        self.assertEqual(post_rest(), 'I posted')
+
+    def test_restful_ignore_extension(self):
+        env = {'request_method': 'GET', 'PATH_INFO': '/welcome/default/index/127.0.0.1'}
+        r = Request(env)
+        regex_url_in(r, env)
+
+        @r.restful(ignore_extension=True)
+        def ignore_rest():
+            def GET(*args, **vars):
+                return args[0]
+            return locals()
+
+        self.assertEqual(ignore_rest(), '127.0.0.1')
+
 
 class testResponse(unittest.TestCase):
 
-    #port from python 2.7, needed for 2.5 and 2.6 tests
+    # port from python 2.7, needed for 2.5 and 2.6 tests
     def assertRegexpMatches(self, text, expected_regexp, msg=None):
         """Fail the test unless the text matches the regular expression."""
         if isinstance(expected_regexp, basestring):
@@ -99,8 +148,8 @@ class testResponse(unittest.TestCase):
         response.files.append(URL('a', 'static', 'css/file.css'))
         content = return_includes(response)
         self.assertEqual(content,
-            '<script src="https://code.jquery.com/jquery-1.11.3.min.js?var=0" type="text/javascript"></script>' +
-            '<link href="/a/static/css/file.css" rel="stylesheet" type="text/css" />')
+                         '<script src="https://code.jquery.com/jquery-1.11.3.min.js?var=0" type="text/javascript"></script>' +
+                         '<link href="/a/static/css/file.css" rel="stylesheet" type="text/css" />')
 
         response = Response()
         response.files.append(('js', 'http://maps.google.com/maps/api/js?sensor=false'))
@@ -109,12 +158,11 @@ class testResponse(unittest.TestCase):
         response.files.append(URL('a', 'static', 'css/file.ts'))
         content = return_includes(response)
         self.assertEqual(content,
-            '<script src="https://code.jquery.com/jquery-1.11.3.min.js?var=0" type="text/javascript"></script>' +
-            '<link href="/a/static/css/file.css" rel="stylesheet" type="text/css" />' +
-            '<script src="/a/static/css/file.ts" type="text/typescript"></script>' +
-            '<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>'
-        )
-
+                         '<script src="https://code.jquery.com/jquery-1.11.3.min.js?var=0" type="text/javascript"></script>' +
+                         '<link href="/a/static/css/file.css" rel="stylesheet" type="text/css" />' +
+                         '<script src="/a/static/css/file.ts" type="text/typescript"></script>' +
+                         '<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>'
+                         )
 
         response = Response()
         response.files.append(URL('a', 'static', 'css/file.js'))
@@ -122,13 +170,13 @@ class testResponse(unittest.TestCase):
         content = return_includes(response, extensions=['css'])
         self.assertEqual(content, '<link href="/a/static/css/file.css" rel="stylesheet" type="text/css" />')
 
-        #regr test for #628
+        # regr test for #628
         response = Response()
         response.files.append('http://maps.google.com/maps/api/js?sensor=false')
         content = return_includes(response)
         self.assertEqual(content, '')
 
-        #regr test for #628
+        # regr test for #628
         response = Response()
         response.files.append(('js', 'http://maps.google.com/maps/api/js?sensor=false'))
         content = return_includes(response)
@@ -147,7 +195,7 @@ class testResponse(unittest.TestCase):
     def test_cookies(self):
         current = setup_clean_session()
         cookie = str(current.response.cookies)
-        session_key='%s=%s'%(current.response.session_id_name,current.response.session_id)
+        session_key = '%s=%s' % (current.response.session_id_name, current.response.session_id)
         self.assertRegexpMatches(cookie, r'^Set-Cookie: ')
         self.assertTrue(session_key in cookie)
         self.assertTrue('Path=/' in cookie)
