@@ -1399,7 +1399,7 @@ http_schemes = [None, 'http', 'https']
 #    fragment = group(9)
 
 url_split_regex = \
-    re.compile('^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?')
+    re.compile('^((?P<scheme>[^:/?#]+):)?(//(?P<authority>[^/?#]*))?(?P<path>[^?#]*)(\?(?P<query>[^#]*))?(#(?P<fragment>.*))?')
 
 # Defined in RFC 3490, Section 3.1, Requirement #1
 # Use this regex to split the authority component of a unicode URL into
@@ -1607,7 +1607,8 @@ class IS_GENERIC_URL(Validator):
                               % (self.prepend_scheme, self.allowed_schemes))
 
     GENERIC_URL = re.compile(r"%[^0-9A-Fa-f]{2}|%[^0-9A-Fa-f][0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f]|%$|%[0-9A-Fa-f]$|%[^0-9A-Fa-f]$")
-    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%#]+$")
+    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
+    URL_FRAGMENT_VALID = re.compile(r"[|A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
 
     def __call__(self, value):
         """
@@ -1621,12 +1622,17 @@ class IS_GENERIC_URL(Validator):
         """
         try:
             # if the URL does not misuse the '%' character
-            if not self.GENERIC_URL.search(value):
+            if value and not self.GENERIC_URL.search(value):
                 # if the URL is only composed of valid characters
-                if self.GENERIC_URL_VALID.match(value):
-                    # Then split up the URL into its components and check on
-                    # the scheme
-                    scheme = url_split_regex.match(value).group(2)
+                components = url_split_regex.match(value).groupdict()
+
+                if all(self.GENERIC_URL_VALID.match(components[k]) for k in ('scheme', 'authority', 'path', 'query') if components[k]):
+                    # Then check on the fragment and scheme
+                    if components['fragment'] is not None:
+                        if not self.URL_FRAGMENT_VALID.match(components['fragment']):
+                            return (value, translate(self.error_message))
+
+                    scheme = components['scheme']
                     # Clean up the scheme before we check it
                     if not scheme is None:
                         scheme = urllib_unquote(scheme).lower()
@@ -1928,7 +1934,7 @@ class IS_HTTP_URL(Validator):
                                prepend_scheme=self.prepend_scheme)
             if x(value)[1] is None:
                 componentsMatch = url_split_regex.match(value)
-                authority = componentsMatch.group(4)
+                authority = componentsMatch.group('authority')
                 # if there is an authority component
                 if authority:
                     # if authority is a valid IP address
@@ -1948,7 +1954,7 @@ class IS_HTTP_URL(Validator):
                 else:
                     # else this is a relative/abbreviated URL, which will parse
                     # into the URL's path component
-                    path = componentsMatch.group(5)
+                    path = componentsMatch.group('path')
                     # relative case: if this is a valid path (if it starts with
                     # a slash)
                     if path.startswith('/'):

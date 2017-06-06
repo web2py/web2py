@@ -553,6 +553,10 @@ class TestValidators(unittest.TestCase):
     def test_IS_URL(self):
         rtn = IS_URL()('http://example.com')
         self.assertEqual(rtn, ('http://example.com', None))
+        rtn = IS_URL(error_message='oops')('http://example.com/something and a space')
+        self.assertEqual(rtn, ('http://example.com/something and a space', 'oops'))
+        rtn = IS_URL(error_message='oops')('http//:example.com')
+        self.assertEqual(rtn, ('http//:example.com', 'oops'))
         rtn = IS_URL(error_message='oops')('http://example,com')
         self.assertEqual(rtn, ('http://example,com', 'oops'))
         rtn = IS_URL(error_message='oops')('http://www.example.com:8800/a/b/c/d/e/f/g/h')
@@ -563,6 +567,14 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('http://example.com?q=george&p=22', None))
         rtn = IS_URL(mode='generic', prepend_scheme=None)('example.com')
         self.assertEqual(rtn, ('example.com', None))
+        rtn = IS_URL()('https://groups.google.com/forum/#!searchin/web2py/url$20validation$20problem|sort:relevance/web2py/69KmsrYAF44/Sgk_hA_6TlcJ')
+        self.assertEqual(rtn, ('https://groups.google.com/forum/#!searchin/web2py/url$20validation$20problem|sort:relevance/web2py/69KmsrYAF44/Sgk_hA_6TlcJ', None))
+        rtn = IS_URL(error_message='oops')('http://example.com/ef|ege')
+        self.assertEqual(rtn, ('http://example.com/ef|ege', 'oops'))
+        rtn = IS_URL(error_message='oops')('http://examp|e.com')
+        self.assertEqual(rtn, ('http://examp|e.com', 'oops'))
+        rtn = IS_URL(error_message='oops')(u'www.example.com/file[/].html')
+        self.assertEqual(rtn, ('www.example.com/file[/].html', 'oops'))
 
     def test_IS_TIME(self):
         rtn = IS_TIME()('21:30')
