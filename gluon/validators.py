@@ -1622,7 +1622,7 @@ class IS_GENERIC_URL(Validator):
         """
         try:
             # if the URL does not misuse the '%' character
-            if not self.GENERIC_URL.search(value):
+            if value and not self.GENERIC_URL.search(value):
                 # if the URL is only composed of valid characters
                 components = url_split_regex.match(value).groupdict()
 
