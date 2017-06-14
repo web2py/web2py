@@ -20,7 +20,8 @@ import urllib
 import struct
 import decimal
 import unicodedata
-from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native, urlparse
+
+from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native, string_types, urlparse
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce
@@ -658,7 +659,7 @@ class IS_IN_DB(Validator):
                     return (values, None)
         else:
             if field.type in ('id', 'integer'):
-                if isinstance(value, (int, long)) or value.isdigit():
+                if isinstance(value, (int, long)) or (isinstance(value, string_types) and value.isdigit()):
                     value = int(value)
                 elif self.auto_add:
                     value = self.maybe_add(table, self.fieldnames[0], value)

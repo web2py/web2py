@@ -349,14 +349,14 @@ class Request(Storage):
             current.session.forget()
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
 
-    def restful(self):
+    def restful(self, ignore_extension=False):
         def wrapper(action, request=self):
             def f(_action=action, *a, **b):
                 request.is_restful = True
                 env = request.env
                 is_json = env.content_type=='application/json'
                 method = env.request_method
-                if len(request.args) and '.' in request.args[-1]:
+                if not ignore_extension and len(request.args) and '.' in request.args[-1]:
                     request.args[-1], _, request.extension = request.args[-1].rpartition('.')
                     current.response.headers['Content-Type'] = \
                         contenttype('.' + request.extension.lower())
