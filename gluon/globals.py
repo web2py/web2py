@@ -89,10 +89,11 @@ class SortingPickler(Pickler):
         self._batch_setitems([(key, obj[key]) for key in sorted(obj)])
 
 if PY2:
-#FIXME PY3
     SortingPickler.dispatch = copy.copy(Pickler.dispatch)
     SortingPickler.dispatch[dict] = SortingPickler.save_dict
-
+else:
+    SortingPickler.dispatch_table = copyreg.dispatch_table.copy()
+    SortingPickler.dispatch_table[dict] = SortingPickler.save_dict
 
 def sorting_dumps(obj, protocol=None):
     file = StringIO()
@@ -415,7 +416,6 @@ class Response(Storage):
         if not escape:
             self.body.write(str(data))
         else:
-            # FIXME PY3:
             self.body.write(to_native(xmlescape(data)))
 
     def render(self, *a, **b):
