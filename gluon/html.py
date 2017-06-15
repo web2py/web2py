@@ -40,6 +40,7 @@ entitydefs.setdefault('apos', u"'".encode('utf-8'))
 
 __all__ = [
     'A',
+    'ARTICLE',
     'ASSIGNJS',
     'B',
     'BEAUTIFY',
@@ -55,6 +56,7 @@ __all__ = [
     'EM',
     'EMBED',
     'FIELDSET',
+    'FOOTER',
     'FORM',
     'H1',
     'H2',
@@ -63,6 +65,7 @@ __all__ = [
     'H5',
     'H6',
     'HEAD',
+    'HEADER',
     'HR',
     'HTML',
     'I',
@@ -562,9 +565,12 @@ class XML(XmlComponent):
         sanitize=False,
         permitted_tags=[
             'a',
+            'article',
             'b',
             'blockquote',
             'br/',
+            'footer',
+            'header',
             'i',
             'li',
             'ol',
@@ -2599,6 +2605,19 @@ def embed64(filename=None,
         fp.close()
     data = base64.b64encode(data)
     return 'data:%s;base64,%s' % (extension, data)
+
+class ARTICLE(DIV):
+
+    tag = 'article'
+
+class FOOTER(DIV):
+
+    tag = 'footer'
+
+class HEADER(DIV):
+
+    tag = 'header'
+
 
 
 # TODO: Check if this test() is still relevant now that we have gluon/tests/test_html.py
