@@ -10,7 +10,6 @@
 Validators
 -----------
 """
-
 import os
 import re
 import datetime
@@ -21,7 +20,8 @@ import urllib
 import struct
 import decimal
 import unicodedata
-from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native, string_types
+
+from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native, string_types, urlparse
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce
@@ -195,7 +195,7 @@ class IS_MATCH(Validator):
         self.is_unicode = is_unicode or (not(PY2))
 
     def __call__(self, value):
-        if not(PY2): # PY3 convert bytes to unicode
+        if not(PY2):  # PY3 convert bytes to unicode
             value = to_unicode(value)
 
         if self.is_unicode or not(PY2):
@@ -270,7 +270,7 @@ class IS_EXPR(Validator):
             return (value, self.expression(value))
         # for backward compatibility
         self.environment.update(value=value)
-        exec ('__ret__=' + self.expression, self.environment)
+        exec('__ret__=' + self.expression, self.environment)
         if self.environment['__ret__']:
             return (value, None)
         return (value, translate(self.error_message))
@@ -1185,7 +1185,6 @@ class IS_EMAIL(Validator):
 
     regex_proposed_but_failed = re.compile('^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$', re.VERBOSE | re.IGNORECASE)
 
-
     def __init__(self,
                  banned=None,
                  forced=None,
@@ -1200,7 +1199,7 @@ class IS_EMAIL(Validator):
 
     def __call__(self, value):
         if not(isinstance(value, (basestring, unicodeT))) or not value or '@' not in value:
-          return (value, translate(self.error_message))
+            return (value, translate(self.error_message))
 
         body, domain = value.rsplit('@', 1)
 
@@ -1388,19 +1387,6 @@ unofficial_url_schemes = [
 all_url_schemes = [None] + official_url_schemes + unofficial_url_schemes
 http_schemes = [None, 'http', 'https']
 
-
-# This regex comes from RFC 2396, Appendix B. It's used to split a URL into
-# its component parts
-# Here are the regex groups that it extracts:
-#    scheme = group(2)
-#    authority = group(4)
-#    path = group(5)
-#    query = group(7)
-#    fragment = group(9)
-
-url_split_regex = \
-    re.compile('^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?')
-
 # Defined in RFC 3490, Section 3.1, Requirement #1
 # Use this regex to split the authority component of a unicode URL into
 # its component labels
@@ -1470,18 +1456,15 @@ def unicode_to_ascii_authority(authority):
     # We use the ToASCII operation because we are about to put the authority
     # into an IDN-unaware slot
     asciiLabels = []
-    try:
-        import encodings.idna
-        for label in labels:
-            if label:
-                asciiLabels.append(to_native(encodings.idna.ToASCII(label)))
-            else:
-                 # encodings.idna.ToASCII does not accept an empty string, but
-                 # it is necessary for us to allow for empty labels so that we
-                 # don't modify the URL
-                asciiLabels.append('')
-    except:
-        asciiLabels = [str(label) for label in labels]
+    import encodings.idna
+    for label in labels:
+        if label:
+            asciiLabels.append(to_native(encodings.idna.ToASCII(label)))
+        else:
+             # encodings.idna.ToASCII does not accept an empty string, but
+             # it is necessary for us to allow for empty labels so that we
+             # don't modify the URL
+            asciiLabels.append('')
     # RFC 3490, Section 4, Step 5
     return str(reduce(lambda x, y: x + unichr(0x002E) + y, asciiLabels))
 
@@ -1520,33 +1503,35 @@ def unicode_to_ascii_url(url, prepend_scheme):
     """
     # convert the authority component of the URL into an ASCII punycode string,
     # but encode the rest using the regular URI character encoding
-
-    groups = url_split_regex.match(url).groups()
+    components = urlparse.urlparse(url)
+    prepended = False
     # If no authority was found
-    if not groups[3]:
+    if not components.netloc:
         # Try appending a scheme to see if that fixes the problem
         scheme_to_prepend = prepend_scheme or 'http'
-        groups = url_split_regex.match(
-            to_unicode(scheme_to_prepend) + u'://' + url).groups()
+        components = urlparse.urlparse(to_unicode(scheme_to_prepend) + u'://' + url)
+        prepended = True
+
     # if we still can't find the authority
-    if not groups[3]:
+    if not components.netloc:
         raise Exception('No authority component found, ' +
                         'could not decode unicode to US-ASCII')
 
     # We're here if we found an authority, let's rebuild the URL
-    scheme = groups[1]
-    authority = groups[3]
-    path = groups[4] or ''
-    query = groups[5] or ''
-    fragment = groups[7] or ''
+    scheme = components.scheme
+    authority = components.netloc
+    path = components.path
+    query = components.query
+    fragment = components.fragment
 
-    if prepend_scheme:
-        scheme = str(scheme) + '://'
-    else:
+    if prepended:
         scheme = ''
 
-    return scheme + unicode_to_ascii_authority(authority) +\
-        escape_unicode(path) + escape_unicode(query) + str(fragment)
+    unparsed = urlparse.urlunparse((scheme, unicode_to_ascii_authority(authority), escape_unicode(path), '', escape_unicode(query), str(fragment)))
+    if unparsed.startswith('//'):
+        unparsed = unparsed[2:] # Remove the // urlunparse puts in the beginning
+    return unparsed
+
 
 
 class IS_GENERIC_URL(Validator):
@@ -1607,7 +1592,8 @@ class IS_GENERIC_URL(Validator):
                               % (self.prepend_scheme, self.allowed_schemes))
 
     GENERIC_URL = re.compile(r"%[^0-9A-Fa-f]{2}|%[^0-9A-Fa-f][0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f]|%$|%[0-9A-Fa-f]$|%[^0-9A-Fa-f]$")
-    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%#]+$")
+    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
+    URL_FRAGMENT_VALID = re.compile(r"[|A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
 
     def __call__(self, value):
         """
@@ -1619,41 +1605,49 @@ class IS_GENERIC_URL(Validator):
             prepended with prepend_scheme), and tuple[1] is either
             None (success!) or the string error_message
         """
-        try:
-            # if the URL does not misuse the '%' character
-            if not self.GENERIC_URL.search(value):
-                # if the URL is only composed of valid characters
-                if self.GENERIC_URL_VALID.match(value):
-                    # Then split up the URL into its components and check on
-                    # the scheme
-                    scheme = url_split_regex.match(value).group(2)
-                    # Clean up the scheme before we check it
-                    if not scheme is None:
-                        scheme = urllib_unquote(scheme).lower()
-                    # If the scheme really exists
-                    if scheme in self.allowed_schemes:
-                        # Then the URL is valid
-                        return (value, None)
-                    else:
-                        # else, for the possible case of abbreviated URLs with
-                        # ports, check to see if adding a valid scheme fixes
-                        # the problem (but only do this if it doesn't have
-                        # one already!)
-                        if value.find('://') < 0 and None in self.allowed_schemes:
-                            schemeToUse = self.prepend_scheme or 'http'
-                            prependTest = self.__call__(
-                                schemeToUse + '://' + value)
-                            # if the prepend test succeeded
-                            if prependTest[1] is None:
-                                # if prepending in the output is enabled
-                                if self.prepend_scheme:
-                                    return prependTest
-                                else:
-                                    # else return the original,
-                                    #  non-prepended value
-                                    return (value, None)
-        except:
-            pass
+
+        # if we dont have anything or the URL misuses the '%' character
+
+        if not value or self.GENERIC_URL.search(value):
+            return (value, translate(self.error_message))
+
+        if '#' in value:
+            url, fragment_part = value.split('#')
+        else:
+            url, fragment_part = value, ''
+        # if the URL is only composed of valid characters
+        if self.GENERIC_URL_VALID.match(url) and (not fragment_part or self.URL_FRAGMENT_VALID.match(fragment_part)):
+            # Then parse the URL into its components and check on
+            try:
+                components = urlparse.urlparse(urllib_unquote(value))._asdict()
+            except ValueError:
+                return (value, translate(self.error_message))
+
+            # Clean up the scheme before we check it
+            scheme = components['scheme']
+            if len(scheme) == 0:
+                scheme = None
+            else:
+                scheme = components['scheme'].lower()
+            # If the scheme doesn't really exists
+            if scheme not in self.allowed_schemes or not scheme and ':' in components['path']:
+                # for the possible case of abbreviated URLs with
+                # ports, check to see if adding a valid scheme fixes
+                # the problem (but only do this if it doesn't have
+                # one already!)
+                if '://' not in value and None in self.allowed_schemes:
+                    schemeToUse = self.prepend_scheme or 'http'
+                    prependTest = self.__call__(
+                        schemeToUse + '://' + value)
+                    # if the prepend test succeeded
+                    if prependTest[1] is None:
+                        # if prepending in the output is enabled
+                        if self.prepend_scheme:
+                            return prependTest
+                        else:
+                            return (value, None)
+            else:
+                return (value, None)
         # else the URL is not valid
         return (value, translate(self.error_message))
 
@@ -1920,15 +1914,14 @@ class IS_HTTP_URL(Validator):
             (possible prepended with prepend_scheme), and tuple[1] is either
             None (success!) or the string error_message
         """
-
         try:
             # if the URL passes generic validation
             x = IS_GENERIC_URL(error_message=self.error_message,
                                allowed_schemes=self.allowed_schemes,
                                prepend_scheme=self.prepend_scheme)
             if x(value)[1] is None:
-                componentsMatch = url_split_regex.match(value)
-                authority = componentsMatch.group(4)
+                components = urlparse.urlparse(value)
+                authority = components.netloc
                 # if there is an authority component
                 if authority:
                     # if authority is a valid IP address
@@ -1948,7 +1941,7 @@ class IS_HTTP_URL(Validator):
                 else:
                     # else this is a relative/abbreviated URL, which will parse
                     # into the URL's path component
-                    path = componentsMatch.group(5)
+                    path = components.path
                     # relative case: if this is a valid path (if it starts with
                     # a slash)
                     if path.startswith('/'):
@@ -1957,7 +1950,7 @@ class IS_HTTP_URL(Validator):
                     else:
                         # abbreviated case: if we haven't already, prepend a
                         # scheme and see if it fixes the problem
-                        if value.find('://') < 0:
+                        if '://' not in value and None in self.allowed_schemes:
                             schemeToUse = self.prepend_scheme or 'http'
                             prependTest = self.__call__(schemeToUse
                                                         + '://' + value)
@@ -2124,7 +2117,6 @@ class IS_URL(Validator):
                 # If we are not able to convert the unicode url into a
                 # US-ASCII URL, then the URL is not valid
                 return (value, translate(self.error_message))
-
             methodResult = subMethod(asciiValue)
             # if the validation of the US-ASCII version of the value failed
             if not methodResult[1] is None:
@@ -2494,6 +2486,7 @@ class IS_LOWER(Validator):
         ('\\xc3\\xb1', None)
 
     """
+
     def __call__(self, value):
         cast_back = lambda x: x
         if isinstance(value, str):
