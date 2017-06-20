@@ -2553,6 +2553,7 @@ class SQLFORM(FORM):
                         if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
                             expcolumns.append(str(field))
 
+            expcolumns = ['"%s"' % '"."'.join(f.split('.')) for f in expcolumns]
             if export_type in exportManager and exportManager[export_type]:
                 if keywords:
                     try:
