@@ -5786,6 +5786,9 @@ class Expose(object):
 
     @staticmethod
     def isprivate(f):
+        # remove '/private' prefix to deal with symbolic links on OSX
+        if f.startswith('/private/'):
+            f = f[8:]
         return 'private' in f or f.startswith('.') or f.endswith('~')
 
     @staticmethod
