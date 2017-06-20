@@ -530,7 +530,7 @@ class AuthAPI(object):
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
-        if role:
+        if role and user_id == self.user_id:
             self.user_groups[group_id] = role
         else:
             self.update_groups()
