@@ -8,7 +8,8 @@ from gluon._compat import long
 from gluon import current
 from gluon.storage import Messages, Settings, Storage
 from gluon.utils import web2py_uuid
-from gluon.validators import CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE, IS_LOWER, IS_MATCH, IS_NOT_EMPTY, IS_NOT_IN_DB
+from gluon.validators import CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE, IS_LOWER, IS_MATCH, IS_NOT_EMPTY, \
+    IS_NOT_IN_DB
 from pydal.objects import Table, Field, Row
 import datetime
 from gluon.settings import global_settings
@@ -153,7 +154,7 @@ class AuthAPI(object):
 
         if type(migrate).__name__ == 'str':
             return (migrate + tablename + '.table')
-        elif migrate == False:
+        elif not migrate:
             return False
         else:
             return True
@@ -261,7 +262,7 @@ class AuthAPI(object):
             signature_list = [signature]
         else:
             signature_list = signature
-        self._table_signature_list = signature_list
+        self._table_signature_list = signature_list  # Should it defined in __init__ first??
 
         is_not_empty = IS_NOT_EMPTY(error_message=self.messages.is_empty)
         is_crypted = CRYPT(key=settings.hmac_key,
@@ -276,7 +277,8 @@ class AuthAPI(object):
             passfield = settings.password_field
             extra_fields = settings.extra_fields.get(
                 settings.table_user_name, []) + signature_list
-            if username or settings.cas_provider: # cas_provider Will always be None here but we compare it anyway so subclasses can use our define_tables
+            # cas_provider Will always be None here but we compare it anyway so subclasses can use our define_tables
+            if username or settings.cas_provider:
                 is_unique_username = \
                     [IS_MATCH('[\w\.\-]+', strict=True,
                               error_message=self.messages.invalid_username),
@@ -313,7 +315,7 @@ class AuthAPI(object):
                     *extra_fields,
                     **dict(
                         migrate=self._get_migrate(settings.table_user_name,
-                                                   migrate),
+                                                  migrate),
                         fake_migrate=fake_migrate,
                         format='%(username)s'))
             else:
@@ -343,7 +345,7 @@ class AuthAPI(object):
                     *extra_fields,
                     **dict(
                         migrate=self._get_migrate(settings.table_user_name,
-                                                   migrate),
+                                                  migrate),
                         fake_migrate=fake_migrate,
                         format='%(first_name)s %(last_name)s (%(id)s)'))
         reference_table_user = 'reference %s' % settings.table_user_name
@@ -771,7 +773,8 @@ class AuthAPI(object):
         user = table_user(**{userfield: validated})
 
         if user is None:
-            return {'errors': {userfield: self.messages.invalid_user}, 'message': self.messages.invalid_login, 'user': None}
+            return {'errors': {userfield: self.messages.invalid_user},
+                    'message': self.messages.invalid_login, 'user': None}
 
         if (user.registration_key or '').startswith('pending'):
             return {'errors': None, 'message': self.messages.registration_pending, 'user': None}
@@ -792,10 +795,12 @@ class AuthAPI(object):
                 settings.expiration
             session.auth.remember_me = kwargs.get('remember_me', False)
             self.log_event(log, user)
-            return {'errors': None, 'message': self.messages.logged_in, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {'errors': None, 'message': self.messages.logged_in,
+                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
         else:
             self.log_event(self.messages['login_failed_log'], kwargs)
-            return {'errors': {passfield: self.messages.invalid_password}, 'message': self.messages.invalid_login, 'user': None}
+            return {'errors': {passfield: self.messages.invalid_password},
+                    'message': self.messages.invalid_login, 'user': None}
 
     def logout(self, log=DEFAULT, onlogout=DEFAULT, **kwargs):
         """
@@ -889,7 +894,7 @@ class AuthAPI(object):
 
         if settings.registration_requires_verification:
             d = {k: user[k] for k in table_user.fields if table_user[k].readable}
-            d['key']= key
+            d['key'] = key
             if settings.login_after_registration and not settings.registration_requires_approval:
                 self.login_user(user)
             return {'errors': None, 'message': None, 'user': d}
@@ -904,7 +909,8 @@ class AuthAPI(object):
 
         self.log_event(log, user)
 
-        return {'errors': None, 'message': message, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+        return {'errors': None, 'message': message,
+                'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
     def profile(self, log=DEFAULT, **kwargs):
         """
@@ -920,20 +926,23 @@ class AuthAPI(object):
 
         if not kwargs:
             user = table_user[self.user.id]
-            return {'errors': None, 'message': None, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {'errors': None, 'message': None,
+                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
         result = self.db(table_user.id == self.user.id).validate_and_update(**kwargs)
         user = table_user[self.user.id]
 
         if result.errors:
-            return {'errors': result.errors, 'message': None, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {'errors': result.errors, 'message': None,
+                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
         if log is DEFAULT:
             log = self.messages['profile_log']
 
         self.log_event(log, user)
         self._update_session_user(user)
-        return {'errors': None, 'message': self.messages.profile_updated, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+        return {'errors': None, 'message': self.messages.profile_updated,
+                'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
     def change_password(self, log=DEFAULT, **kwargs):
         """
@@ -997,10 +1006,10 @@ class AuthAPI(object):
             return {'errors': None, 'message': messages.password_changed}
 
     def verify_key(self,
-                     key=None,
-                     ignore_approval=False,
-                     log=DEFAULT,
-                     ):
+                   key=None,
+                   ignore_approval=False,
+                   log=DEFAULT,
+                   ):
         """
         Verify a given registration_key actually exists in the user table.
         Resets the key to empty string '' or 'pending' if 
@@ -1012,7 +1021,7 @@ class AuthAPI(object):
         table_user = self.table_user()
         user = table_user(registration_key=key)
         if (user is None) or (key is None):
-            return {'errors': {'key': self.messages.invalid_key}, 'message': self.messages.invalid_key }
+            return {'errors': {'key': self.messages.invalid_key}, 'message': self.messages.invalid_key}
 
         if self.settings.registration_requires_approval:
             user.update_record(registration_key='pending')
