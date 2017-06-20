@@ -13,7 +13,7 @@ Contains the classes for the global used variables:
 - Session
 
 """
-from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, unicodeT, long
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, unicodeT, long, hashlib_md5
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -457,7 +457,6 @@ class Response(Storage):
         self.write(s, escape=False)
 
     def include_files(self, extensions=None):
-
         """
         Includes files (usually in the head).
         Can minify and cache local files
@@ -484,8 +483,7 @@ class Response(Storage):
 
         if have_minify and ((self.optimize_css and has_css) or (self.optimize_js and has_js)):
             # cache for 5 minutes by default
-            key = hashlib.md5(repr(files)).hexdigest()
-
+            key = hashlib_md5(repr(files)).hexdigest()
             cache = self.cache_includes or (current.cache.ram, 60 * 5)
 
             def call_minify(files=files):
@@ -523,6 +521,7 @@ class Response(Storage):
                 tmpl = template_mapping.get(f)
                 if tmpl:
                     s.append(tmpl % item[1])
+
         self.write(''.join(s), escape=False)
 
     def stream(self,
