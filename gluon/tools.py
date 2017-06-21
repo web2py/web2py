@@ -5605,12 +5605,12 @@ class PluginManager(object):
 
         where the plugin is used::
 
-            >>> print plugins.me.param1
+            >>> print(plugins.me.param1)
             3
-            >>> print plugins.me.param2
+            >>> print(plugins.me.param2)
             6
             >>> plugins.me.param3 = 8
-            >>> print plugins.me.param3
+            >>> print(plugins.me.param3)
             8
 
         Here are some tests::
@@ -5618,25 +5618,25 @@ class PluginManager(object):
             >>> a=PluginManager()
             >>> a.x=6
             >>> b=PluginManager('check')
-            >>> print b.x
+            >>> print(b.x)
             6
             >>> b=PluginManager() # reset settings
-            >>> print b.x
+            >>> print(b.x)
             <Storage {}>
             >>> b.x=7
-            >>> print a.x
+            >>> print(a.x)
             7
             >>> a.y.z=8
-            >>> print b.y.z
+            >>> print(b.y.z)
             8
             >>> test_thread_separation()
             5
             >>> plugins=PluginManager('me',db='mydb')
-            >>> print plugins.me.db
+            >>> print(plugins.me.db)
             mydb
-            >>> print 'me' in plugins
+            >>> print('me' in plugins)
             True
-            >>> print plugins.me.installed
+            >>> print(plugins.me.installed)
             True
 
     """
