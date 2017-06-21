@@ -13,7 +13,8 @@ Contains the classes for the global used variables:
 - Session
 
 """
-from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, unicodeT, long
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, \
+    unicodeT, long
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -30,7 +31,7 @@ from gluon.fileutils import copystream
 import hashlib
 from pydal.contrib import portalocker
 from pickle import Pickler, MARK, DICT, EMPTY_DICT
-#from types import DictionaryType
+# from types import DictionaryType
 import datetime
 import re
 import os
@@ -48,7 +49,7 @@ PAST = 'Sat, 1-Jan-1971 00:00:00'
 FUTURE = 'Tue, 1-Dec-2999 23:59:59'
 
 try:
-    #FIXME PY3
+    # FIXME PY3
     from gluon.contrib.minify import minify
     have_minify = True
 except ImportError:
@@ -79,6 +80,7 @@ template_mapping = {
     'js:inline': js_inline
 }
 
+
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
 # are sorted and web2py can detect without ambiguity when a session changes
@@ -94,6 +96,7 @@ if PY2:
 else:
     SortingPickler.dispatch_table = copyreg.dispatch_table.copy()
     SortingPickler.dispatch_table[dict] = SortingPickler.save_dict
+
 
 def sorting_dumps(obj, protocol=None):
     file = StringIO()
@@ -120,7 +123,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
         dest = tempfile.NamedTemporaryFile()
     except NotImplementedError:  # and GAE this
         dest = tempfile.TemporaryFile()
-    if not 'X-Progress-ID' in request.get_vars:
+    if 'X-Progress-ID' not in request.get_vars:
         copystream(source, dest, size, chunk_size)
         return dest
     cache_key = 'X-Progress-ID:' + request.get_vars['X-Progress-ID']
@@ -198,7 +201,8 @@ class Request(Storage):
         """Takes the QUERY_STRING and unpacks it to get_vars
         """
         query_string = self.env.get('query_string', '')
-        dget = urlparse.parse_qs(query_string, keep_blank_values=1)  # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
+        dget = urlparse.parse_qs(query_string, keep_blank_values=1)
+        # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
         get_vars = self._get_vars = Storage(dget)
         for (key, value) in iteritems(get_vars):
             if isinstance(value, list) and len(value) == 1:
@@ -228,8 +232,7 @@ class Request(Storage):
             body.seek(0)
 
         # parse POST variables on POST, PUT, BOTH only in post_vars
-        if (body and not is_json
-            and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH')):
+        if body and not is_json and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH'):
             query_string = env.pop('QUERY_STRING', None)
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
             try:
@@ -355,7 +358,7 @@ class Request(Storage):
             def f(_action=action, *a, **b):
                 request.is_restful = True
                 env = request.env
-                is_json = env.content_type=='application/json'
+                is_json = env.content_type == 'application/json'
                 method = env.request_method
                 if not ignore_extension and len(request.args) and '.' in request.args[-1]:
                     request.args[-1], _, request.extension = request.args[-1].rpartition('.')
@@ -451,7 +454,8 @@ class Response(Storage):
         for meta in iteritems((self.meta or {})):
             k, v = meta
             if isinstance(v, dict):
-                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key), to_native(xmlescape(v[key]))) for key in v) +' />\n'
+                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key),
+                                                     to_native(xmlescape(v[key]))) for key in v) + ' />\n'
             else:
                 s += '<meta name="%s" content="%s" />\n' % (k, to_native(xmlescape(v)))
         self.write(s, escape=False)
@@ -578,9 +582,9 @@ class Response(Storage):
         if hasattr(stream, 'name'):
             filename = stream.name
 
-        if filename and not 'content-type' in keys:
+        if filename and 'content-type' not in keys:
             headers['Content-Type'] = contenttype(filename)
-        if filename and not 'content-length' in keys:
+        if filename and 'content-length' not in keys:
             try:
                 headers['Content-Length'] = \
                     os.path.getsize(filename)
@@ -1022,7 +1026,7 @@ class Session(Storage):
         if self._forget:
             del rcookies[response.session_id_name]
             return
-        if self.get('httponly_cookies',True):
+        if self.get('httponly_cookies', True):
             scookies['HttpOnly'] = True
         if self._secure:
             scookies['secure'] = True
@@ -1193,7 +1197,7 @@ class Session(Storage):
             if (not response.session_id or
                 not response.session_filename or
                 self._forget
-                or self._unchanged(response)):
+                    or self._unchanged(response)):
                 # self.clear_session_cookies()
                 return False
             else:
