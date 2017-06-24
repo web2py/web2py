@@ -596,13 +596,13 @@ def run_controller_in(controller, function, environment):
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
     if os.path.exists(cpath):
-        filename = pjoin(cpath, 'controllers.%s.%s.pyc'
-                         % (controller, function))
-        if not os.path.exists(filename):
+        filename = pjoin(cpath, 'controllers.%s.%s.pyc' % (controller, function))
+        try:
+            ccode = getcfs(filename, filename, lambda: read_pyc(filename))
+        except IOError:
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
-        ccode = getcfs(filename, filename, lambda: read_pyc(filename))
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
         from gluon.settings import global_settings
@@ -623,13 +623,13 @@ def run_controller_in(controller, function, environment):
         code += TEST_CODE
         ccode = compile2(code, filename)
     else:
-        filename = pjoin(folder, 'controllers/%s.py'
-                                 % controller)
-        if not os.path.exists(filename):
+        filename = pjoin(folder, 'controllers/%s.py' % controller)
+        try:
+            code = getcfs(filename, filename, lambda: read_file(filename))
+        except IOError:
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
-        code = getcfs(filename, filename, lambda: read_file(filename))
         exposed = find_exposed_functions(code)
         if not function in exposed:
             raise HTTP(404,
@@ -705,12 +705,14 @@ def run_view_in(environment):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badv,
                        web2py_error=badv)
-        layer = filename
-        # Compile the template
-        ccode = parse_template(view,
-                               pjoin(folder, 'views'),
-                               context=environment)
 
+        # if the view is not compiled
+        if not layer:
+            # Compile the template
+            ccode = parse_template(view,
+                                   pjoin(folder, 'views'),
+                                   context=environment)
+        layer = filename
     restricted(ccode, environment, layer=layer)
     # parse_template saves everything in response body
     return environment['response'].body.getvalue()
