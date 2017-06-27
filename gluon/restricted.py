@@ -137,7 +137,10 @@ class RestrictedError(Exception):
         self.environment = environment
         if layer:
             try:
-                self.traceback = traceback.format_exc(limit=1)
+                try:
+                    self.traceback = traceback.format_exc()
+                except:
+                    self.traceback = traceback.format_exc(limit=1)
             except:
                 self.traceback = 'no traceback because template parsing error'
             try:
