@@ -2341,10 +2341,11 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
-            filter1 = lambda f: isinstance(f, Field) and f.readable and (f.type!='blob' or showblobs)
+            filter1 = lambda f: isinstance(f, Field) and (f.type!='blob' or showblobs)
+            filter2 = lambda f: isinstance(f, Field) and f.readable
             for table in tables:
                 fields += filter(filter1, table)
-                columns += filter(filter1, table)
+                columns += filter(filter2, table)
                 for k, f in iteritems(table):
                     if not k.startswith('_'):
                         if isinstance(f, Field.Virtual) and f.readable:
