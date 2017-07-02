@@ -13,7 +13,7 @@ Auth, Mail, PluginManager and various utilities
 import base64
 from functools import reduce
 from gluon._compat import pickle, thread, urllib2, Cookie, StringIO
-from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText
+from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText, Header
 from gluon._compat import Encoders, Charset, long, urllib_quote, iteritems
 from gluon._compat import to_bytes, to_native, add_charset
 from gluon._compat import charset_QP, basestring, unicodeT, to_unicode
