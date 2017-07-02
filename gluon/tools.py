@@ -266,7 +266,7 @@ class Mail(object):
         settings.sender = sender
         settings.login = login
         settings.tls = tls
-        settings.timeout = 60  # seconds
+        settings.timeout = 5  # seconds
         settings.hostname = None
         settings.ssl = False
         settings.cipher_type = None
@@ -789,19 +789,18 @@ class Mail(object):
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
-                if self.settings.ssl:
-                    server = smtplib.SMTP_SSL(*smtp_args, **kwargs)
-                else:
-                    server = smtplib.SMTP(*smtp_args, **kwargs)
-                if self.settings.tls and not self.settings.ssl:
-                    server.ehlo(self.settings.hostname)
-                    server.starttls()
-                    server.ehlo(self.settings.hostname)
-                if self.settings.login:
-                    server.login(*self.settings.login.split(':', 1))
-                result = server.sendmail(
-                    sender, to, payload.as_string())
-                server.quit()
+                func = smtplib.SMTP_SSL if self.settings.ssl else smtplib.SMTP
+                server = func(*smtp_args, **kwargs)
+                try:
+                    if self.settings.tls and not self.settings.ssl:
+                        server.ehlo(self.settings.hostname)
+                        server.starttls()
+                        server.ehlo(self.settings.hostname)
+                    if self.settings.login:
+                        server.login(*self.settings.login.split(':', 1))
+                    result = server.sendmail(sender, to, payload.as_string())
+                finally:
+                    server.quit()
         except Exception as e:
             logger.warning('Mail.send failure:%s' % e)
             self.result = result
@@ -6425,7 +6424,7 @@ class Wiki(object):
                 query = (db.wiki_page.id == db.wiki_tag.wiki_page) &\
                     (db.wiki_tag.name.belongs(tags))
                 query = query | db.wiki_page.title.contains(request.vars.q)
-            if self.settings.restrict_search and not self.manage():
+            if self.settings.restrict_search and not self.can_manage():
                 query = query & (db.wiki_page.created_by == self.auth.user_id)
             pages = db(query).select(count,
                                      *fields, **dict(orderby=orderby or ~count,
