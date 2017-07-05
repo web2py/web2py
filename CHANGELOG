@@ -1,3 +1,36 @@
+## 2.16.0b1
+- experimental python 3 support
+- experimental authapi for service login
+- more tests
+- d3.js model visulization
+- improved scheduler
+- is_email support for internationalized Domain Names
+- improved used of cookies with CookieJar
+- SQLFORM.grid(showblobs=True)
+- import JS events (added w2p.componentBegin event)
+- added support for CASv3
+- allow first_name and last_name placeholders in verify_email message
+- added three-quote support in markmin
+- updated pg8000 driver (but we still recommend psycopg2)
+- compiled views use . separator not _ separator (must recompile code)
+- better serbian, french, and catalan translations
+- speed improvements (refactor of compileapp and pyc caching)
+- removed web shell (never worked as intended)
+- allow Expose(..., follow_symlink_out=False).
+- Updated fpdf to latest version
+- JWT support
+- import fabfile for remote deployment
+- jQuery 3.2.1
+- PyDAL 17.07 including:
+  allow jsonb support for postgres
+  correctly configure adapters that need connection for configuration
+  better caching
+  updated IMAP adapter methods to new API
+  experimental suport for joinable subselects
+  improved Teradata support
+  improved mongodb support
+  overall refactoring
+  experimental support for Google Cloud SQL v2 (TODO)
 
 ## 2.15.x
 - web2py does not support python 2.6 anymore
