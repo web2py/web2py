@@ -54,7 +54,8 @@ def app_pack(app, request, raise_ex=False, filenames=None):
 
     """
     try:
-        if filenames is None: app_cleanup(app, request)
+        if filenames is None:
+            app_cleanup(app, request)
         filename = apath('../deposit/web2py.app.%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
@@ -104,7 +105,8 @@ def app_cleanup(app, request):
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
-                if f[:1] != '.': os.unlink(os.path.join(path, f))
+                if f[:1] != '.':
+                    os.unlink(os.path.join(path, f))
             except IOError:
                 r = False
 
@@ -113,7 +115,8 @@ def app_cleanup(app, request):
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
-                if f[:1] != '.': recursive_unlink(os.path.join(path, f))
+                if f[:1] != '.':
+                    recursive_unlink(os.path.join(path, f))
             except (OSError, IOError):
                 r = False
 
@@ -123,7 +126,8 @@ def app_cleanup(app, request):
         CacheOnDisk(folder=path).clear()
         for f in os.listdir(path):
             try:
-                if f[:1] != '.': recursive_unlink(os.path.join(path, f))
+                if f[:1] != '.':
+                    recursive_unlink(os.path.join(path, f))
             except (OSError, IOError):
                 r = False
     return r
@@ -175,10 +179,9 @@ def app_create(app, request, force=False, key=None, info=False):
             return False
     try:
         w2p_unpack('welcome.w2p', path)
-        for subfolder in [
-            'models', 'views', 'controllers', 'databases',
-            'modules', 'cron', 'errors', 'sessions', 'cache',
-            'languages', 'static', 'private', 'uploads']:
+        for subfolder in ['models', 'views', 'controllers', 'databases',
+                          'modules', 'cron', 'errors', 'sessions', 'cache',
+                          'languages', 'static', 'private', 'uploads']:
             subpath = os.path.join(path, subfolder)
             if not os.path.exists(subpath):
                 os.mkdir(subpath)
@@ -368,7 +371,7 @@ def unzip(filename, dir, subfolder=''):
     for name in sorted(zf.namelist()):
         if not name.startswith(subfolder):
             continue
-        #print name[n:]
+        # print name[n:]
         if name.endswith('/'):
             folder = os.path.join(dir, name[n:])
             if not os.path.exists(folder):
@@ -435,6 +438,7 @@ def add_path_first(path):
     if not global_settings.web2py_runtime_gae:
         site.addsitedir(path)
 
+
 def try_mkdir(path):
     if not os.path.exists(path):
         try:
@@ -444,10 +448,11 @@ def try_mkdir(path):
             else:
                 os.mkdir(path)
         except OSError as e:
-            if e.strerror == 'File exists': # In case of race condition.
+            if e.strerror == 'File exists':  # In case of race condition.
                 pass
             else:
                 raise e
+
 
 def create_missing_folders():
     if not global_settings.web2py_runtime_gae:
