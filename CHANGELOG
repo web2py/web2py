@@ -30,7 +30,7 @@
   improved Teradata support
   improved mongodb support
   overall refactoring
-  experimental support for Google Cloud SQL v2 (TODO)
+  experimental support for Google Cloud SQL v2
 
 ## 2.15.x
 - web2py does not support python 2.6 anymore
