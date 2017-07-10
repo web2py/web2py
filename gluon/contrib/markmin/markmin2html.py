@@ -795,7 +795,7 @@ def render(text,
     '<table><tbody><tr class="first"><td>a</td><td>b</td></tr><tr class="even"><td>c</td><td>d</td></tr></tbody></table>'
 
     >>> render("----\\nhello world\\n----\\n")
-    '<blockquote>hello world</blockquote>'
+    '<blockquote><p>hello world</p></blockquote>'
 
     >>> render('[[myanchor]]')
     '<p><span class="anchor" id="markmin_myanchor"></span></p>'
