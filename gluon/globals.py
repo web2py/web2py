@@ -954,7 +954,7 @@ class Session(Storage):
                     cookie_expires.strftime(FMT)
 
         session_pickled = pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
-        response.session_hash = hashlib_md5(session_pickled).hexdigest()
+        response.session_hash = hashlib.md5(session_pickled).hexdigest()
 
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
@@ -1141,7 +1141,7 @@ class Session(Storage):
             return True
         session_pickled = pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
         response.session_pickled = session_pickled
-        session_hash = hashlib_md5(session_pickled).hexdigest()
+        session_hash = hashlib.md5(session_pickled).hexdigest()
         return response.session_hash == session_hash
 
     def _try_store_in_db(self, request, response):
