@@ -41,10 +41,11 @@ import imp
 import logging
 import types
 from functools import reduce
-logger = logging.getLogger("web2py")
 from gluon import rewrite
 from gluon.custom_import import custom_import_install
 import py_compile
+
+logger = logging.getLogger("web2py")
 
 is_pypy = settings.global_settings.is_pypy
 is_gae = settings.global_settings.web2py_runtime_gae
@@ -111,7 +112,7 @@ class mybuiltin(object):
     NOTE could simple use a dict and populate it,
     NOTE not sure if this changes things though if monkey patching import.....
     """
-    #__builtins__
+    # __builtins__
     def __getitem__(self, key):
         try:
             return getattr(builtin, key)
@@ -185,7 +186,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
         else:
             statement = "$.web2py.component('%s','%s');" % (url, target)
         attr['_data-w2p_remote'] = url
-        if not target is None:
+        if target is not None:
             return DIV(content, **attr)
 
     else:
@@ -211,7 +212,8 @@ def LOAD(c=None, f='index', args=None, vars=None,
             request.env.path_info
         other_request.cid = target
         other_request.env.http_web2py_component_element = target
-        other_request.restful = types.MethodType(request.restful.__func__, other_request) # A bit nasty but needed to use LOAD on action decorates with @request.restful()
+        other_request.restful = types.MethodType(request.restful.__func__, other_request)
+        # A bit nasty but needed to use LOAD on action decorates with @request.restful()
         other_response.view = '%s/%s.%s' % (c, f, other_request.extension)
 
         other_environment = copy.copy(current.globalenv)  # NASTY
@@ -405,7 +407,7 @@ def build_environment(request, response, session, store_current=True):
     """
     Build the environment dictionary into which web2py files are executed.
     """
-    #h,v = html,validators
+    # h,v = html,validators
     environment = dict(_base_environment_)
 
     if not request.env:
@@ -418,7 +420,7 @@ def build_environment(request, response, session, store_current=True):
         r'^%s/%s/\w+\.py$' % (request.controller, request.function)
         ]
 
-    t = environment['T'] = translator(os.path.join(request.folder,'languages'),
+    t = environment['T'] = translator(os.path.join(request.folder, 'languages'),
                                       request.env.http_accept_language)
     c = environment['cache'] = Cache(request)
 
@@ -506,9 +508,11 @@ def compile_models(folder):
         save_pyc(filename)
         os.unlink(filename)
 
+
 def find_exposed_functions(data):
-    data = regex_longcomments.sub('',data)
+    data = regex_longcomments.sub('', data)
     return regex_expose.findall(data)
+
 
 def compile_controllers(folder):
     """
@@ -524,16 +528,19 @@ def compile_controllers(folder):
             command = data + "\nresponse._vars=response._caller(%s)\n" % \
                 function
             filename = pjoin(folder, 'compiled',
-                             'controllers.%s.%s.py' % (fname[:-3],function))
+                             'controllers.%s.%s.py' % (fname[:-3], function))
             write_file(filename, command)
             save_pyc(filename)
             os.unlink(filename)
 
+
 def model_cmp(a, b, sep='.'):
     return cmp(a.count(sep), b.count(sep)) or cmp(a, b)
 
+
 def model_cmp_sep(a, b, sep=os.path.sep):
-    return model_cmp(a,b,sep)
+    return model_cmp(a, b, sep)
+
 
 def run_models_in(environment):
     """
@@ -544,7 +551,7 @@ def run_models_in(environment):
     request = current.request
     folder = request.folder
     c = request.controller
-    #f = environment['request'].function
+    # f = environment['request'].function
     response = current.response
 
     path = pjoin(folder, 'models')
@@ -557,9 +564,11 @@ def run_models_in(environment):
             models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
     else:
         if compiled:
-            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), key=lambda f: '{0:03d}'.format(f.count('.')) + f)
+            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0),
+                            key=lambda f: '{0:03d}'.format(f.count('.')) + f)
         else:
-            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), key=lambda f: '{0:03d}'.format(f.count(os.path.sep)) + f)
+            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False),
+                            key=lambda f: '{0:03d}'.format(f.count(os.path.sep)) + f)
 
     models_to_run = None
     for model in models:
@@ -570,10 +579,10 @@ def run_models_in(environment):
         if models_to_run:
             if compiled:
                 n = len(cpath)+8
-                fname = model[n:-4].replace('.','/')+'.py'
+                fname = model[n:-4].replace('.', '/')+'.py'
             else:
                 n = len(path)+1
-                fname = model[n:].replace(os.path.sep,'/')
+                fname = model[n:].replace(os.path.sep, '/')
             if not regex.search(fname) and c != 'appadmin':
                 continue
             elif compiled:
@@ -582,6 +591,7 @@ def run_models_in(environment):
                 f = lambda: compile2(read_file(model), model)
             ccode = getcfs(model, model, f)
             restricted(ccode, environment, layer=model)
+
 
 def run_controller_in(controller, function, environment):
     """
@@ -596,13 +606,13 @@ def run_controller_in(controller, function, environment):
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
     if os.path.exists(cpath):
-        filename = pjoin(cpath, 'controllers.%s.%s.pyc'
-                         % (controller, function))
-        if not os.path.exists(filename):
+        filename = pjoin(cpath, 'controllers.%s.%s.pyc' % (controller, function))
+        try:
+            ccode = getcfs(filename, filename, lambda: read_pyc(filename))
+        except IOError:
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
-        ccode = getcfs(filename, filename, lambda: read_pyc(filename))
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
         from gluon.settings import global_settings
@@ -623,15 +633,15 @@ def run_controller_in(controller, function, environment):
         code += TEST_CODE
         ccode = compile2(code, filename)
     else:
-        filename = pjoin(folder, 'controllers/%s.py'
-                                 % controller)
-        if not os.path.exists(filename):
+        filename = pjoin(folder, 'controllers/%s.py' % controller)
+        try:
+            code = getcfs(filename, filename, lambda: read_file(filename))
+        except IOError:
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
-        code = getcfs(filename, filename, lambda: read_file(filename))
         exposed = find_exposed_functions(code)
-        if not function in exposed:
+        if function not in exposed:
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
@@ -678,7 +688,7 @@ def run_view_in(environment):
         layer = 'file stream'
     else:
         filename = pjoin(folder, 'views', view)
-        if os.path.exists(cpath): # compiled views
+        if os.path.exists(cpath):  # compiled views
             x = view.replace('/', '.')
             files = ['views.%s.pyc' % x]
             is_compiled = os.path.exists(pjoin(cpath, files[0]))
@@ -705,15 +715,18 @@ def run_view_in(environment):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badv,
                        web2py_error=badv)
-        layer = filename
-        # Compile the template
-        ccode = parse_template(view,
-                               pjoin(folder, 'views'),
-                               context=environment)
 
+        # if the view is not compiled
+        if not layer:
+            # Compile the template
+            ccode = parse_template(view,
+                                   pjoin(folder, 'views'),
+                                   context=environment)
+        layer = filename
     restricted(ccode, environment, layer=layer)
     # parse_template saves everything in response body
     return environment['response'].body.getvalue()
+
 
 def remove_compiled_application(folder):
     """

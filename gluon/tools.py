@@ -1127,7 +1127,6 @@ def addrow(form, a, b, c, style, _id, position=-1):
 
 
 class AuthJWT(object):
-
     """
     Experimental!
 
@@ -1537,7 +1536,8 @@ class Auth(AuthAPI):
     # ## these are messages that can be customized
     default_messages = dict(AuthAPI.default_messages,
                             access_denied='Insufficient privileges',
-                            bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete the process',
+                            bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete '
+                                             'the process',
                             bulk_invite_subject='Invitation to join %(site)s',
                             delete_label='Check to delete',
                             email_sent='Email sent',
@@ -1840,14 +1840,15 @@ class Auth(AuthAPI):
         # ## these are messages that can be customized
         messages = self.messages = Messages(current.T)
         messages.update(Auth.default_messages)
-        messages.update(ajax_failed_authentication=DIV(H4('NOT AUTHORIZED'),
-                                                       'Please ',
-                                                       A('login',
-                                                         _href=self.settings.login_url +
-                                                         ('?_next=' + urllib_quote(current.request.env.http_web2py_component_location))
-                                                         if current.request.env.http_web2py_component_location else ''),
-                                                       ' to view this content.',
-                                                       _class='not-authorized alert alert-block'))
+        messages.update(ajax_failed_authentication=
+                        DIV(H4('NOT AUTHORIZED'),
+                            'Please ',
+                            A('login',
+                              _href=self.settings.login_url +
+                                    ('?_next=' + urllib_quote(current.request.env.http_web2py_component_location))
+                              if current.request.env.http_web2py_component_location else ''),
+                            ' to view this content.',
+                            _class='not-authorized alert alert-block'))
         messages.lock_keys = True
 
         # for "remember me" option
@@ -1876,7 +1877,7 @@ class Auth(AuthAPI):
         # _next variable in the request.
         if next:
             parts = next.split('/')
-            if not ':' in parts[0]:
+            if ':' not in parts[0]:
                 return next
             elif len(parts) > 2 and parts[0].endswith(':') and parts[1:3] == ['', host]:
                 return next
@@ -2008,8 +2009,7 @@ class Auth(AuthAPI):
                 items.append({'name': T('Lost password?'),
                               'href': href('request_reset_password'),
                               'icon': 'icon-lock'})
-            if (self.settings.use_username and not
-                    'retrieve_username' in self.settings.actions_disabled):
+            if self.settings.use_username and 'retrieve_username' not in self.settings.actions_disabled:
                 items.append({'name': T('Forgot username?'),
                               'href': href('retrieve_username'),
                               'icon': 'icon-edit'})
@@ -2181,9 +2181,7 @@ class Auth(AuthAPI):
             current_record.replace('_', ' ').title())
         for table in tables:
             fieldnames = table.fields()
-            if ('id' in fieldnames and
-                    'modified_on' in fieldnames and
-                    not current_record in fieldnames):
+            if 'id' in fieldnames and 'modified_on' in fieldnames and current_record not in fieldnames:
                 table._enable_record_versioning(archive_db=archive_db,
                                                 archive_name=archive_names,
                                                 current_record=current_record,
@@ -2213,7 +2211,8 @@ class Auth(AuthAPI):
             fake_migrate = db._fake_migrate
         settings = self.settings
         settings.enable_tokens = enable_tokens
-        signature_list = super(Auth, self).define_tables(username, signature, migrate, fake_migrate)._table_signature_list
+        signature_list = \
+            super(Auth, self).define_tables(username, signature, migrate, fake_migrate)._table_signature_list
 
         now = current.request.now
         reference_table_user = 'reference %s' % settings.table_user_name
@@ -2360,7 +2359,7 @@ class Auth(AuthAPI):
             if callable(basic_auth_realm):
                 basic_auth_realm = basic_auth_realm()
             elif isinstance(basic_auth_realm, (unicode, str)):
-                basic_realm = unicode(basic_auth_realm)
+                basic_realm = unicode(basic_auth_realm)  # Warning python 3.5 does not have method unicod
             elif basic_auth_realm is True:
                 basic_realm = u'' + current.request.application
             http_401 = HTTP(401, u'Not Authorized', **{'WWW-Authenticate': u'Basic realm="' + basic_realm + '"'})
@@ -2462,7 +2461,7 @@ class Auth(AuthAPI):
                          _href=service + query_sep + "ticket=" + ticket)
             else:
                 redirect(service + query_sep + "ticket=" + ticket)
-        if self.is_logged_in() and not 'renew' in request.vars:
+        if self.is_logged_in() and 'renew' not in request.vars:
             return allow_access()
         elif not self.is_logged_in() and 'gateway' in request.vars:
             redirect(session._cas_service)
@@ -2779,7 +2778,7 @@ class Auth(AuthAPI):
         # If auth.settings.auth_two_factor_enabled it will enable two factor
         # for all the app. Another way to anble two factor is that the user
         # must be part of a group that is called auth.settings.two_factor_authentication_group
-        if user and self.settings.auth_two_factor_enabled == True:
+        if user and self.settings.auth_two_factor_enabled is True:
             session.auth_two_factor_enabled = True
         elif user and self.settings.two_factor_authentication_group:
             role = self.settings.two_factor_authentication_group
@@ -2809,7 +2808,7 @@ class Auth(AuthAPI):
                 # Set the way we generate the code or we send the code. For example using SMS...
                 two_factor_methods = self.settings.two_factor_methods
 
-                if two_factor_methods == []:
+                if not two_factor_methods:
                     # TODO: Add some error checking to handle cases where email cannot be sent
                     self.settings.mailer.send(
                         to=user.email,
@@ -2832,47 +2831,49 @@ class Auth(AuthAPI):
                             hideerror=settings.hideerror):
                 accepted_form = True
 
-                '''
+                """
                 The lists is executed after form validation for each of the corresponding action.
                 For example, in your model:
 
                 In your models copy and paste:
 
-                #Before define tables, we add some extra field to auth_user
+                # Before define tables, we add some extra field to auth_user
                 auth.settings.extra_fields['auth_user'] = [
                     Field('motp_secret', 'password', length=512, default='', label='MOTP Secret'),
                     Field('motp_pin', 'string', length=128, default='', label='MOTP PIN')]
 
-                OFFSET = 60 #Be sure is the same in your OTP Client
+                OFFSET = 60  # Be sure is the same in your OTP Client
 
-                #Set session.auth_two_factor to None. Because the code is generated by external app.
+                # Set session.auth_two_factor to None. Because the code is generated by external app.
                 # This will avoid to use the default setting and send a code by email.
                 def _set_two_factor(user, auth_two_factor):
                     return None
 
                 def verify_otp(user, otp):
-                import time
-                from hashlib import md5
-                epoch_time = int(time.time())
-                time_start = int(str(epoch_time - OFFSET)[:-1])
-                time_end = int(str(epoch_time + OFFSET)[:-1])
-                for t in range(time_start - 1, time_end + 1):
-                    to_hash = str(t) + user.motp_secret + user.motp_pin
-                    hash = md5(to_hash).hexdigest()[:6]
-                    if otp == hash:
-                    return hash
+                    import time
+                    from hashlib import md5
+                    epoch_time = int(time.time())
+                    time_start = int(str(epoch_time - OFFSET)[:-1])
+                    time_end = int(str(epoch_time + OFFSET)[:-1])
+                    for t in range(time_start - 1, time_end + 1):
+                        to_hash = str(t) + user.motp_secret + user.motp_pin
+                        hash = md5(to_hash).hexdigest()[:6]
+                        if otp == hash:
+                        return hash
 
                 auth.settings.auth_two_factor_enabled = True
                 auth.messages.two_factor_comment = "Verify your OTP Client for the code."
-                auth.settings.two_factor_methods = [lambda user, auth_two_factor: _set_two_factor(user, auth_two_factor)]
+                auth.settings.two_factor_methods = [lambda user, 
+                                                           auth_two_factor: _set_two_factor(user, auth_two_factor)]
                 auth.settings.two_factor_onvalidation = [lambda user, otp: verify_otp(user, otp)]
 
-                '''
-                if self.settings.two_factor_onvalidation != []:
+                """
+                if self.settings.two_factor_onvalidation:
 
                     for two_factor_onvalidation in self.settings.two_factor_onvalidation:
                         try:
-                            session.auth_two_factor = two_factor_onvalidation(session.auth_two_factor_user, form.vars['authentication_code'])
+                            session.auth_two_factor = \
+                                two_factor_onvalidation(session.auth_two_factor_user, form.vars['authentication_code'])
                         except:
                             pass
                         else:
@@ -4146,7 +4147,7 @@ class Auth(AuthAPI):
             archive_table = table._db[archive_table_name]
         new_record = {current_record: form.vars.id}
         for fieldname in archive_table.fields:
-            if not fieldname in ['id', current_record]:
+            if fieldname not in ['id', current_record]:
                 if archive_current and fieldname in form.vars:
                     new_record[fieldname] = form.vars[fieldname]
                 elif form.record and fieldname in form.record:
@@ -4956,7 +4957,10 @@ class Service(object):
 
             Then call it with:
 
-                wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "myfunction", "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2
+                wget --post-data '{"jsonrpc": "2.0",
+                                   "id": 1,
+                                   "method": "myfunction",
+                                   "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2
 
         """
         self.jsonrpc2_procedures[f.__name__] = f
@@ -5600,12 +5604,12 @@ class PluginManager(object):
 
         where the plugin is used::
 
-            >>> print plugins.me.param1
+            >>> print(plugins.me.param1)
             3
-            >>> print plugins.me.param2
+            >>> print(plugins.me.param2)
             6
             >>> plugins.me.param3 = 8
-            >>> print plugins.me.param3
+            >>> print(plugins.me.param3)
             8
 
         Here are some tests::
@@ -5613,25 +5617,25 @@ class PluginManager(object):
             >>> a=PluginManager()
             >>> a.x=6
             >>> b=PluginManager('check')
-            >>> print b.x
+            >>> print(b.x)
             6
             >>> b=PluginManager() # reset settings
-            >>> print b.x
+            >>> print(b.x)
             <Storage {}>
             >>> b.x=7
-            >>> print a.x
+            >>> print(a.x)
             7
             >>> a.y.z=8
-            >>> print b.y.z
+            >>> print(b.y.z)
             8
             >>> test_thread_separation()
             5
             >>> plugins=PluginManager('me',db='mydb')
-            >>> print plugins.me.db
+            >>> print(plugins.me.db)
             mydb
-            >>> print 'me' in plugins
+            >>> print('me' in plugins)
             True
-            >>> print plugins.me.installed
+            >>> print(plugins.me.installed)
             True
 
     """
@@ -5780,7 +5784,7 @@ class Expose(object):
             return os.path.realpath(f)
 
     def issymlink_out(self, f):
-        "True if f is a symlink and is pointing outside of self.base"
+        """True if f is a symlink and is pointing outside of self.base"""
         return os.path.islink(f) and not self.in_base(f)
 
     @staticmethod

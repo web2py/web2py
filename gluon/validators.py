@@ -21,7 +21,8 @@ import struct
 import decimal
 import unicodedata
 
-from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native, string_types, urlparse
+from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, \
+    to_unicode, to_native, string_types, urlparse
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce
@@ -455,7 +456,7 @@ class IS_IN_SET(Validator):
             items = [(k, self.labels[i]) for (i, k) in enumerate(self.theset)]
         if self.sort:
             items.sort(key=lambda o: str(o[1]).upper())
-        if zero and not self.zero is None and not self.multiple:
+        if zero and self.zero is not None and not self.multiple:
             items.insert(0, ('', self.zero))
         return items
 
@@ -823,7 +824,7 @@ class IS_INT_IN_RANGE(Validator):
 
 def str2dec(number):
     s = str(number)
-    if not '.' in s:
+    if '.' not in s:
         s += '.00'
     else:
         s += '0' * (2 - len(s.split('.')[1]))
@@ -1213,7 +1214,7 @@ class IS_EMAIL(Validator):
                 domain_encoded = to_unicode(domain).encode('idna').decode('ascii')
                 match_domain = self.domain_regex.match(domain_encoded)
 
-            match = (match_body != None) and (match_domain != None)
+            match = (match_body is not None) and (match_domain is not None)
         except (TypeError, UnicodeError):
             # Value may not be a string where we can look for matches.
             # Example: we're calling ANY_OF formatter and IS_EMAIL is asked to validate a date.
@@ -1247,7 +1248,7 @@ class IS_LIST_OF_EMAILS(object):
         f = IS_EMAIL()
         for email in self.split_emails.findall(value):
             error = f(email)[1]
-            if error and not email in bad_emails:
+            if error and email not in bad_emails:
                 bad_emails.append(email)
         if not bad_emails:
             return (value, None)
@@ -1461,9 +1462,9 @@ def unicode_to_ascii_authority(authority):
         if label:
             asciiLabels.append(to_native(encodings.idna.ToASCII(label)))
         else:
-             # encodings.idna.ToASCII does not accept an empty string, but
-             # it is necessary for us to allow for empty labels so that we
-             # don't modify the URL
+            # encodings.idna.ToASCII does not accept an empty string, but
+            # it is necessary for us to allow for empty labels so that we
+            # don't modify the URL
             asciiLabels.append('')
     # RFC 3490, Section 4, Step 5
     return str(reduce(lambda x, y: x + unichr(0x002E) + y, asciiLabels))
@@ -1527,11 +1528,15 @@ def unicode_to_ascii_url(url, prepend_scheme):
     if prepended:
         scheme = ''
 
-    unparsed = urlparse.urlunparse((scheme, unicode_to_ascii_authority(authority), escape_unicode(path), '', escape_unicode(query), str(fragment)))
+    unparsed = urlparse.urlunparse((scheme,
+                                    unicode_to_ascii_authority(authority),
+                                    escape_unicode(path),
+                                    '',
+                                    escape_unicode(query),
+                                    str(fragment)))
     if unparsed.startswith('//'):
-        unparsed = unparsed[2:] # Remove the // urlunparse puts in the beginning
+        unparsed = unparsed[2:]  # Remove the // urlunparse puts in the beginning
     return unparsed
-
 
 
 class IS_GENERIC_URL(Validator):
@@ -2622,7 +2627,7 @@ class ANY_OF(Validator):
     def __call__(self, value):
         for validator in self.subs:
             value, error = validator(value)
-            if error == None:
+            if error is None:
                 break
         return value, error
 
@@ -2762,7 +2767,7 @@ class LazyCrypt(object):
         else:
             digest_alg, key = self.crypt.digest_alg, ''
         if self.crypt.salt:
-            if self.crypt.salt == True:
+            if self.crypt.salt:
                 salt = str(web2py_uuid()).replace('-', '')[-16:]
             else:
                 salt = self.crypt.salt
@@ -2847,7 +2852,7 @@ class CRYPT(object):
     Supports standard algorithms
 
         >>> for alg in ('md5','sha1','sha256','sha384','sha512'):
-        ...     print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+        ...     print(str(CRYPT(digest_alg=alg,salt=True)('test')[0]))
         md5$...$...
         sha1$...$...
         sha256$...$...
@@ -2859,13 +2864,13 @@ class CRYPT(object):
     Supports for pbkdf2
 
         >>> alg = 'pbkdf2(1000,20,sha512)'
-        >>> print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+        >>> print(str(CRYPT(digest_alg=alg,salt=True)('test')[0]))
         pbkdf2(1000,20,sha512)$...$...
 
     An optional hmac_key can be specified and it is used as salt prefix
 
         >>> a = str(CRYPT(digest_alg='md5',key='mykey',salt=True)('test')[0])
-        >>> print a
+        >>> print(a)
         md5$...$...
 
     Even if the algorithm changes the hash can still be validated
