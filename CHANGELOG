@@ -3,7 +3,9 @@
 - dropped web shell
 - experimental python 3 support
 - experimental authapi for service login
+- allow ajax file uploads
 - more tests
+- more pep8 compliance
 - d3.js model visulization
 - improved scheduler
 - is_email support for internationalized Domain Names
