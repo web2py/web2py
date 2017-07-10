@@ -453,7 +453,7 @@ class IS_IN_SET(Validator):
         if not self.labels:
             items = [(k, k) for (i, k) in enumerate(self.theset)]
         else:
-            items = [(k, self.labels[i]) for (i, k) in enumerate(self.theset)]
+            items = [(k, list(self.labels)[i]) for (i, k) in enumerate(self.theset)]
         if self.sort:
             items.sort(key=lambda o: str(o[1]).upper())
         if zero and self.zero is not None and not self.multiple:
