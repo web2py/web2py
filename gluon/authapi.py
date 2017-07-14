@@ -115,7 +115,7 @@ class AuthAPI(object):
             if auth.last_visit and auth.last_visit + delta > now:
                 self.user = auth.user
                 # this is a trick to speed up sessions to avoid many writes
-                if (now - auth.last_visit).seconds > (auth.expiration / 10):
+                if (now - auth.last_visit).seconds > (auth.expiration // 10):
                     auth.last_visit = now
             else:
                 self.user = None
