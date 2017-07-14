@@ -684,9 +684,10 @@ class AutocompleteWidget(object):
             urlvars = request.vars
             urlvars[default_var] = 1
             self.url = URL(args=request.args, vars=urlvars)
-            self.callback()
+            self.run_callback = True
         else:
             self.url = request
+            self.run_callback = False
 
     def callback(self):
         if self.keyword in self.request.vars:
@@ -759,6 +760,8 @@ class AutocompleteWidget(object):
                 raise HTTP(200, '')
 
     def __call__(self, field, value, **attributes):
+        if self.run_callback:
+            self.callback()
         default = dict(
             _type='text',
             value=(value is not None and str(value)) or '',
