@@ -119,7 +119,6 @@ class HTTP(Exception):
             elif v is not None:
                 rheaders.append((k, str(v)))
         responder(status, rheaders)
-        print(type(body))
         if env.get('request_method', '') == 'HEAD':
             return ['']
         elif isinstance(body, (str, bytes, bytearray)):
