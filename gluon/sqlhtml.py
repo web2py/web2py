@@ -1919,7 +1919,7 @@ class SQLFORM(FORM):
         if 'table_name' in attributes:
             del attributes['table_name']
 
-        return SQLFORM(DAL(None).define_table(table_name, *fields),
+        return SQLFORM(DAL(None).define_table(table_name, *[field.clone() for field in fields]),
                        **attributes)
 
     @staticmethod
