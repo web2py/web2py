@@ -5,7 +5,7 @@ import os
 import unittest
 import datetime
 
-from gluon.fileutils import parse_version, fix_newlines, listdir
+from gluon.fileutils import parse_version, fix_newlines
 
 
 class TestFileUtils(unittest.TestCase):
