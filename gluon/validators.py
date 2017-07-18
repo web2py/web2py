@@ -2767,7 +2767,7 @@ class LazyCrypt(object):
         else:
             digest_alg, key = self.crypt.digest_alg, ''
         if self.crypt.salt:
-            if self.crypt.salt:
+            if self.crypt.salt is True:
                 salt = str(web2py_uuid()).replace('-', '')[-16:]
             else:
                 salt = self.crypt.salt

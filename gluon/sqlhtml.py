@@ -405,7 +405,7 @@ class RadioWidget(OptionsWidget):
         cols = attributes.get('cols', 1)
         totals = len(options)
         mods = totals % cols
-        rows = totals / cols
+        rows = totals // cols
         if mods:
             rows += 1
 
@@ -471,7 +471,7 @@ class CheckboxesWidget(OptionsWidget):
         cols = attributes.get('cols', 1)
         totals = len(options)
         mods = totals % cols
-        rows = totals / cols
+        rows = totals // cols
         if mods:
             rows += 1
 
@@ -684,9 +684,10 @@ class AutocompleteWidget(object):
             urlvars = request.vars
             urlvars[default_var] = 1
             self.url = URL(args=request.args, vars=urlvars)
-            self.callback()
+            self.run_callback = True
         else:
             self.url = request
+            self.run_callback = False
 
     def callback(self):
         if self.keyword in self.request.vars:
@@ -759,6 +760,8 @@ class AutocompleteWidget(object):
                 raise HTTP(200, '')
 
     def __call__(self, field, value, **attributes):
+        if self.run_callback:
+            self.callback()
         default = dict(
             _type='text',
             value=(value is not None and str(value)) or '',
@@ -1916,7 +1919,7 @@ class SQLFORM(FORM):
         if 'table_name' in attributes:
             del attributes['table_name']
 
-        return SQLFORM(DAL(None).define_table(table_name, *fields),
+        return SQLFORM(DAL(None).define_table(table_name, *[field.clone() for field in fields]),
                        **attributes)
 
     @staticmethod

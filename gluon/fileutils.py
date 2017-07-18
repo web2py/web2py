@@ -415,10 +415,10 @@ def fix_newlines(path):
 |\r|
 )''')
     for filename in listdir(path, '.*\.(py|html)$', drop=False):
-        rdata = read_file(filename, 'rb')
+        rdata = read_file(filename, 'r')
         wdata = regex.sub('\n', rdata)
         if wdata != rdata:
-            write_file(filename, wdata, 'wb')
+            write_file(filename, wdata, 'w')
 
 
 def copystream(
