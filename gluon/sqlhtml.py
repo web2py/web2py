@@ -1919,13 +1919,8 @@ class SQLFORM(FORM):
         if 'table_name' in attributes:
             del attributes['table_name']
 
-        fields_with_clones = []
-        for field in fields:
-            if isinstance(field, Field):
-                fields_with_clones.append(field.clone())
-            else:
-                # We have a table, so pass it along
-                fields_with_clones.append(field)                
+        # Clone fields, while passing tables straight through
+        fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]                  
             
         return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
 
