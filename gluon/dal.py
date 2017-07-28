@@ -14,6 +14,7 @@ from pydal import DAL as DAL
 from pydal import Field
 from pydal.objects import Row, Rows, Table, Query, Set, Expression
 from pydal import SQLCustomType, geoPoint, geoLine, geoPolygon
+from pydal.migrator import Migrator, InDBMigrator
 from gluon.serializers import custom_json, xml
 from gluon.utils import web2py_uuid
 from gluon import sqlhtml
