@@ -658,7 +658,8 @@ class AutocompleteWidget(object):
                  orderby=None, limitby=(0, 10), distinct=False,
                  keyword='_autocomplete_%(tablename)s_%(fieldname)s',
                  min_length=2, help_fields=None, help_string=None,
-                 at_beginning=True, default_var='ac'):
+                 at_beginning=True, default_var='ac', user_signature=True,
+                 hash_vars=False):
 
         self.help_fields = help_fields or []
         self.help_string = help_string
@@ -683,7 +684,8 @@ class AutocompleteWidget(object):
         if hasattr(request, 'application'):
             urlvars = request.vars
             urlvars[default_var] = 1
-            self.url = URL(args=request.args, vars=urlvars)
+            self.url = URL(args=request.args, vars=urlvars,
+                           user_signature=user_signature, hash_vars=hash_vars)
             self.run_callback = True
         else:
             self.url = request
