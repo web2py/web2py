@@ -2159,6 +2159,7 @@ class SQLFORM(FORM):
              represent_none=None,
              showblobs=False):
 
+        dbset = None
         formstyle = formstyle or current.response.formstyle
         if isinstance(query, Set):
             query = query.query
@@ -3037,6 +3038,7 @@ class SQLFORM(FORM):
         res.view_form = view_form
         res.search_form = search_form
         res.rows = rows
+        res.dbset = dbset
         return res
 
     @staticmethod
