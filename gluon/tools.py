@@ -3663,6 +3663,16 @@ class Auth(AuthAPI):
         if not self.is_logged_in():
             redirect(self.settings.login_url,
                      client_side=self.settings.client_side)
+
+        # Go to external link to change the password
+        if self.settings.login_form != self:
+            cas = self.settings.login_form
+            # To prevent error if change_password_url function is not defined in alternate login
+            if hasattr(cas, 'change_password_url'):
+                next = cas.change_password_url(next)
+                if next is not None:
+                    redirect(next)
+
         db = self.db
         table_user = self.table_user()
         s = db(table_user.id == self.user.id)
