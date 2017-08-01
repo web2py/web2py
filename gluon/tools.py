@@ -1320,7 +1320,7 @@ class AuthJWT(object):
         # is the following safe or should we use
         # calendar.timegm(datetime.datetime.utcnow().timetuple())
         # result seem to be the same (seconds since epoch, in UTC)
-        now = time.mktime(datetime.datetime.now().timetuple())
+        now = time.mktime(datetime.datetime.utcnow().timetuple())
         expires = now + self.expiration
         payload = dict(
             hmac_key=session_auth['hmac_key'],
@@ -1332,7 +1332,7 @@ class AuthJWT(object):
         return payload
 
     def refresh_token(self, orig_payload):
-        now = time.mktime(datetime.datetime.now().timetuple())
+        now = time.mktime(datetime.datetime.utcnow().timetuple())
         if self.verify_expiration:
             orig_exp = orig_payload['exp']
             if orig_exp + self.leeway < now:
@@ -2863,7 +2863,7 @@ class Auth(AuthAPI):
 
                 auth.settings.auth_two_factor_enabled = True
                 auth.messages.two_factor_comment = "Verify your OTP Client for the code."
-                auth.settings.two_factor_methods = [lambda user, 
+                auth.settings.two_factor_methods = [lambda user,
                                                            auth_two_factor: _set_two_factor(user, auth_two_factor)]
                 auth.settings.two_factor_onvalidation = [lambda user, otp: verify_otp(user, otp)]
 
