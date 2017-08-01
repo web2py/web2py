@@ -557,7 +557,7 @@ class AuthAPI(object):
         self.log_event(self.messages['del_membership_log'],
                        dict(user_id=user_id, group_id=group_id))
         ret = self.db(membership.user_id == user_id)(membership.group_id == group_id).delete()
-        if group_id in self.user_groups:
+        if group_id in self.user_groups and user_id == self.user_id:
             del self.user_groups[group_id]
         return ret
 
