@@ -20,10 +20,10 @@ DEFAULT = lambda: None
 class AuthAPI(object):
     """
     AuthAPI is a barebones Auth implementation which does not have a concept of
-    HTML forms or redirects, emailing or even an URL, you are responsible for 
+    HTML forms or redirects, emailing or even an URL, you are responsible for
     all that if you use it.
     The main Auth functions such as login, logout, register, profile are designed
-    in a Dict In -> Dict Out logic so, for instance, if you set 
+    in a Dict In -> Dict Out logic so, for instance, if you set
     registration_requires_verification you are responsible for sending the key to
     the user and even rolling back the transaction if you can't do it.
 
@@ -245,13 +245,13 @@ class AuthAPI(object):
             migrate = db._migrate
         if fake_migrate is None:
             fake_migrate = db._fake_migrate
-        
+
         settings = self.settings
         if username is None:
             username = settings.use_username
         else:
             settings.use_username = username
-        
+
         if not self.signature:
             self.define_signature()
         if signature is True:
@@ -1012,7 +1012,7 @@ class AuthAPI(object):
                    ):
         """
         Verify a given registration_key actually exists in the user table.
-        Resets the key to empty string '' or 'pending' if 
+        Resets the key to empty string '' or 'pending' if
         setttings.registration_requires_approval is true.
 
         Keyword Args:

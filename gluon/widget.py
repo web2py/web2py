@@ -140,7 +140,7 @@ class web2pyDialog(object):
         else:
             import tkinter
             from tkinter import messagebox
-        
+
 
         bg_color = 'white'
         root.withdraw()
@@ -463,7 +463,7 @@ class web2pyDialog(object):
             import tkMessageBox as messagebox
         else:
             from tkinter import messagebox
-        
+
         messagebox.showerror('web2py start server', message)
 
     def start(self):

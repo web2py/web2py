@@ -1922,8 +1922,8 @@ class SQLFORM(FORM):
             del attributes['table_name']
 
         # Clone fields, while passing tables straight through
-        fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]                  
-            
+        fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
+
         return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
@@ -3161,8 +3161,8 @@ class SQLFORM(FORM):
                 # if isinstance(linked_tables, dict):
                 #     linked_tables = linked_tables.get(table._tablename, [])
                 if linked_tables is None or referee in linked_tables:
-                    field.represent = (lambda id, r=None, referee=referee, rep=field.represent: 
-                                       A(callable(rep) and rep(id) or id, 
+                    field.represent = (lambda id, r=None, referee=referee, rep=field.represent:
+                                       A(callable(rep) and rep(id) or id,
                                          cid=request.cid, _href=url(args=['view', referee, id])))
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
