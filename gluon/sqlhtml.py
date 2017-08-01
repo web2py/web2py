@@ -1919,8 +1919,10 @@ class SQLFORM(FORM):
         if 'table_name' in attributes:
             del attributes['table_name']
 
-        return SQLFORM(DAL(None).define_table(table_name, *[field.clone() for field in fields]),
-                       **attributes)
+        # Clone fields, while passing tables straight through
+        fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]                  
+            
+        return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
     def build_query(fields, keywords):
