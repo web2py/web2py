@@ -1792,6 +1792,7 @@ class Auth(AuthAPI):
                              servicevalidate='serviceValidate',
                              proxyvalidate='proxyValidate',
                              logout='logout'),
+	    cas_create_user=True,
             extra_fields={},
             actions_disabled=[],
             controller=controller,
@@ -2284,6 +2285,7 @@ class Auth(AuthAPI):
         If the user doesn't yet exist, then they are created.
         """
         table_user = self.table_user()
+	create_user = self.settings.cas_create_user
         user = None
         checks = []
         # make a guess about who this user is
@@ -2316,6 +2318,11 @@ class Auth(AuthAPI):
                     update_keys[key] = keys[key]
             user.update_record(**update_keys)
         elif checks:
+	    if create_user is False:
+                # Remove current open session a send message
+                self.logout(next=None, onlogout=None, log=None)
+                raise HTTP(403, "Forbidden. User need to be created first.")
+
             if 'first_name' not in keys and 'first_name' in table_user.fields:
                 guess = keys.get('email', 'anonymous').split('@')[0]
                 keys['first_name'] = keys.get('username', guess)
@@ -3656,6 +3663,16 @@ class Auth(AuthAPI):
         if not self.is_logged_in():
             redirect(self.settings.login_url,
                      client_side=self.settings.client_side)
+
+        # Go to external link to change the password
+        if self.settings.login_form != self:
+            cas = self.settings.login_form
+            # To prevent error if change_password_url function is not defined in alternate login
+            if hasattr(cas, 'change_password_url'):
+                next = cas.change_password_url(next)
+                if next is not None:
+                    redirect(next)
+
         db = self.db
         table_user = self.table_user()
         s = db(table_user.id == self.user.id)
