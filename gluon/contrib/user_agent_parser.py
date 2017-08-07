@@ -678,6 +678,9 @@ def simple_detect(agent):
 class mobilize(object):  
     """
     Decorator for controller functions so they use different views for mobile devices.
+
+    WARNING: If you update httpagentparser make sure to leave mobilize for
+    backwards compatibility.
     """
     def __init__(self, func):
         self.func = func
