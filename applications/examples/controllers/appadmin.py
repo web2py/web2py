@@ -657,37 +657,36 @@ def d3_graph_model():
     Create a list of table dicts, called "nodes"
     """
     
-    data = {}
     nodes = []
     links = []
 
-    subgraphs = dict()
+    for database in databases:
+        db = eval_in_global_env(database)
+        for tablename in db.tables:
+            fields = []
+            for field in db[tablename]:
+                f_type = field.type
+                if not isinstance(f_type,str):
+                    disp = ' '
+                elif f_type == 'string':
+                    disp =  field.length
+                elif f_type == 'id':
+                    disp =  "PK"
+                elif f_type.startswith('reference') or \
+                    f_type.startswith('list:reference'):
+                    disp = "FK"
+                else:
+                    disp = ' '
+                fields.append(dict(name= field.name, type=field.type, disp = disp))
 
-    for tablename in db.tables:
-        fields = []
-        for field in db[tablename]:
-            f_type = field.type
-            if not isinstance(f_type,str):
-                disp = ' '
-            elif f_type == 'string':
-                disp =  field.length
-            elif f_type == 'id':
-                disp =  "PK"
-            elif f_type.startswith('reference') or \
-                f_type.startswith('list:reference'):
-                disp = "FK"
-            else:
-                disp = ' '
-            fields.append(dict(name= field.name, type=field.type, disp = disp))
+                if isinstance(f_type,str) and (
+                    f_type.startswith('reference') or
+                    f_type.startswith('list:reference')):
+                    referenced_table = f_type.split()[1].split('.')[0]
 
-            if isinstance(f_type,str) and (
-                f_type.startswith('reference') or
-                f_type.startswith('list:reference')):
-                referenced_table = f_type.split()[1].split('.')[0]
+                    links.append(dict(source=tablename, target = referenced_table))
 
-                links.append(dict(source=tablename, target = referenced_table))
-
-        nodes.append(dict(name=tablename, type="table", fields = fields))
+            nodes.append(dict(name=tablename, type="table", fields = fields))
 
     # d3 v4 allows individual modules to be specified.  The complete d3 library is included below.
     response.files.append(URL('admin','static','js/d3.min.js'))
