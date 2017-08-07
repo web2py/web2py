@@ -14,7 +14,7 @@ Contains the classes for the global used variables:
 
 """
 from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, \
-    unicodeT, long, hashlib_md5
+    unicodeT, long, hashlib_md5, urllib_quote
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -641,6 +641,11 @@ class Response(Storage):
         if download_filename is None:
             download_filename = filename
         if attachment:
+            # Browsers still don't have a simple uniform way to have non ascii
+            # characters in the filename so for now we are percent encoding it
+            if isinstance(download_filename, unicodeT):
+                download_filename = download_filename.encode('utf-8')
+            download_filename = urllib_quote(download_filename)
             headers['Content-Disposition'] = \
                 'attachment; filename="%s"' % download_filename.replace('"', '\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
