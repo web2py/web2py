@@ -10,7 +10,7 @@ Restricted environment to execute application's code
 """
 
 import sys
-from gluon._compat import pickle, ClassType
+from gluon._compat import pickle, ClassType, unicodeT, to_bytes
 import traceback
 import types
 import os
@@ -192,10 +192,10 @@ class RestrictedError(Exception):
         # safely show an useful message to the user
         try:
             output = self.output
-            if isinstance(output, unicode):
-                output = output.encode("utf8")
-            elif not isinstance(output, str):
+            if not isinstance(output, str, bytes, bytearray):
                 output = str(output)
+            if isinstance(output, unicodeT):
+                output = to_bytes(output)
         except:
             output = ""
         return output
