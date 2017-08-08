@@ -331,11 +331,16 @@ class Request(Storage):
         user_agent = session._user_agent
         if user_agent:
             return user_agent
-        user_agent = user_agent_parser.detect(self.env.http_user_agent)
+        http_user_agent = self.env.http_user_agent
+        user_agent = user_agent_parser.detect(http_user_agent)
         for key, value in user_agent.items():
             if isinstance(value, dict):
                 user_agent[key] = Storage(value)
-        user_agent = session._user_agent = Storage(user_agent)
+        user_agent = Storage(user_agent)
+        user_agent.is_mobile = 'Mobile' in http_user_agent
+        user_agent.is_tablet = 'Tablet' in http_user_agent
+        session._user_agent = user_agent 
+        
         return user_agent
 
     def requires_https(self):
