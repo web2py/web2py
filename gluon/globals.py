@@ -476,8 +476,9 @@ class Response(Storage):
         files = []
         ext_files = []
         has_js = has_css = False
+        app = current.request.application
         for item in self.files:
-            if isinstance(item, (list, tuple)):
+            if isinstance(item, (list, tuple)) or not item.startswith('/' + app):
                 ext_files.append(item)
                 continue
             if extensions and not item.rpartition('.')[2] in extensions:
