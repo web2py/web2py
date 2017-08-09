@@ -158,10 +158,10 @@ class testResponse(unittest.TestCase):
         response.files.append(URL('a', 'static', 'css/file.ts'))
         content = return_includes(response)
         self.assertEqual(content,
+                         '<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>' +
                          '<script src="https://code.jquery.com/jquery-1.11.3.min.js?var=0" type="text/javascript"></script>' +
                          '<link href="/a/static/css/file.css" rel="stylesheet" type="text/css" />' +
-                         '<script src="/a/static/css/file.ts" type="text/typescript"></script>' +
-                         '<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>'
+                         '<script src="/a/static/css/file.ts" type="text/typescript"></script>'
                          )
 
         response = Response()
