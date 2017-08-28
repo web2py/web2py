@@ -1076,7 +1076,10 @@ def start_schedulers(options):
         return
 
     # Work around OS X problem: http://bugs.python.org/issue9405
-    import urllib
+    if PY2:
+        import urllib
+    else:
+        import urllib.request as urllib
     urllib.getproxies()
 
     for app in apps:
