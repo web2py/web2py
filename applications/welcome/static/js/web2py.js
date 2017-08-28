@@ -265,13 +265,17 @@
                 }
             });
             /* help preventing double form submission for normal form (not LOADed) */
-            $(doc).on('submit', 'form', function () {
-                var submit_button = $(this).find(web2py.formInputClickSelector);
-                web2py.disableElement(submit_button);
+            $(doc).on('submit', 'form', function (e) {
+                var submit_buttons = $(this).find(web2py.formInputClickSelector);
+                submit_buttons.each(function() {
+                    web2py.disableElement($(this));
+                })
                 /* safeguard in case the form doesn't trigger a refresh,
                 see https://github.com/web2py/web2py/issues/1100 */
                 setTimeout(function () {
-                    web2py.enableElement(submit_button);
+                    submit_buttons.each(function() {
+                        web2py.enableElement($(this));
+                    });
                 }, 5000);
             });
             doc.ajaxSuccess(function (e, xhr) {
