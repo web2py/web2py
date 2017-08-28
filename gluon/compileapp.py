@@ -676,6 +676,7 @@ def run_view_in(environment):
     badv = 'invalid view (%s)' % view
     patterns = response.get('generic_patterns')
     layer = None
+    scode = None
     if patterns:
         regex = re_compile('|'.join(map(fnmatch.translate, patterns)))
         short_action = '%(controller)s/%(function)s.%(extension)s' % request
@@ -718,12 +719,14 @@ def run_view_in(environment):
 
         # if the view is not compiled
         if not layer:
-            # Compile the template
-            ccode = parse_template(view,
+            # Parse template
+            scode = parse_template(view,
                                    pjoin(folder, 'views'),
                                    context=environment)
+            # Compile template
+            ccode = compile2(scode, filename)
         layer = filename
-    restricted(ccode, environment, layer=layer)
+    restricted(ccode, environment, layer=layer, scode=scode)
     # parse_template saves everything in response body
     return environment['response'].body.getvalue()
 
