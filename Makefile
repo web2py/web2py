@@ -98,7 +98,7 @@ win:
 	cp -r applications/examples ../web2py_win/web2py/applications
 	cp applications/__init__.py ../web2py_win/web2py/applications
 	# per https://github.com/web2py/web2py/issues/1716
-	mv ../web2py_win/web2py/_ssl.pyd ../web2py_win/web2py/_ssl.pyd.legacy 
+	mv ../web2py_win/web2py/_ssl.pyd ../web2py_win/web2py/_ssl.pyd.legacy | echo 'done'
 	cd ../web2py_win; zip -r web2py_win.zip web2py
 	mv ../web2py_win/web2py_win.zip .
 run:
