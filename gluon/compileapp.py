@@ -205,7 +205,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
         other_response = Response()
         other_request.env.path_info = '/' + \
             '/'.join([request.application, c, f] +
-                     map(str, other_request.args))
+                     [str(a) for a in other_request.args])
         other_request.env.query_string = \
             vars and URL(vars=vars).split('?')[1] or ''
         other_request.env.http_web2py_component_location = \
@@ -288,7 +288,7 @@ class LoadFactory(object):
             other_response = globals.Response()
             other_request.env.path_info = '/' + \
                 '/'.join([request.application, c, f] +
-                         map(str, other_request.args))
+                         [str(a) for a in other_request.args])
             other_request.env.query_string = \
                 vars and html.URL(vars=vars).split('?')[1] or ''
             other_request.env.http_web2py_component_location = \
@@ -678,7 +678,7 @@ def run_view_in(environment):
     layer = None
     scode = None
     if patterns:
-        regex = re_compile('|'.join(map(fnmatch.translate, patterns)))
+        regex = re_compile('|'.join(fnmatch.translate(p) for p in patterns))
         short_action = '%(controller)s/%(function)s.%(extension)s' % request
         allow_generic = regex.search(short_action)
     else:
