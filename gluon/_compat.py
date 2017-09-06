@@ -151,7 +151,7 @@ def with_metaclass(meta, *bases):
 def to_unicode(obj, charset='utf-8', errors='strict'):
     if obj is None:
         return None
-    if not hasattr(obj, 'decode') and not isinstance(obj, bytes):
+    if not hasattr(obj, 'decode'):
         return text_type(obj)
     return obj.decode(charset, errors)
 
