@@ -122,7 +122,7 @@ else:
             return None
         if isinstance(obj, (bytes, bytearray, memoryview)):
             return bytes(obj)
-        if isinstance(obj, str):
+        if hasattr(obj, 'encode'):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
 
