@@ -63,7 +63,7 @@ if PY2:
             return None
         if isinstance(obj, (bytes, bytearray, buffer)):
             return bytes(obj)
-        if isinstance(obj, unicode):
+        if hasattr(obj, 'encode'):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
 
