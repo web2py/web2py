@@ -709,23 +709,22 @@ def run_view_in(environment):
                         ccode = getcfs(compiled, compiled, lambda: read_pyc(compiled))
                         layer = compiled
                         break
-        if not os.path.exists(filename) and allow_generic:
-            view = 'generic.' + request.extension
-            filename = pjoin(folder, 'views', view)
-        if not os.path.exists(filename):
-            raise HTTP(404,
-                       rewrite.THREAD_LOCAL.routes.error_message % badv,
-                       web2py_error=badv)
-
         # if the view is not compiled
         if not layer:
+            if not os.path.exists(filename) and allow_generic:
+                view = 'generic.' + request.extension
+                filename = pjoin(folder, 'views', view)
+            if not os.path.exists(filename):
+                raise HTTP(404,
+                           rewrite.THREAD_LOCAL.routes.error_message % badv,
+                           web2py_error=badv)
             # Parse template
             scode = parse_template(view,
                                    pjoin(folder, 'views'),
                                    context=environment)
             # Compile template
             ccode = compile2(scode, filename)
-        layer = filename
+            layer = filename
     restricted(ccode, environment, layer=layer, scode=scode)
     # parse_template saves everything in response body
     return environment['response'].body.getvalue()
