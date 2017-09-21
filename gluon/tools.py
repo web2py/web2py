@@ -3777,7 +3777,7 @@ class Auth(AuthAPI):
             if any(f.compute for f in extra_fields):
                 user = table_user[self.user.id]
                 self._update_session_user(user)
-		self.update_groups()
+                self.update_groups()
             else:
                 self.user.update(table_user._filter_fields(form.vars))
             session.flash = self.messages.profile_updated
