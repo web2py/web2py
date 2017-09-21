@@ -18,10 +18,11 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-from gluon.utf8 import Utf8
+
 from gluon.utils import local_html_escape
 
 from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
+
 from pydal.contrib.portalocker import read_locked, LockedFile
 
 from gluon.fileutils import listdir
@@ -49,8 +50,10 @@ DEFAULT_CONSTRUCT_PLURAL_FORM = lambda word, plural_id: word
 
 if PY2:
     NUMBERS = (int, long, float)
+    from gluon.utf8 import Utf8
 else:
     NUMBERS = (int, float)
+    Utf8 = str
 
 # pattern to find T(blah blah blah) expressions
 PY_STRING_LITERAL_RE = r'(?<=[^\w]T\()(?P<name>'\
