@@ -996,7 +996,7 @@ def is_empty(value, empty_regex=None):
         value = value.strip()
         if empty_regex is not None and empty_regex.match(value):
             value = ''
-    if value is None or value == '' or value == []:
+    if value is None or value == '' or value == b'' or value == []:
         return (_value, True)
     return (_value, False)
 
