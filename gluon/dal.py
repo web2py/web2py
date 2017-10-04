@@ -63,7 +63,7 @@ def _default_validators(db, field):
         if field.unique:
             requires._and = validators.IS_NOT_IN_DB(db, field)
         if not field.notnull:
-            return validators.IS_EMPTY_OR(requires)
+            requires = validators.IS_EMPTY_OR(requires)
         return requires
     elif db and field_type.startswith('list:reference'):
         if field_type.find('.') < 0 and field_type[15:] in db.tables:
@@ -87,7 +87,7 @@ def _default_validators(db, field):
                                                multiple=True)
         if field.unique:
             requires._and = validators.IS_NOT_IN_DB(db, field)
-        if field.notnull:
+        if not field.notnull:
             requires = validators.IS_EMPTY_OR(requires)
         return requires
     # does not get here for reference and list:reference
