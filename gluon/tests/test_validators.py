@@ -273,8 +273,41 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('jerry', 'oops'))
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', auto_add=True)('jerry')
         self.assertEqual(rtn, (3, None))
+        # Test it works with reference table
+        db.define_table('ref_table',
+                        Field('name'),
+                        Field('person_id', 'reference person')
+                        )
+        ret = db.ref_table.validate_and_insert(name='test reference table')
+        self.assertFalse(list(ret.errors))
+        ret = db.ref_table.validate_and_insert(name='test reference table', person_id=george_id)
+        self.assertFalse(list(ret.errors))
+        rtn = IS_IN_DB(db, 'ref_table.person_id', '%(name)s')(george_id)
+        self.assertEqual(rtn, (george_id, None))
+        # Test it works with reference table.field and keyed table
+        db.define_table('ref_person',
+                        Field('name'),
+                        primarykey=['name'])
+        ret=db.ref_person.insert(name='george')
+        rtn = IS_IN_DB(db, 'ref_person.name')('george')
+        self.assertEqual(rtn, ('george', None))
+        db.define_table('ref_table_field',
+                        Field('name'),
+                        Field('person_name', 'reference ref_person.name')
+                        )
+        ret = db.ref_table_field.validate_and_insert(name='test reference table.field')
+        self.assertFalse(list(ret.errors))
+        ret = db.ref_table_field.validate_and_insert(name='test reference table.field', person_name='george')
+        self.assertFalse(list(ret.errors))
+        vldtr = IS_IN_DB(db, 'ref_table_field.person_name', '%(name)s')
+        vldtr.options()
+        rtn = vldtr('george')
+        self.assertEqual(rtn, ('george', None))
         db.person.drop()
         db.category.drop()
+        db.ref_person.drop()
+        db.ref_table.drop()
+        db.ref_table_field.drop()
 
     def test_IS_NOT_IN_DB(self):
         from gluon.dal import DAL, Field
