@@ -32,7 +32,7 @@ update:
 	echo "remember that pymysql was tweaked"
 src:
 	### Use semantic versioning
-	echo 'Version 2.15.2-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 2.15.4-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
 	make clean
 	### clean up baisc apps
@@ -97,6 +97,8 @@ win:
 	cp -r applications/welcome ../web2py_win/web2py/applications
 	cp -r applications/examples ../web2py_win/web2py/applications
 	cp applications/__init__.py ../web2py_win/web2py/applications
+	# per https://github.com/web2py/web2py/issues/1716
+	mv ../web2py_win/web2py/_ssl.pyd ../web2py_win/web2py/_ssl.pyd.legacy | echo 'done'
 	cd ../web2py_win; zip -r web2py_win.zip web2py
 	mv ../web2py_win/web2py_win.zip .
 run:

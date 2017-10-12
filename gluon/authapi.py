@@ -20,10 +20,10 @@ DEFAULT = lambda: None
 class AuthAPI(object):
     """
     AuthAPI is a barebones Auth implementation which does not have a concept of
-    HTML forms or redirects, emailing or even an URL, you are responsible for 
+    HTML forms or redirects, emailing or even an URL, you are responsible for
     all that if you use it.
     The main Auth functions such as login, logout, register, profile are designed
-    in a Dict In -> Dict Out logic so, for instance, if you set 
+    in a Dict In -> Dict Out logic so, for instance, if you set
     registration_requires_verification you are responsible for sending the key to
     the user and even rolling back the transaction if you can't do it.
 
@@ -245,13 +245,13 @@ class AuthAPI(object):
             migrate = db._migrate
         if fake_migrate is None:
             fake_migrate = db._fake_migrate
-        
+
         settings = self.settings
         if username is None:
             username = settings.use_username
         else:
             settings.use_username = username
-        
+
         if not self.signature:
             self.define_signature()
         if signature is True:
@@ -557,27 +557,43 @@ class AuthAPI(object):
         self.log_event(self.messages['del_membership_log'],
                        dict(user_id=user_id, group_id=group_id))
         ret = self.db(membership.user_id == user_id)(membership.group_id == group_id).delete()
-        if group_id in self.user_groups:
+        if group_id in self.user_groups and user_id == self.user_id:
             del self.user_groups[group_id]
         return ret
 
-    def has_membership(self, group_id=None, user_id=None, role=None):
+    def has_membership(self, group_id=None, user_id=None, role=None, cached=False):
         """
         Checks if user is member of group_id or role
+
+        NOTE: To avoid database query at each page load that use auth.has_membership, someone can use cached=True.
+              If cached is set to True has_membership() check group_id or role only against auth.user_groups variable
+              which is populated properly only at login time. This means that if an user membership change during a
+              given session the user has to log off and log in again in order to auth.user_groups to be properly
+              recreated and reflecting the user membership modification. There is one exception to this log off and
+              log in process which is in case that the user change his own membership, in this case auth.user_groups
+              can be properly update for the actual connected user because web2py has access to the proper session
+              user_groups variable. To make use of this exception someone has to place an "auth.update_groups()"
+              instruction in his app code to force auth.user_groups to be updated. As mention this will only work if it
+              the user itself that change it membership not if another user, let say an administrator, change someone
+              else's membership.
         """
-        group_id = group_id or self.id_group(role)
-        try:
-            group_id = int(group_id)
-        except:
-            group_id = self.id_group(group_id)  # interpret group_id as a role
         if not user_id and self.user:
             user_id = self.user.id
-        membership = self.table_membership()
-        if group_id and user_id and self.db((membership.user_id == user_id) &
-                                            (membership.group_id == group_id)).select():
-            r = True
+        if cached:
+            id_role = group_id or role
+            r = (user_id and id_role in self.user_groups.values()) or (user_id and id_role in self.user_groups)
         else:
-            r = False
+            group_id = group_id or self.id_group(role)
+            try:
+                group_id = int(group_id)
+            except:
+                group_id = self.id_group(group_id)  # interpret group_id as a role
+            membership = self.table_membership()
+            if group_id and user_id and self.db((membership.user_id == user_id) &
+                                                (membership.group_id == group_id)).select():
+                r = True
+            else:
+                r = False
         self.log_event(self.messages['has_membership_log'],
                        dict(user_id=user_id, group_id=group_id, check=r))
         return r
@@ -1012,7 +1028,7 @@ class AuthAPI(object):
                    ):
         """
         Verify a given registration_key actually exists in the user table.
-        Resets the key to empty string '' or 'pending' if 
+        Resets the key to empty string '' or 'pending' if
         setttings.registration_requires_approval is true.
 
         Keyword Args:

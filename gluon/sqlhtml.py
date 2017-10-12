@@ -658,7 +658,8 @@ class AutocompleteWidget(object):
                  orderby=None, limitby=(0, 10), distinct=False,
                  keyword='_autocomplete_%(tablename)s_%(fieldname)s',
                  min_length=2, help_fields=None, help_string=None,
-                 at_beginning=True, default_var='ac'):
+                 at_beginning=True, default_var='ac', user_signature=True,
+                 hash_vars=False):
 
         self.help_fields = help_fields or []
         self.help_string = help_string
@@ -683,7 +684,8 @@ class AutocompleteWidget(object):
         if hasattr(request, 'application'):
             urlvars = request.vars
             urlvars[default_var] = 1
-            self.url = URL(args=request.args, vars=urlvars)
+            self.url = URL(args=request.args, vars=urlvars,
+                           user_signature=user_signature, hash_vars=hash_vars)
             self.run_callback = True
         else:
             self.url = request
@@ -1920,8 +1922,8 @@ class SQLFORM(FORM):
             del attributes['table_name']
 
         # Clone fields, while passing tables straight through
-        fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]                  
-            
+        fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
+
         return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
@@ -1937,11 +1939,13 @@ class SQLFORM(FORM):
             if settings.global_settings.web2py_runtime_gae:
                 return reduce(lambda a,b: a|b, [field.contains(key) for field in sfields])
             else:
+                if not (sfields and key and key.split()):
+                    return fields[0].table
                 return reduce(lambda a,b:a&b,[
                         reduce(lambda a,b: a|b, [
                                 field.contains(k) for field in sfields]
                                ) for k in key.split()])
-
+                    
             # from https://groups.google.com/forum/#!topic/web2py/hKe6lI25Bv4
             # needs testing...
             #words = key.split(' ') if key else []
@@ -2161,6 +2165,7 @@ class SQLFORM(FORM):
              represent_none=None,
              showblobs=False):
 
+        dbset = None
         formstyle = formstyle or current.response.formstyle
         if isinstance(query, Set):
             query = query.query
@@ -3039,6 +3044,7 @@ class SQLFORM(FORM):
         res.view_form = view_form
         res.search_form = search_form
         res.rows = rows
+        res.dbset = dbset
         return res
 
     @staticmethod
@@ -3157,8 +3163,8 @@ class SQLFORM(FORM):
                 # if isinstance(linked_tables, dict):
                 #     linked_tables = linked_tables.get(table._tablename, [])
                 if linked_tables is None or referee in linked_tables:
-                    field.represent = (lambda id, r=None, referee=referee, rep=field.represent: 
-                                       A(callable(rep) and rep(id) or id, 
+                    field.represent = (lambda id, r=None, referee=referee, rep=field.represent:
+                                       A(callable(rep) and rep(id) or id,
                                          cid=request.cid, _href=url(args=['view', referee, id])))
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
@@ -3564,7 +3570,9 @@ class ExportClass(object):
                 if not self.rows.db._adapter.REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
-                    (t, f) = col.split('.')
+                    # The grid code modifies rows.colnames, adding double quotes
+                    # around the table and field names -- so they must be removed here.
+                    (t, f) = [name.strip('"') for name in col.split('.')]
                     field = self.rows.db[t][f]
                     if isinstance(record.get(t, None), (Row, dict)):
                         value = record[t][f]

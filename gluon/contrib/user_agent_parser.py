@@ -673,3 +673,23 @@ def simple_detect(agent):
     if os_version:
         os = " ".join((os, os_version))
     return os, browser
+
+
+class mobilize(object):  
+    """
+    Decorator for controller functions so they use different views for mobile devices.
+
+    WARNING: If you update httpagentparser make sure to leave mobilize for
+    backwards compatibility.
+    """
+    def __init__(self, func):
+        self.func = func
+    
+    def __call__(self):
+        from gluon import current
+        user_agent = current.request.user_agent()
+        if user_agent.is_mobile:
+            items = current.response.view.split('.')
+            items.insert(-1, 'mobile')
+            current.response.view = '.'.join(items)
+        return self.func()

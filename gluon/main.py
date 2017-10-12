@@ -745,7 +745,7 @@ class HttpServer(object):
         sock_list = [ip, port]
         if not ssl_certificate or not ssl_private_key:
             logger.info('SSL is off')
-        elif not rocket.ssl:
+        elif not rocket.has_ssl:
             logger.warning('Python "ssl" module unavailable. SSL is OFF')
         elif not exists(ssl_certificate):
             logger.warning('unable to open SSL certificate. SSL is OFF')

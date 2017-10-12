@@ -14,7 +14,7 @@ Contains the classes for the global used variables:
 
 """
 from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, \
-    unicodeT, long, hashlib_md5
+    unicodeT, long, hashlib_md5, urllib_quote
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -331,11 +331,16 @@ class Request(Storage):
         user_agent = session._user_agent
         if user_agent:
             return user_agent
-        user_agent = user_agent_parser.detect(self.env.http_user_agent)
+        http_user_agent = self.env.http_user_agent or ''
+        user_agent = user_agent_parser.detect(http_user_agent)
         for key, value in user_agent.items():
             if isinstance(value, dict):
                 user_agent[key] = Storage(value)
-        user_agent = session._user_agent = Storage(user_agent)
+        user_agent = Storage(user_agent)
+        user_agent.is_mobile = 'Mobile' in http_user_agent
+        user_agent.is_tablet = 'Tablet' in http_user_agent
+        session._user_agent = user_agent 
+        
         return user_agent
 
     def requires_https(self):
@@ -468,45 +473,67 @@ class Response(Storage):
         response.cache_includes = (cache_method, time_expire).
         Example: (cache.disk, 60) # caches to disk for 1 minute.
         """
+        app = current.request.application
+
+        # We start by building a files list in which adjacent files internal to
+        # the application are placed in a list inside the files list.
+        #
+        # We will only minify and concat adjacent internal files as there's
+        # no way to know if changing the order with which the files are apppended
+        # will break things since the order matters in both CSS and JS and 
+        # internal files may be interleaved with external ones.
         files = []
-        ext_files = []
-        has_js = has_css = False
+        # For the adjacent list we're going to use storage List to both distinguish
+        # from the regular list and so we can add attributes
+        internal = List()  
+        internal.has_js = False
+        internal.has_css = False
+        done = set() # to remove duplicates
         for item in self.files:
-            if isinstance(item, (list, tuple)):
-                ext_files.append(item)
+            if not isinstance(item, list):
+                if item in done:
+                    continue
+                done.add(item)
+            if isinstance(item, (list, tuple)) or not item.startswith('/' + app): # also consider items in other web2py applications to be external
+                if internal:
+                    files.append(internal)
+                    internal = List()
+                    internal.has_js = False
+                    internal.has_css = False
+                files.append(item)
                 continue
             if extensions and not item.rpartition('.')[2] in extensions:
                 continue
-            if item in files:
-                continue
+            internal.append(item)
             if item.endswith('.js'):
-                has_js = True
+                internal.has_js = True
             if item.endswith('.css'):
-                has_css = True
-            files.append(item)
+                internal.has_css = True            
+        if internal:
+            files.append(internal)
 
-        if have_minify and ((self.optimize_css and has_css) or (self.optimize_js and has_js)):
-            # cache for 5 minutes by default
-            key = hashlib_md5(repr(files)).hexdigest()
-            cache = self.cache_includes or (current.cache.ram, 60 * 5)
-
-            def call_minify(files=files):
-                return minify.minify(files,
-                                     URL('static', 'temp'),
-                                     current.request.folder,
-                                     self.optimize_css,
-                                     self.optimize_js)
-            if cache:
-                cache_model, time_expire = cache
-                files = cache_model('response.files.minified/' + key,
-                                    call_minify,
-                                    time_expire)
-            else:
-                files = call_minify()
-
-        files.extend(ext_files)
-        s = []
-        for item in files:
+        # We're done we can now minify
+        if have_minify:
+            for i, f in enumerate(files):
+                if isinstance(f, List) and ((self.optimize_css and f.has_css) or (self.optimize_js and f.has_js)):
+                    # cache for 5 minutes by default
+                    key = hashlib_md5(repr(f)).hexdigest()
+                    cache = self.cache_includes or (current.cache.ram, 60 * 5)
+                    def call_minify(files=f):
+                        return List(minify.minify(files,
+                                             URL('static', 'temp'),
+                                             current.request.folder,
+                                             self.optimize_css,
+                                             self.optimize_js))
+                    if cache:
+                        cache_model, time_expire = cache
+                        files[i] = cache_model('response.files.minified/' + key,
+                                            call_minify,
+                                            time_expire)
+                    else:
+                        files[i] = call_minify()
+        
+        def static_map(s, item):
             if isinstance(item, str):
                 f = item.lower().split('?')[0]
                 ext = f.rpartition('.')[2]
@@ -526,6 +553,13 @@ class Response(Storage):
                 if tmpl:
                     s.append(tmpl % item[1])
 
+        s = []
+        for item in files:
+            if isinstance(item, List):
+                for f in item:
+                    static_map(s, f)
+            else:
+                static_map(s, item)
         self.write(''.join(s), escape=False)
 
     def stream(self,
@@ -641,6 +675,11 @@ class Response(Storage):
         if download_filename is None:
             download_filename = filename
         if attachment:
+            # Browsers still don't have a simple uniform way to have non ascii
+            # characters in the filename so for now we are percent encoding it
+            if isinstance(download_filename, unicodeT):
+                download_filename = download_filename.encode('utf-8')
+            download_filename = urllib_quote(download_filename)
             headers['Content-Disposition'] = \
                 'attachment; filename="%s"' % download_filename.replace('"', '\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)

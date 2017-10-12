@@ -11,7 +11,7 @@ HTTP statuses helpers
 """
 
 import re
-from gluon._compat import iteritems, unicodeT
+from gluon._compat import iteritems, unicodeT, to_bytes
 
 __all__ = ['HTTP', 'redirect']
 
@@ -111,6 +111,8 @@ class HTTP(Exception):
             if not body:
                 body = status
             if isinstance(body, (str, bytes, bytearray)):
+                if isinstance(body, unicodeT):
+                    body = to_bytes(body) # This must be done before len
                 headers['Content-Length'] = len(body)
         rheaders = []
         for k, v in iteritems(headers):
@@ -123,12 +125,15 @@ class HTTP(Exception):
             return ['']
         elif isinstance(body, (str, bytes, bytearray)):
             if isinstance(body, unicodeT):
-                body = body.encode('utf-8')
+                body = to_bytes(body)
             return [body]
         elif hasattr(body, '__iter__'):
             return body
         else:
-            return [str(body)]
+            body = str(body)
+            if isinstance(body, unicodeT):
+                body = to_bytes(body)
+            return [body]
 
     @property
     def message(self):
