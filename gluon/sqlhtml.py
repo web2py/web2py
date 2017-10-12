@@ -17,6 +17,7 @@ Holds:
 import datetime
 import urllib
 import re
+import copy
 
 import os
 from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native, to_unicode
@@ -682,7 +683,7 @@ class AutocompleteWidget(object):
         else:
             self.is_reference = False
         if hasattr(request, 'application'):
-            urlvars = request.vars
+            urlvars = copy.copy(request.vars)
             urlvars[default_var] = 1
             self.url = URL(args=request.args, vars=urlvars,
                            user_signature=user_signature, hash_vars=hash_vars)
