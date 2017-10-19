@@ -444,6 +444,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (None, 'Enter a value'))
         rtn = IS_NOT_EMPTY()('')
         self.assertEqual(rtn, ('', 'Enter a value'))
+        rtn = IS_NOT_EMPTY()(b'')
+        self.assertEqual(rtn, (b'', 'Enter a value'))
         rtn = IS_NOT_EMPTY()('  ')
         self.assertEqual(rtn, ('  ', 'Enter a value'))
         rtn = IS_NOT_EMPTY()(' \n\t')

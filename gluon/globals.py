@@ -331,7 +331,7 @@ class Request(Storage):
         user_agent = session._user_agent
         if user_agent:
             return user_agent
-        http_user_agent = self.env.http_user_agent
+        http_user_agent = self.env.http_user_agent or ''
         user_agent = user_agent_parser.detect(http_user_agent)
         for key, value in user_agent.items():
             if isinstance(value, dict):
