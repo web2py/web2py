@@ -35,6 +35,7 @@ if PY2:
     from gluon.contrib import ipaddress
     BytesIO = StringIO
     reduce = reduce
+    reload = reload
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
     itervalues = lambda d: d.itervalues()
@@ -77,6 +78,7 @@ else:
     import pickle
     from io import StringIO, BytesIO
     import copyreg
+    from importlib import reload
     from functools import reduce
     from html.parser import HTMLParser
     from http import cookies as Cookie
