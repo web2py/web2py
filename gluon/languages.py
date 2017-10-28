@@ -110,15 +110,17 @@ def markmin(s):
 
 
 def upper_fun(s):
-    return unicode(s, 'utf-8').upper().encode('utf-8')
+    return to_unicode(s).upper()
 
 
 def title_fun(s):
-    return unicode(s, 'utf-8').title().encode('utf-8')
+    return to_unicode(s).title()
 
 
 def cap_fun(s):
-    return unicode(s, 'utf-8').capitalize().encode('utf-8')
+    return to_unicode(s).capitalize()
+
+
 ttab_in = maketrans("\\%{}", '\x1c\x1d\x1e\x1f')
 ttab_out = maketrans('\x1c\x1d\x1e\x1f', "\\%{}")
 
