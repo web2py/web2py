@@ -105,7 +105,9 @@ def deletefile(arglist, vars={}):
         {{if os.access(os.path.join(request.folder,'..',app,'databases','sql.log'),os.R_OK):}}
             {{=button(URL('peek/%s/databases/sql.log'%app), 'sql.log')}}
         {{pass}}
-                {{=button(URL(a=app, c='appadmin',f='graph_model'), T('graph model'))}}
+        {{if os.access(os.path.join(request.folder,'..','admin','static','js','d3_graph.js'),os.R_OK):}}
+                {{=button(URL(a=app, c='appadmin',f='d3_graph_model'), T('graph model'))}}
+        {{pass}}
     </div>
     <ul class="unstyled act_edit">
         {{for m in models:}}

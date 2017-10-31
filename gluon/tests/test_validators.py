@@ -235,6 +235,11 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
         rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
         self.assertEqual(rtn, [('', ''), ('%d' % costanza_id, 'costanza'), ('%d' % george_id, 'george')])
+        # Test None
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
+        rtn = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
         # Test using the set it made for options
         vldtr = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')
         vldtr.options()
@@ -434,21 +439,23 @@ class TestValidators(unittest.TestCase):
         rtn = IS_NOT_EMPTY()('x')
         self.assertEqual(rtn, ('x', None))
         rtn = IS_NOT_EMPTY()(' x ')
-        self.assertEqual(rtn, ('x', None))
+        self.assertEqual(rtn, (' x ', None))
         rtn = IS_NOT_EMPTY()(None)
         self.assertEqual(rtn, (None, 'Enter a value'))
         rtn = IS_NOT_EMPTY()('')
         self.assertEqual(rtn, ('', 'Enter a value'))
+        rtn = IS_NOT_EMPTY()(b'')
+        self.assertEqual(rtn, (b'', 'Enter a value'))
         rtn = IS_NOT_EMPTY()('  ')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('  ', 'Enter a value'))
         rtn = IS_NOT_EMPTY()(' \n\t')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, (' \n\t', 'Enter a value'))
         rtn = IS_NOT_EMPTY()([])
         self.assertEqual(rtn, ([], 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='def')('def')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('def', 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='de[fg]')('deg')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('deg', 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='def')('abc')
         self.assertEqual(rtn, ('abc', None))
 
@@ -530,6 +537,11 @@ class TestValidators(unittest.TestCase):
         # test for not a string at all
         rtn = IS_EMAIL(error_message='oops')(42)
         self.assertEqual(rtn, (42, 'oops'))
+
+        # test for Internationalized Domain Names, see https://docs.python.org/2/library/codecs.html#module-encodings.idna
+        rtn = IS_EMAIL()('web2py@Alliancefrançaise.nu')
+        self.assertEqual(rtn, ('web2py@Alliancefrançaise.nu', None))
+
 
     def test_IS_LIST_OF_EMAILS(self):
         emails = ['localguy@localhost', '_Yosemite.Sam@example.com']
@@ -702,15 +714,19 @@ class TestValidators(unittest.TestCase):
 
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
+        self.assertEqual(rtn, ('abc', None))
+        rtn = IS_LOWER()(b'ABC')
         self.assertEqual(rtn, (b'abc', None))
         rtn = IS_LOWER()('Ñ')
-        self.assertEqual(rtn, (b'\xc3\xb1', None))
+        self.assertEqual(rtn, ('ñ', None))
 
     def test_IS_UPPER(self):
         rtn = IS_UPPER()('abc')
+        self.assertEqual(rtn, ('ABC', None))
+        rtn = IS_UPPER()(b'abc')
         self.assertEqual(rtn, (b'ABC', None))
         rtn = IS_UPPER()('ñ')
-        self.assertEqual(rtn, (b'\xc3\x91', None))
+        self.assertEqual(rtn, ('Ñ', None))
 
     def test_IS_SLUG(self):
         rtn = IS_SLUG()('abc123')
@@ -780,7 +796,7 @@ class TestValidators(unittest.TestCase):
         rtn = IS_EMPTY_OR(IS_EMAIL())('abc')
         self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
         rtn = IS_EMPTY_OR(IS_EMAIL())(' abc ')
-        self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
+        self.assertEqual(rtn, (' abc ', 'Enter a valid email address'))
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options(zero=False)
         self.assertEqual(rtn, [('', ''), ('id1', 'first label'), ('id2', 'second label')])
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options()

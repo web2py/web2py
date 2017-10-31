@@ -307,13 +307,13 @@ try:
 except ImportError:
     has_futures = False
 
-    class Future:
+    class Future(object):
         pass
 
-    class ThreadPoolExecutor:
+    class ThreadPoolExecutor(object):
         pass
 
-    class _WorkItem:
+    class _WorkItem(object):
         pass
 
 
@@ -784,8 +784,7 @@ class Rocket(object):
                        the application developer.  Please update your \
                        applications to no longer call rocket.stop(True)"
                 try:
-                    import warnings
-                    raise warnings.DeprecationWarning(msg)
+                    raise DeprecationWarning(msg)
                 except ImportError:
                     raise RuntimeError(msg)
 

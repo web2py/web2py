@@ -63,7 +63,7 @@ if PY2:
             return None
         if isinstance(obj, (bytes, bytearray, buffer)):
             return bytes(obj)
-        if isinstance(obj, unicode):
+        if hasattr(obj, 'encode'):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
 
@@ -122,7 +122,7 @@ else:
             return None
         if isinstance(obj, (bytes, bytearray, memoryview)):
             return bytes(obj)
-        if isinstance(obj, str):
+        if hasattr(obj, 'encode'):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
 
@@ -151,7 +151,7 @@ def with_metaclass(meta, *bases):
 def to_unicode(obj, charset='utf-8', errors='strict'):
     if obj is None:
         return None
-    if not isinstance(obj, bytes):
+    if not hasattr(obj, 'decode'):
         return text_type(obj)
     return obj.decode(charset, errors)
 

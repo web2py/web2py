@@ -105,14 +105,14 @@ class ServerProxy(object):
 
     def __getattr__(self, attr):
         "pseudo method that can be called"
-        return lambda *args: self.call(attr, *args)
+        return lambda *args, **vars: self.call(attr, *args, **vars)
 
-    def call(self, method, *args):
+    def call(self, method, *args, **vars):
         "JSON RPC communication (method invocation)"
 
         # build data sent to the service
         request_id = random.randint(0, sys.maxsize)
-        data = {'id': request_id, 'method': method, 'params': args, }
+        data = {'id': request_id, 'method': method, 'params': args or vars, }
         if self.version:
             data['jsonrpc'] = self.version #mandatory key/value for jsonrpc2 validation else err -32600
         request = json.dumps(data)

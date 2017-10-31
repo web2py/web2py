@@ -11,11 +11,13 @@ import unittest
 from gluon.html import A, ASSIGNJS, B, BEAUTIFY, P, BODY, BR, BUTTON, CAT, CENTER, CODE, COL, COLGROUP, DIV, SPAN, URL, verifyURL
 from gluon.html import truncate_string, EM, FIELDSET, FORM, H1, H2, H3, H4, H5, H6, HEAD, HR, HTML, I, IFRAME, IMG, INPUT, EMBED
 from gluon.html import LABEL, LEGEND, LI, LINK, MARKMIN, MENU, META, OBJECT, OL, OPTGROUP, OPTION, PRE, SCRIPT, SELECT, STRONG
-from gluon.html import STYLE, TABLE, TR, TD, TAG, TBODY, THEAD, TEXTAREA, TFOOT, TH, TITLE, TT, UL, XHTML, XML
+from gluon.html import STYLE, TABLE, TR, TD, TAG, TBODY, THEAD, TEXTAREA, TFOOT, TH, TITLE, TT, UL, XHTML, XML, web2pyHTMLParser
 from gluon.storage import Storage
 from gluon.html import XML_pickle, XML_unpickle
 from gluon.html import TAG_pickler, TAG_unpickler
 from gluon._compat import xrange, PY2, to_native
+from gluon.decoder import decoder
+import re
 
 class TestBareHelpers(unittest.TestCase):
 
@@ -155,7 +157,7 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(rtn, True)
 
     # TODO: def test_XmlComponent(self):
-    @unittest.skipIf(not PY2, "Skipping Python 3.x tests for XML.__repr__")
+
     def test_XML(self):
         # sanitization process
         self.assertEqual(XML('<h1>Hello<a data-hello="world">World</a></h1>').xml(),
@@ -168,6 +170,8 @@ class TestBareHelpers(unittest.TestCase):
         # seams that __repr__ is no longer enough
         ##self.assertEqual(XML('1.3'), '1.3')
         self.assertEqual(XML(u'<div>è</div>').xml(), b'<div>\xc3\xa8</div>')
+        # make sure unicode works with sanitize
+        self.assertEqual(XML(u'<div>è</div>', sanitize=True).xml(), b'<div>\xc3\xa8</div>')
         # you can calc len on the class, that equals the xml() and the str()
         ##self.assertEqual(len(XML('1.3')), len('1.3'))
         self.assertEqual(len(XML('1.3').xml()), len('1.3'))
@@ -179,19 +183,18 @@ class TestBareHelpers(unittest.TestCase):
         # you can compare them
         ##self.assertEqual(XML('a') == XML('a'), True)
         # beware that the comparison is made on the XML repr
-        self.assertEqual(XML('<h1>Hello<a data-hello="world">World</a></h1>', sanitize=True),
-                         XML('<h1>HelloWorld</h1>'))
+
+        self.assertEqual(XML('<h1>Hello<a data-hello="world">World</a></h1>', sanitize=True).__repr__(),
+                         XML('<h1>HelloWorld</h1>').__repr__())
         # bug check for the sanitizer for closing no-close tags
-        self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True),
-                         XML('<p>Test</p><br /><p>Test</p><br />'))
+        self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True).xml(),
+                         XML('<p>Test</p><br /><p>Test</p><br />').xml())
         # basic flatten test
         self.assertEqual(XML('<p>Test</p>').flatten(), '<p>Test</p>')
         self.assertEqual(XML('<p>Test</p>').flatten(render=lambda text, tag, attr: text), '<p>Test</p>')
 
-    @unittest.skipIf(not PY2, "Skipping Python 3.x tests for XML_unpickle.__repr__")
     def test_XML_pickle_unpickle(self):
-        # weird test
-        self.assertEqual(XML_unpickle(XML_pickle('data to be pickle')[1][0]), 'data to be pickle')
+        self.assertEqual(str(XML_unpickle(XML_pickle('data to be pickle')[1][0])), 'data to be pickle')
 
     def test_DIV(self):
         # Empty DIV()
@@ -254,6 +257,11 @@ class TestBareHelpers(unittest.TestCase):
         # test .get('attrib')
         self.assertEqual(DIV('<p>Test</p>', _class="class_test").get('_class'), 'class_test')
         self.assertEqual(DIV(b'a').xml(), b'<div>a</div>')
+
+    def test_decoder(self):
+        tag_html = '<div><span><a id="1-1" u:v="$">hello</a></span><p class="this is a test">world</p></div>'
+        a = decoder(tag_html)
+        self.assertEqual(a, tag_html)
 
     def test_CAT(self):
         # Empty CAT()
@@ -636,8 +644,8 @@ class TestBareHelpers(unittest.TestCase):
         # These 2 crash AppVeyor and Travis with: "ImportError: No YAML serializer available"
         # self.assertEqual(FORM('<>', _a='1', _b='2').as_yaml(),
         #                  "accepted: null\nattributes: {_a: '1', _action: '#', _b: '2', _enctype: multipart/form-data, _method: post}\ncomponents: [<>]\nerrors: {}\nlatest: {}\nparent: null\nvars: {}\n")
-        # self.assertEqual(FORM('<>', _a='1', _b='2').as_xml(),
-        #                  '<?xml version="1.0" encoding="UTF-8"?><document><errors></errors><vars></vars><parent>None</parent><attributes><_enctype>multipart/form-data</_enctype><_action>#</_action><_b>2</_b><_a>1</_a><_method>post</_method></attributes><components><item>&amp;lt;&amp;gt;</item></components><accepted>None</accepted><latest></latest></document>')
+        # TODO check tags content
+        self.assertEqual(len(FORM('<>', _a='1', _b='2').as_xml()), 334)
 
     def test_BEAUTIFY(self):
         #self.assertEqual(BEAUTIFY(['a', 'b', {'hello': 'world'}]).xml(),
@@ -670,13 +678,42 @@ class TestBareHelpers(unittest.TestCase):
 
     # TODO: def test_embed64(self):
 
-    # TODO: def test_web2pyHTMLParser(self):
+    def test_web2pyHTMLParser(self):
+        #tag should not be a byte
+        self.assertEqual(web2pyHTMLParser("<div></div>").tree.components[0].tag, 'div')
+        a = str(web2pyHTMLParser('<div>a<span>b</div>c').tree)
+        self.assertEqual(a, "<div>a<span>b</span></div>c")
+
+        tree = web2pyHTMLParser('hello<div a="b">world</div>').tree
+        tree.element(_a='b')['_c']=5
+        self.assertEqual(str(tree), 'hello<div a="b" c="5">world</div>')
+
+        a = str(web2pyHTMLParser('<div><img class="img"/></div>', closed=['img']).tree)
+        self.assertEqual(a, '<div><img class="img" /></div>')
+
+        #greater-than sign ( > )  --> decimal &#62; --> hexadecimal &#x3E;
+        #Less-than sign    ( < )  --> decimal &#60; --> hexadecimal &#x3C;
+        # test decimal
+        a = str(web2pyHTMLParser('<div>&#60; &#62;</div>').tree)
+        self.assertEqual(a, '<div>&lt; &gt;</div>')
+        # test hexadecimal
+        a = str(web2pyHTMLParser('<div>&#x3C; &#x3E;</div>').tree)
+        self.assertEqual(a, '<div>&lt; &gt;</div>')
+
+    def test_markdown(self):
+        def markdown(text, tag=None, attributes={}):
+            r = {None: re.sub('\s+',' ',text), \
+                 'h1':'#'+text+'\\n\\n', \
+                 'p':text+'\\n'}.get(tag,text)
+            return r
+        a=TAG('<h1>Header</h1><p>this is a     test</p>')
+        ret = a.flatten(markdown)
+        self.assertEqual(ret, '#Header\\n\\nthis is a test\\n')
 
     # TODO: def test_markdown_serializer(self):
 
     # TODO: def test_markmin_serializer(self):
 
-    @unittest.skipIf(not PY2, "Skipping Python 3.x tests for MARKMIN")
     def test_MARKMIN(self):
         # This test pass with python 2.7 but expected to fail under 2.6
         # with self.assertRaises(TypeError) as cm:

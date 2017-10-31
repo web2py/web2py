@@ -10,8 +10,11 @@ Original author: Zachary Voase
 Modified for inclusion into web2py by: Ross Peoples <ross.peoples@gmail.com>
 """
 
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
-from StringIO import StringIO  # The pure-Python StringIO supports unicode.
 import re
 
 

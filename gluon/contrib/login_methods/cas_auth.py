@@ -49,7 +49,8 @@ class CasAuth(object):
                            email=lambda v: v.get('email', None),
                            user_id=lambda v: v['user']),
                  casversion=1,
-                 casusername='cas:user'
+                 casusername='cas:user',
+		 change_password_url=None
                  ):
         self.urlbase = urlbase
         self.cas_login_url = "%s/%s" % (self.urlbase, actions[0])
@@ -64,6 +65,9 @@ class CasAuth(object):
                               #vars=current.request.vars,
                               scheme=True)
 
+	# URL to let users change their password in the IDP system
+        self.cas_change_password_url = change_password_url
+
     def login_url(self, next="/"):
         current.session.token = self._CAS_login()
         return next
@@ -72,6 +76,10 @@ class CasAuth(object):
         current.session.token = None
         current.session.auth = None
         self._CAS_logout()
+        return next
+
+    def change_password_url(self, next="/"):
+        self._CAS_change_password()
         return next
 
     def get_user(self):
@@ -135,3 +143,6 @@ class CasAuth(object):
         redirects to the CAS logout page
         """
         redirect("%s?service=%s" % (self.cas_logout_url, self.cas_my_url))
+
+    def _CAS_change_password(self):
+        redirect(self.cas_change_password_url)

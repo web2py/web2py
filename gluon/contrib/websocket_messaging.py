@@ -94,31 +94,9 @@ import optparse
 import time
 import sys
 import gluon.utils
-
-if (sys.version_info[0] == 2):
-    from urllib import urlencode, urlopen
-    def to_bytes(obj, charset='utf-8', errors='strict'):
-        if obj is None:
-            return None
-        if isinstance(obj, (bytes, bytearray, buffer)):
-            return bytes(obj)
-        if isinstance(obj, unicode):
-            return obj.encode(charset, errors)
-        raise TypeError('Expected bytes')
-else:
-    from urllib.request import urlopen
-    from urllib.parse import urlencode
-    def to_bytes(obj, charset='utf-8', errors='strict'):
-        if obj is None:
-            return None
-        if isinstance(obj, (bytes, bytearray, memoryview)):
-            return bytes(obj)
-        if isinstance(obj, str):
-            return obj.encode(charset, errors)
-        raise TypeError('Expected bytes')
+from gluon._compat import to_native, to_bytes, urlencode, urlopen
 
 listeners, names, tokens = {}, {}, {}
-
 
 def websocket_send(url, message, hmac_key=None, group='default'):
     sig = hmac_key and hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest() or ''
@@ -138,8 +116,8 @@ class PostHandler(tornado.web.RequestHandler):
         if hmac_key and not 'signature' in self.request.arguments:
             self.send_error(401)
         if 'message' in self.request.arguments:
-            message = self.request.arguments['message'][0]
-            group = self.request.arguments.get('group', ['default'])[0]
+            message = self.request.arguments['message'][0].decode(encoding='UTF-8')
+            group = self.request.arguments.get('group', ['default'])[0].decode(encoding='UTF-8')
             print('%s:MESSAGE to %s:%s' % (time.time(), group, message))
             if hmac_key:
                 signature = self.request.arguments['signature'][0]

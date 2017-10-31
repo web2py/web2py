@@ -233,30 +233,22 @@
 <div class="clear"></div>
 {{pass}}
 
-{{if request.function=='graph_model':}}
+{{if request.function=='d3_graph_model':}}
 <h2>{{=T("Graph Model")}}</h2>
-  {{if not pgv:}}
-    {{=T('pygraphviz library not found')}}
-  {{elif not databases:}}
+  {{if not databases:}}  
     {{=T("No databases in this application")}}
-  {{else:}}	   
-    <div class="btn-group">
-      <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
-        <i class="icon-download"></i> {{=T('Save model as...')}}
-        <span class="caret"></span>
-      </a>
-      <ul class="dropdown-menu">
-          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['png'])}}">png</a></li>
-          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['svg'])}}">svg</a></li>
-          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['pdf'])}}">pdf</a></li>
-          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['ps'])}}">ps</a></li>
-          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['dot'])}}">dot</a></li>
-      </ul>
-    </div>
-    <br />
-    {{=IMG(_src=URL('appadmin', 'bg_graph_model'))}}
+  {{else:}}    
+    <div id="vis"></div>
+      <link rel="stylesheet" href="{{=URL('admin','static','css/d3_graph.css')}}"/>
+      <script>
+        // Define the d3 input data
+        {{from gluon.serializers import json }}
+        var nodes = {{=XML(json(nodes))}};
+        var links = {{=XML(json(links))}};
+        d3_graph();
+      </script>
   {{pass}}
-{{pass}}
+{{pass}}  
 
 {{if request.function == 'manage':}}
 <h2>{{=heading}}</h2>

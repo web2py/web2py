@@ -45,7 +45,7 @@ class RESIZE(object):
                 background = Image.new('RGBA', (self.nx, self.ny), (255, 255, 255, 0))
                 background.paste(
                     img,
-                    ((self.nx - img.size[0]) / 2, (self.ny - img.size[1]) / 2))
+                    ((self.nx - img.size[0]) // 2, (self.ny - img.size[1]) // 2))
                 background.save(s, 'JPEG', quality=self.quality)
             else:
                 img.save(s, 'JPEG', quality=self.quality)

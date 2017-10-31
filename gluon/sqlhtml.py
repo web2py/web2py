@@ -17,6 +17,7 @@ Holds:
 import datetime
 import urllib
 import re
+import copy
 
 import os
 from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native, to_unicode
@@ -29,7 +30,7 @@ from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
 from pydal.objects import Table, Row, Expression, Field, Set, Rows
 from pydal.adapters.base import CALLABLETYPES
-from pydal.helpers.methods import smart_query, bar_encode,  _repr_ref
+from pydal.helpers.methods import smart_query, bar_encode, _repr_ref, merge_tablemaps
 from pydal.helpers.classes import Reference, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
@@ -405,7 +406,7 @@ class RadioWidget(OptionsWidget):
         cols = attributes.get('cols', 1)
         totals = len(options)
         mods = totals % cols
-        rows = totals / cols
+        rows = totals // cols
         if mods:
             rows += 1
 
@@ -471,7 +472,7 @@ class CheckboxesWidget(OptionsWidget):
         cols = attributes.get('cols', 1)
         totals = len(options)
         mods = totals % cols
-        rows = totals / cols
+        rows = totals // cols
         if mods:
             rows += 1
 
@@ -658,7 +659,8 @@ class AutocompleteWidget(object):
                  orderby=None, limitby=(0, 10), distinct=False,
                  keyword='_autocomplete_%(tablename)s_%(fieldname)s',
                  min_length=2, help_fields=None, help_string=None,
-                 at_beginning=True, default_var='ac'):
+                 at_beginning=True, default_var='ac', user_signature=True,
+                 hash_vars=False):
 
         self.help_fields = help_fields or []
         self.help_string = help_string
@@ -681,12 +683,14 @@ class AutocompleteWidget(object):
         else:
             self.is_reference = False
         if hasattr(request, 'application'):
-            urlvars = request.vars
+            urlvars = copy.copy(request.vars)
             urlvars[default_var] = 1
-            self.url = URL(args=request.args, vars=urlvars)
-            self.callback()
+            self.url = URL(args=request.args, vars=urlvars,
+                           user_signature=user_signature, hash_vars=hash_vars)
+            self.run_callback = True
         else:
             self.url = request
+            self.run_callback = False
 
     def callback(self):
         if self.keyword in self.request.vars:
@@ -759,6 +763,8 @@ class AutocompleteWidget(object):
                 raise HTTP(200, '')
 
     def __call__(self, field, value, **attributes):
+        if self.run_callback:
+            self.callback()
         default = dict(
             _type='text',
             value=(value is not None and str(value)) or '',
@@ -1916,8 +1922,10 @@ class SQLFORM(FORM):
         if 'table_name' in attributes:
             del attributes['table_name']
 
-        return SQLFORM(DAL(None).define_table(table_name, *fields),
-                       **attributes)
+        # Clone fields, while passing tables straight through
+        fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
+
+        return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
     def build_query(fields, keywords):
@@ -1932,11 +1940,13 @@ class SQLFORM(FORM):
             if settings.global_settings.web2py_runtime_gae:
                 return reduce(lambda a,b: a|b, [field.contains(key) for field in sfields])
             else:
+                if not (sfields and key and key.split()):
+                    return fields[0].table
                 return reduce(lambda a,b:a&b,[
                         reduce(lambda a,b: a|b, [
                                 field.contains(k) for field in sfields]
                                ) for k in key.split()])
-
+                    
             # from https://groups.google.com/forum/#!topic/web2py/hKe6lI25Bv4
             # needs testing...
             #words = key.split(' ') if key else []
@@ -2156,6 +2166,7 @@ class SQLFORM(FORM):
              represent_none=None,
              showblobs=False):
 
+        dbset = None
         formstyle = formstyle or current.response.formstyle
         if isinstance(query, Set):
             query = query.query
@@ -2329,7 +2340,7 @@ class SQLFORM(FORM):
             if not isinstance(left, (list, tuple)):
                 left = [left]
             for join in left:
-                tablenames += db._adapter.tables(join)
+                tablenames = merge_tablemaps(tablenames, db._adapter.tables(join))
         tables = [db[tablename] for tablename in tablenames]
         if fields:
             # add missing tablename to virtual fields
@@ -2341,10 +2352,11 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
-            filter1 = lambda f: isinstance(f, Field) and f.readable and (f.type!='blob' or showblobs)
+            filter1 = lambda f: isinstance(f, Field) and (f.type!='blob' or showblobs)
+            filter2 = lambda f: isinstance(f, Field) and f.readable
             for table in tables:
                 fields += filter(filter1, table)
-                columns += filter(filter1, table)
+                columns += filter(filter2, table)
                 for k, f in iteritems(table):
                     if not k.startswith('_'):
                         if isinstance(f, Field.Virtual) and f.readable:
@@ -2553,6 +2565,7 @@ class SQLFORM(FORM):
                         if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
                             expcolumns.append(str(field))
 
+            expcolumns = ['"%s"' % '"."'.join(f.split('.')) for f in expcolumns]
             if export_type in exportManager and exportManager[export_type]:
                 if keywords:
                     try:
@@ -3032,6 +3045,7 @@ class SQLFORM(FORM):
         res.view_form = view_form
         res.search_form = search_form
         res.rows = rows
+        res.dbset = dbset
         return res
 
     @staticmethod
@@ -3150,7 +3164,9 @@ class SQLFORM(FORM):
                 # if isinstance(linked_tables, dict):
                 #     linked_tables = linked_tables.get(table._tablename, [])
                 if linked_tables is None or referee in linked_tables:
-                    field.represent = lambda id, r=None, referee=referee, rep=field.represent: A(callable(rep) and rep(id) or id, cid=request.cid, _href=url(args=['view', referee, id]))
+                    field.represent = (lambda id, r=None, referee=referee, rep=field.represent:
+                                       A(callable(rep) and rep(id) or id,
+                                         cid=request.cid, _href=url(args=['view', referee, id])))
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
         if nargs == len(args) + 1:
@@ -3555,7 +3571,9 @@ class ExportClass(object):
                 if not self.rows.db._adapter.REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
-                    (t, f) = col.split('.')
+                    # The grid code modifies rows.colnames, adding double quotes
+                    # around the table and field names -- so they must be removed here.
+                    (t, f) = [name.strip('"') for name in col.split('.')]
                     field = self.rows.db[t][f]
                     if isinstance(record.get(t, None), (Row, dict)):
                         value = record[t][f]
