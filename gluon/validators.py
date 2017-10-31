@@ -10,7 +10,6 @@
 Validators
 -----------
 """
-
 import os
 import re
 import datetime
@@ -21,7 +20,9 @@ import urllib
 import struct
 import decimal
 import unicodedata
-from gluon._compat import StringIO, long, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native
+
+from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, \
+    to_unicode, to_native, string_types, urlparse
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce
@@ -195,7 +196,7 @@ class IS_MATCH(Validator):
         self.is_unicode = is_unicode or (not(PY2))
 
     def __call__(self, value):
-        if not(PY2): # PY3 convert bytes to unicode
+        if not(PY2):  # PY3 convert bytes to unicode
             value = to_unicode(value)
 
         if self.is_unicode or not(PY2):
@@ -270,7 +271,7 @@ class IS_EXPR(Validator):
             return (value, self.expression(value))
         # for backward compatibility
         self.environment.update(value=value)
-        exec ('__ret__=' + self.expression, self.environment)
+        exec('__ret__=' + self.expression, self.environment)
         if self.environment['__ret__']:
             return (value, None)
         return (value, translate(self.error_message))
@@ -452,10 +453,10 @@ class IS_IN_SET(Validator):
         if not self.labels:
             items = [(k, k) for (i, k) in enumerate(self.theset)]
         else:
-            items = [(k, self.labels[i]) for (i, k) in enumerate(self.theset)]
+            items = [(k, list(self.labels)[i]) for (i, k) in enumerate(self.theset)]
         if self.sort:
             items.sort(key=lambda o: str(o[1]).upper())
-        if zero and not self.zero is None and not self.multiple:
+        if zero and self.zero is not None and not self.multiple:
             items.insert(0, ('', self.zero))
         return items
 
@@ -659,7 +660,7 @@ class IS_IN_DB(Validator):
                     return (values, None)
         else:
             if field.type in ('id', 'integer'):
-                if isinstance(value, (int, long)) or value.isdigit():
+                if isinstance(value, (int, long)) or (isinstance(value, string_types) and value.isdigit()):
                     value = int(value)
                 elif self.auto_add:
                     value = self.maybe_add(table, self.fieldnames[0], value)
@@ -823,7 +824,7 @@ class IS_INT_IN_RANGE(Validator):
 
 def str2dec(number):
     s = str(number)
-    if not '.' in s:
+    if '.' not in s:
         s += '.00'
     else:
         s += '0' * (2 - len(s.split('.')[1]))
@@ -989,14 +990,15 @@ class IS_DECIMAL_IN_RANGE(Validator):
 
 
 def is_empty(value, empty_regex=None):
+    _value = value
     """test empty field"""
     if isinstance(value, (str, unicodeT)):
         value = value.strip()
         if empty_regex is not None and empty_regex.match(value):
             value = ''
-    if value is None or value == '' or value == []:
-        return (value, True)
-    return (value, False)
+    if value is None or value == '' or value == b'' or value == []:
+        return (_value, True)
+    return (_value, False)
 
 
 class IS_NOT_EMPTY(Validator):
@@ -1156,15 +1158,16 @@ class IS_EMAIL(Validator):
 
     """
 
-    regex = re.compile('''
+    body_regex = re.compile('''
         ^(?!\.)                            # name may not begin with a dot
         (
           [-a-z0-9!\#$%&'*+/=?^_`{|}~]     # all legal characters except dot
           |
           (?<!\.)\.                        # single dots only
         )+
-        (?<!\.)                            # name may not end with a dot
-        @
+        (?<!\.)$                            # name may not end with a dot
+    ''', re.VERBOSE | re.IGNORECASE)
+    domain_regex = re.compile('''
         (
           localhost
           |
@@ -1196,14 +1199,27 @@ class IS_EMAIL(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
+        if not(isinstance(value, (basestring, unicodeT))) or not value or '@' not in value:
+            return (value, translate(self.error_message))
+
+        body, domain = value.rsplit('@', 1)
+
         try:
-            match = self.regex.match(value)
-        except TypeError:
+            match_body = self.body_regex.match(body)
+            match_domain = self.domain_regex.match(domain)
+
+            if not match_domain:
+                # check for Internationalized Domain Names
+                # see https://docs.python.org/2/library/codecs.html#module-encodings.idna
+                domain_encoded = to_unicode(domain).encode('idna').decode('ascii')
+                match_domain = self.domain_regex.match(domain_encoded)
+
+            match = (match_body is not None) and (match_domain is not None)
+        except (TypeError, UnicodeError):
             # Value may not be a string where we can look for matches.
             # Example: we're calling ANY_OF formatter and IS_EMAIL is asked to validate a date.
             match = None
         if match:
-            domain = value.split('@')[1]
             if (not self.banned or not self.banned.match(domain)) \
                     and (not self.forced or self.forced.match(domain)):
                 return (value, None)
@@ -1232,7 +1248,7 @@ class IS_LIST_OF_EMAILS(object):
         f = IS_EMAIL()
         for email in self.split_emails.findall(value):
             error = f(email)[1]
-            if error and not email in bad_emails:
+            if error and email not in bad_emails:
                 bad_emails.append(email)
         if not bad_emails:
             return (value, None)
@@ -1372,19 +1388,6 @@ unofficial_url_schemes = [
 all_url_schemes = [None] + official_url_schemes + unofficial_url_schemes
 http_schemes = [None, 'http', 'https']
 
-
-# This regex comes from RFC 2396, Appendix B. It's used to split a URL into
-# its component parts
-# Here are the regex groups that it extracts:
-#    scheme = group(2)
-#    authority = group(4)
-#    path = group(5)
-#    query = group(7)
-#    fragment = group(9)
-
-url_split_regex = \
-    re.compile('^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?')
-
 # Defined in RFC 3490, Section 3.1, Requirement #1
 # Use this regex to split the authority component of a unicode URL into
 # its component labels
@@ -1454,18 +1457,15 @@ def unicode_to_ascii_authority(authority):
     # We use the ToASCII operation because we are about to put the authority
     # into an IDN-unaware slot
     asciiLabels = []
-    try:
-        import encodings.idna
-        for label in labels:
-            if label:
-                asciiLabels.append(to_native(encodings.idna.ToASCII(label)))
-            else:
-                 # encodings.idna.ToASCII does not accept an empty string, but
-                 # it is necessary for us to allow for empty labels so that we
-                 # don't modify the URL
-                asciiLabels.append('')
-    except:
-        asciiLabels = [str(label) for label in labels]
+    import encodings.idna
+    for label in labels:
+        if label:
+            asciiLabels.append(to_native(encodings.idna.ToASCII(label)))
+        else:
+            # encodings.idna.ToASCII does not accept an empty string, but
+            # it is necessary for us to allow for empty labels so that we
+            # don't modify the URL
+            asciiLabels.append('')
     # RFC 3490, Section 4, Step 5
     return str(reduce(lambda x, y: x + unichr(0x002E) + y, asciiLabels))
 
@@ -1504,33 +1504,39 @@ def unicode_to_ascii_url(url, prepend_scheme):
     """
     # convert the authority component of the URL into an ASCII punycode string,
     # but encode the rest using the regular URI character encoding
-
-    groups = url_split_regex.match(url).groups()
+    components = urlparse.urlparse(url)
+    prepended = False
     # If no authority was found
-    if not groups[3]:
+    if not components.netloc:
         # Try appending a scheme to see if that fixes the problem
         scheme_to_prepend = prepend_scheme or 'http'
-        groups = url_split_regex.match(
-            to_unicode(scheme_to_prepend) + u'://' + url).groups()
+        components = urlparse.urlparse(to_unicode(scheme_to_prepend) + u'://' + url)
+        prepended = True
+
     # if we still can't find the authority
-    if not groups[3]:
+    if not components.netloc:
         raise Exception('No authority component found, ' +
                         'could not decode unicode to US-ASCII')
 
     # We're here if we found an authority, let's rebuild the URL
-    scheme = groups[1]
-    authority = groups[3]
-    path = groups[4] or ''
-    query = groups[5] or ''
-    fragment = groups[7] or ''
+    scheme = components.scheme
+    authority = components.netloc
+    path = components.path
+    query = components.query
+    fragment = components.fragment
 
-    if prepend_scheme:
-        scheme = str(scheme) + '://'
-    else:
+    if prepended:
         scheme = ''
 
-    return scheme + unicode_to_ascii_authority(authority) +\
-        escape_unicode(path) + escape_unicode(query) + str(fragment)
+    unparsed = urlparse.urlunparse((scheme,
+                                    unicode_to_ascii_authority(authority),
+                                    escape_unicode(path),
+                                    '',
+                                    escape_unicode(query),
+                                    str(fragment)))
+    if unparsed.startswith('//'):
+        unparsed = unparsed[2:]  # Remove the // urlunparse puts in the beginning
+    return unparsed
 
 
 class IS_GENERIC_URL(Validator):
@@ -1591,7 +1597,8 @@ class IS_GENERIC_URL(Validator):
                               % (self.prepend_scheme, self.allowed_schemes))
 
     GENERIC_URL = re.compile(r"%[^0-9A-Fa-f]{2}|%[^0-9A-Fa-f][0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f]|%$|%[0-9A-Fa-f]$|%[^0-9A-Fa-f]$")
-    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%#]+$")
+    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
+    URL_FRAGMENT_VALID = re.compile(r"[|A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
 
     def __call__(self, value):
         """
@@ -1603,41 +1610,49 @@ class IS_GENERIC_URL(Validator):
             prepended with prepend_scheme), and tuple[1] is either
             None (success!) or the string error_message
         """
-        try:
-            # if the URL does not misuse the '%' character
-            if not self.GENERIC_URL.search(value):
-                # if the URL is only composed of valid characters
-                if self.GENERIC_URL_VALID.match(value):
-                    # Then split up the URL into its components and check on
-                    # the scheme
-                    scheme = url_split_regex.match(value).group(2)
-                    # Clean up the scheme before we check it
-                    if not scheme is None:
-                        scheme = urllib_unquote(scheme).lower()
-                    # If the scheme really exists
-                    if scheme in self.allowed_schemes:
-                        # Then the URL is valid
-                        return (value, None)
-                    else:
-                        # else, for the possible case of abbreviated URLs with
-                        # ports, check to see if adding a valid scheme fixes
-                        # the problem (but only do this if it doesn't have
-                        # one already!)
-                        if value.find('://') < 0 and None in self.allowed_schemes:
-                            schemeToUse = self.prepend_scheme or 'http'
-                            prependTest = self.__call__(
-                                schemeToUse + '://' + value)
-                            # if the prepend test succeeded
-                            if prependTest[1] is None:
-                                # if prepending in the output is enabled
-                                if self.prepend_scheme:
-                                    return prependTest
-                                else:
-                                    # else return the original,
-                                    #  non-prepended value
-                                    return (value, None)
-        except:
-            pass
+
+        # if we dont have anything or the URL misuses the '%' character
+
+        if not value or self.GENERIC_URL.search(value):
+            return (value, translate(self.error_message))
+
+        if '#' in value:
+            url, fragment_part = value.split('#')
+        else:
+            url, fragment_part = value, ''
+        # if the URL is only composed of valid characters
+        if self.GENERIC_URL_VALID.match(url) and (not fragment_part or self.URL_FRAGMENT_VALID.match(fragment_part)):
+            # Then parse the URL into its components and check on
+            try:
+                components = urlparse.urlparse(urllib_unquote(value))._asdict()
+            except ValueError:
+                return (value, translate(self.error_message))
+
+            # Clean up the scheme before we check it
+            scheme = components['scheme']
+            if len(scheme) == 0:
+                scheme = None
+            else:
+                scheme = components['scheme'].lower()
+            # If the scheme doesn't really exists
+            if scheme not in self.allowed_schemes or not scheme and ':' in components['path']:
+                # for the possible case of abbreviated URLs with
+                # ports, check to see if adding a valid scheme fixes
+                # the problem (but only do this if it doesn't have
+                # one already!)
+                if '://' not in value and None in self.allowed_schemes:
+                    schemeToUse = self.prepend_scheme or 'http'
+                    prependTest = self.__call__(
+                        schemeToUse + '://' + value)
+                    # if the prepend test succeeded
+                    if prependTest[1] is None:
+                        # if prepending in the output is enabled
+                        if self.prepend_scheme:
+                            return prependTest
+                        else:
+                            return (value, None)
+            else:
+                return (value, None)
         # else the URL is not valid
         return (value, translate(self.error_message))
 
@@ -1904,15 +1919,14 @@ class IS_HTTP_URL(Validator):
             (possible prepended with prepend_scheme), and tuple[1] is either
             None (success!) or the string error_message
         """
-
         try:
             # if the URL passes generic validation
             x = IS_GENERIC_URL(error_message=self.error_message,
                                allowed_schemes=self.allowed_schemes,
                                prepend_scheme=self.prepend_scheme)
             if x(value)[1] is None:
-                componentsMatch = url_split_regex.match(value)
-                authority = componentsMatch.group(4)
+                components = urlparse.urlparse(value)
+                authority = components.netloc
                 # if there is an authority component
                 if authority:
                     # if authority is a valid IP address
@@ -1932,7 +1946,7 @@ class IS_HTTP_URL(Validator):
                 else:
                     # else this is a relative/abbreviated URL, which will parse
                     # into the URL's path component
-                    path = componentsMatch.group(5)
+                    path = components.path
                     # relative case: if this is a valid path (if it starts with
                     # a slash)
                     if path.startswith('/'):
@@ -1941,7 +1955,7 @@ class IS_HTTP_URL(Validator):
                     else:
                         # abbreviated case: if we haven't already, prepend a
                         # scheme and see if it fixes the problem
-                        if value.find('://') < 0:
+                        if '://' not in value and None in self.allowed_schemes:
                             schemeToUse = self.prepend_scheme or 'http'
                             prependTest = self.__call__(schemeToUse
                                                         + '://' + value)
@@ -2108,7 +2122,6 @@ class IS_URL(Validator):
                 # If we are not able to convert the unicode url into a
                 # US-ASCII URL, then the URL is not valid
                 return (value, translate(self.error_message))
-
             methodResult = subMethod(asciiValue)
             # if the validation of the US-ASCII version of the value failed
             if not methodResult[1] is None:
@@ -2480,7 +2493,13 @@ class IS_LOWER(Validator):
     """
 
     def __call__(self, value):
-        return (to_bytes(to_unicode(value).lower()), None)
+        cast_back = lambda x: x
+        if isinstance(value, str):
+            cast_back = to_native
+        elif isinstance(value, bytes):
+            cast_back = to_bytes
+        value = to_unicode(value).lower()
+        return (cast_back(value), None)
 
 
 class IS_UPPER(Validator):
@@ -2495,7 +2514,13 @@ class IS_UPPER(Validator):
     """
 
     def __call__(self, value):
-        return (to_bytes(to_unicode(value).upper()), None)
+        cast_back = lambda x: x
+        if isinstance(value, str):
+            cast_back = to_native
+        elif isinstance(value, bytes):
+            cast_back = to_bytes
+        value = to_unicode(value).upper()
+        return (cast_back(value), None)
 
 
 def urlify(s, maxlen=80, keep_underscores=False):
@@ -2602,7 +2627,7 @@ class ANY_OF(Validator):
     def __call__(self, value):
         for validator in self.subs:
             value, error = validator(value)
-            if error == None:
+            if error is None:
                 break
         return value, error
 
@@ -2742,7 +2767,7 @@ class LazyCrypt(object):
         else:
             digest_alg, key = self.crypt.digest_alg, ''
         if self.crypt.salt:
-            if self.crypt.salt == True:
+            if self.crypt.salt is True:
                 salt = str(web2py_uuid()).replace('-', '')[-16:]
             else:
                 salt = self.crypt.salt
@@ -2827,7 +2852,7 @@ class CRYPT(object):
     Supports standard algorithms
 
         >>> for alg in ('md5','sha1','sha256','sha384','sha512'):
-        ...     print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+        ...     print(str(CRYPT(digest_alg=alg,salt=True)('test')[0]))
         md5$...$...
         sha1$...$...
         sha256$...$...
@@ -2839,13 +2864,13 @@ class CRYPT(object):
     Supports for pbkdf2
 
         >>> alg = 'pbkdf2(1000,20,sha512)'
-        >>> print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+        >>> print(str(CRYPT(digest_alg=alg,salt=True)('test')[0]))
         pbkdf2(1000,20,sha512)$...$...
 
     An optional hmac_key can be specified and it is used as salt prefix
 
         >>> a = str(CRYPT(digest_alg='md5',key='mykey',salt=True)('test')[0])
-        >>> print a
+        >>> print(a)
         md5$...$...
 
     Even if the algorithm changes the hash can still be validated

@@ -16,6 +16,7 @@ from gluon.tools import Config
 from gluon.compileapp import find_exposed_functions
 from glob import glob
 from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native
+import gluon.rewrite
 import shutil
 import platform
 
@@ -249,6 +250,7 @@ def site():
                 db.app.insert(name=appname, owner=auth.user.id)
             log_progress(appname)
             session.flash = T('new application "%s" created', appname)
+            gluon.rewrite.load()
             redirect(URL('design', args=appname))
         else:
             session.flash = \
@@ -266,6 +268,7 @@ def site():
                 new_repo = git.Repo.clone_from(form_update.vars.url, target)
                 session.flash = T('new application "%s" imported',
                                   form_update.vars.name)
+                gluon.rewrite.load()
             except git.GitCommandError as err:
                 session.flash = T('Invalid git repository specified.')
             redirect(URL(r=request))
@@ -302,6 +305,7 @@ def site():
             log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
+            gluon.rewrite.load()
         else:
             msg = 'unable to install application "%(appname)s"'
             session.flash = T(msg, dict(appname=form_update.vars.name))
@@ -1861,7 +1865,6 @@ def user():
 
 def reload_routes():
     """ Reload routes.py """
-    import gluon.rewrite
     gluon.rewrite.load()
     redirect(URL('site'))
 

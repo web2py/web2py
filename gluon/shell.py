@@ -31,9 +31,15 @@ from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
 from pydal.base import BaseAdapter
-from gluon._compat import iteritems, ClassType
+from gluon._compat import iteritems, ClassType, PY2
 
 logger = logging.getLogger("web2py")
+
+if not PY2:
+    def execfile(filename, global_vars=None, local_vars=None):
+        with open(filename) as f:
+            code = compile(f.read(), filename, 'exec')
+            exec(code, global_vars, local_vars)
 
 
 def enable_autocomplete_and_history(adir, env):

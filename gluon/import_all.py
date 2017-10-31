@@ -78,12 +78,8 @@ alert_dependency = ['hashlib', 'uuid']
 # Now we remove the blacklisted modules if we are using the stated
 # python version.
 #
-# List of modules deprecated in Python 2.6 or 2.7 that are in the above set
+# List of modules deprecated in Python 2.7 that are in the above list
 py27_deprecated = ['mhlib', 'multifile', 'mimify', 'sets', 'MimeWriter']  # And ['optparse'] but we need it for now
-
-if python_version >= '2.6':
-    base_modules += ['json', 'multiprocessing']
-    base_modules = list(set(base_modules).difference(set(py26_deprecated)))
 
 if python_version >= '2.7':
     base_modules += ['argparse', 'json', 'multiprocessing']

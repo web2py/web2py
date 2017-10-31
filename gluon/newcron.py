@@ -19,13 +19,14 @@ import sched
 import re
 import datetime
 import platform
-import gluon.fileutils
 from functools import reduce
 try:
     import cPickle as pickle
 except:
     import pickle
 from gluon.settings import global_settings
+from gluon import fileutils
+from gluon._compat import to_bytes
 from pydal.contrib import portalocker
 
 logger = logging.getLogger("web2py.cron")
@@ -116,7 +117,7 @@ class Token(object):
     def __init__(self, path):
         self.path = os.path.join(path, 'cron.master')
         if not os.path.exists(self.path):
-            fileutils.write_file(self.path, '', 'wb')
+            fileutils.write_file(self.path, to_bytes(''), 'wb')
         self.master = None
         self.now = time.time()
 
@@ -139,7 +140,7 @@ class Token(object):
         if portalocker.LOCK_EX is None:
             logger.warning('WEB2PY CRON: Disabled because no file locking')
             return None
-        self.master = open(self.path, 'rb+')
+        self.master = fileutils.open_file(self.path, 'rb+')
         try:
             ret = None
             portalocker.lock(self.master, portalocker.LOCK_EX)
@@ -167,6 +168,7 @@ class Token(object):
         """
         Writes into cron.master the time when cron job was completed
         """
+        ret = self.master.closed
         if not self.master.closed:
             portalocker.lock(self.master, portalocker.LOCK_EX)
             logger.debug('WEB2PY CRON: Releasing cron lock')
@@ -177,6 +179,7 @@ class Token(object):
                 pickle.dump((self.now, time.time()), self.master)
             portalocker.unlock(self.master)
             self.master.close()
+        return ret
 
 
 def rangetolist(s, period='min'):
@@ -222,8 +225,8 @@ def parsecronline(line):
     params = line.strip().split(None, 6)
     if len(params) < 7:
         return None
-    daysofweek = {'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4,
-                  'fri': 5, 'sat': 6}
+    daysofweek = {'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3,
+                  'thu': 4, 'fri': 5, 'sat': 6}
     for (s, id) in zip(params[:5], ['min', 'hr', 'dom', 'mon', 'dow']):
         if not s in [None, '*']:
             task[id] = []
@@ -236,7 +239,7 @@ def parsecronline(line):
                 elif val.isdigit() or val == '-1':
                     task[id].append(int(val))
                 elif id == 'dow' and val[:3].lower() in daysofweek:
-                    task[id].append(daysofweek(val[:3].lower()))
+                    task[id].append(daysofweek[val[:3].lower()])
     task['user'] = params[5]
     task['cmd'] = params[6]
     return task

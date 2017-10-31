@@ -110,7 +110,7 @@ class TestWeb(LiveTest):
         self.assertTrue('Welcome Homer' in client.text)
 
         client = WebClient('http://127.0.0.1:8000/admin/default/')
-        client.post('index', data=dict(password='hello'))
+        client.post('index', data=dict(password='testpass'))
         client.get('site')
         client.get('design/welcome')
 
