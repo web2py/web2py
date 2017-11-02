@@ -231,7 +231,7 @@ class LazyWSGI(object):
 
         to call third party WSGI applications
         """
-        self.response.status = str(status).split(' ', 1)[0]
+        self.response.status = int(str(status).split(' ', 1)[0])
         self.response.headers = dict(headers)
         return lambda *args, **kargs: \
             self.response.write(escape=False, *args, **kargs)
