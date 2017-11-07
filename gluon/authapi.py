@@ -988,7 +988,7 @@ class AuthAPI(object):
             requires = [requires]
         requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
         if requires:
-            requires[0].min_length = 0
+            requires[0] = CRYPT(key=settings.hmac_key, min_length=0)
 
         old_password = kwargs.get('old_password', '')
         new_password = kwargs.get('new_password', '')
