@@ -3693,7 +3693,8 @@ class Auth(AuthAPI):
             requires = [requires]
         requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
         if requires:
-            requires[0] = CRYPT(key=self.settings.hmac_key, min_length=0)
+            requires[0] = CRYPT(**requires[0].__dict__) # Copy the existing CRYPT attributes
+            requires[0].min_length = 0 # But do not enforce minimum length for the old password
         form = SQLFORM.factory(
             Field('old_password', 'password', requires=requires,
                   label=self.messages.old_password),
