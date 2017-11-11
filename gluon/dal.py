@@ -32,7 +32,11 @@ def _default_validators(db, field):
     field_type, field_length = field.type, field.length
     requires = []
 
-    if field_type in (('string', 'text', 'password')):
+    if field.options is not None and field.requires:
+        requires = validators.IS_IN_SET(field.options, multiple=field_type.startswith('list:'))
+    elif field.regex and not field.requires:
+        requires.append(validators.IS_REGEX(regex))
+    elif field_type in (('string', 'text', 'password')):
         requires.append(validators.IS_LENGTH(field_length))
     elif field_type == 'json':
         requires.append(validators.IS_EMPTY_OR(validators.IS_JSON()))
@@ -50,10 +54,6 @@ def _default_validators(db, field):
         requires.append(validators.IS_TIME())
     elif field_type == 'datetime':
         requires.append(validators.IS_DATETIME())
-    elif field.options is not None:
-        requires = IS_IN_SET(field.options, multiple=field_type.startswith('list:'))
-    elif field.regex and not requires:
-        requires = IS_REGEX(regex)
     elif db and field_type.startswith('reference') and \
             field_type.find('.') < 0 and \
             field_type[10:] in db.tables:
