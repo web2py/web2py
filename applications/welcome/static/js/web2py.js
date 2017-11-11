@@ -13,6 +13,8 @@
     }
 
     var FORMDATA_IS_SUPPORTED = typeof(FormData) !== 'undefined';
+    var animateIn = 'fadeIn';
+    // var animateIn = 'slideDown';
 
     String.prototype.reverse = function () {
         return this.split('').reverse().join('');
@@ -180,7 +182,7 @@
         },
         /* manage errors in forms */
         manage_errors: function (target) {
-            $('div.error', target).hide().slideDown('slow');
+            $('div.error', target).hide()[animateIn]('slow');
         },
         after_ajax: function (xhr) {
             /* called whenever an ajax request completes */
@@ -616,7 +618,7 @@
             var flash = $('.w2p_flash');
             web2py.hide_flash();
             flash.html(message).addClass(status);
-            if (flash.html()) flash.append('<span id="closeflash"> &times; </span>').slideDown();
+            if (flash.html()) flash.append('<span id="closeflash"> &times; </span>')[animateIn]();
         },
         hide_flash: function () {
             $('.w2p_flash').fadeOut(0).html('');
@@ -630,7 +632,7 @@
                 for (var k = 0; k < triggers[id].length; k++) {
                     var dep = $('#' + triggers[id][k], target);
                     var tr = $('#' + triggers[id][k] + '__row', target);
-                    if (t.is(dep.attr('data-show-if'))) tr.slideDown();
+                    if (t.is(dep.attr('data-show-if'))) tr[animateIn]();
                     else tr.hide();
                 }
             };
