@@ -3328,7 +3328,7 @@ class SQLTABLE(TABLE):
             return
         REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
         fieldmap = dict(zip(sqlrows.colnames, sqlrows.fields))
-        tablemap = dict(((f.tablename, f.table) for f in fieldmap.values()))
+        tablemap = dict(((f.tablename, f.table) if isinstance(f, Field) else (f._table._tablename, f._table) for f in fieldmap.values()))
         for table in tablemap.values():
             pref = table._tablename + '.'
             fieldmap.update(((pref+f.name, f) for f in table._virtual_fields))

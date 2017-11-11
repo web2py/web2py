@@ -355,10 +355,10 @@ class TestSQLTABLE(unittest.TestCase):
 
         self.db.commit()
 
-#    def test_SQLTABLE(self):
-#        rows = self.db(self.db.auth_user.id > 0).select(self.db.auth_user.ALL)
-#        sqltable = SQLTABLE(rows)
-#        self.assertEqual(sqltable.xml(), '<table><thead><tr><th>auth_user.id</th><th>auth_user.first_name</th><th>auth_user.last_name</th><th>auth_user.email</th><th>auth_user.username</th><th>auth_user.password</th><th>auth_user.registration_key</th><th>auth_user.reset_password_key</th><th>auth_user.registration_id</th></tr></thead><tbody><tr class="w2p_odd odd"><td>1</td><td>Bart</td><td>Simpson</td><td>user1@test.com</td><td>user1</td><td>password_123</td><td>None</td><td></td><td>None</td></tr></tbody></table>')
+    def test_SQLTABLE(self):
+        rows = self.db(self.db.auth_user.id > 0).select(self.db.auth_user.ALL)
+        sqltable = SQLTABLE(rows)
+        self.assertEqual(sqltable.xml(), b'<table><thead><tr><th>auth_user.id</th><th>auth_user.first_name</th><th>auth_user.last_name</th><th>auth_user.email</th><th>auth_user.username</th><th>auth_user.password</th><th>auth_user.registration_key</th><th>auth_user.reset_password_key</th><th>auth_user.registration_id</th></tr></thead><tbody><tr class="w2p_odd odd"><td>1</td><td>Bart</td><td>Simpson</td><td>user1@test.com</td><td>user1</td><td>password_123</td><td>None</td><td></td><td>None</td></tr></tbody></table>')
 
 
 # class TestExportClass(unittest.TestCase):
