@@ -988,7 +988,8 @@ class AuthAPI(object):
             requires = [requires]
         requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
         if requires:
-            requires[0].min_length = 0
+            requires[0] = CRYPT(**requires[0].__dict__) # Copy the existing CRYPT attributes
+            requires[0].min_length = 0 # But do not enforce minimum length for the old password
 
         old_password = kwargs.get('old_password', '')
         new_password = kwargs.get('new_password', '')
