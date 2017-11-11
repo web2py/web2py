@@ -2348,12 +2348,12 @@ class SQLFORM(FORM):
                 for k, f in iteritems(table):
                     if isinstance(f, Field.Virtual):
                         f.tablename = table._tablename
-            columns = [f for f in fields if f.tablename in tablenames]
+            columns = [f for f in fields if f.tablename in tablenames and f.listable]
         else:
             fields = []
             columns = []
             filter1 = lambda f: isinstance(f, Field) and (f.type!='blob' or showblobs)
-            filter2 = lambda f: isinstance(f, Field) and f.readable
+            filter2 = lambda f: isinstance(f, Field) and f.readable and f.listable
             for table in tables:
                 fields += filter(filter1, table)
                 columns += filter(filter2, table)
@@ -2571,8 +2571,8 @@ class SQLFORM(FORM):
                     try:
                         # the query should be constructed using searchable
                         # fields but not virtual fields
-                        sfields = reduce(lambda a, b: a + b,
-                            [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
+                        is_searchable = lambda f: f.readable and not isinstance(f, Field.Virtual) and f.searchable
+                        sfields = reduce(lambda a, b: a + b, [filter(is_searchable, t) for t in tables])
                         # use custom_query using searchable
                         if callable(searchable):
                             dbset = dbset(searchable(sfields, keywords))

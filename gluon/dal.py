@@ -50,6 +50,10 @@ def _default_validators(db, field):
         requires.append(validators.IS_TIME())
     elif field_type == 'datetime':
         requires.append(validators.IS_DATETIME())
+    elif field.options is not None:
+        requires = IS_IN_SET(field.options, multiple=field_type.startswith('list:'))
+    elif field.regex and not requires:
+        requires = IS_REGEX(regex)
     elif db and field_type.startswith('reference') and \
             field_type.find('.') < 0 and \
             field_type[10:] in db.tables:
@@ -76,16 +80,17 @@ def _default_validators(db, field):
             requires._and = validators.IS_NOT_IN_DB(db, field)
         if not field.notnull:
             requires = validators.IS_EMPTY_OR(requires)
-        return requires
+        return requires    
     # does not get here for reference and list:reference
-    if field.unique:
-        requires.insert(0, validators.IS_NOT_IN_DB(db, field))
-    excluded_fields = ['string', 'upload', 'text', 'password', 'boolean']
-    if (field.notnull or field.unique) and field_type not in excluded_fields:
-        requires.insert(0, validators.IS_NOT_EMPTY())
-    elif not field.notnull and not field.unique and requires:
-        requires[0] = \
-            validators.IS_EMPTY_OR(requires[0], null='' if field.type in ('string', 'text', 'password') else None)
+    if isinstance(requires, list):
+        if field.unique:
+            requires.insert(0, validators.IS_NOT_IN_DB(db, field))
+        excluded_fields = ['string', 'upload', 'text', 'password', 'boolean']
+        if (field.notnull or field.unique) and field_type not in excluded_fields:
+            requires.insert(0, validators.IS_NOT_EMPTY())
+        elif not field.notnull and not field.unique and requires:
+            null = null='' if field.type in ('string', 'text', 'password') else None
+            requires[0] = validators.IS_EMPTY_OR(requires[0], null=null)
     return requires
 
 DAL.serializers = {'json': custom_json, 'xml': xml}
