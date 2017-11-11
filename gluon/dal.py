@@ -32,7 +32,7 @@ def _default_validators(db, field):
     field_type, field_length = field.type, field.length
     requires = []
 
-    if field.options is not None and field.requires:
+    if isinstance(field.options, list) and field.requires:
         requires = validators.IS_IN_SET(field.options, multiple=field_type.startswith('list:'))
     elif field.regex and not field.requires:
         requires.append(validators.IS_REGEX(regex))
