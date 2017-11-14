@@ -102,12 +102,12 @@ class TestWeb(LiveTest):
                     password='test',
                     _formname='login')
         client.post('user/login', data=data)
-        self.assertTrue('Welcome Homer' in client.text)
+        self.assertTrue('Homer' in client.text)
 
         # check registration and login were successful
         client.get('index')
 
-        self.assertTrue('Welcome Homer' in client.text)
+        self.assertTrue('Homer' in client.text)
 
         client = WebClient('http://127.0.0.1:8000/admin/default/')
         client.post('index', data=dict(password='testpass'))
