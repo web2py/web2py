@@ -220,7 +220,12 @@ class Request(Storage):
 
         if is_json:
             try:
-                json_vars = json_parser.load(body)
+                # In Python 3 versions prior to 3.6 load doesn't accept bytes and
+                # bytearray, so we read the body convert to native and use loads
+                # instead of load.
+                # This line can be simplified to json_vars = json_parser.load(body)
+                # if and when we drop support for python versions under 3.6
+                json_vars = json_parser.loads(to_native(body.read())) 
             except:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}
