@@ -1088,6 +1088,106 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
         return parent
     return _inner
 
+# bootstrap 4
+def formstyle_bootstrap4_stacked(form, fields):
+    """ bootstrap 3 format form layout
+
+    Note:
+        Experimental!
+    """
+    parent = CAT()
+    for id, label, controls, help in fields:
+        # wrappers
+        _help = SPAN(help, _class='help-block')
+        # embed _help into _controls
+        _controls = CAT(controls, _help)
+        if isinstance(controls, INPUT):
+            if controls['_type'] == 'submit':
+                controls.add_class('btn btn-primary')
+            if controls['_type'] == 'button':
+                controls.add_class('btn btn-secondary')
+            elif controls['_type'] == 'file':
+                controls.add_class('input-file')
+            elif controls['_type'] in ('text', 'password'):
+                controls.add_class('form-control')
+            elif controls['_type'] == 'checkbox':
+                label['_for'] = None
+                label.insert(0, controls)
+                label.insert(0, ' ')
+                _controls = DIV(label, _help, _class="checkbox")
+                label = ''
+            elif isinstance(controls, (SELECT, TEXTAREA)):
+                controls.add_class('form-control')
+
+        elif isinstance(controls, SPAN):
+            _controls = P(controls.components)
+
+        elif isinstance(controls, UL):
+            for e in controls.elements("input"):
+                e.add_class('form-control')
+
+        elif isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+            controls[0].add_class('form-control')
+
+        if isinstance(label, LABEL):
+            label['_class'] = add_class(label.get('_class'), 'form-control-label')
+
+        parent.append(DIV(label, _controls, _class='form-group', _id=id))
+    return parent
+
+
+def formstyle_bootstrap4_inline_factory(col_label_size=3):
+    """ bootstrap 3 horizontal form layout
+
+    Note:
+        Experimental!
+    """
+    def _inner(form, fields):
+        form.add_class('form-horizontal')
+        label_col_class = "col-sm-%d" % col_label_size
+        col_class = "col-sm-%d" % (12 - col_label_size)
+        offset_class = "col-sm-offset-%d" % col_label_size
+        parent = CAT()
+        for id, label, controls, help in fields:
+            # wrappers
+            _help = SPAN(help, _class='help-block')
+            # embed _help into _controls
+            _controls = DIV(controls, _help, _class="%s" % (col_class))
+            if isinstance(controls, INPUT):
+                if controls['_type'] == 'submit':
+                    controls.add_class('btn btn-primary')
+                    _controls = DIV(controls, _class="%s %s" % (col_class, offset_class))
+                if controls['_type'] == 'button':
+                    controls.add_class('btn btn-secondary')
+                elif controls['_type'] == 'file':
+                    controls.add_class('input-file')
+                elif controls['_type'] in ('text', 'password'):
+                    controls.add_class('form-control')
+                elif controls['_type'] == 'checkbox':
+                    label['_for'] = None
+                    label.insert(0, controls)
+                    label.insert(1, ' ')
+                    _controls = DIV(DIV(label, _help, _class="checkbox"),
+                                    _class="%s %s" % (offset_class, col_class))
+                    label = ''
+                elif isinstance(controls, (SELECT, TEXTAREA)):
+                    controls.add_class('form-control')
+
+            elif isinstance(controls, SPAN):
+                _controls = P(controls.components,
+                              _class="form-control-static %s" % col_class)
+            elif isinstance(controls, UL):
+                for e in controls.elements("input"):
+                    e.add_class('form-control')
+            elif isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+                    controls[0].add_class('form-control')
+            if isinstance(label, LABEL):
+                label['_class'] = add_class(label.get('_class'), 'form-control-label %s' % label_col_class)
+
+            parent.append(DIV(label, _controls, _class='form-group', _id=id))
+        return parent
+    return _inner
+
 
 class SQLFORM(FORM):
 
@@ -1176,6 +1276,8 @@ class SQLFORM(FORM):
         bootstrap=formstyle_bootstrap,
         bootstrap3_stacked=formstyle_bootstrap3_stacked,
         bootstrap3_inline=formstyle_bootstrap3_inline_factory(3),
+        bootstrap4_stacked=formstyle_bootstrap4_stacked,
+        bootstrap4_inline=formstyle_bootstrap4_inline_factory(3),
         inline=formstyle_inline,
         )
 
