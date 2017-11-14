@@ -54,28 +54,47 @@ def _default_validators(db, field):
         requires.append(validators.IS_TIME())
     elif field_type == 'datetime':
         requires.append(validators.IS_DATETIME())
-    elif db and field_type.startswith('reference') and \
-            field_type.find('.') < 0 and \
-            field_type[10:] in db.tables:
-        referenced = db[field_type[10:]]
-        if hasattr(referenced, '_format') and referenced._format:
-            requires = validators.IS_IN_DB(db, referenced._id,
-                                           referenced._format)
-            if field.unique:
-                requires._and = validators.IS_NOT_IN_DB(db, field)
-            if field.tablename == field_type[10:]:
-                return validators.IS_EMPTY_OR(requires)
-            return requires
-    elif db and field_type.startswith('list:reference') and \
-            field_type.find('.') < 0 and \
-            field_type[15:] in db.tables:
-        referenced = db[field_type[15:]]
-        if hasattr(referenced, '_format') and referenced._format:
-            requires = validators.IS_IN_DB(db, referenced._id,
-                                           referenced._format, multiple=True)
-        else:
-            requires = validators.IS_IN_DB(db, referenced._id,
-                                           multiple=True)
+    elif db and field_type.startswith('reference'):
+        if field_type.find('.') < 0 and field_type[10:] in db.tables:
+            referenced = db[field_type[10:]]
+            if hasattr(referenced, '_format') and referenced._format:
+                requires = validators.IS_IN_DB(db, referenced._id,referenced._format)
+            else:
+                requires = validators.IS_IN_DB(db, referenced._id)
+        elif field_type.find('.') > 0 and field_type[10:].split('.')[0] in db.tables:
+            table_field = field_type[10:].split('.')
+            table_name=table_field[0]
+            field_name=table_field[1]
+            referenced = db[table_name]
+            if hasattr(referenced, '_format') and referenced._format:
+                requires = validators.IS_IN_DB(db, referenced[field_name],referenced._format)
+            else:
+                requires = validators.IS_IN_DB(db, referenced[field_name])
+        if field.unique:
+            requires._and = validators.IS_NOT_IN_DB(db, field)
+        if not field.notnull:
+            requires = validators.IS_EMPTY_OR(requires)
+        return requires
+    elif db and field_type.startswith('list:reference'):
+        if field_type.find('.') < 0 and field_type[15:] in db.tables:
+            referenced = db[field_type[15:]]
+            if hasattr(referenced, '_format') and referenced._format:
+                requires = validators.IS_IN_DB(db, referenced._id,
+                                               referenced._format, multiple=True)
+            else:
+                requires = validators.IS_IN_DB(db, referenced._id,
+                                               multiple=True)
+        elif field_type.find('.') > 0 and field_type[15:].split('.')[0] in db.tables:
+            table_field = field_type[15:].split('.')
+            table_name=table_field[0]
+            field_name=table_field[1]
+            referenced = db[table_name]
+            if hasattr(referenced, '_format') and referenced._format:
+                requires = validators.IS_IN_DB(db, referenced[field_name],
+                                               referenced._format, multiple=True)
+            else:
+                requires = validators.IS_IN_DB(db, referenced[field_name],
+                                               multiple=True)
         if field.unique:
             requires._and = validators.IS_NOT_IN_DB(db, field)
         if not field.notnull:
