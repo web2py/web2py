@@ -724,7 +724,7 @@ def run_view_in(environment):
                                    context=environment)
             # Compile template
             ccode = compile2(scode, filename)
-            layer = filename
+            layer = filename        
     restricted(ccode, environment, layer=layer, scode=scode)
     # parse_template saves everything in response body
     return environment['response'].body.getvalue()
