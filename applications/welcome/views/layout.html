@@ -94,6 +94,7 @@
         {{block center}}
         {{include}}
         {{end}}
+        {{=response.toolbar() if configuration.get('app.toolbar') else ''}}
       </div>
     </div>
 

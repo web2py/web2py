@@ -29,6 +29,9 @@
   <a class="btn btn-secondary" href="{{=URL('examples','default','index')}}">{{=T("Online examples")}}</a>
   <a class="btn btn-secondary" href="http://web2py.com">web2py.com</a>
   <a class="btn btn-secondary" href="http://web2py.com/book">{{=T('Documentation')}}</a>
+  <a class="btn btn-secondary" href="{{=URL('default','api_get_user_email')}}">{{=T('API Example')}}</a>
+  <a class="btn btn-secondary" href="{{=URL('default','grid/auth_user')}}">{{=T('Grid Example')}}</a>
+  <a class="btn btn-secondary" href="{{=URL('default','wiki')}}">{{=T('Wiki Example')}}</a>
 </center>
 {{elif 'content' in globals():}}
 {{=content}}
