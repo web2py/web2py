@@ -58,7 +58,7 @@ def update_languages(cwd, default_lang):
 	default = read_dict(defaultfp)
 
 	for lang in os.listdir(os.path.join(cwd, "languages")):
-		if lang == default_lang or lang.startswith("plural-"): continue
+		if lang == default_lang+".py" or lang.startswith("plural-"): continue
 		
 		i18n = read_dict(os.path.join(cwd, "languages", lang))
 		if i18n:
