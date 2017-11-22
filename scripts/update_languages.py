@@ -18,7 +18,7 @@ from gluon.utf8 import Utf8
 from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
 from gluon.languages import findT
 
-# This script can be run with no arguments (which sets the language folder to the current working directory, and default language to English), one argument (which sets the default language), or two arguments (language folder path and default language).
+# This script can be run with no arguments (which sets the application folder to the current working directory, and default language to English), one argument (which sets the default language), or two arguments (application folder path and default language).
 # When run, it will update the default language, as well as strip all of the strings found in the non-default languages but not in the default language, and add the strings found in the default language to the non-default languages it is not, making sure translators don't do additional work that will never be used.
 
 def read_dict_aux(filename):
@@ -53,21 +53,21 @@ def write_file(file, contents):
 	file.close()
 
 def update_languages(cwd, default_lang):
-	defaultfp = os.path.join(cwd, '%s.py' %default_lang)
+	defaultfp = os.path.join(cwd, "languages", '%s.py' %default_lang)
 	findT(cwd, default_lang)
 	default = read_dict(defaultfp)
 
-	for x in os.listdir(cwd):
-		if x == default_lang or x.startswith("plural-"): continue
+	for lang in os.listdir(os.path.join(cwd, "languages")):
+		if lang == default_lang+".py" or lang.startswith("plural-"): continue
 		
-		i18n = read_dict(os.path.join(cwd, x))
+		i18n = read_dict(os.path.join(cwd, "languages", lang))
 		if i18n:
-			nd = default
-			for k_d1 in i18n:
-				if k_d1 in default:
-					nd[k_d1] = i18n[k_d1]
-			write_file(open(x, 'w'), nd)
-			print x
+			new_dict = default
+			for phrase in i18n:
+				if phrase in default:
+					new_dict[phrase] = i18n[phrase]
+			write_file(open(os.path.join(cwd, "languages", lang), 'w'), new_dict)
+			print lang
 
 if __name__ == "__main__":
 	cwd = os.getcwd()
