@@ -1,3 +1,7 @@
+label, th {
+    font-weigth: bold;
+    white-space: nowrap;
+}
 div.w2p_flash {
     background-image: none;
     border-radius: 4px;

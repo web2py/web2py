@@ -3051,7 +3051,7 @@ class Auth(AuthAPI):
 
         if self.settings.register_verify_password:
             if self.settings.register_fields is None:
-                self.settings.register_fields = [f.name for f in table_user if f.writable]
+                self.settings.register_fields = [f.name for f in table_user if f.writable and not f.compute]
                 k = self.settings.register_fields.index(passfield)
                 self.settings.register_fields.insert(k + 1, "password_two")
             extra_fields = [
