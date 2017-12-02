@@ -459,7 +459,7 @@ class Response(Storage):
         for meta in iteritems((self.meta or {})):
             k, v = meta
             if isinstance(v, dict):
-                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key),
+                s += '<meta' + ''.join(' %s="%s"' % (to_native(xmlescape(key)),
                                                      to_native(xmlescape(v[key]))) for key in v) + ' />\n'
             else:
                 s += '<meta name="%s" content="%s" />\n' % (k, to_native(xmlescape(v)))
