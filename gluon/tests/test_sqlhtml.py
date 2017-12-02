@@ -279,13 +279,14 @@ class TestSQLFORM(unittest.TestCase):
         self.assertEqual(form.xml(), b'<form action="#" enctype="multipart/form-data" method="post"><table><tr id="auth_user_first_name__row"><td class="w2p_fl"><label class="" for="auth_user_first_name" id="auth_user_first_name__label">First name: </label></td><td class="w2p_fw"><input class="string" id="auth_user_first_name" name="first_name" type="text" value="" /></td><td class="w2p_fc"></td></tr><tr id="auth_user_last_name__row"><td class="w2p_fl"><label class="" for="auth_user_last_name" id="auth_user_last_name__label">Last name: </label></td><td class="w2p_fw"><input class="string" id="auth_user_last_name" name="last_name" type="text" value="" /></td><td class="w2p_fc"></td></tr><tr id="auth_user_email__row"><td class="w2p_fl"><label class="" for="auth_user_email" id="auth_user_email__label">E-mail: </label></td><td class="w2p_fw"><input class="string" id="auth_user_email" name="email" type="text" value="" /></td><td class="w2p_fc"></td></tr><tr id="auth_user_username__row"><td class="w2p_fl"><label class="" for="auth_user_username" id="auth_user_username__label">Username: </label></td><td class="w2p_fw"><input class="string" id="auth_user_username" name="username" type="text" value="" /></td><td class="w2p_fc"></td></tr><tr id="auth_user_password__row"><td class="w2p_fl"><label class="" for="auth_user_password" id="auth_user_password__label">Password: </label></td><td class="w2p_fw"><input class="password" id="auth_user_password" name="password" type="password" value="" /></td><td class="w2p_fc"></td></tr><tr id="submit_record__row"><td class="w2p_fl"></td><td class="w2p_fw"><input type="submit" value="Submit" /></td><td class="w2p_fc"></td></tr></table></form>')
 
     def test_represent_SQLFORM(self):
+        id = self.db.t0.insert()
         self.db.t0.tt.represent = lambda value: value.capitalize()
         self.db.t0.tt.writable = False
         self.db.t0.tt.readable = True
-        form = SQLFORM(self.db.t0)
+        form = SQLFORM(self.db.t0, id)
         self.assertTrue(b'Web2py' in form.xml())
         self.db.t0.tt.represent = lambda value, row: value.capitalize()
-        form = SQLFORM(self.db.t0)
+        form = SQLFORM(self.db.t0, id)
         self.assertTrue(b'Web2py' in form.xml())
 
     # def test_assert_status(self):
