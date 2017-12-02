@@ -1346,8 +1346,14 @@ class SQLFORM(FORM):
         # will only use writable or readable fields, unless forced to ignore
         if fields is None:
             if not readonly:
-                fields = [f.name for f in table if (ignore_rw or f.writable or f.readable) and (not f.compute or record)]
+                if not record:
+                    # create form should only show writable fields
+                    fields = [f.name for f in table if (ignore_rw or f.writable) and not f.compute]
+                else:
+                    # update form should also show readable fields and computed fields (but in reaodnly mode)
+                    fields = [f.name for f in table if (ignore_rw or f.writable or f.readable)]
             else:
+                # read only form should show all readable fields
                 fields = [f.name for f in table if (ignore_rw or f.readable)]
         self.fields = fields
 
