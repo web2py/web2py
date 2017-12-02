@@ -1,3 +1,7 @@
+ul.navbar-nav.navbar-right {
+    position: absolute;
+    right: 100px;
+}
 label, th {
     font-weigth: bold;
     white-space: nowrap;
