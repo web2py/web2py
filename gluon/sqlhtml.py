@@ -1677,6 +1677,7 @@ class SQLFORM(FORM):
             keepvalues = True if self.record else False
 
         if self.readonly:
+            self.deleted = False
             return False
 
         if request_vars.__class__.__name__ == 'Request':
