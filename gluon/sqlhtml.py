@@ -1840,7 +1840,7 @@ class SQLFORM(FORM):
                 continue
 
             field = self.table[fieldname]
-            if field.type == 'id':
+            if field.type == 'id' or field.compute:
                 continue
             if field.type == 'boolean':
                 if self.vars.get(fieldname, False):
