@@ -24,7 +24,6 @@ install:
   - python -m ensurepip
   - pip install codecov
   - git submodule update --init --recursive
-  - pip install pycrypto
   # Check that we have the expected version and architecture for Python
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
