@@ -75,7 +75,7 @@ if PY2:
 
     def u(x):
         "safe alternative for the python 2 `unicode()` function, which doesn't exist in python 3"
-        return unicode('x', 'utf-8')
+        return unicode(x, 'utf-8')
 
 
 else:
