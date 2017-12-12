@@ -22,12 +22,11 @@ import re
 import logging
 import traceback
 import threading
-import urllib
 from gluon.storage import Storage, List
 from gluon.http import HTTP
 from gluon.fileutils import abspath, read_file
 from gluon.settings import global_settings
-from gluon._compat import urllib_unquote, urllib_quote, iteritems, xrange
+from gluon._compat import urllib_unquote, urllib_quote, iteritems, xrange, urllib_quote_plus
 
 isdir = os.path.isdir
 isfile = os.path.isfile
@@ -235,7 +234,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                     path_info, query_string = uri, ''
                 query_string += \
                     'code=%s&ticket=%s&requested_uri=%s&request_url=%s' % \
-                    (status, ticket, urllib.quote_plus(
+                    (status, ticket, urllib_quote_plus(
                         request.env.request_uri), request.url)
                 if uri.startswith('http://') or uri.startswith('https://'):
                     # make up a response
@@ -270,12 +269,12 @@ def try_redirect_on_error(http_object, request, ticket=None):
                 elif '?' in redir:
                     url = '%s&code=%s&ticket=%s&requested_uri=%s&request_url=%s' % \
                         (redir, status, ticket,
-                         urllib.quote_plus(request.env.request_uri),
+                         urllib_quote_plus(request.env.request_uri),
                          request.url)
                 else:
                     url = '%s?code=%s&ticket=%s&requested_uri=%s&request_url=%s' % \
                         (redir, status, ticket,
-                         urllib.quote_plus(request.env.request_uri),
+                         urllib_quote_plus(request.env.request_uri),
                          request.url)
                 return HTTP(303, 'You are being redirected <a href="%s">here</a>' % url, Location=url)
     return http_object
