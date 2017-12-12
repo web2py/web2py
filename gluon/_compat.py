@@ -73,6 +73,10 @@ if PY2:
             return obj
         return obj.encode(charset, errors)
 
+    def u(x):
+        "safe alternative for the python 2 `unicode()` function, which doesn't exist in python 3"
+        return unicode('x', 'utf-8')
+
 
 else:
     import pickle
@@ -132,6 +136,10 @@ else:
         if obj is None or isinstance(obj, str):
             return obj
         return obj.decode(charset, errors)
+
+    def u(x):
+        "safe replacement for the python 2 `unicode()` function"
+        return x
 
 
 def with_metaclass(meta, *bases):
