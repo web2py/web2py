@@ -183,12 +183,13 @@ def serve_controller(request, response, session):
         response._view_environment.update(page)
         page = run_view_in(response._view_environment)
 
-    # logic to garbage collect after exec, not always, once every 100 requests
-    global requests
-    requests = ('requests' in globals()) and (requests + 1) % 100 or 0
-    if not requests:
-        gc.collect()
-    # end garbage collection logic
+    if not request.env.web2py_disable_garbage_collect:
+        # logic to garbage collect after exec, not always, once every 100 requests
+        global requests
+        requests = ('requests' in globals()) and (requests + 1) % 100 or 0
+        if not requests:
+            gc.collect()
+        # end garbage collection logic
 
     # ##################################################
     # set default headers it not set
