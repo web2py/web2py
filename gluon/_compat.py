@@ -26,7 +26,7 @@ if PY2:
     from email.MIMEText import MIMEText
     from email.Charset import add_charset, QP as charset_QP
     from urllib import FancyURLopener, urlencode, urlopen
-    from urllib import quote as urllib_quote, unquote as urllib_unquote
+    from urllib import quote as urllib_quote, unquote as urllib_unquote, quote_plus as urllib_quote_plus
     from string import maketrans
     from types import ClassType
     import cgi
@@ -96,7 +96,7 @@ else:
     from email.header import Header
     from email.charset import Charset, add_charset, QP as charset_QP
     from urllib.request import FancyURLopener, urlopen
-    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode
+    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode, quote_plus as urllib_quote_plus
     from http import cookiejar as cookielib
     from xmlrpc.client import ProtocolError
     import html # warning, this is the python3 module and not the web2py html module

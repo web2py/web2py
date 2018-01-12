@@ -2498,9 +2498,9 @@ class Auth(AuthAPI):
                 success = True
 
         def build_response(body):
-            return '<?xml version="1.0" encoding="UTF-8"?>\n' +\
-                TAG['cas:serviceResponse'](
-                    body, **{'_xmlns:cas': 'http://www.yale.edu/tp/cas'}).xml()
+            xml_body = to_native(TAG['cas:serviceResponse'](
+                    body, **{'_xmlns:cas': 'http://www.yale.edu/tp/cas'}).xml())
+            return '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_body
         if success:
             if version == 1:
                 message = 'yes\n%s' % user[userfield]
