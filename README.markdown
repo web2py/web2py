@@ -7,12 +7,13 @@ Based on
 - https://github.com/Nbushkov/web2py 
 - https://azure.microsoft.com/en-us/documentation/articles/web-sites-python-configure/
 
-#Files added
+Files added
     - ptvs_virtualenv_proxy.py
     - requirements.txt
     - runtime.txt
     - web.config
-    
+
+To start
 1. Fork this repo (github)
 2. Configure continuous deployment using github https://azure.microsoft.com/en-us/documentation/articles/web-sites-publish-source-control/ 
 look Deploy files from a repository site like BitBucket, CodePlex, Dropbox, GitHub, or Mercurial. 
