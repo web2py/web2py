@@ -20,7 +20,7 @@ look Deploy files from a repository site like BitBucket, CodePlex, Dropbox, GitH
 Azure creates an association with the selected repository, and pulls in the files from the specified branch. After this process completes, the Deployment section of your web app's blade will show an Active Deployment message that indicates deployment has succeeded.
 
 How to set admin password:
-1. The default password for this instance is Admin$123456. In Azure Just rename parameters_8000.py to parameters_443.py
+1. The default password for this instance is Admin$123456. In Azure Just rename default.parameters_8000.py to parameters_443.py
 2. On local copy web2py - save the password in the parameters_8000.py file
 3. Rename parameters_8000.py to parameters_443.py
 4. Copy parameters_443.py via FTP (link in Azure Portal) in site/wwwroot
