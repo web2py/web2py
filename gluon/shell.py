@@ -40,6 +40,7 @@ if not PY2:
         with open(filename) as f:
             code = compile(f.read(), filename, 'exec')
             exec(code, global_vars, local_vars)
+    raw_input = input
 
 
 def enable_autocomplete_and_history(adir, env):
