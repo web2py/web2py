@@ -121,6 +121,8 @@ def saml2_handler(session, request, config_filename = None, entityid = None):
         req_id, req = client.create_authn_request(destination, binding=binding)
         relay_state = web2py_uuid().replace('-','')
         session.saml_outstanding_queries = {req_id: request.url}
+	if '_next' in request.vars:
+            session.saml_outstanding_queries += '?%s' % request.vars._next
         session.saml_req_id = req_id
         http_args = client.apply_binding(binding, str(req), destination,
                                          relay_state=relay_state)
