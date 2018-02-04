@@ -340,18 +340,20 @@ class TestBareHelpers(unittest.TestCase):
 
     def test_SCRIPT(self):
         self.assertEqual(SCRIPT('<>', _a='1', _b='2').xml(),
-                         '''<script a="1" b="2"><!--
+                         b'''<script a="1" b="2"><!--
 <>
 //--></script>''')
         self.assertEqual(SCRIPT('<>').xml(),
-                         '''<script><!--
+                         b'''<script><!--
 <>
 //--></script>''')
         self.assertEqual(SCRIPT().xml(), b'<script></script>')
+        self.assertEqual(SCRIPT(';').xml() + DIV().xml(), 
+                         b'<script><!--\n;\n//--></script><div></div>')
 
     def test_STYLE(self):
         self.assertEqual(STYLE('<>', _a='1', _b='2').xml(),
-                         '<style a="1" b="2"><!--/*--><![CDATA[/*><!--*/\n<>\n/*]]>*/--></style>')
+                         b'<style a="1" b="2"><!--/*--><![CDATA[/*><!--*/\n<>\n/*]]>*/--></style>')
         # Try to hit : return DIV.xml(self)
         self.assertEqual(STYLE().xml(), b'<style></style>')
 
