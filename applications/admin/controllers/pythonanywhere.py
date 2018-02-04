@@ -5,7 +5,7 @@ import re
 import gzip
 import tarfile
 from gluon.contrib.simplejsonrpc import ServerProxy
-from gluon._compat import StringIO, ProtocolError
+from gluon._compat import StringIO, ProtocolError, urlencode, urllib2
 
 def deploy():
     response.title = T('Deploy to pythonanywhere')
@@ -26,9 +26,8 @@ def create_account():
         except ProtocolError as error:
             pass
 
-    import urllib, urllib2
     url = 'https://www.pythonanywhere.com/api/web2py/create_account'
-    data = urllib.urlencode(request.vars)
+    data = urlencode(request.vars)
     req = urllib2.Request(url, data)
     
     try:

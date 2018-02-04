@@ -15,12 +15,11 @@ Holds:
 """
 
 import datetime
-import urllib
 import re
 import copy
 
 import os
-from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native, to_unicode
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native, to_unicode, urlencode
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -3550,7 +3549,7 @@ class SQLTABLE(TABLE):
                             if ref.find('.') >= 0:
                                 tref, fref = ref.split('.')
                                 if hasattr(sqlrows.db[tref], '_primarykey'):
-                                    href = '%s/%s?%s' % (linkto, tref, urllib.urlencode({fref: r}))
+                                    href = '%s/%s?%s' % (linkto, tref, urlencode({fref: r}))
                         r = A(represent(field, r, record), _href=str(href))
                     elif field.represent:
                         if field not in repr_cache:
@@ -3561,7 +3560,7 @@ class SQLTABLE(TABLE):
                 elif linkto and hasattr(field._table, '_primarykey')\
                         and fieldname in field._table._primarykey:
                     # have to test this with multi-key tables
-                    key = urllib.urlencode(dict([
+                    key = urlencode(dict([
                                 ((tablename in record
                                       and isinstance(record, Row)
                                       and isinstance(record[tablename], Row)) and

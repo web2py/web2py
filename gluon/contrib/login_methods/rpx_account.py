@@ -13,12 +13,11 @@
 
 import os
 import re
-import urllib
 from gluon import *
 from gluon.tools import fetch
 from gluon.storage import Storage
 import json
-
+from gluon._compat import urlencode
 
 class RPXAccount(object):
 
@@ -83,7 +82,7 @@ class RPXAccount(object):
         token = request.post_vars.token or request.get_vars.token
         if token:
             user = Storage()
-            data = urllib.urlencode(
+            data = urlencode(
                 dict(apiKey=self.api_key, token=token))
             auth_info_json = fetch(self.auth_url + '?' + data)
             auth_info = json.loads(auth_info_json)
