@@ -525,7 +525,7 @@ class MetaScheduler(threading.Thread):
         self.have_heartbeat = True   # set to False to kill
         self.empty_runs = 0
 
-    def async(self, task):
+    def local_async(self, task):
         """Start the background process.
 
         Args:
@@ -913,7 +913,7 @@ class Scheduler(MetaScheduler):
                     self.w_stats.empty_runs = 0
                     self.w_stats.status = RUNNING
                     self.w_stats.total += 1
-                    self.wrapped_report_task(task, self.async(task))
+                    self.wrapped_report_task(task, self.local_async(task))
                     if not self.w_stats.status == DISABLED:
                         self.w_stats.status = ACTIVE
                 else:
