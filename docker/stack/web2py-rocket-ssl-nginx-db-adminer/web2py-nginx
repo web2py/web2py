@@ -1,0 +1,10 @@
+FROM nginx:latest
+
+COPY ./w2p.conf /etc/nginx/conf.d/
+
+RUN apt update
+RUN apt-get install curl -y
+
+EXPOSE 80
+
+CMD nginx -g "daemon off;"
