@@ -39,7 +39,7 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <a class="navbar-brand" href="http://web2py.com">web2py</a>
-      <div class="collapse navbar-collapse">
+      <div id="navbarNavDropdown" class="collapse navbar-collapse">
         <ul class="navbar-nav">
           {{for _item in response.menu or []:}}
           {{if len(_item)<4 or not _item[3]:}}
