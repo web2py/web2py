@@ -434,7 +434,10 @@ class lazyT(object):
         return str(self).encode(*a, **b)
 
     def decode(self, *a, **b):
-        return str(self).decode(*a, **b)
+        if PY2:
+            return str(self).decode(*a, **b)
+        else:
+            return str(self)
 
     def read(self):
         return str(self)

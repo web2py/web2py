@@ -12,7 +12,8 @@ import tempfile
 import unittest
 
 from gluon import languages
-from gluon._compat import PY2
+from gluon._compat import PY2, to_unicode
+from gluon.storage import Messages
 
 MP_WORKING = 0
 try:
@@ -108,6 +109,8 @@ class TestTranslations(unittest.TestCase):
         T.force('it')
         self.assertEqual(str(T('Hello World')),
                          'Salve Mondo')
+        self.assertEqual(to_unicode(T('Hello World')),
+                         'Salve Mondo')
 
 class TestDummyApp(unittest.TestCase):
 
@@ -179,3 +182,22 @@ def index():
         for key in ['hello', 'world', '%s %%{shop}', 'ahoy']:
             self.assertTrue(key in en_dict)
             self.assertTrue(key in pt_dict)
+
+class TestMessages(unittest.TestCase):
+
+    def setUp(self):
+        if os.path.isdir('gluon'):
+            self.langpath = 'applications/welcome/languages'
+        else:
+            self.langpath = os.path.realpath(
+                '../../applications/welcome/languages')
+        self.http_accept_language = 'en'
+
+    def tearDown(self):
+        pass
+
+    def test_decode(self):
+        T = languages.translator(self.langpath, self.http_accept_language)
+        messages = Messages(T)
+        messages.update({'email_sent':'Email sent', 'test': "ä"})
+        self.assertEqual(to_unicode(messages.email_sent, 'utf-8'), 'Email sent')
