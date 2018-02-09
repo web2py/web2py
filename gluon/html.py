@@ -1419,20 +1419,21 @@ class LINK(DIV):
 
 class SCRIPT(DIV):
 
-    tag = 'script'
+    tag = b'script'
+    tagname = to_bytes(tag)
 
     def xml(self):
         (fa, co) = self._xml()
-        fa = to_native(fa)
+        fa = to_bytes(fa)
         # no escaping of subcomponents
-        co = '\n'.join([str(component) for component in
+        co = b'\n'.join([to_bytes(component) for component in
                        self.components])
         if co:
             # <script [attributes]><!--//--><![CDATA[//><!--
             # script body
             # //--><!]]></script>
             # return '<%s%s><!--//--><![CDATA[//><!--\n%s\n//--><!]]></%s>' % (self.tag, fa, co, self.tag)
-            return '<%s%s><!--\n%s\n//--></%s>' % (self.tag, fa, co, self.tag)
+            return b'<%s%s><!--\n%s\n//--></%s>' % (self.tagname, fa, co, self.tagname)
         else:
             return DIV.xml(self)
 
@@ -1440,18 +1441,19 @@ class SCRIPT(DIV):
 class STYLE(DIV):
 
     tag = 'style'
+    tagname = to_bytes(tag)
 
     def xml(self):
         (fa, co) = self._xml()
-        fa = to_native(fa)
+        fa = to_bytes(fa)
         # no escaping of subcomponents
-        co = '\n'.join([str(component) for component in
+        co = b'\n'.join([to_bytes(component) for component in
                        self.components])
         if co:
             # <style [attributes]><!--/*--><![CDATA[/*><!--*/
             # style body
             # /*]]>*/--></style>
-            return '<%s%s><!--/*--><![CDATA[/*><!--*/\n%s\n/*]]>*/--></%s>' % (self.tag, fa, co, self.tag)
+            return b'<%s%s><!--/*--><![CDATA[/*><!--*/\n%s\n/*]]>*/--></%s>' % (self.tagname, fa, co, self.tagname)
         else:
             return DIV.xml(self)
 
