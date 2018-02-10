@@ -431,7 +431,10 @@ class lazyT(object):
         return str(self) if self.M else local_html_escape(str(self), quote=False)
 
     def encode(self, *a, **b):
-        return str(self).encode(*a, **b)
+        if PY2 and a[0] != 'utf8':
+            return to_unicode(str(self)).encode(*a, **b)
+        else:
+            return str(self)
 
     def decode(self, *a, **b):
         if PY2:
