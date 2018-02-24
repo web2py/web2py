@@ -1183,7 +1183,7 @@ def formstyle_bootstrap4_inline_factory(col_label_size=3):
             if isinstance(label, LABEL):
                 label['_class'] = add_class(label.get('_class'), 'form-control-label %s' % label_col_class)
 
-            parent.append(DIV(label, _controls, _class='form-group', _id=id))
+            parent.append(DIV(label, _controls, _class='form-group row', _id=id))
         return parent
     return _inner
 
