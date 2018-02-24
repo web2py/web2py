@@ -392,12 +392,11 @@ def ccache():
                 cache.disk.clear()
                 session.flash += T("Disk Cleared")
         redirect(URL(r=request))
-
+    
     try:
-        from guppy import hpy
-        hp = hpy()
+        from pympler.asizeof import asizeof
     except ImportError:
-        hp = False
+        asizeof = False
 
     import shelve
     import os
@@ -451,9 +450,9 @@ def ccache():
             ram['ratio'] = 0
 
         for key, value in iteritems(cache.ram.storage):
-            if hp:
-                ram['bytes'] += hp.iso(value[1]).size
-                ram['objects'] += hp.iso(value[1]).count
+            if asizeof:
+                ram['bytes'] += asizeof(value[1])
+                ram['objects'] += 1
             ram['entries'] += 1
             if value[0] < ram['oldest']:
                 ram['oldest'] = value[0]
@@ -469,9 +468,9 @@ def ccache():
                 except (KeyError, ZeroDivisionError):
                     disk['ratio'] = 0
             else:
-                if hp:
-                    disk['bytes'] += hp.iso(value[1]).size
-                    disk['objects'] += hp.iso(value[1]).count
+                if asizeof:
+                    disk['bytes'] += asizeof(value[1])
+                    disk['objects'] += 1
                 disk['entries'] += 1
                 if value[0] < disk['oldest']:
                     disk['oldest'] = value[0]
@@ -511,7 +510,7 @@ def ccache():
         total['keys'] = key_table(total['keys'])
 
     return dict(form=form, total=total,
-                ram=ram, disk=disk, object_stats=hp != False)
+                ram=ram, disk=disk, object_stats=asizeof != False)
 
 
 def table_template(table):

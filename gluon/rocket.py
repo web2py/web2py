@@ -1750,7 +1750,7 @@ class WSGIWorker(Worker):
         if self.request_method != 'HEAD':
             try:
                 if self.chunked:
-                    self.conn.sendall(b('%x\r\n%s\r\n' % (len(data), data)))
+                    self.conn.sendall(b'%x\r\n%s\r\n' % (len(data), to_bytes(data, 'ISO-8859-1')))
                 else:
                     self.conn.sendall(to_bytes(data))
             except socket.timeout:

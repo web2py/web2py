@@ -39,7 +39,7 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <a class="navbar-brand" href="http://web2py.com">web2py</a>
-      <div class="collapse navbar-collapse">
+      <div id="navbarNavDropdown" class="collapse navbar-collapse">
         <ul class="navbar-nav">
           {{for _item in response.menu or []:}}
           {{if len(_item)<4 or not _item[3]:}}
@@ -75,7 +75,7 @@
               {{else:}}
               <a class="dropdown-item" href="{{=URL('default','user/login')}}">{{=T('Login')}}</a>
               <a class="dropdown-item" href="{{=URL('default','user/register')}}">{{=T('Sign up')}}</a>
-              <a class="dropdown-item" href="{{=URL('default','user/request_password')}}">{{=T('Lost Password')}}</a>
+              <a class="dropdown-item" href="{{=URL('default','user/retrieve_password')}}">{{=T('Lost Password')}}</a>
               {{pass}}
             </div>
           </li>

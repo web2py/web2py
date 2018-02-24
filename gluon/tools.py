@@ -12,7 +12,7 @@ Auth, Mail, PluginManager and various utilities
 
 import base64
 from functools import reduce
-from gluon._compat import pickle, thread, urllib2, Cookie, StringIO
+from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, urlencode
 from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText, Header
 from gluon._compat import Encoders, Charset, long, urllib_quote, iteritems
 from gluon._compat import to_bytes, to_native, add_charset
@@ -27,7 +27,6 @@ import time
 import fnmatch
 import traceback
 import smtplib
-import urllib
 import email.utils
 import random
 import hmac
@@ -873,7 +872,7 @@ class Recaptcha(DIV):
                 and len(recaptcha_challenge_field)):
             self.errors['captcha'] = self.error_message
             return False
-        params = urllib.urlencode({
+        params = urlencode({
             'privatekey': private_key,
             'remoteip': remoteip,
             'challenge': recaptcha_challenge_field,
@@ -1026,7 +1025,7 @@ class Recaptcha2(DIV):
         if not recaptcha_response_field:
             self.errors['captcha'] = self.error_message
             return False
-        params = urllib.urlencode({
+        params = urlencode({
             'secret': self.private_key,
             'remoteip': remoteip,
             'response': recaptcha_response_field,
@@ -4738,7 +4737,7 @@ def fetch(url, data=None, headers=None,
           user_agent='Mozilla/5.0'):
     headers = headers or {}
     if data is not None:
-        data = urllib.urlencode(data)
+        data = urlencode(data)
     if user_agent:
         headers['User-agent'] = user_agent
     headers['Cookie'] = ' '.join(
