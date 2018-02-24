@@ -321,3 +321,20 @@ td.w2p_fc,
 input[type=checkbox], input[type=radio] {
     margin: 4px 4px 0 0;
 }
+
+/* for backward compatbility with pre-font-awesome */
+.icon.plus,.icon.arrowleft,.icon.download,.icon.trash,.icon.pen,.icon.arrowright,.icon.magnifier {
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome;
+    font-size: inherit;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.icon.plus:before { content: "\f067";}
+.icon.arrowleft:before { content: "\f060";}
+.icon.download:before { content: "\f019";}
+.icon.trash:before { content: "\f1f8";}
+.icon.pen:before { content: "\f040";}
+.icon.arrowright:before { content: "\f061";}
+.icon.magnifier:before { content: "\f002";}

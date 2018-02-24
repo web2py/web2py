@@ -2307,7 +2307,7 @@ class SQLFORM(FORM):
                       cornerall='',
                       cornertop='',
                       cornerbottom='',
-                      button='button btn btn-default',
+                      button='button btn btn-default btn-secondary',
                       buttontext='buttontext button',
                       buttonadd='icon plus icon-plus glyphicon glyphicon-plus',
                       buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
@@ -2748,8 +2748,8 @@ class SQLFORM(FORM):
                           _id=skeywords_id, _class='form-control',
                           _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();" % (spanel_id, sfields_id) if advanced_search else ''
                           ),
-                    INPUT(_type='submit', _value=T('Search'), _class="btn btn-default"),
-                    INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default",
+                    INPUT(_type='submit', _value=T('Search'), _class="btn btn-default btn-secondary"),
+                    INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default btn-secondary",
                           _onclick="jQuery('#%s').val('');" % skeywords_id),
                     *hidden_fields,
                     _method="GET", _action=url), search_menu)
@@ -3135,7 +3135,7 @@ class SQLFORM(FORM):
                     order=request.vars.order or '',
                     _export_type=k,
                     keywords=keywords or ''))
-                export_links.append(A(T(label), _href=link, _title=title, _class='btn btn-default'))
+                export_links.append(A(T(label), _href=link, _title=title, _class='btn btn-default btn-secondary'))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
         else:
