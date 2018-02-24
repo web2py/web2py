@@ -617,7 +617,7 @@
         flash: function (message, status) {
             var flash = $('.w2p_flash');
             web2py.hide_flash();
-            flash.html(message).addClass(status);
+            flash.text(message).addClass(status);
             if (flash.html()) flash.append('<span id="closeflash"> &times; </span>')[animateIn]();
         },
         hide_flash: function () {
