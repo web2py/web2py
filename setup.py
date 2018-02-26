@@ -63,7 +63,6 @@ def start():
                     'gluon/contrib/pymysql',
                     'gluon/contrib/pyrtf',
                     'gluon/contrib/pysimplesoap',
-                    'gluon/contrib/pg8000',
                     'gluon/contrib/plural_rules',
                     'gluon/contrib/minify',
                     'gluon/contrib/pyaes',
