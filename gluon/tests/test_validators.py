@@ -861,6 +861,10 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, [('', ''), ('id1', 'first label'), ('id2', 'second label')])
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options()
         self.assertEqual(rtn, [('', 'zero'), ('id1', 'first label'), ('id2', 'second label')])
+        rtn = IS_EMPTY_OR((IS_LOWER(), IS_EMAIL()))('AAA')
+        self.assertEqual(rtn, ('aaa', 'Enter a valid email address'))
+        rtn = IS_EMPTY_OR([IS_LOWER(), IS_EMAIL()])('AAA')
+        self.assertEqual(rtn, ('aaa', 'Enter a valid email address'))
 
     def test_CLEANUP(self):
         rtn = CLEANUP()('helloò')
