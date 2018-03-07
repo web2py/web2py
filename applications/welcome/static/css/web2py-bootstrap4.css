@@ -1,7 +1,4 @@
-ul.navbar-nav.navbar-right {
-    position: absolute;
-    right: 100px;
-}
+
 label, th {
     font-weigth: bold;
     white-space: nowrap;
@@ -317,9 +314,6 @@ td.w2p_fc,
 .web2py_grid,
 .web2py_grid table {
     width: 100%;
-}
-input[type=checkbox], input[type=radio] {
-    margin: 4px 4px 0 0;
 }
 
 /* for backward compatbility with pre-font-awesome */

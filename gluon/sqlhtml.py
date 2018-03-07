@@ -1106,14 +1106,16 @@ def formstyle_bootstrap4_stacked(form, fields):
             if controls['_type'] == 'button':
                 controls.add_class('btn btn-secondary')
             elif controls['_type'] == 'file':
-                controls.add_class('input-file')
+                controls.add_class('form-control-file')
             elif controls['_type'] in ('text', 'password'):
                 controls.add_class('form-control')
-            elif controls['_type'] == 'checkbox':
+            elif controls['_type'] == 'checkbox' or controls['_type'] == 'radio':
+                controls.add_class('form-check-input')
                 label['_for'] = None
+                label.add_class('form-check-label')
                 label.insert(0, controls)
                 label.insert(0, ' ')
-                _controls = DIV(label, _help, _class="checkbox")
+                _controls = DIV(label, _help, _class="form-check")
                 label = ''
             elif isinstance(controls, (SELECT, TEXTAREA)):
                 controls.add_class('form-control')
@@ -1142,7 +1144,6 @@ def formstyle_bootstrap4_inline_factory(col_label_size=3):
         Experimental!
     """
     def _inner(form, fields):
-        form.add_class('form-horizontal')
         label_col_class = "col-sm-%d" % col_label_size
         col_class = "col-sm-%d" % (12 - col_label_size)
         offset_class = "col-sm-offset-%d" % col_label_size
@@ -1162,19 +1163,19 @@ def formstyle_bootstrap4_inline_factory(col_label_size=3):
                     controls.add_class('input-file')
                 elif controls['_type'] in ('text', 'password'):
                     controls.add_class('form-control')
-                elif controls['_type'] == 'checkbox':
-                    label['_for'] = None
+                elif controls['_type'] == 'checkbox' or controls['_type'] == 'radio':
+                    controls.add_class('form-check-input')
+                    label.add_class('form-check-label')
                     label.insert(0, controls)
-                    label.insert(1, ' ')
-                    _controls = DIV(DIV(label, _help, _class="checkbox"),
-                                    _class="%s %s" % (offset_class, col_class))
-                    label = ''
+                    #label.insert(0, ' ')
+                    _controls = DIV(DIV(label, _help, _class="form-check"), _class="%s" % col_class)
+                    label = DIV(_class="sm-hidden %s" % label_col_class)
                 elif isinstance(controls, (SELECT, TEXTAREA)):
                     controls.add_class('form-control')
 
             elif isinstance(controls, SPAN):
                 _controls = P(controls.components,
-                              _class="form-control-static %s" % col_class)
+                              _class="form-control-plaintext %s" % col_class)
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
                     e.add_class('form-control')
