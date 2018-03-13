@@ -10,7 +10,7 @@ try:
     import ldap.filter
     ldap.set_option(ldap.OPT_REFERRALS, 0)
 except Exception as e:
-    logging.error('missing ldap, try "easy_install python-ldap"')
+    logging.error('missing ldap, try "pip install python-ldap"')
     raise e
 
 
