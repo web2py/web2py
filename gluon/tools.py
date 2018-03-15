@@ -775,7 +775,9 @@ class Mail(object):
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=to_unicode(subject, encoding), body=to_unicode(text or '', encoding), html=html,
+                        subject=to_unicode(subject, encoding), 
+                        body=to_unicode(text or '', encoding), 
+                        html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
@@ -785,6 +787,20 @@ class Mail(object):
                     result = mail.send_mail(
                         sender=sender, to=origTo,
                         subject=to_unicode(subject, encoding), body=to_unicode(text or '', encoding), **xcc)
+            elif self.settings.server == 'aws':
+                import boto3
+                from botocore.exceptions import ClientError
+                client = boto3.client('ses')
+                try:
+                    raw = payload.as_string()
+                    response = client.send_raw_email(RawMessage=raw,
+                                                     Source=sender, 
+                                                     Destinations=to)
+                    return True
+                except ClientError as e:
+                    # we should log this error:
+                    # print e.response['Error']['Message']
+                    return False
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
