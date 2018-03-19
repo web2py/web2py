@@ -14,7 +14,6 @@ import os
 import sys
 import traceback
 import zipfile
-import urllib
 from shutil import rmtree
 from gluon.utils import web2py_uuid
 from gluon.fileutils import w2p_pack, w2p_unpack, w2p_pack_plugin, w2p_unpack_plugin
@@ -23,7 +22,7 @@ from gluon.fileutils import read_file, write_file, parse_version
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 from gluon.cache import CacheOnDisk
-
+from gluon._compat import urlopen, to_native
 
 if not global_settings.web2py_runtime_gae:
     import site
@@ -55,13 +54,12 @@ def app_pack(app, request, raise_ex=False, filenames=None):
 
     """
     try:
-        if filenames is None: app_cleanup(app, request)
+        if filenames is None:
+            app_cleanup(app, request)
         filename = apath('../deposit/web2py.app.%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
         if raise_ex:
             raise
         return False
@@ -107,7 +105,8 @@ def app_cleanup(app, request):
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
-                if f[:1] != '.': os.unlink(os.path.join(path, f))
+                if f[:1] != '.':
+                    os.unlink(os.path.join(path, f))
             except IOError:
                 r = False
 
@@ -116,7 +115,8 @@ def app_cleanup(app, request):
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
-                if f[:1] != '.': recursive_unlink(os.path.join(path, f))
+                if f[:1] != '.':
+                    recursive_unlink(os.path.join(path, f))
             except (OSError, IOError):
                 r = False
 
@@ -126,7 +126,8 @@ def app_cleanup(app, request):
         CacheOnDisk(folder=path).clear()
         for f in os.listdir(path):
             try:
-                if f[:1] != '.': recursive_unlink(os.path.join(path, f))
+                if f[:1] != '.':
+                    recursive_unlink(os.path.join(path, f))
             except (OSError, IOError):
                 r = False
     return r
@@ -143,7 +144,7 @@ def app_compile(app, request, skip_failed_views=False):
         None if everything went ok, traceback text if errors are found
 
     """
-    from compileapp import compile_application, remove_compiled_application
+    from gluon.compileapp import compile_application, remove_compiled_application
     folder = apath(app, request)
     try:
         failed_views = compile_application(folder, skip_failed_views)
@@ -178,10 +179,9 @@ def app_create(app, request, force=False, key=None, info=False):
             return False
     try:
         w2p_unpack('welcome.w2p', path)
-        for subfolder in [
-            'models', 'views', 'controllers', 'databases',
-            'modules', 'cron', 'errors', 'sessions', 'cache',
-            'languages', 'static', 'private', 'uploads']:
+        for subfolder in ['models', 'views', 'controllers', 'databases',
+                          'modules', 'cron', 'errors', 'sessions', 'cache',
+                          'languages', 'static', 'private', 'uploads']:
             subpath = os.path.join(path, subfolder)
             if not os.path.exists(subpath):
                 os.mkdir(subpath)
@@ -338,8 +338,7 @@ def check_new_version(myversion, version_url):
 
     """
     try:
-        from urllib import urlopen
-        version = urlopen(version_url).read()
+        version = to_native(urlopen(version_url).read())
         pversion = parse_version(version)
         pmyversion = parse_version(myversion)
     except IOError:
@@ -372,7 +371,7 @@ def unzip(filename, dir, subfolder=''):
     for name in sorted(zf.namelist()):
         if not name.startswith(subfolder):
             continue
-        #print name[n:]
+        # print name[n:]
         if name.endswith('/'):
             folder = os.path.join(dir, name[n:])
             if not os.path.exists(folder):
@@ -423,7 +422,7 @@ def upgrade(request, url='http://web2py.com'):
     full_url = url + '/examples/static/web2py_%s.zip' % version_type
     filename = abspath('web2py_%s_downloaded.zip' % version_type)
     try:
-        write_file(filename, urllib.urlopen(full_url).read(), 'wb')
+        write_file(filename, urlopen(full_url).read(), 'wb')
     except Exception as e:
         return False, e
     try:
@@ -440,15 +439,33 @@ def add_path_first(path):
         site.addsitedir(path)
 
 
+def try_mkdir(path):
+    if not os.path.exists(path):
+        try:
+            if os.path.islink(path):
+                # path is a broken link, try to mkdir the target of the link instead of the link itself.
+                os.mkdir(os.path.realpath(path))
+            else:
+                os.mkdir(path)
+        except OSError as e:
+            if e.strerror == 'File exists':  # In case of race condition.
+                pass
+            else:
+                raise e
+
+
 def create_missing_folders():
     if not global_settings.web2py_runtime_gae:
         for path in ('applications', 'deposit', 'site-packages', 'logs'):
-            path = abspath(path, gluon=True)
-            if not os.path.exists(path):
-                os.mkdir(path)
+            try_mkdir(abspath(path, gluon=True))
+    """
+    OLD sys.path dance
     paths = (global_settings.gluon_parent, abspath(
         'site-packages', gluon=True), abspath('gluon', gluon=True), '')
-    [add_path_first(path) for path in paths]
+    """
+    paths = (global_settings.gluon_parent, abspath(
+        'site-packages', gluon=True), '')
+    [add_path_first(p) for p in paths]
 
 
 def create_missing_app_folders(request):
@@ -457,7 +474,5 @@ def create_missing_app_folders(request):
             for subfolder in ('models', 'views', 'controllers', 'databases',
                               'modules', 'cron', 'errors', 'sessions',
                               'languages', 'static', 'private', 'uploads'):
-                path = os.path.join(request.folder, subfolder)
-                if not os.path.exists(path):
-                    os.mkdir(path)
+                try_mkdir(os.path.join(request.folder, subfolder))
             global_settings.app_folders.add(request.folder)

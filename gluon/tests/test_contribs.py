@@ -5,9 +5,7 @@
 
 import unittest
 import os
-from .fix_path import fix_sys_path
 
-fix_sys_path(__file__)
 from gluon._compat import to_bytes
 from gluon.storage import Storage
 from gluon.contrib import fpdf as fpdf
@@ -67,6 +65,3 @@ class TestContribs(unittest.TestCase):
         self.assertEqual(myappconfig.take('config3.key2'), 2)
 
         current.request = {}
-
-if __name__ == '__main__':
-    unittest.main()

@@ -314,8 +314,8 @@
         // Vim does not support modifier only keys.
         return false;
       }
-      // TODO: Current bindings expect the character to be lower case, but
-      // it looks like vim key notation uses upper case.
+      // TODO: Current bindings expect the character to be lowercase, but
+      // it looks like vim key notation uses uppercase.
       if (isUpperCase(lastPiece)) {
         pieces[pieces.length - 1] = lastPiece.toLowerCase();
       }
@@ -3644,7 +3644,7 @@
      * Extract the regular expression from the query and return a Regexp object.
      * Returns null if the query is blank.
      * If ignoreCase is passed in, the Regexp object will have the 'i' flag set.
-     * If smartCase is passed in, and the query contains upper case letters,
+     * If smartCase is passed in, and the query contains uppercase letters,
      *   then ignoreCase is overridden, and the 'i' flag will not be set.
      * If the query contains the /i in the flag part of the regular expression,
      *   then both ignoreCase and smartCase are ignored, and 'i' will be passed

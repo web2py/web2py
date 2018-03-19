@@ -17,30 +17,31 @@ import random
 import inspect
 import time
 import os
-import re
 import sys
+import re
 import logging
 import socket
 import base64
 import zlib
+import hashlib
+import binascii
+import hmac
+from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 from gluon._compat import basestring, pickle, PY2, xrange, to_bytes, to_native
 
 _struct_2_long_long = struct.Struct('=QQ')
 
-import hashlib, binascii
-from hashlib import md5, sha1, sha224, sha256, sha384, sha512
-
 try:
     from Crypto.Cipher import AES
+    HAVE_AES = True
 except ImportError:
-    import gluon.contrib.aes as AES
-
-import hmac
+    import gluon.contrib.pyaes as PYAES
+    HAVE_AES = False
 
 if hasattr(hashlib, "pbkdf2_hmac"):
     def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
         hashfunc = hashfunc or sha1
-        hmac = hashlib.pbkdf2_hmac(hashfunc().name, to_bytes(data), 
+        hmac = hashlib.pbkdf2_hmac(hashfunc().name, to_bytes(data),
                                    to_bytes(salt), iterations, keylen)
         return binascii.hexlify(hmac)
     HAVE_PBKDF2 = True
@@ -66,11 +67,35 @@ logger = logging.getLogger("web2py")
 
 
 def AES_new(key, IV=None):
-    """ Returns an AES cipher object and random IV if None specified """
+    """Return an AES cipher object and random IV if None specified."""
     if IV is None:
         IV = fast_urandom16()
+    if HAVE_AES:
+        return AES.new(key, AES.MODE_CBC, IV), IV
+    else:
+        return PYAES.AESModeOfOperationCBC(key, iv=IV), IV
 
-    return AES.new(key, AES.MODE_CBC, IV), IV
+
+def AES_enc(cipher, data):
+    """Encrypt data with the cipher."""
+    if HAVE_AES:
+        return cipher.encrypt(data)
+    else:
+        encrypter = PYAES.Encrypter(cipher)
+        enc = encrypter.feed(data)
+        enc += encrypter.feed()
+        return enc
+
+
+def AES_dec(cipher, data):
+    """Decrypt data with the cipher."""
+    if HAVE_AES:
+        return cipher.decrypt(data)
+    else:
+        decrypter = PYAES.Decrypter(cipher)
+        dec = decrypter.feed(data)
+        dec += decrypter.feed()
+        return dec
 
 
 def compare(a, b):
@@ -79,20 +104,17 @@ def compare(a, b):
         return hmac.compare_digest(a, b)
     result = len(a) ^ len(b)
     for i in xrange(len(b)):
-        result |= ord(a[i%len(a)]) ^ ord(b[i])
+        result |= ord(a[i % len(a)]) ^ ord(b[i])
     return result == 0
 
 
 def md5_hash(text):
-    """ Generates a md5 hash with the given text """
-    return md5(text).hexdigest()
+    """Generate an md5 hash with the given text."""
+    return md5(to_bytes(text)).hexdigest()
 
 
 def simple_hash(text, key='', salt='', digest_alg='md5'):
-    """
-    Generates hash with the given text using the specified
-    digest hashing algorithm
-    """
+    """Generate hash with the given text using the specified digest algorithm."""
     text = to_bytes(text)
     key = to_bytes(key)
     salt = to_bytes(salt)
@@ -114,9 +136,7 @@ def simple_hash(text, key='', salt='', digest_alg='md5'):
 
 
 def get_digest(value):
-    """
-    Returns a hashlib digest algorithm from a string
-    """
+    """Return a hashlib digest algorithm from a string."""
     if not isinstance(value, str):
         return value
     value = value.lower()
@@ -136,12 +156,12 @@ def get_digest(value):
         raise ValueError("Invalid digest algorithm: %s" % value)
 
 DIGEST_ALG_BY_SIZE = {
-    128 / 4: 'md5',
-    160 / 4: 'sha1',
-    224 / 4: 'sha224',
-    256 / 4: 'sha256',
-    384 / 4: 'sha384',
-    512 / 4: 'sha512',
+    128 // 4: 'md5',
+    160 // 4: 'sha1',
+    224 // 4: 'sha224',
+    256 // 4: 'sha256',
+    384 // 4: 'sha384',
+    512 // 4: 'sha512',
 }
 
 
@@ -157,39 +177,99 @@ def get_callable_argspec(fn):
     return inspect.getargspec(inspectable)
 
 
-def pad(s, n=32, padchar=' '):
-    return s + (32 - len(s) % 32) * padchar
+def pad(s, n=32):
+    # PKCS7v1.5 https://www.ietf.org/rfc/rfc2315.txt
+    padlen = n - len(s) % n
+    return s + bytes(bytearray(padlen * [padlen]))
+
+
+def unpad(s, n=32):
+    padlen = s[-1]
+    if isinstance(padlen, str):
+        padlen = ord(padlen)  # python2
+    if (padlen < 1) | (padlen > n):  # avoid short-circuit
+        # return garbage to minimize side channels
+        return bytes(bytearray(len(s) * [0]))
+    return s[:-padlen]
 
 
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
+    dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+    if compression_level:
+        dump = zlib.compress(dump, compression_level)
+    encryption_key = to_bytes(encryption_key)
+    if not hash_key:
+        hash_key = hashlib.sha256(encryption_key).digest()
+    cipher, IV = AES_new(pad(encryption_key)[:32])
+    encrypted_data = base64.urlsafe_b64encode(IV + AES_enc(cipher, pad(dump)))
+    signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data, hashlib.sha256).hexdigest())
+    return b'hmac256:' + signature + b':' + encrypted_data
+
+
+def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+    components = data.count(b':')
+    if components == 1:
+        return secure_loads_deprecated(data, encryption_key, hash_key, compression_level)
+    if components != 2:
+        return None
+    version, signature, encrypted_data = data.split(b':', 2)
+    if version != b'hmac256':
+        return None
+    encryption_key = to_bytes(encryption_key)
+    if not hash_key:
+        hash_key = hashlib.sha256(encryption_key).digest()
+    actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.sha256).hexdigest()
+    if not compare(to_native(signature), actual_signature):
+        return None
+    encrypted_data = base64.urlsafe_b64decode(encrypted_data)
+    IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
+    cipher, _ = AES_new(pad(encryption_key)[:32], IV=IV)
+    try:
+        data = unpad(AES_dec(cipher, encrypted_data))
+        if compression_level:
+            data = zlib.decompress(data)
+        return pickle.loads(data)
+    except Exception as e:
+        return None
+
+
+def __pad_deprecated(s, n=32, padchar=b' '):
+    return s + (32 - len(s) % 32) * padchar
+
+
+def secure_dumps_deprecated(data, encryption_key, hash_key=None, compression_level=None):
+    encryption_key = to_bytes(encryption_key)
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
     dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
-    key = pad(encryption_key)[:32]
+    key = __pad_deprecated(encryption_key)[:32]
     cipher, IV = AES_new(key)
-    encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
-    signature = hmac.new(hash_key, encrypted_data).hexdigest()
-    return signature + ':' + encrypted_data
+    encrypted_data = base64.urlsafe_b64encode(IV + AES_enc(cipher, pad(dump)))
+    signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest())
+    return signature + b':' + encrypted_data
 
 
-def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+def secure_loads_deprecated(data, encryption_key, hash_key=None, compression_level=None):
+    encryption_key = to_bytes(encryption_key)
+    data = to_native(data)
     if ':' not in data:
         return None
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
     signature, encrypted_data = data.split(':', 1)
-    actual_signature = hmac.new(hash_key, encrypted_data).hexdigest()
+    encrypted_data = to_bytes(encrypted_data)
+    actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest()
     if not compare(signature, actual_signature):
         return None
-    key = pad(encryption_key)[:32]
+    key = __pad_deprecated(encryption_key)[:32]
     encrypted_data = base64.urlsafe_b64decode(encrypted_data)
     IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
     cipher, _ = AES_new(key, IV=IV)
     try:
-        data = cipher.decrypt(encrypted_data)
-        data = data.rstrip(' ')
+        data = AES_dec(cipher, encrypted_data)
+        data = data.rstrip(b' ')
         if compression_level:
             data = zlib.decompress(data)
         return pickle.loads(data)
@@ -220,19 +300,20 @@ def initialize_urandom():
     try:
         os.urandom(1)
         have_urandom = True
-        try:
-            # try to add process-specific entropy
-            frandom = open('/dev/urandom', 'wb')
+        if sys.platform != 'win32':
             try:
-                if PY2:
-                    frandom.write(''.join(chr(t) for t in ctokens)) # python 2
-                else:
-                    frandom.write(bytes([]).join(bytes([t]) for t in ctokens)) # python 3
-            finally:
-                frandom.close()
-        except IOError:
-            # works anyway
-            pass
+                # try to add process-specific entropy
+                frandom = open('/dev/urandom', 'wb')
+                try:
+                    if PY2:
+                        frandom.write(''.join(chr(t) for t in ctokens))
+                    else:
+                        frandom.write(bytes([]).join(bytes([t]) for t in ctokens))
+                finally:
+                    frandom.close()
+            except IOError:
+                # works anyway
+                pass
     except NotImplementedError:
         have_urandom = False
         logger.warning(
@@ -240,9 +321,9 @@ def initialize_urandom():
 your system does not provide a cryptographically secure entropy source.
 This is not specific to web2py; consider deploying on a different operating system.""")
     if PY2:
-        packed = ''.join(chr(x) for x in ctokens) # python 2
+        packed = ''.join(chr(x) for x in ctokens)
     else:
-        packed = bytes([]).join(bytes([x]) for x in ctokens) # python 3
+        packed = bytes([]).join(bytes([x]) for x in ctokens)
     unpacked_ctokens = _struct_2_long_long.unpack(packed)
     return unpacked_ctokens, have_urandom
 UNPACKED_CTOKENS, HAVE_URANDOM = initialize_urandom()
@@ -332,7 +413,7 @@ def is_loopback_ip_address(ip=None, addrinfo=None):
     Determines whether the address appears to be a loopback address.
     This assumes that the IP is valid.
     """
-    if addrinfo: # see socket.getaddrinfo() for layout of addrinfo tuple
+    if addrinfo:  # see socket.getaddrinfo() for layout of addrinfo tuple
         if addrinfo[0] == socket.AF_INET or addrinfo[0] == socket.AF_INET6:
             ip = addrinfo[4]
     if not isinstance(ip, basestring):
@@ -355,3 +436,28 @@ def getipaddrinfo(host):
                 and isinstance(addrinfo[4][0], basestring)]
     except socket.error:
         return []
+
+
+def local_html_escape(data, quote=False):
+    """
+    Works with bytes.
+    Replace special characters "&", "<" and ">" to HTML-safe sequences.
+    If the optional flag quote is true (the default), the quotation mark
+    characters, both double quote (") and single quote (') characters are also
+    translated.
+    """
+    if PY2:
+        import cgi
+        data = cgi.escape(data, quote)
+        return data.replace("'", "&#x27;") if quote else data
+    else:
+        import html
+        if isinstance(data, str):
+            return html.escape(data, quote=quote)
+        data = data.replace(b"&", b"&amp;")  # Must be done first!
+        data = data.replace(b"<", b"&lt;")
+        data = data.replace(b">", b"&gt;")
+        if quote:
+            data = data.replace(b'"', b"&quot;")
+            data = data.replace(b'\'', b"&#x27;")
+        return data

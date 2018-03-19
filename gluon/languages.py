@@ -18,24 +18,22 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems
 
-from gluon.portalocker import read_locked, LockedFile
-from gluon.utf8 import Utf8
+from gluon.utils import local_html_escape
+
+from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
+
+from pydal.contrib.portalocker import read_locked, LockedFile
 
 from gluon.fileutils import listdir
 from gluon.cfs import getcfs
 from gluon.html import XML, xmlescape
-if PY2:
-    # FIXME PY3
-    from gluon.contrib.markmin.markmin2html import render, markmin_escape
+from gluon.contrib.markmin.markmin2html import render, markmin_escape
 
 __all__ = ['translator', 'findT', 'update_all_languages']
 
 ostat = os.stat
 oslistdir = os.listdir
-pjoin = os.path.join
-pexists = os.path.exists
 pdirname = os.path.dirname
 isdir = os.path.isdir
 
@@ -52,8 +50,10 @@ DEFAULT_CONSTRUCT_PLURAL_FORM = lambda word, plural_id: word
 
 if PY2:
     NUMBERS = (int, long, float)
+    from gluon.utf8 import Utf8
 else:
     NUMBERS = (int, float)
+    Utf8 = str
 
 # pattern to find T(blah blah blah) expressions
 PY_STRING_LITERAL_RE = r'(?<=[^\w]T\()(?P<name>'\
@@ -110,15 +110,17 @@ def markmin(s):
 
 
 def upper_fun(s):
-    return unicode(s, 'utf-8').upper().encode('utf-8')
+    return to_unicode(s).upper()
 
 
 def title_fun(s):
-    return unicode(s, 'utf-8').title().encode('utf-8')
+    return to_unicode(s).title()
 
 
 def cap_fun(s):
-    return unicode(s, 'utf-8').capitalize().encode('utf-8')
+    return to_unicode(s).capitalize()
+
+
 ttab_in = maketrans("\\%{}", '\x1c\x1d\x1e\x1f')
 ttab_out = maketrans('\x1c\x1d\x1e\x1f', "\\%{}")
 
@@ -167,7 +169,7 @@ def read_dict_aux(filename):
     lang_text = read_locked(filename).replace(b'\r\n', b'\n')
     clear_cache(filename)
     try:
-        return safe_eval(lang_text) or {}
+        return safe_eval(to_native(lang_text)) or {}
     except Exception:
         e = sys.exc_info()[1]
         status = 'Syntax error in %s (%s)' % (filename, e)
@@ -426,13 +428,19 @@ class lazyT(object):
         return len(str(self))
 
     def xml(self):
-        return str(self) if self.M else escape(str(self))
+        return str(self) if self.M else local_html_escape(str(self), quote=False)
 
     def encode(self, *a, **b):
-        return str(self).encode(*a, **b)
+        if PY2 and a[0] != 'utf8':
+            return to_unicode(str(self)).encode(*a, **b)
+        else:
+            return str(self)
 
     def decode(self, *a, **b):
-        return str(self).decode(*a, **b)
+        if PY2:
+            return str(self).decode(*a, **b)
+        else:
+            return str(self)
 
     def read(self):
         return str(self)
@@ -623,7 +631,6 @@ class translator(object):
         of them matches possible_languages.
         """
         pl_info = read_possible_languages(self.langpath)
-
         def set_plural(language):
             """
             initialize plural forms subsystem
@@ -763,10 +770,10 @@ class translator(object):
                     symbols = (symbols,)
                 symbols = tuple(
                     value if isinstance(value, NUMBERS)
-                    else xmlescape(value).translate(ttab_in)
+                    else to_native(xmlescape(value)).translate(ttab_in)
                     for value in symbols)
             message = self.params_substitution(message, symbols)
-        return XML(message.translate(ttab_out))
+        return to_native(XML(message.translate(ttab_out)).xml())
 
     def M(self, message, symbols={}, language=None,
           lazy=None, filter=None, ftag=None, ns=None):
@@ -800,18 +807,16 @@ class translator(object):
         the ## notation is ignored in multiline strings and strings that
         start with ##. This is needed to allow markmin syntax to be translated
         """
-        if isinstance(message, unicodeT):
-            message = message.encode('utf8')
-        if isinstance(prefix, unicodeT):
-            prefix = prefix.encode('utf8')
+        message = to_native(message, 'utf8')
+        prefix = to_native(prefix, 'utf8')
         key = prefix + message
         mt = self.t.get(key, None)
         if mt is not None:
             return mt
         # we did not find a translation
-        if message.find(to_bytes('##')) > 0:
+        if message.find('##') > 0:
             pass
-        if message.find(to_bytes('##')) > 0 and not '\n' in message:
+        if message.find('##') > 0 and not '\n' in message:
             # remove comments
             message = message.rsplit('##', 1)[0]
         # guess translation same as original
@@ -821,7 +826,7 @@ class translator(object):
                 self.language_file != self.default_language_file:
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
-            lambda m: m.group(1).translate(ttab_in), str(mt))
+            lambda m: m.group(1).translate(ttab_in), to_native(mt))
 
     def params_substitution(self, message, symbols):
         """
@@ -957,32 +962,40 @@ def findT(path, language=DEFAULT_LANGUAGE):
     Note:
         Must be run by the admin app
     """
+    from gluon.tools import Auth, Crud
     lang_file = pjoin(path, 'languages', language + '.py')
     sentences = read_dict(lang_file)
     mp = pjoin(path, 'models')
     cp = pjoin(path, 'controllers')
     vp = pjoin(path, 'views')
     mop = pjoin(path, 'modules')
+    def add_message(message):
+        if not message.startswith('#') and not '\n' in message:
+            tokens = message.rsplit('##', 1)
+        else:
+            # this allows markmin syntax in translations
+            tokens = [message]
+        if len(tokens) == 2:
+            message = tokens[0].strip() + '##' + tokens[1].strip()
+        if message and not message in sentences:
+            sentences[message] = message.replace("@markmin\x01", "")
     for filename in \
             listdir(mp, '^.+\.py$', 0) + listdir(cp, '^.+\.py$', 0)\
             + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
-        data = read_locked(filename)
+        data = to_native(read_locked(filename))
         items = regex_translate.findall(data)
-        items += regex_translate_m.findall(data)
+        for x in regex_translate_m.findall(data):
+            if x[0:3] in ["'''", '"""']: items.append("%s@markmin\x01%s" %(x[0:3], x[3:]))
+            else: items.append("%s@markmin\x01%s" %(x[0], x[1:]))
         for item in items:
             try:
                 message = safe_eval(item)
             except:
                 continue  # silently ignore inproperly formatted strings
-            if not message.startswith('#') and not '\n' in message:
-                tokens = message.rsplit('##', 1)
-            else:
-                # this allows markmin syntax in translations
-                tokens = [message]
-            if len(tokens) == 2:
-                message = tokens[0].strip() + '##' + tokens[1].strip()
-            if message and not message in sentences:
-                sentences[message] = message
+            add_message(message)
+    gluon_msg = [Auth.default_messages, Crud.default_messages]
+    for item in [x for m in gluon_msg for x in m.values() if x is not None]:
+        add_message(item)
     if not '!langcode!' in sentences:
         sentences['!langcode!'] = (
             DEFAULT_LANGUAGE if language in ('default', DEFAULT_LANGUAGE) else language)

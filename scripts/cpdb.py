@@ -15,6 +15,7 @@ except ImportError:
   import readline
 try:
     from gluon import DAL
+    from gluon.fileutils import open_file
 except ImportError as err:
     print('gluon path not found')
 
@@ -531,7 +532,7 @@ class setCopyDB():
         self.db.export_to_csv_file(open('tmp.sql', 'wb'))
 
         print 'importing data...'
-        other_db.import_from_csv_file(open('tmp.sql', 'rb'))
+        other_db.import_from_csv_file(open_file('tmp.sql', 'rb'))
         other_db.commit()
         print 'done!'
         print 'Attention: do not run this program again or you end up with duplicate records'

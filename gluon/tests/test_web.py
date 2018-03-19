@@ -9,14 +9,11 @@ import os
 import unittest
 import subprocess
 import time
-import signal
 
-from .fix_path import fix_sys_path
 
-fix_sys_path(__file__)
 
 from gluon.contrib.webclient import WebClient
-from gluon._compat import urllib2
+from gluon._compat import urllib2, PY2
 
 webserverprocess = None
 
@@ -32,7 +29,7 @@ def startwebserver():
                 break
             path = os.path.abspath(os.path.join(path, '..'))
     web2py_exec = os.path.join(path, 'web2py.py')
-    webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a',  'testpass'])
+    webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a', 'testpass'])
     print('Sleeping before web2py starts...')
     for a in range(1, 11):
         time.sleep(1)
@@ -50,6 +47,24 @@ def stopwebserver():
     global webserverprocess
     print('Killing webserver')
     webserverprocess.terminate()
+
+
+class Cookie(unittest.TestCase):
+    def testParseMultipleEquals(self):
+        """ Test for issue #1500.
+        Ensure that a cookie containing one or more '=' is correctly parsed
+        """
+        client = WebClient()
+        client.headers['set-cookie'] = "key = value with one =;"
+        client._parse_headers_in_cookies()
+        self.assertIn("key", client.cookies)
+        self.assertEqual(client.cookies['key'], "value with one =")
+
+        client.headers['set-cookie'] = "key = value with one = and another one =;"
+        client._parse_headers_in_cookies()
+        client._parse_headers_in_cookies()
+        self.assertIn("key", client.cookies)
+        self.assertEqual(client.cookies['key'], "value with one = and another one =")
 
 
 class LiveTest(unittest.TestCase):
@@ -87,15 +102,15 @@ class TestWeb(LiveTest):
                     password='test',
                     _formname='login')
         client.post('user/login', data=data)
-        self.assertTrue('Welcome Homer' in client.text)
+        self.assertTrue('Homer' in client.text)
 
         # check registration and login were successful
         client.get('index')
 
-        self.assertTrue('Welcome Homer' in client.text)
+        self.assertTrue('Homer' in client.text)
 
         client = WebClient('http://127.0.0.1:8000/admin/default/')
-        client.post('index', data=dict(password='hello'))
+        client.post('index', data=dict(password='testpass'))
         client.get('site')
         client.get('design/welcome')
 
@@ -110,6 +125,7 @@ class TestWeb(LiveTest):
         assert('expires' in s.headers)
         assert(s.headers['cache-control'].startswith('max-age'))
 
+    @unittest.skipIf(not(PY2), 'skip PY3 testSoap')
     def testSoap(self):
         # test soap server implementation
         from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
@@ -140,7 +156,3 @@ class TestWeb(LiveTest):
         # check internal server error returned (issue 153)
         assert(s.status == 500)
         assert(s.text == xml_response)
-
-
-if __name__ == '__main__':
-    unittest.main()

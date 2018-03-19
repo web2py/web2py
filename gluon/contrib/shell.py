@@ -48,7 +48,7 @@ _HISTORY_KIND = '_Shell_History'
 UNPICKLABLE_TYPES = [
     types.ModuleType,
     type,
-    ClassType
+    ClassType,
     types.FunctionType,
 ]
 

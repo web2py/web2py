@@ -19,7 +19,8 @@ done
 if [ "$nopassword" -eq 0 ]
 then
   echo -e "Web2py Admin Password: \c "
-  read  PW
+  read -s PW
+  printf "\n"  # fix no new line artifact of "read -s" to avoid cleartext password
 fi
 # Upgrade and install needed software
 apt-get update
@@ -214,18 +215,19 @@ then
 fi
 
 /etc/init.d/nginx start
-start uwsgi-emperor
+systemctl start emperor.uwsgi.service
+systemctl enable emperor.uwsgi.service
 
 echo <<EOF
 you can stop uwsgi and nginx with
 
   sudo /etc/init.d/nginx stop
-  sudo stop uwsgi-emperor
+  sudo systemctl stop emperor.uwsgi.service
  
 and start it with
 
   sudo /etc/init.d/nginx start
-  sudo start uwsgi-emperor
+  systemctl start emperor.uwsgi.service
 
 EOF
 

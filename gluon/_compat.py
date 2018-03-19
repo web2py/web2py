@@ -21,13 +21,21 @@ if PY2:
     import ConfigParser as configparser
     from email.MIMEBase import MIMEBase
     from email.Header import Header
-    from email import MIMEMultipart, MIMEText, Encoders, Charset
+    from email import Encoders, Charset
+    from email.MIMEMultipart import MIMEMultipart
+    from email.MIMEText import MIMEText
+    from email.Charset import add_charset, QP as charset_QP
     from urllib import FancyURLopener, urlencode, urlopen
-    from urllib import quote as urllib_quote, unquote as urllib_unquote
+    from urllib import quote as urllib_quote, unquote as urllib_unquote, quote_plus as urllib_quote_plus
     from string import maketrans
     from types import ClassType
     import cgi
+    import cookielib
+    from xmlrpclib import ProtocolError
+    from gluon.contrib import ipaddress
+    BytesIO = StringIO
     reduce = reduce
+    reload = reload
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
     itervalues = lambda d: d.itervalues()
@@ -41,14 +49,14 @@ if PY2:
     unichr = unichr
     unicodeT = unicode
 
-    def implements_iterator(cls):
-        cls.next = cls.__next__
-        del cls.__next__
-        return cls
-
     def implements_bool(cls):
         cls.__nonzero__ = cls.__bool__
         del cls.__bool__
+        return cls
+
+    def implements_iterator(cls):
+        cls.next = cls.__next__
+        del cls.__next__
         return cls
 
     def to_bytes(obj, charset='utf-8', errors='strict'):
@@ -56,7 +64,7 @@ if PY2:
             return None
         if isinstance(obj, (bytes, bytearray, buffer)):
             return bytes(obj)
-        if isinstance(obj, unicode):
+        if hasattr(obj, 'encode'):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
 
@@ -65,14 +73,12 @@ if PY2:
             return obj
         return obj.encode(charset, errors)
 
-    def _local_html_escape(data, quote=False):
-        s = cgi.escape(data, quote)
-        return s.replace("'", "&#x27;") if quote else s
 
 else:
     import pickle
-    from io import StringIO
+    from io import StringIO, BytesIO
     import copyreg
+    from importlib import reload
     from functools import reduce
     from html.parser import HTMLParser
     from http import cookies as Cookie
@@ -88,10 +94,13 @@ else:
     from email.mime.text import MIMEText
     from email import encoders as Encoders
     from email.header import Header
-    from email.charset import Charset
+    from email.charset import Charset, add_charset, QP as charset_QP
     from urllib.request import FancyURLopener, urlopen
-    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode
-    import html
+    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode, quote_plus as urllib_quote_plus
+    from http import cookiejar as cookielib
+    from xmlrpc.client import ProtocolError
+    import html # warning, this is the python3 module and not the web2py html module
+    import ipaddress
     hashlib_md5 = lambda s: hashlib.md5(bytes(s, 'utf8'))
     iterkeys = lambda d: iter(d.keys())
     itervalues = lambda d: iter(d.values())
@@ -115,7 +124,7 @@ else:
             return None
         if isinstance(obj, (bytes, bytearray, memoryview)):
             return bytes(obj)
-        if isinstance(obj, str):
+        if hasattr(obj, 'encode'):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
 
@@ -124,24 +133,6 @@ else:
             return obj
         return obj.decode(charset, errors)
 
-    def _local_html_escape(s, quote=True):
-        """
-        Works with bytes.
-        Replace special characters "&", "<" and ">" to HTML-safe sequences.
-        If the optional flag quote is true (the default), the quotation mark
-        characters, both double quote (") and single quote (') characters are also
-        translated.
-        """
-        if isinstance(s, str):
-            return html.escape(s, quote=quote)
-
-        s = s.replace(b"&", b"&amp;") # Must be done first!
-        s = s.replace(b"<", b"&lt;")
-        s = s.replace(b">", b"&gt;")
-        if quote:
-            s = s.replace(b'"', b"&quot;")
-            s = s.replace(b'\'', b"&#x27;")
-        return s
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
@@ -162,7 +153,7 @@ def with_metaclass(meta, *bases):
 def to_unicode(obj, charset='utf-8', errors='strict'):
     if obj is None:
         return None
-    if not isinstance(obj, bytes):
+    if not hasattr(obj, 'decode'):
         return text_type(obj)
     return obj.decode(charset, errors)
 

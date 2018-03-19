@@ -12,7 +12,7 @@ Just for backward compatibility
 """
 __all__ = ['DAL', 'Field', 'DRIVERS']
 
-from dal import DAL, Field, SQLCustomType
+from gluon.dal import DAL, Field, SQLCustomType
 from pydal.base import BaseAdapter
 from pydal.drivers import DRIVERS
 from pydal.objects import Table, Query, Set, Expression, Row, Rows

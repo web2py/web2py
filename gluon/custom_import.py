@@ -8,7 +8,7 @@
 Support for smart import syntax for web2py applications
 -------------------------------------------------------
 """
-from gluon._compat import builtin
+from gluon._compat import builtin, unicodeT, PY2, to_native, reload
 import os
 import sys
 import threading
@@ -47,8 +47,8 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     If the import fails, it falls back on naive_importer
     """
 
-    if isinstance(name, unicode):
-        name = name.encode('utf8')
+    if isinstance(name, unicodeT):
+        name = to_native(name)
 
     globals = globals or {}
     locals = locals or {}
@@ -62,6 +62,9 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     except:  # there is no current.request (should never happen)
         base_importer = NATIVE_IMPORTER
 
+    if not(PY2) and level < 0:
+        level = 0
+
     # if not relative and not from applications:
     if hasattr(current, 'request') \
             and level <= 0 \
@@ -72,7 +75,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             try:
                 oname = name if not name.startswith('.') else '.'+name
                 return NATIVE_IMPORTER(oname, globals, locals, fromlist, level)
-            except ImportError:
+            except (ImportError, KeyError):
                 items = current.request.folder.split(os.path.sep)
                 if not items[-1]:
                     items = items[:-1]
@@ -97,7 +100,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             import_tb = sys.exc_info()[2]
             try:
                 return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
-            except ImportError as e3:
+            except (ImportError, KeyError) as e3:
                 raise ImportError(e1, import_tb)  # there an import error in the module
         except Exception as e2:
             raise  # there is an error in the module

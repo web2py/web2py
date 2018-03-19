@@ -18,7 +18,6 @@
     :license: LGPLv3
 
 """
-from __future__ import print_function
 
 import ctypes
 import ctypes.util
@@ -29,7 +28,7 @@ import binascii
 import sys
 
 __all__ = ['pkcs5_pbkdf2_hmac', 'pbkdf2_bin', 'pbkdf2_hex']
-__version__ = '0.99.3'
+__version__ = '0.99.4'
 
 def _commoncrypto_hashlib_to_crypto_map_get(hashfunc):
     hashlib_to_crypto_map = {hashlib.sha1: 1,

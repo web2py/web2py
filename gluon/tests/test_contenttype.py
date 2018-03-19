@@ -6,9 +6,7 @@
 """
 
 import unittest
-from .fix_path import fix_sys_path
 
-fix_sys_path(__file__)
 
 from gluon.contenttype import contenttype
 from gluon._compat import iteritems
@@ -37,7 +35,3 @@ class TestContentType(unittest.TestCase):
         # test without dot extension
         rtn = contenttype('png')
         self.assertEqual(rtn, 'text/plain; charset=utf-8')
-
-
-if __name__ == '__main__':
-    unittest.main()

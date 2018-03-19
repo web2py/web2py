@@ -21,6 +21,7 @@ import logging
 from gluon.http import HTTP
 from gzip import open as gzopen
 from gluon.recfile import generate
+from gluon._compat import PY2
 
 __all__ = [
     'parse_version',
@@ -96,11 +97,19 @@ def parse_version(version):
     return version_tuple
 
 
+def open_file(filename, mode):
+    if PY2 or 'b' in mode:
+        f = open(filename, mode)
+    else:
+        f = open(filename, mode, encoding="utf8")
+    return f
+
+
 def read_file(filename, mode='r'):
     """Returns content from filename, making sure to close the file explicitly
     on exit.
     """
-    f = open(filename, mode)
+    f = open_file(filename, mode)
     try:
         return f.read()
     finally:
@@ -111,7 +120,7 @@ def write_file(filename, value, mode='w'):
     """Writes <value> to filename, making sure to close the file
     explicitly on exit.
     """
-    f = open(filename, mode)
+    f = open_file(filename, mode)
     try:
         return f.write(value)
     finally:
@@ -406,10 +415,10 @@ def fix_newlines(path):
 |\r|
 )''')
     for filename in listdir(path, '.*\.(py|html)$', drop=False):
-        rdata = read_file(filename, 'rb')
+        rdata = read_file(filename, 'r')
         wdata = regex.sub('\n', rdata)
         if wdata != rdata:
-            write_file(filename, wdata, 'wb')
+            write_file(filename, wdata, 'w')
 
 
 def copystream(

@@ -7,14 +7,10 @@ import platform
 import time
 import base64
 import os
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+from gluon._compat import StringIO
 
 
 service = Service(globals())
-
 
 @service.jsonrpc
 def login():
@@ -85,44 +81,44 @@ def install(app_name, filename, data, overwrite=True):
 
 @service.jsonrpc
 def attach_debugger(host='localhost', port=6000, authkey='secret password'):
-    import gluon.contrib.qdb as qdb
+    import gluon.contrib.dbg as dbg
     import gluon.debug
     from multiprocessing.connection import Listener
 
     if isinstance(authkey, unicode):
         authkey = authkey.encode('utf8')
 
-    if not hasattr(gluon.debug, 'qdb_listener'):
+    if not hasattr(gluon.debug, 'dbg_listener'):
         # create a remote debugger server and wait for connection
         address = (host, port)     # family is deduced to be 'AF_INET'
-        gluon.debug.qdb_listener = Listener(address, authkey=authkey)
-        gluon.debug.qdb_connection = gluon.debug.qdb_listener.accept()
+        gluon.debug.dbg_listener = Listener(address, authkey=authkey)
+        gluon.debug.dbg_connection = gluon.debug.dbg_listener.accept()
         # create the backend
-        gluon.debug.qdb_debugger = qdb.Qdb(gluon.debug.qdb_connection)
-        gluon.debug.dbg = gluon.debug.qdb_debugger
+        gluon.debug.dbg_debugger = dbg.Qdb(gluon.debug.dbg_connection)
+        gluon.debug.dbg = gluon.debug.dbg_debugger
         # welcome message (this should be displayed on the frontend)
-        print 'debugger connected to', gluon.debug.qdb_listener.last_accepted
+        print('debugger connected to', gluon.debug.dbg_listener.last_accepted)
     return True     # connection successful!
 
 
 @service.jsonrpc
 def detach_debugger():
-    import gluon.contrib.qdb as qdb
+    import gluon.contrib.dbg as dbg
     import gluon.debug
     # stop current debugger
-    if gluon.debug.qdb_debugger:
+    if gluon.debug.dbg_debugger:
         try:
-            gluon.debug.qdb_debugger.do_quit()
+            gluon.debug.dbg_debugger.do_quit()
         except:
             pass
-    if hasattr(gluon.debug, 'qdb_listener'):
-        if gluon.debug.qdb_connection:
-            gluon.debug.qdb_connection.close()
-            del gluon.debug.qdb_connection
-        if gluon.debug.qdb_listener:
-            gluon.debug.qdb_listener.close()
-            del gluon.debug.qdb_listener
-    gluon.debug.qdb_debugger = None
+    if hasattr(gluon.debug, 'dbg_listener'):
+        if gluon.debug.dbg_connection:
+            gluon.debug.dbg_connection.close()
+            del gluon.debug.dbg_connection
+        if gluon.debug.dbg_listener:
+            gluon.debug.dbg_listener.close()
+            del gluon.debug.dbg_listener
+    gluon.debug.dbg_debugger = None
     return True
 
 

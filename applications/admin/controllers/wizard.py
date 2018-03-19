@@ -7,7 +7,7 @@ import pickle
 import urllib
 import glob
 from gluon.admin import app_create, plugin_install
-from gluon.fileutils import abspath, read_file, write_file
+from gluon.fileutils import abspath, read_file, write_file, open_file
 
 
 def reset(session):
@@ -67,7 +67,7 @@ def index():
                              '..', app, 'wizard.metadata'))
             if os.path.exists(meta):
                 try:
-                    metafile = open(meta, 'rb')
+                    metafile = open_file(meta, 'rb')
                     try:
                         session.app = pickle.load(metafile)
                     finally:
@@ -402,7 +402,7 @@ db.auth_user.email.requires = (
 
 def fix_db(filename):
     params = dict(session.app['params'])
-    content = read_file(filename, 'rb')
+    content = read_file(filename, 'r')
     if 'auth_user' in session.app['tables']:
         auth_user = make_table('auth_user', session.app['table_auth_user'])
         content = content.replace('sqlite://storage.sqlite',
@@ -424,7 +424,7 @@ auth.settings.login_form = RPXAccount(request,
     domain = settings.login_config.split(':')[0],
     url = "http://%s/%s/default/user/login" % (request.env.http_host,request.application))
 """
-    write_file(filename, content, 'wb')
+    write_file(filename, content, 'w')
 
 
 def make_menu(pages):
@@ -493,7 +493,7 @@ def create(options):
     ### save metadata in newapp/wizard.metadata
     try:
         meta = os.path.join(request.folder, '..', app, 'wizard.metadata')
-        file = open(meta, 'wb')
+        file = open_file(meta, 'wb')
         pickle.dump(session.app, file)
         file.close()
     except IOError:
@@ -516,12 +516,12 @@ def create(options):
             plugin_name = 'web2py.plugin.' + plugin + '.w2p'
             stream = urllib.urlopen(PLUGINS_APP + '/static/' + plugin_name)
             plugin_install(app, stream, request, plugin_name)
-        except Exception, e:
+        except Exception as e:
             session.flash = T("unable to download plugin: %s" % plugin)
 
     ### write configuration file into newapp/models/0.py
     model = os.path.join(request.folder, '..', app, 'models', '0.py')
-    file = open(model, 'wb')
+    file = open_file(model, 'w')
     try:
         file.write("from gluon.storage import Storage\n")
         file.write("settings = Storage()\n\n")
@@ -534,7 +534,7 @@ def create(options):
     ### write configuration file into newapp/models/menu.py
     if options.generate_menu:
         model = os.path.join(request.folder, '..', app, 'models', 'menu.py')
-        file = open(model, 'wb')
+        file = open_file(model, 'w')
         try:
             file.write(make_menu(session.app['pages']))
         finally:
@@ -548,7 +548,7 @@ def create(options):
     if options.generate_model:
         model = os.path.join(
             request.folder, '..', app, 'models', 'db_wizard.py')
-        file = open(model, 'wb')
+        file = open_file(model, 'w')
         try:
             file.write('### we prepend t_ to tablenames and f_ to fieldnames for disambiguity\n\n')
             tables = sort_tables(session.app['tables'])
@@ -564,7 +564,7 @@ def create(options):
     if os.path.exists(model):
         os.unlink(model)
     if options.populate_database and session.app['tables']:
-        file = open(model, 'wb')
+        file = open_file(model, 'w')
         try:
             file.write(populate(session.app['tables']))
         finally:
@@ -574,7 +574,7 @@ def create(options):
     if options.generate_controller:
         controller = os.path.join(
             request.folder, '..', app, 'controllers', 'default.py')
-        file = open(controller, 'wb')
+        file = open_file(controller, 'w')
         try:
             file.write("""# -*- coding: utf-8 -*-
 ### required - do no delete
@@ -594,7 +594,7 @@ def call(): return service()
         for page in session.app['pages']:
             view = os.path.join(
                 request.folder, '..', app, 'views', 'default', page + '.html')
-            file = open(view, 'wb')
+            file = open_file(view, 'w')
             try:
                 file.write(
                     make_view(page, session.app.get('page_' + page, '')))

@@ -8,9 +8,7 @@ import unittest
 import os
 import shutil
 import uuid
-from .fix_path import fix_sys_path
 
-fix_sys_path(__file__)
 
 from gluon import recfile
 
@@ -29,7 +27,8 @@ class TestRecfile(unittest.TestCase):
             filename = os.path.join('tests', str(uuid.uuid4()) + '.test')
             with recfile.open(filename, "w") as g:
                 g.write(teststring)
-            self.assertEqual(recfile.open(filename, "r").read(), teststring)
+            with recfile.open(filename, "r") as f:
+                self.assertEqual(f.read(), teststring)
             is_there = recfile.exists(filename)
             self.assertTrue(is_there)
             recfile.remove(filename)
@@ -40,7 +39,8 @@ class TestRecfile(unittest.TestCase):
             filename = str(uuid.uuid4()) + '.test'
             with recfile.open(filename, "w", path='tests') as g:
                 g.write(teststring)
-            self.assertEqual(recfile.open(filename, "r", path='tests').read(), teststring)
+            with recfile.open(filename, "r", path='tests') as f:
+                self.assertEqual(f.read(), teststring)
             is_there = recfile.exists(filename, path='tests')
             self.assertTrue(is_there)
             recfile.remove(filename, path='tests')
@@ -51,7 +51,8 @@ class TestRecfile(unittest.TestCase):
             filename = os.path.join('tests', str(uuid.uuid4()), str(uuid.uuid4()) + '.test')
             with recfile.open(filename, "w") as g:
                 g.write(teststring)
-            self.assertEqual(recfile.open(filename, "r").read(), teststring)
+            with recfile.open(filename, "r") as f:
+                self.assertEqual(f.read(), teststring)
             is_there = recfile.exists(filename)
             self.assertTrue(is_there)
             recfile.remove(filename)
@@ -63,12 +64,11 @@ class TestRecfile(unittest.TestCase):
         with open(filename, 'w') as g:
             g.write('this file exists')
         self.assertTrue(recfile.exists(filename))
-        self.assertTrue(hasattr(recfile.open(filename, "r"), 'read'))
+        r = recfile.open(filename, "r")
+        self.assertTrue(hasattr(r, 'read'))
+        r.close()
         recfile.remove(filename, path='tests')
         self.assertFalse(recfile.exists(filename))
         self.assertRaises(IOError, recfile.remove, filename)
         self.assertRaises(IOError, recfile.open, filename, "r")
 
-
-if __name__ == '__main__':
-    unittest.main()

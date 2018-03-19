@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Unit tests for http.py """
@@ -7,15 +7,16 @@ import unittest
 import datetime
 import decimal
 import re
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
-
 
 from gluon.validators import *
 from gluon._compat import PY2, to_bytes
 
 class TestValidators(unittest.TestCase):
+
+    def myassertRegex(self, *args, **kwargs):
+        if PY2:
+            return getattr(self, 'assertRegexpMatches')(*args, **kwargs)
+        return getattr(self, 'assertRegex')(*args, **kwargs)
 
     def test_MISC(self):
         """ Test miscelaneous utility functions and some general behavior guarantees """
@@ -234,6 +235,11 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
         rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
         self.assertEqual(rtn, [('', ''), ('%d' % costanza_id, 'costanza'), ('%d' % george_id, 'george')])
+        # Test None
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
+        rtn = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
         # Test using the set it made for options
         vldtr = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')
         vldtr.options()
@@ -272,8 +278,68 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('jerry', 'oops'))
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', auto_add=True)('jerry')
         self.assertEqual(rtn, (3, None))
+        # Test it works with reference table
+        db.define_table('ref_table',
+                        Field('name'),
+                        Field('person_id', 'reference person')
+                        )
+        ret = db.ref_table.validate_and_insert(name='test reference table')
+        self.assertFalse(list(ret.errors))
+        ret = db.ref_table.validate_and_insert(name='test reference table', person_id=george_id)
+        self.assertFalse(list(ret.errors))
+        rtn = IS_IN_DB(db, 'ref_table.person_id', '%(name)s')(george_id)
+        self.assertEqual(rtn, (george_id, None))
+        # Test it works with reference table.field and keyed table
+        db.define_table('person_keyed',
+                        Field('name'),
+                        primarykey=['name'])
+        db.person_keyed.insert(name='george')
+        db.person_keyed.insert(name='costanza')
+        rtn = IS_IN_DB(db, 'person_keyed.name')('george')
+        self.assertEqual(rtn, ('george', None))
+        db.define_table('ref_table_field',
+                        Field('name'),
+                        Field('person_name', 'reference person_keyed.name')
+                        )
+        ret = db.ref_table_field.validate_and_insert(name='test reference table.field')
+        self.assertFalse(list(ret.errors))
+        ret = db.ref_table_field.validate_and_insert(name='test reference table.field', person_name='george')
+        self.assertFalse(list(ret.errors))
+        vldtr = IS_IN_DB(db, 'ref_table_field.person_name', '%(name)s')
+        vldtr.options()
+        rtn = vldtr('george')
+        self.assertEqual(rtn, ('george', None))
+        # Test it works with list:reference table
+        db.define_table('list_ref_table',
+                        Field('name'),
+                        Field('person_list', 'list:reference person'))
+        ret = db.list_ref_table.validate_and_insert(name='test list:reference table')
+        self.assertFalse(list(ret.errors))
+        ret = db.list_ref_table.validate_and_insert(name='test list:reference table', person_list=[george_id,costanza_id])
+        self.assertFalse(list(ret.errors))
+        vldtr = IS_IN_DB(db, 'list_ref_table.person_list')
+        vldtr.options()
+        rtn = vldtr([george_id,costanza_id])
+        self.assertEqual(rtn, ([george_id,costanza_id], None))
+        # Test it works with list:reference table.field and keyed table
+        #db.define_table('list_ref_table_field',
+        #                Field('name'),
+        #                Field('person_list', 'list:reference person_keyed.name'))
+        #ret = db.list_ref_table_field.validate_and_insert(name='test list:reference table.field')
+        #self.assertFalse(list(ret.errors))
+        #ret = db.list_ref_table_field.validate_and_insert(name='test list:reference table.field', person_list=['george','costanza'])
+        #self.assertFalse(list(ret.errors))
+        #vldtr = IS_IN_DB(db, 'list_ref_table_field.person_list')
+        #vldtr.options()
+        #rtn = vldtr(['george','costanza'])
+        #self.assertEqual(rtn, (['george','costanza'], None))
         db.person.drop()
         db.category.drop()
+        db.person_keyed.drop()
+        db.ref_table.drop()
+        db.ref_table_field.drop()
+        db.list_ref_table.drop()
+        #db.list_ref_table_field.drop()
 
     def test_IS_NOT_IN_DB(self):
         from gluon.dal import DAL, Field
@@ -433,21 +499,23 @@ class TestValidators(unittest.TestCase):
         rtn = IS_NOT_EMPTY()('x')
         self.assertEqual(rtn, ('x', None))
         rtn = IS_NOT_EMPTY()(' x ')
-        self.assertEqual(rtn, ('x', None))
+        self.assertEqual(rtn, (' x ', None))
         rtn = IS_NOT_EMPTY()(None)
         self.assertEqual(rtn, (None, 'Enter a value'))
         rtn = IS_NOT_EMPTY()('')
         self.assertEqual(rtn, ('', 'Enter a value'))
+        rtn = IS_NOT_EMPTY()(b'')
+        self.assertEqual(rtn, (b'', 'Enter a value'))
         rtn = IS_NOT_EMPTY()('  ')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('  ', 'Enter a value'))
         rtn = IS_NOT_EMPTY()(' \n\t')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, (' \n\t', 'Enter a value'))
         rtn = IS_NOT_EMPTY()([])
         self.assertEqual(rtn, ([], 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='def')('def')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('def', 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='de[fg]')('deg')
-        self.assertEqual(rtn, ('', 'Enter a value'))
+        self.assertEqual(rtn, ('deg', 'Enter a value'))
         rtn = IS_NOT_EMPTY(empty_regex='def')('abc')
         self.assertEqual(rtn, ('abc', None))
 
@@ -529,6 +597,11 @@ class TestValidators(unittest.TestCase):
         # test for not a string at all
         rtn = IS_EMAIL(error_message='oops')(42)
         self.assertEqual(rtn, (42, 'oops'))
+
+        # test for Internationalized Domain Names, see https://docs.python.org/2/library/codecs.html#module-encodings.idna
+        rtn = IS_EMAIL()('web2py@Alliancefrançaise.nu')
+        self.assertEqual(rtn, ('web2py@Alliancefrançaise.nu', None))
+
 
     def test_IS_LIST_OF_EMAILS(self):
         emails = ['localguy@localhost', '_Yosemite.Sam@example.com']
@@ -701,15 +774,19 @@ class TestValidators(unittest.TestCase):
 
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
+        self.assertEqual(rtn, ('abc', None))
+        rtn = IS_LOWER()(b'ABC')
         self.assertEqual(rtn, (b'abc', None))
         rtn = IS_LOWER()('Ñ')
-        self.assertEqual(rtn, (b'\xc3\xb1', None))
+        self.assertEqual(rtn, ('ñ', None))
 
     def test_IS_UPPER(self):
         rtn = IS_UPPER()('abc')
+        self.assertEqual(rtn, ('ABC', None))
+        rtn = IS_UPPER()(b'abc')
         self.assertEqual(rtn, (b'ABC', None))
         rtn = IS_UPPER()('ñ')
-        self.assertEqual(rtn, (b'\xc3\x91', None))
+        self.assertEqual(rtn, ('Ñ', None))
 
     def test_IS_SLUG(self):
         rtn = IS_SLUG()('abc123')
@@ -779,11 +856,15 @@ class TestValidators(unittest.TestCase):
         rtn = IS_EMPTY_OR(IS_EMAIL())('abc')
         self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
         rtn = IS_EMPTY_OR(IS_EMAIL())(' abc ')
-        self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
+        self.assertEqual(rtn, (' abc ', 'Enter a valid email address'))
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options(zero=False)
         self.assertEqual(rtn, [('', ''), ('id1', 'first label'), ('id2', 'second label')])
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options()
         self.assertEqual(rtn, [('', 'zero'), ('id1', 'first label'), ('id2', 'second label')])
+        rtn = IS_EMPTY_OR((IS_LOWER(), IS_EMAIL()))('AAA')
+        self.assertEqual(rtn, ('aaa', 'Enter a valid email address'))
+        rtn = IS_EMPTY_OR([IS_LOWER(), IS_EMAIL()])('AAA')
+        self.assertEqual(rtn, ('aaa', 'Enter a valid email address'))
 
     def test_CLEANUP(self):
         rtn = CLEANUP()('helloò')
@@ -791,20 +872,20 @@ class TestValidators(unittest.TestCase):
 
     def test_CRYPT(self):
         rtn = str(CRYPT(digest_alg='md5', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^md5\$.{16}\$.{32}$')
+        self.myassertRegex(rtn, r'^md5\$.{16}\$.{32}$')
         rtn = str(CRYPT(digest_alg='sha1', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha1\$.{16}\$.{40}$')
+        self.myassertRegex(rtn, r'^sha1\$.{16}\$.{40}$')
         rtn = str(CRYPT(digest_alg='sha256', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha256\$.{16}\$.{64}$')
+        self.myassertRegex(rtn, r'^sha256\$.{16}\$.{64}$')
         rtn = str(CRYPT(digest_alg='sha384', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha384\$.{16}\$.{96}$')
+        self.myassertRegex(rtn, r'^sha384\$.{16}\$.{96}$')
         rtn = str(CRYPT(digest_alg='sha512', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha512\$.{16}\$.{128}$')
+        self.myassertRegex(rtn, r'^sha512\$.{16}\$.{128}$')
         alg = 'pbkdf2(1000,20,sha512)'
         rtn = str(CRYPT(digest_alg=alg, salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^pbkdf2\(1000,20,sha512\)\$.{16}\$.{40}$')
+        self.myassertRegex(rtn, r'^pbkdf2\(1000,20,sha512\)\$.{16}\$.{40}$')
         rtn = str(CRYPT(digest_alg='md5', key='mykey', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^md5\$.{16}\$.{32}$')
+        self.myassertRegex(rtn, r'^md5\$.{16}\$.{32}$')
         a = str(CRYPT(digest_alg='sha1', salt=False)('test')[0])
         self.assertEqual(CRYPT(digest_alg='sha1', salt=False)('test')[0], a)
         self.assertEqual(CRYPT(digest_alg='sha1', salt=False)('test')[0], a[6:])
@@ -842,7 +923,7 @@ class TestValidators(unittest.TestCase):
                           '|'.join(['Minimum length is 8',
                                     'Maximum length is 4',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 uppercase',
                                     'Must include at least 1 number']))
                          )
         rtn = IS_STRONG(es=True)('abcde')
@@ -850,7 +931,7 @@ class TestValidators(unittest.TestCase):
                          ('abcde',
                           '|'.join(['Minimum length is 8',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 uppercase',
                                     'Must include at least 1 number']))
                          )
         rtn = IS_STRONG(upper=0, lower=0, number=0, es=True)('Abcde1')
@@ -858,8 +939,8 @@ class TestValidators(unittest.TestCase):
                          ('Abcde1',
                           '|'.join(['Minimum length is 8',
                                     'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                                    'May not include any upper case letters',
-                                    'May not include any lower case letters',
+                                    'May not include any uppercase letters',
+                                    'May not include any lowercase letters',
                                     'May not include any numbers']))
                          )
 
@@ -1028,12 +1109,11 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', 'Enter valid IPv6 address'))
         rtn = IS_IPV6(is_multicast=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', None))
-        # TODO:
         # with py3.ipaddress '2001::126c:8ffa:fe22:b3af' is considered private
         # with py2.ipaddress '2001::126c:8ffa:fe22:b3af' is considered private
         # with gluon.contrib.ipaddr(both current and trunk) is not considered private
-        # rtn = IS_IPV6(is_routeable=True)('2001::126c:8ffa:fe22:b3af')
-        # self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', None))
+        rtn = IS_IPV6(is_routeable=False)('2001::126c:8ffa:fe22:b3af')
+        self.assertEqual(rtn, ('2001::126c:8ffa:fe22:b3af', None))
         rtn = IS_IPV6(is_routeable=True)('ff00::126c:8ffa:fe22:b3af')
         self.assertEqual(rtn, ('ff00::126c:8ffa:fe22:b3af', 'Enter valid IPv6 address'))
         rtn = IS_IPV6(subnets='2001::/32')('2001::8ffa:fe22:b3af')
@@ -1117,7 +1197,3 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', None))
         rtn = IS_IPADDRESS(subnets='invalidsubnet')('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', 'invalid subnet provided'))
-
-
-if __name__ == '__main__':
-    unittest.main()

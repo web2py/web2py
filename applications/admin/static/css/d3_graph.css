@@ -1,0 +1,33 @@
+    .node {fill: steelblue;
+           stroke: #636363;
+           stroke-width: 1px;}
+
+    .auth {fill: lightgrey;}
+
+    .table {r: 10;}
+
+    .link {stroke: #bbbbbb;
+           stroke-width: 2px;}
+    td {padding: 4px;}
+
+    div.tooltip {
+       position: absolute;
+       text-align: left;
+       /* width: 140px; */
+       /* height: 28px;*/
+       padding: 0px 5px 0px 5px;
+       padding-top: 0px;
+       font: 12px sans-serif;
+       background: #fff7bc;
+       border: solid 1px #aaa;
+       border-radius: 6px;
+       pointer-events: none;}
+
+    h5 { font: 14px sans-serif;
+         background : #ec7014;
+         color: #ffffe5; 
+         padding: 5px 2px 5px 2px;
+         margin-top: 1px;}
+    path {
+           fill: #aaaaaa;}
+

@@ -11,7 +11,8 @@ The gluon wsgi application
 """
 from __future__ import print_function
 
-if False: import import_all # DO NOT REMOVE PART OF FREEZE PROCESS
+if False:
+    import import_all  # DO NOT REMOVE PART OF FREEZE PROCESS
 import gc
 
 import os
@@ -26,7 +27,7 @@ import random
 import string
 
 from gluon._compat import Cookie, urllib2
-#from thread import allocate_lock
+# from thread import allocate_lock
 
 from gluon.fileutils import abspath, write_file
 from gluon.settings import global_settings
@@ -67,14 +68,14 @@ import gluon.messageboxhandler
 logging.gluon = gluon
 # so we must restore it! Thanks ozancag
 import locale
-locale.setlocale(locale.LC_CTYPE, "C") # IMPORTANT, web2py requires locale "C"
+locale.setlocale(locale.LC_CTYPE, "C")  # IMPORTANT, web2py requires locale "C"
 
 exists = os.path.exists
 pjoin = os.path.join
 
 try:
     logging.config.fileConfig(abspath("logging.conf"))
-except: # fails on GAE or when logfile is missing
+except:  # fails on GAE or when logfile is missing
     logging.basicConfig()
 logger = logging.getLogger("web2py")
 
@@ -180,14 +181,15 @@ def serve_controller(request, response, session):
     if isinstance(page, dict):
         response._vars = page
         response._view_environment.update(page)
-        run_view_in(response._view_environment)
-        page = response.body.getvalue()
-    # logic to garbage collect after exec, not always, once every 100 requests
-    global requests
-    requests = ('requests' in globals()) and (requests + 1) % 100 or 0
-    if not requests:
-        gc.collect()
-    # end garbage collection logic
+        page = run_view_in(response._view_environment)
+
+    if not request.env.web2py_disable_garbage_collect:
+        # logic to garbage collect after exec, not always, once every 100 requests
+        global requests
+        requests = ('requests' in globals()) and (requests + 1) % 100 or 0
+        if not requests:
+            gc.collect()
+        # end garbage collection logic
 
     # ##################################################
     # set default headers it not set
@@ -230,7 +232,7 @@ class LazyWSGI(object):
 
         to call third party WSGI applications
         """
-        self.response.status = str(status).split(' ', 1)[0]
+        self.response.status = int(str(status).split(' ', 1)[0])
         self.response.headers = dict(headers)
         return lambda *args, **kargs: \
             self.response.write(escape=False, *args, **kargs)
@@ -254,6 +256,7 @@ class LazyWSGI(object):
                 return [data]
             for item in middleware_apps:
                 app = item(app)
+
             def caller(app):
                 return app(self.environ, self.start_response)
             return lambda caller=caller, app=app: caller(app)
@@ -294,10 +297,11 @@ def wsgibase(environ, responder):
     response = Response()
     session = Session()
     env = request.env
-    #env.web2py_path = global_settings.applications_parent
+    # env.web2py_path = global_settings.applications_parent
     env.web2py_version = web2py_version
-    #env.update(global_settings)
+    # env.update(global_settings)
     static_file = False
+    http_response = None
     try:
         try:
             try:
@@ -323,7 +327,6 @@ def wsgibase(environ, responder):
                         response.headers[
                             'Expires'] = 'Thu, 31 Dec 2037 23:59:59 GMT'
                     response.stream(static_file, request=request)
-
 
                 # ##################################################
                 # fill in request items
@@ -355,17 +358,15 @@ def wsgibase(environ, responder):
                 cmd_opts = global_settings.cmd_options
 
                 request.update(
-                    client = client,
-                    folder = abspath('applications', app) + os.sep,
-                    ajax = x_req_with == 'xmlhttprequest',
-                    cid = env.http_web2py_component_element,
-                    is_local = (env.remote_addr in local_hosts and
-                                client == env.remote_addr),
-                    is_shell = False,
-                    is_scheduler = False,
-                    is_https = env.wsgi_url_scheme in HTTPS_SCHEMES or \
-                        request.env.http_x_forwarded_proto in HTTPS_SCHEMES \
-                        or env.https == 'on'
+                    client=client,
+                    folder=abspath('applications', app) + os.sep,
+                    ajax=x_req_with == 'xmlhttprequest',
+                    cid=env.http_web2py_component_element,
+                    is_local=(env.remote_addr in local_hosts and client == env.remote_addr),
+                    is_shell=False,
+                    is_scheduler=False,
+                    is_https=env.wsgi_url_scheme in HTTPS_SCHEMES or
+                             request.env.http_x_forwarded_proto in HTTPS_SCHEMES or env.https == 'on'
                     )
                 request.url = environ['PATH_INFO']
 
@@ -389,7 +390,11 @@ def wsgibase(environ, responder):
                                    % 'invalid request',
                                    web2py_error='invalid application')
                 elif not request.is_local and exists(disabled):
-                    raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
+                    five0three = os.path.join(request.folder, 'static', '503.html')
+                    if os.path.exists(five0three):
+                        raise HTTP(503, file(five0three, 'r').read())
+                    else:
+                        raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
 
                 # ##################################################
                 # build missing folders
@@ -401,7 +406,7 @@ def wsgibase(environ, responder):
                 # get the GET and POST data
                 # ##################################################
 
-                #parse_get_post_vars(request, environ)
+                # parse_get_post_vars(request, environ)
 
                 # ##################################################
                 # expose wsgi hooks for convenience
@@ -439,8 +444,8 @@ def wsgibase(environ, responder):
                     gluon.debug.dbg.do_debug(mainpyfile=request.folder)
 
                 serve_controller(request, response, session)
-
-            except HTTP as http_response:
+            except HTTP as hr:
+                http_response = hr
 
                 if static_file:
                     return http_response.to(responder, env=env)
@@ -453,7 +458,8 @@ def wsgibase(environ, responder):
                     # ##################################################
                     # on success, try store session in database
                     # ##################################################
-                    session._try_store_in_db(request, response)
+                    if not env.web2py_disable_session:
+                        session._try_store_in_db(request, response)
 
                     # ##################################################
                     # on success, commit database
@@ -470,8 +476,8 @@ def wsgibase(environ, responder):
                     # if session not in db try store session on filesystem
                     # this must be done after trying to commit database!
                     # ##################################################
-
-                    session._try_store_in_cookie_or_file(request, response)
+                    if not env.web2py_disable_session:
+                        session._try_store_in_cookie_or_file(request, response)
 
                     # Set header so client can distinguish component requests.
                     if request.cid:
@@ -481,7 +487,7 @@ def wsgibase(environ, responder):
                     if request.ajax:
                         if response.flash:
                             http_response.headers['web2py-component-flash'] = \
-                                urllib2.quote(xmlescape(response.flash).replace('\n', ''))
+                                urllib2.quote(xmlescape(response.flash).replace(b'\n', b''))
                         if response.js:
                             http_response.headers['web2py-component-command'] = \
                                 urllib2.quote(response.js.replace('\n', ''))
@@ -619,7 +625,7 @@ def appfactory(wsgiapp=wsgibase,
                 raise BaseException("Can't create dir %s" % profiler_dir)
         filepath = pjoin(profiler_dir, 'wtest')
         try:
-            filehandle = open( filepath, 'w' )
+            filehandle = open(filepath, 'w')
             filehandle.close()
             os.unlink(filepath)
         except IOError:
@@ -740,7 +746,7 @@ class HttpServer(object):
         sock_list = [ip, port]
         if not ssl_certificate or not ssl_private_key:
             logger.info('SSL is off')
-        elif not rocket.ssl:
+        elif not rocket.has_ssl:
             logger.warning('Python "ssl" module unavailable. SSL is OFF')
         elif not exists(ssl_certificate):
             logger.warning('unable to open SSL certificate. SSL is OFF')

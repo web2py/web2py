@@ -8,19 +8,16 @@ from __future__ import print_function
 import os
 import sys
 import unittest
-import json
-
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
 
 
-from gluon.compileapp import run_controller_in, run_view_in
+from gluon.compileapp import run_controller_in, run_view_in, compile_application, remove_compiled_application
 from gluon.languages import translator
 from gluon.storage import Storage, List
 from gluon import fileutils
 from gluon.dal import DAL, Field, Table
 from gluon.http import HTTP
+from gluon.fileutils import open_file
+from gluon.cache import CacheInRam
 
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
@@ -35,6 +32,7 @@ class TestAppAdmin(unittest.TestCase):
     def setUp(self):
         from gluon.globals import Request, Response, Session, current
         from gluon.html import A, DIV, FORM, MENU, TABLE, TR, INPUT, URL, XML
+        from gluon.html import ASSIGNJS
         from gluon.validators import IS_NOT_EMPTY
         from gluon.compileapp import LOAD
         from gluon.http import HTTP, redirect
@@ -81,15 +79,46 @@ class TestAppAdmin(unittest.TestCase):
     def run_view(self):
         return run_view_in(self.env)
 
-    def test_index(self):
+    def run_view_file_stream(self):
+        view_path = os.path.join(self.env['request'].folder, 'views', 'appadmin.html')
+        self.env['response'].view = open_file(view_path, 'r')
+        return run_view_in(self.env)
+
+    def _test_index(self):
         result = self.run_function()
         self.assertTrue('db' in result['databases'])
         self.env.update(result)
         try:
             self.run_view()
+            self.run_view_file_stream()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
+
+    def test_index(self):
+        self._test_index()
+
+    def test_index_compiled(self):
+        appname_path = os.path.join(os.getcwd(), 'applications', 'welcome')
+        compile_application(appname_path)
+        self._test_index()
+        remove_compiled_application(appname_path)
+
+    def test_index_minify(self):
+        # test for gluon/contrib/minify
+        self.env['response'].optimize_css = 'concat|minify'
+        self.env['response'].optimize_js = 'concat|minify'
+        self.env['current'].cache = Storage({'ram':CacheInRam()})
+        appname_path = os.path.join(os.getcwd(), 'applications', 'welcome')
+        self._test_index()
+        file_l = os.listdir(os.path.join(appname_path, 'static', 'temp'))
+        file_l.sort()
+        self.assertTrue(len(file_l) == 2)
+        self.assertEqual(file_l[0][0:10], 'compressed')
+        self.assertEqual(file_l[1][0:10], 'compressed')
+        self.assertEqual(file_l[0][-3:], 'css')
+        self.assertEqual(file_l[1][-2:], 'js')
 
     def test_select(self):
         request = self.env['request']
@@ -103,7 +132,8 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
 
     def test_insert(self):
@@ -117,7 +147,8 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
 
     def test_insert_submit(self):
@@ -139,7 +170,8 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print(e.message)
+            import traceback
+            print(traceback.format_exc())
             self.fail('Could not make the view')
         db = self.env['db']
         lisa_record = db(db.auth_user.username == 'lisasimpson').select().first()
@@ -165,6 +197,3 @@ class TestAppAdmin(unittest.TestCase):
         request._vars = data
         self.assertRaises(HTTP, self.run_function)
 
-
-if __name__ == '__main__':
-    unittest.main()

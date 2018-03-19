@@ -15,6 +15,8 @@ from gluon.utils import web2py_uuid
 from gluon.tools import Config
 from gluon.compileapp import find_exposed_functions
 from glob import glob
+from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native
+import gluon.rewrite
 import shutil
 import platform
 
@@ -23,7 +25,7 @@ try:
     if git.__version__ < '0.3.1':
         raise ImportError("Your version of git is %s. Upgrade to 0.3.1 or better." % git.__version__)
     have_git = True
-except ImportError, e:
+except ImportError as e:
     have_git = False
     GIT_MISSING = 'Requires gitpython module, but not installed or incompatible version: %s' % e
 
@@ -81,7 +83,10 @@ def safe_open(a, b):
             def close(self):
                 pass
         return tmp()
-    return open(a, b)
+    if PY2 or 'b' in b:
+        return open(a, b)
+    else:
+        return open(a, b, encoding="utf8")
 
 
 def safe_read(a, b='r'):
@@ -245,6 +250,7 @@ def site():
                 db.app.insert(name=appname, owner=auth.user.id)
             log_progress(appname)
             session.flash = T('new application "%s" created', appname)
+            gluon.rewrite.load()
             redirect(URL('design', args=appname))
         else:
             session.flash = \
@@ -262,17 +268,18 @@ def site():
                 new_repo = git.Repo.clone_from(form_update.vars.url, target)
                 session.flash = T('new application "%s" imported',
                                   form_update.vars.name)
-            except git.GitCommandError, err:
+                gluon.rewrite.load()
+            except git.GitCommandError as err:
                 session.flash = T('Invalid git repository specified.')
             redirect(URL(r=request))
 
         elif form_update.vars.url:
             # fetch an application via URL or file upload
             try:
-                f = urllib.urlopen(form_update.vars.url)
+                f = urlopen(form_update.vars.url)
                 if f.code == 404:
                     raise Exception("404 file not found")
-            except Exception, e:
+            except Exception as e:
                 session.flash = \
                     DIV(T('Unable to download app because:'), PRE(repr(e)))
                 redirect(URL(r=request))
@@ -298,6 +305,7 @@ def site():
             log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
+            gluon.rewrite.load()
         else:
             msg = 'unable to install application "%(appname)s"'
             session.flash = T(msg, dict(appname=form_update.vars.name))
@@ -306,14 +314,15 @@ def site():
     regex = re.compile('^\w+$')
 
     if is_manager():
-        apps = [f for f in os.listdir(apath(r=request)) if regex.match(f)]
+        apps = [a for a in os.listdir(apath(r=request)) if regex.match(a) and
+                a != '__pycache__']
     else:
-        apps = [f.name for f in db(db.app.owner == auth.user_id).select()]
+        apps = [a.name for a in db(db.app.owner == auth.user_id).select()]
 
     if FILTER_APPS:
-        apps = [f for f in apps if f in FILTER_APPS]
+        apps = [a for a in apps if a in FILTER_APPS]
 
-    apps = sorted(apps, lambda a, b: cmp(a.upper(), b.upper()))
+    apps = sorted(apps, key=lambda a: a.upper())
     myplatform = platform.python_version()
     return dict(app=None, apps=apps, myversion=myversion, myplatform=myplatform,
                 form_create=form_create, form_update=form_update)
@@ -347,7 +356,7 @@ def pack():
         else:
             fname = 'web2py.app.%s.compiled.w2p' % app
             filename = app_pack_compiled(app, request, raise_ex=True)
-    except Exception, e:
+    except Exception as e:
         filename = None
 
     if filename:
@@ -378,11 +387,10 @@ def pack_plugin():
 def pack_exe(app, base, filenames=None):
     import urllib
     import zipfile
-    from cStringIO import StringIO
     # Download latest web2py_win and open it with zipfile
     download_url = 'http://www.web2py.com/examples/static/web2py_win.zip'
     out = StringIO()
-    out.write(urllib.urlopen(download_url).read())
+    out.write(urlopen(download_url).read())
     web2py_win = zipfile.ZipFile(out, mode='a')
     # Write routes.py with the application as default
     routes = u'# -*- coding: utf-8 -*-\nrouters = dict(BASE=dict(default_application="%s"))' % app
@@ -421,7 +429,7 @@ def pack_custom():
             fname = 'web2py.app.%s.w2p' % app
             try:
                 filename = app_pack(app, request, raise_ex=True, filenames=files)
-            except Exception, e:
+            except Exception as e:
                 filename = None
             if filename:
                 response.headers['Content-Type'] = 'application/w2p'
@@ -732,7 +740,7 @@ def edit():
         try:
             code = request.vars.data.rstrip().replace('\r\n', '\n') + '\n'
             compile(code, path, "exec", _ast.PyCF_ONLY_AST)
-        except Exception, e:
+        except Exception as e:
             # offset calculation is only used for textarea (start/stop)
             start = sum([len(line) + 1 for l, line
                          in enumerate(request.vars.data.split("\n"))
@@ -757,11 +765,11 @@ def edit():
         # Lets try to reload the modules
         try:
             mopath = '.'.join(request.args[2:])[:-3]
-            exec 'import applications.%s.modules.%s' % (
-                request.args[0], mopath)
+            exec('import applications.%s.modules.%s' % (
+                request.args[0], mopath))
             reload(sys.modules['applications.%s.modules.%s'
                                % (request.args[0], mopath)])
-        except Exception, e:
+        except Exception as e:
             response.flash = DIV(
                 T('failed to reload module because:'), PRE(repr(e)))
 
@@ -853,7 +861,7 @@ def todolist():
         for f in listfiles(app, d):
             matches = []
             filename = apath(os.path.join(app, d, f), r=request)
-            with open(filename, 'r') as f_s:
+            with safe_open(filename, 'r') as f_s:
                 src = f_s.read()
                 for m in regex.finditer(src):
                     start = m.start()
@@ -955,8 +963,7 @@ def edit_language():
         form = SPAN(strings['__corrupted__'], _class='error')
         return dict(filename=filename, form=form)
 
-    keys = sorted(strings.keys(), lambda x, y: cmp(
-        unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower()))
+    keys = sorted(strings.keys(), key=lambda x: to_native(x).lower())
     rows = []
     rows.append(H2(T('Original/Translation')))
 
@@ -1084,11 +1091,11 @@ def design():
             redirect(URL('design', args=app))
         else:
             session.flash = \
-                T('unable to create application "%s"', request.vars.filename)
-        redirect(URL(r=request))
+                T('unable to install plugin "%s"', filename)
+        redirect(URL(r=request, args=app))
     elif isinstance(request.vars.pluginfile, str):
         session.flash = T('plugin not specified')
-        redirect(URL(r=request))
+        redirect(URL(r=request, args=app))
 
     # If we have only pyc files it means that
     # we cannot design
@@ -1151,7 +1158,7 @@ def design():
     # Get all languages
     langpath = os.path.join(apath(app, r=request), 'languages')
     languages = dict([(lang, info) for lang, info
-                      in read_possible_languages(langpath).iteritems()
+                      in iteritems(read_possible_languages(langpath))
                       if info[2] != 0])  # info[2] is langfile_mtime:
     # get only existed files
 
@@ -1287,7 +1294,7 @@ def plugin():
 
     # Get all languages
     languages = sorted([lang + '.py' for lang, info in
-                        T.get_possible_languages_info().iteritems()
+                        iteritems(T.get_possible_languages_info())
                         if info[2] != 0])  # info[2] is langfile_mtime:
     # get only existed files
 
@@ -1468,7 +1475,7 @@ def create_file():
         redirect(URL('edit',
                      args=[os.path.join(request.vars.location, filename)], vars=vars))
 
-    except Exception, e:
+    except Exception as e:
         if not isinstance(e, HTTP):
             session.flash = T('cannot create file')
 
@@ -1570,7 +1577,6 @@ def errors():
     """ Error handler """
     import operator
     import os
-    import pickle
     import hashlib
 
     app = get_app()
@@ -1600,7 +1606,7 @@ def errors():
             if not os.path.isfile(fullpath):
                 continue
             try:
-                fullpath_file = open(fullpath, 'r')
+                fullpath_file = safe_open(fullpath, 'rb')
                 try:
                     error = pickle.load(fullpath_file)
                 finally:
@@ -1610,7 +1616,7 @@ def errors():
             except EOFError:
                 continue
 
-            hash = hashlib.md5(error['traceback']).hexdigest()
+            hash = hashlib.md5(to_bytes(error['traceback'])).hexdigest()
 
             if hash in delete_hashes:
                 os.unlink(fullpath)
@@ -1661,7 +1667,7 @@ def errors():
                                                 pickel=error, causer=error_causer,
                                                 last_line=last_line, hash=hash,
                                                 ticket=fn.ticket_id)
-            except AttributeError, e:
+            except AttributeError as e:
                 tk_db(tk_table.id == fn.id).delete()
                 tk_db.commit()
 
@@ -1705,7 +1711,7 @@ def get_ticket_storage(app):
     private_folder = apath('%s/private' % app, r=request)
     ticket_file = os.path.join(private_folder, 'ticket_storage.txt')
     if os.path.exists(ticket_file):
-        db_string = open(ticket_file).read()
+        db_string = safe_open(ticket_file).read()
         db_string = db_string.strip().replace('\r', '').replace('\n', '')
     elif is_gae:
         # use Datastore as fallback if there is no ticket_file
@@ -1739,9 +1745,9 @@ def make_link(path):
         for key in editable.keys():
             check_extension = folder.endswith("%s/%s" % (app, key))
             if ext.lower() == editable[key] and check_extension:
-                return A('"' + tryFile + '"',
-                         _href=URL(r=request,
-                                   f='edit/%s/%s/%s' % (app, key, filename))).xml()
+                return to_native(A('"' + tryFile + '"',
+                                   _href=URL(r=request,
+                                   f='edit/%s/%s/%s' % (app, key, filename))).xml())
     return ''
 
 
@@ -1858,7 +1864,6 @@ def user():
 
 def reload_routes():
     """ Reload routes.py """
-    import gluon.rewrite
     gluon.rewrite.load()
     redirect(URL('site'))
 
@@ -1957,12 +1962,12 @@ def git_push():
 
 def plugins():
     app = request.args(0)
-    from serializers import loads_json
+    from gluon.serializers import loads_json
     if not session.plugins:
         try:
-            rawlist = urllib.urlopen("http://www.web2pyslices.com/" +
-                                     "public/api.json/action/list/content/Package?package" +
-                                     "_type=plugin&search_index=false").read()
+            rawlist = urlopen("http://www.web2pyslices.com/" +
+                              "public/api.json/action/list/content/Package?package" +
+                              "_type=plugin&search_index=false").read()
             session.plugins = loads_json(rawlist)
         except:
             response.flash = T('Unable to download the list of plugins')
@@ -1988,7 +1993,7 @@ def install_plugin():
                 source.split("web2py.plugin.")[-1].split(".w2p")[0]
         else:
             filename = "web2py.plugin.%s.w2p" % cleanpath(plugin)
-        if plugin_install(app, urllib.urlopen(source),
+        if plugin_install(app, urlopen(source),
                           request, filename):
             session.flash = T('New plugin installed: %s', filename)
         else:

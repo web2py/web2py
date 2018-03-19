@@ -7,7 +7,8 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 from __future__ import print_function
-from gluon._compat import xrange, _local_html_escape
+from gluon._compat import xrange
+from gluon.utils import local_html_escape
 import re
 
 __all__ = ['highlight']
@@ -62,7 +63,7 @@ class Highlighter(object):
         Callback for C specific highlighting.
         """
 
-        value = _local_html_escape(match.group(), quote=False)
+        value = local_html_escape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
 
@@ -76,7 +77,7 @@ class Highlighter(object):
         Callback for python specific highlighting.
         """
 
-        value = _local_html_escape(match.group(), quote=False)
+        value = local_html_escape(match.group(), quote=False)
         if token == 'MULTILINESTRING':
             self.change_style(token, style)
             self.output.append(value)
@@ -113,7 +114,7 @@ class Highlighter(object):
         Callback for HTML specific highlighting.
         """
 
-        value = _local_html_escape(match.group(), quote=False)
+        value = local_html_escape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
         if token == 'GOTOPYTHON':
@@ -181,8 +182,8 @@ class Highlighter(object):
         )),
         'PYTHONMultilineString': (python_tokenizer,
                                   (('ENDMULTILINESTRING',
-                                  re.compile(r'.*?("""|\'\'\')',
-                                  re.DOTALL), 'color: darkred'), )),
+                                    re.compile(r'.*?("""|\'\'\')',
+                                               re.DOTALL), 'color: darkred'), )),
         'HTML': (html_tokenizer, (
             ('GOTOPYTHON', re.compile(r'\{\{'), 'color: red'),
             ('COMMENT', re.compile(r'<!--[^>]*-->|<!>'),
@@ -208,7 +209,7 @@ class Highlighter(object):
         mode = self.mode
         while i < len(data):
             for (token, o_re, style) in Highlighter.all_styles[mode][1]:
-                if not token in self.suppress_tokens:
+                if token not in self.suppress_tokens:
                     match = o_re.match(data, i)
                     if match:
                         if style:
@@ -220,7 +221,7 @@ class Highlighter(object):
                             new_mode = \
                                 Highlighter.all_styles[mode][0](self,
                                                                 token, match, style)
-                        if not new_mode is None:
+                        if new_mode is not None:
                             mode = new_mode
                         i += max(1, len(match.group()))
                         break
@@ -240,9 +241,9 @@ class Highlighter(object):
             style = self.styles[token]
         if self.span_style != style:
             if style != 'Keep':
-                if not self.span_style is None:
+                if self.span_style is not None:
                     self.output.append('</span>')
-                if not style is None:
+                if style is not None:
                     self.output.append('<span style="%s">' % style)
                 self.span_style = style
 
@@ -259,7 +260,7 @@ def highlight(
 ):
     styles = styles or {}
     attributes = attributes or {}
-    if not 'CODE' in styles:
+    if 'CODE' not in styles:
         code_style = """
         font-size: 11px;
         font-family: Bitstream Vera Sans Mono,monospace;
@@ -271,7 +272,7 @@ def highlight(
         white-space: pre !important;\n"""
     else:
         code_style = styles['CODE']
-    if not 'LINENUMBERS' in styles:
+    if 'LINENUMBERS' not in styles:
         linenumbers_style = """
         font-size: 11px;
         font-family: Bitstream Vera Sans Mono,monospace;
@@ -282,7 +283,7 @@ def highlight(
         color: #A0A0A0;\n"""
     else:
         linenumbers_style = styles['LINENUMBERS']
-    if not 'LINEHIGHLIGHT' in styles:
+    if 'LINEHIGHLIGHT' not in styles:
         linehighlight_style = "background-color: #EBDDE2;"
     else:
         linehighlight_style = styles['LINEHIGHLIGHT']
@@ -291,13 +292,13 @@ def highlight(
                                          'WEB2PY']:
         code = Highlighter(language, link, styles).highlight(code)
     else:
-        code = _local_html_escape(code, quote=False)
+        code = local_html_escape(code, quote=False)
     lines = code.split('\n')
 
     if counter is None:
         linenumbers = [''] * len(lines)
     elif isinstance(counter, str):
-        linenumbers = [_local_html_escape(counter, quote=False)] * len(lines)
+        linenumbers = [local_html_escape(counter, quote=False)] * len(lines)
     else:
         linenumbers = [str(i + counter) + '.' for i in
                        xrange(len(lines))]
@@ -332,8 +333,9 @@ def highlight(
                   == '_' and value])
     if fa:
         fa = ' ' + fa
-    return '<table%s><tr style="vertical-align:top;"><td style="min-width:40px; text-align: right;"><pre style="%s">%s</pre></td><td><pre style="%s">%s</pre></td></tr></table>'\
-        % (fa, linenumbers_style, numbers, code_style, code)
+    return '<table%s><tr style="vertical-align:top;">' \
+           '<td style="min-width:40px; text-align: right;"><pre style="%s">%s</pre></td>' \
+           '<td><pre style="%s">%s</pre></td></tr></table>' % (fa, linenumbers_style, numbers, code_style, code)
 
 
 if __name__ == '__main__':
@@ -341,5 +343,4 @@ if __name__ == '__main__':
     argfp = open(sys.argv[1])
     data = argfp.read()
     argfp.close()
-    print('<html><body>' + highlight(data, sys.argv[2])\
-        + '</body></html>')
+    print('<html><body>' + highlight(data, sys.argv[2]) + '</body></html>')

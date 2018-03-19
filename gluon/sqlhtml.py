@@ -15,11 +15,11 @@ Holds:
 """
 
 import datetime
-import urllib
 import re
+import copy
 
 import os
-from gluon._compat import StringIO, unichr, urllib_quote, iteritems
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native, to_unicode, urlencode
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -27,9 +27,9 @@ from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
-from pydal.objects import Table, Row, Expression, Field, Set
+from pydal.objects import Table, Row, Expression, Field, Set, Rows
 from pydal.adapters.base import CALLABLETYPES
-from pydal.helpers.methods import smart_query, bar_encode,  _repr_ref
+from pydal.helpers.methods import smart_query, bar_encode, _repr_ref, merge_tablemaps
 from pydal.helpers.classes import Reference, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
@@ -54,17 +54,27 @@ REGEX_ALIAS_MATCH = re.compile('^(.*) AS (.*)$')
 def add_class(a, b):
     return a + ' ' + b if a else b
 
+def count_expected_args(f):
+    if hasattr(f,'func_code'):
+        # python 2
+        n = f.func_code.co_argcount - len(f.func_defaults or [])
+        if getattr(f, 'im_self', None):
+            n -= 1
+    elif hasattr(f, '__code__'):
+        # python 3
+        n = f.__code__.co_argcount - len(f.__defaults__ or [])
+        if getattr(f, '__self__', None):
+            n -= 1
+    else:
+        # doh!
+        n = 1
+    return n
 
 def represent(field, value, record):
     f = field.represent
     if not callable(f):
         return str(value)
-    if hasattr(f,'func_code'):
-        n = f.__code__.co_argcount - len(f.__defaults__ or [])
-        if getattr(f, 'im_self', None):
-            n -= 1
-    else:
-        n = 1
+    n = count_expected_args(f)
     if n == 1:
         return f(value)
     elif n == 2:
@@ -395,7 +405,7 @@ class RadioWidget(OptionsWidget):
         cols = attributes.get('cols', 1)
         totals = len(options)
         mods = totals % cols
-        rows = totals / cols
+        rows = totals // cols
         if mods:
             rows += 1
 
@@ -461,7 +471,7 @@ class CheckboxesWidget(OptionsWidget):
         cols = attributes.get('cols', 1)
         totals = len(options)
         mods = totals % cols
-        rows = totals / cols
+        rows = totals // cols
         if mods:
             rows += 1
 
@@ -647,7 +657,9 @@ class AutocompleteWidget(object):
     def __init__(self, request, field, id_field=None, db=None,
                  orderby=None, limitby=(0, 10), distinct=False,
                  keyword='_autocomplete_%(tablename)s_%(fieldname)s',
-                 min_length=2, help_fields=None, help_string=None, at_beginning = True):
+                 min_length=2, help_fields=None, help_string=None,
+                 at_beginning=True, default_var='ac', user_signature=True,
+                 hash_vars=False):
 
         self.help_fields = help_fields or []
         self.help_string = help_string
@@ -670,43 +682,67 @@ class AutocompleteWidget(object):
         else:
             self.is_reference = False
         if hasattr(request, 'application'):
-            self.url = URL(args=request.args)
-            self.callback()
+            urlvars = copy.copy(request.vars)
+            urlvars[default_var] = 1
+            self.url = URL(args=request.args, vars=urlvars,
+                           user_signature=user_signature, hash_vars=hash_vars)
+            self.run_callback = True
         else:
             self.url = request
+            self.run_callback = False
 
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
+            kword = self.request.vars[self.keyword]
             if isinstance(field, Field.Virtual):
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
                 count = 0
                 for row in table_rows:
                     if self.at_beginning:
-                        if row[field.name].lower().startswith(self.request.vars[self.keyword]):
+                        if row[field.name].lower().startswith(kword):
                             count += 1
                             records.append(row)
                     else:
-                        if self.request.vars[self.keyword] in row[field.name].lower():
+                        if kword in row[field.name].lower():
                             count += 1
                             records.append(row)
                     if count == 10:
                         break
-                rows = Rows(self.db, records, table_rows.colnames, compact=table_rows.compact)
+                rows = Rows(self.db, records, table_rows.colnames,
+                            compact=table_rows.compact)
             elif settings and settings.global_settings.web2py_runtime_gae:
-                rows = self.db(field.__ge__(self.request.vars[self.keyword]) & field.__lt__(self.request.vars[self.keyword] + u'\ufffd')).select(orderby=self.orderby, limitby=self.limitby, *(self.fields+self.help_fields))
+                rows = self.db(field.__ge__(kword) &
+                               field.__lt__(kword + u'\ufffd')
+                               ).select(orderby=self.orderby,
+                                        limitby=self.limitby,
+                                        *(self.fields + self.help_fields))
             elif self.at_beginning:
-                rows = self.db(field.like(self.request.vars[self.keyword] + '%', case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
+                rows = self.db(field.like(kword + '%', case_sensitive=False)
+                               ).select(orderby=self.orderby,
+                                        limitby=self.limitby,
+                                        distinct=self.distinct,
+                                        *(self.fields + self.help_fields))
             else:
-                rows = self.db(field.contains(self.request.vars[self.keyword], case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
+                rows = self.db(field.contains(kword, case_sensitive=False)
+                               ).select(orderby=self.orderby,
+                                        limitby=self.limitby,
+                                        distinct=self.distinct,
+                                        *(self.fields + self.help_fields))
             if rows:
                 if self.is_reference:
                     id_field = self.fields[1]
                     if self.help_fields:
-                        options = [OPTION(
-                            self.help_string % dict([(h.name, s[h.name]) for h in self.fields[:1] + self.help_fields]),
-                                   _value=s[id_field.name], _selected=(k == 0)) for k, s in enumerate(rows)]
+                        options = [
+                            OPTION(
+                                self.help_string % dict(
+                                    [(h.name, s[h.name]) for h
+                                     in self.fields[:1] + self.help_fields]),
+                                                    _value=s[id_field.name],
+                                                    _selected=(k == 0))
+                                            for k, s in enumerate(rows)
+                                    ]
                     else:
                         options = [OPTION(
                             s[field.name], _value=s[id_field.name],
@@ -726,6 +762,8 @@ class AutocompleteWidget(object):
                 raise HTTP(200, '')
 
     def __call__(self, field, value, **attributes):
+        if self.run_callback:
+            self.callback()
         default = dict(
             _type='text',
             value=(value is not None and str(value)) or '',
@@ -753,28 +791,100 @@ class AutocompleteWidget(object):
                 record = self.db(
                     self.fields[1] == value).select(self.fields[0]).first()
             attr['value'] = record and record[self.fields[0].name]
-            attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
+            attr['_onblur'] = "jQuery('#%(div_id)s').delay(500).fadeOut('slow');" % \
                 dict(div_id=div_id, u='F' + self.keyword)
-            attr['_onkeyup'] = "jQuery('#%(key3)s').val('');var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s :selected').text());jQuery('#%(key3)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+encodeURIComponent(jQuery('#%(id)s').val()),function(data){if(data=='')jQuery('#%(key3)s').val('');else{jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key3)s').val(jQuery('#%(key)s').val());jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);};}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
+            js = """
+            (function($) {
+                function doit(e_) {
+                    $('#%(key3)s').val('');
+                    var e=e_.which?e_.which:e_.keyCode;
+                    function %(u)s(){
+                        $('#%(id)s').val($('#%(key)s :selected').text());
+                        $('#%(key3)s').val($('#%(key)s').val())
+                    };
+                    if(e==39) %(u)s();
+                    else if(e==40) {
+                        if($('#%(key)s option:selected').next().length)
+                        $('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected');
+                        %(u)s();
+                    }
+                    else if(e==38) {
+                    if($('#%(key)s option:selected').prev().length)
+                        $('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected');
+                        %(u)s();
+                    }
+                    else if($('#%(id)s').val().length>=%(min_length)s)
+                        $.get('%(url)s&%(key)s='+encodeURIComponent($('#%(id)s').val()),
+                            function(data){
+                                if(data=='')$('#%(key3)s').val('');
+                                else{
+                                    $('#%(id)s').next('.error').hide();
+                                    $('#%(div_id)s').html(data).show().focus();
+                                    $('#%(div_id)s select').css('width',$('#%(id)s').css('width'));
+                                    $('#%(key3)s').val($('#%(key)s').val());
+                                    $('#%(key)s').change(%(u)s).click(%(u)s);
+                                };
+                            });
+                    else $('#%(div_id)s').fadeOut('slow');
+                }
+            var tmr = null;
+            $("#%(id)s").on('keyup focus',function(e) {
+                if (tmr) clearTimeout(tmr);
+                if($('#%(id)s').val().length>=%(min_length)s) {
+                    tmr = setTimeout(function() { tmr = null; doit(e); }, 300);
+                }
+            });
+            })(jQuery)""".replace('\n', '').replace(' ' * 4, '') % \
                 dict(url=self.url, min_length=self.min_length,
                      key=self.keyword, id=attr['_id'], key2=key2, key3=key3,
                      name=name, div_id=div_id, u='F' + self.keyword)
-            if self.min_length == 0:
-                attr['_onfocus'] = attr['_onkeyup']
             return CAT(INPUT(**attr),
                        INPUT(_type='hidden', _id=key3, _value=value,
                              _name=name, requires=field.requires),
+                       SCRIPT(js),
                        DIV(_id=div_id, _style='position:absolute;'))
         else:
             attr['_name'] = field.name
-            attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
+            attr['_onblur'] = "jQuery('#%(div_id)s').delay(500).fadeOut('slow');" % \
                 dict(div_id=div_id, u='F' + self.keyword)
-            attr['_onkeyup'] = "var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+encodeURIComponent(jQuery('#%(id)s').val()),function(data){jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
+            js = """
+            (function($) {
+            function doit(e_) {
+                var e=e_.which?e_.which:e_.keyCode;
+                function %(u)s(){
+                    $('#%(id)s').val($('#%(key)s').val())
+                };
+                if(e==39) %(u)s();
+                else if(e==40) {
+                    if($('#%(key)s option:selected').next().length)
+                    $('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected');
+                    %(u)s();
+                } else if(e==38) {
+                if($('#%(key)s option:selected').prev().length)
+                $('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected');
+                %(u)s();
+                } else if($('#%(id)s').val().length>=%(min_length)s)
+                        $.get('%(url)s&%(key)s='+encodeURIComponent($('#%(id)s').val()),
+                            function(data){
+                                $('#%(id)s').next('.error').hide();
+                                $('#%(div_id)s').html(data).show().focus();
+                                $('#%(div_id)s select').css('width',$('#%(id)s').css('width'));
+                                $('#%(key)s').change(%(u)s).click(%(u)s);
+                            }
+                        );
+                else $('#%(div_id)s').fadeOut('slow');
+            }
+            var tmr = null;
+            $("#%(id)s").on('keyup focus',function(e) {
+                if (tmr) clearTimeout(tmr);
+                if($('#%(id)s').val().length>=%(min_length)s) {
+                    tmr = setTimeout(function() { tmr = null; doit(e); }, 300);
+                }
+            });
+            })(jQuery)""".replace('\n', '').replace(' ' * 4, '') % \
                 dict(url=self.url, min_length=self.min_length,
                      key=self.keyword, id=attr['_id'], div_id=div_id, u='F' + self.keyword)
-            if self.min_length == 0:
-                attr['_onfocus'] = attr['_onkeyup']
-            return CAT(INPUT(**attr),
+            return CAT(INPUT(**attr), SCRIPT(js),
                        DIV(_id=div_id, _style='position:absolute;'))
 
 
@@ -865,7 +975,7 @@ def formstyle_bootstrap(form, fields):
             controls.add_class('span4')
 
         if isinstance(label, LABEL):
-            label['_class'] = add_class(label.get('_class'),'control-label')
+            label['_class'] = add_class(label.get('_class'), 'control-label')
 
         if _submit:
             # submit button has unwrapped label and controls, different class
@@ -915,8 +1025,11 @@ def formstyle_bootstrap3_stacked(form, fields):
             for e in controls.elements("input"):
                 e.add_class('form-control')
 
+        elif isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+            controls[0].add_class('form-control')
+
         if isinstance(label, LABEL):
-            label['_class'] = add_class(label.get('_class'),'control-label')
+            label['_class'] = add_class(label.get('_class'), 'control-label')
 
         parent.append(DIV(label, _controls, _class='form-group', _id=id))
     return parent
@@ -965,10 +1078,112 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
                     e.add_class('form-control')
+            elif isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+                    controls[0].add_class('form-control')
             if isinstance(label, LABEL):
-                label['_class'] = add_class(label.get('_class'),'control-label %s' % label_col_class)
+                label['_class'] = add_class(label.get('_class'), 'control-label %s' % label_col_class)
 
             parent.append(DIV(label, _controls, _class='form-group', _id=id))
+        return parent
+    return _inner
+
+# bootstrap 4
+def formstyle_bootstrap4_stacked(form, fields):
+    """ bootstrap 3 format form layout
+
+    Note:
+        Experimental!
+    """
+    parent = CAT()
+    for id, label, controls, help in fields:
+        # wrappers
+        _help = SPAN(help, _class='help-block')
+        # embed _help into _controls
+        _controls = CAT(controls, _help)
+        if isinstance(controls, INPUT):
+            if controls['_type'] == 'submit':
+                controls.add_class('btn btn-primary')
+            if controls['_type'] == 'button':
+                controls.add_class('btn btn-secondary')
+            elif controls['_type'] == 'file':
+                controls.add_class('input-file')
+            elif controls['_type'] in ('text', 'password'):
+                controls.add_class('form-control')
+            elif controls['_type'] == 'checkbox':
+                label['_for'] = None
+                label.insert(0, controls)
+                label.insert(0, ' ')
+                _controls = DIV(label, _help, _class="checkbox")
+                label = ''
+            elif isinstance(controls, (SELECT, TEXTAREA)):
+                controls.add_class('form-control')
+
+        elif isinstance(controls, SPAN):
+            _controls = P(controls.components)
+
+        elif isinstance(controls, UL):
+            for e in controls.elements("input"):
+                e.add_class('form-control')
+
+        elif isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+            controls[0].add_class('form-control')
+
+        if isinstance(label, LABEL):
+            label['_class'] = add_class(label.get('_class'), 'form-control-label')
+
+        parent.append(DIV(label, _controls, _class='form-group', _id=id))
+    return parent
+
+
+def formstyle_bootstrap4_inline_factory(col_label_size=3):
+    """ bootstrap 3 horizontal form layout
+
+    Note:
+        Experimental!
+    """
+    def _inner(form, fields):
+        form.add_class('form-horizontal')
+        label_col_class = "col-sm-%d" % col_label_size
+        col_class = "col-sm-%d" % (12 - col_label_size)
+        offset_class = "col-sm-offset-%d" % col_label_size
+        parent = CAT()
+        for id, label, controls, help in fields:
+            # wrappers
+            _help = SPAN(help, _class='help-block')
+            # embed _help into _controls
+            _controls = DIV(controls, _help, _class="%s" % (col_class))
+            if isinstance(controls, INPUT):
+                if controls['_type'] == 'submit':
+                    controls.add_class('btn btn-primary')
+                    _controls = DIV(controls, _class="%s %s" % (col_class, offset_class))
+                if controls['_type'] == 'button':
+                    controls.add_class('btn btn-secondary')
+                elif controls['_type'] == 'file':
+                    controls.add_class('input-file')
+                elif controls['_type'] in ('text', 'password'):
+                    controls.add_class('form-control')
+                elif controls['_type'] == 'checkbox':
+                    label['_for'] = None
+                    label.insert(0, controls)
+                    label.insert(1, ' ')
+                    _controls = DIV(DIV(label, _help, _class="checkbox"),
+                                    _class="%s %s" % (offset_class, col_class))
+                    label = ''
+                elif isinstance(controls, (SELECT, TEXTAREA)):
+                    controls.add_class('form-control')
+
+            elif isinstance(controls, SPAN):
+                _controls = P(controls.components,
+                              _class="form-control-static %s" % col_class)
+            elif isinstance(controls, UL):
+                for e in controls.elements("input"):
+                    e.add_class('form-control')
+            elif isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+                    controls[0].add_class('form-control')
+            if isinstance(label, LABEL):
+                label['_class'] = add_class(label.get('_class'), 'form-control-label %s' % label_col_class)
+
+            parent.append(DIV(label, _controls, _class='form-group row', _id=id))
         return parent
     return _inner
 
@@ -1060,6 +1275,8 @@ class SQLFORM(FORM):
         bootstrap=formstyle_bootstrap,
         bootstrap3_stacked=formstyle_bootstrap3_stacked,
         bootstrap3_inline=formstyle_bootstrap3_inline_factory(3),
+        bootstrap4_stacked=formstyle_bootstrap4_stacked,
+        bootstrap4_inline=formstyle_bootstrap4_inline_factory(3),
         inline=formstyle_inline,
         )
 
@@ -1127,9 +1344,16 @@ class SQLFORM(FORM):
         # if no fields are provided, build it from the provided table
         # will only use writable or readable fields, unless forced to ignore
         if fields is None:
-            fields = [f.name for f in table if
-                      (ignore_rw or f.writable or f.readable) and
-                      (readonly or not f.compute)]
+            if not readonly:
+                if not record:
+                    # create form should only show writable fields
+                    fields = [f.name for f in table if (ignore_rw or f.writable) and not f.compute]
+                else:
+                    # update form should also show readable fields and computed fields (but in reaodnly mode)
+                    fields = [f.name for f in table if (ignore_rw or f.writable or f.readable)]
+            else:
+                # read only form should show all readable fields
+                fields = [f.name for f in table if (ignore_rw or f.readable)]
         self.fields = fields
 
         # make sure we have an id
@@ -1141,7 +1365,7 @@ class SQLFORM(FORM):
 
         # try to retrieve the indicated record using its id
         # otherwise ignore it
-        if record and isinstance(record, (int, long, str, unicode)):
+        if record and isinstance(record, (int, long, str, unicodeT)):
             if not str(record).isdigit():
                 raise HTTP(404, "Object not found")
             record = table._db(table._id == record).select().first()
@@ -1212,7 +1436,7 @@ class SQLFORM(FORM):
             label = LABEL(label, label and sep, _for=field_id,
                           _id=field_id + SQLFORM.ID_LABEL_SUFFIX)
 
-            cond = readonly or \
+            cond = readonly or field.compute or \
                 (not ignore_rw and not field.writable and field.readable)
 
             if cond:
@@ -1395,8 +1619,8 @@ class SQLFORM(FORM):
                 self['hidden']['id'] = record[table._id.name]
 
         (begin, end) = self._xml()
-        self.custom.begin = XML("<%s %s>" % (self.tag, begin))
-        self.custom.end = XML("%s</%s>" % (end, self.tag))
+        self.custom.begin = XML("<%s %s>" % (self.tag, to_native(begin)))
+        self.custom.end = XML("%s</%s>" % (to_native(end), self.tag))
         table = self.createform(xfields)
         self.components = [table]
 
@@ -1458,6 +1682,7 @@ class SQLFORM(FORM):
             keepvalues = True if self.record else False
 
         if self.readonly:
+            self.deleted = False
             return False
 
         if request_vars.__class__.__name__ == 'Request':
@@ -1614,7 +1839,7 @@ class SQLFORM(FORM):
                 continue
 
             field = self.table[fieldname]
-            if field.type == 'id':
+            if field.type == 'id' or field.compute:
                 continue
             if field.type == 'boolean':
                 if self.vars.get(fieldname, False):
@@ -1651,7 +1876,7 @@ class SQLFORM(FORM):
                         original_filename = os.path.split(f)[1]
                 elif hasattr(f, 'file'):
                     (source_file, original_filename) = (f.file, f.filename)
-                elif isinstance(f, (str, unicode)):
+                elif isinstance(f, (str, unicodeT)):
                     # do not know why this happens, it should not
                     (source_file, original_filename) = \
                         (StringIO(f), 'file.txt')
@@ -1806,8 +2031,10 @@ class SQLFORM(FORM):
         if 'table_name' in attributes:
             del attributes['table_name']
 
-        return SQLFORM(DAL(None).define_table(table_name, *fields),
-                       **attributes)
+        # Clone fields, while passing tables straight through
+        fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
+
+        return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
     def build_query(fields, keywords):
@@ -1822,11 +2049,13 @@ class SQLFORM(FORM):
             if settings.global_settings.web2py_runtime_gae:
                 return reduce(lambda a,b: a|b, [field.contains(key) for field in sfields])
             else:
+                if not (sfields and key and key.split()):
+                    return fields[0].table
                 return reduce(lambda a,b:a&b,[
                         reduce(lambda a,b: a|b, [
                                 field.contains(k) for field in sfields]
                                ) for k in key.split()])
-
+                    
             # from https://groups.google.com/forum/#!topic/web2py/hKe6lI25Bv4
             # needs testing...
             #words = key.split(' ') if key else []
@@ -2043,8 +2272,10 @@ class SQLFORM(FORM):
              ignore_common_filters=None,
              auto_pagination=True,
              use_cursor=False,
-             represent_none=None):
+             represent_none=None,
+             showblobs=False):
 
+        dbset = None
         formstyle = formstyle or current.response.formstyle
         if isinstance(query, Set):
             query = query.query
@@ -2076,7 +2307,7 @@ class SQLFORM(FORM):
                       cornerall='',
                       cornertop='',
                       cornerbottom='',
-                      button='button btn btn-default',
+                      button='button btn btn-default btn-secondary',
                       buttontext='buttontext button',
                       buttonadd='icon plus icon-plus glyphicon glyphicon-plus',
                       buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
@@ -2084,7 +2315,7 @@ class SQLFORM(FORM):
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
                       buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
                       buttontable='icon rightarrow icon-arrow-right glyphicon glyphicon-arrow-right',
-                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-zoom-in',
+                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-zoom-in'
                       )
         elif not isinstance(ui, dict):
             raise RuntimeError('SQLFORM.grid ui argument must be a dictionary')
@@ -2218,7 +2449,7 @@ class SQLFORM(FORM):
             if not isinstance(left, (list, tuple)):
                 left = [left]
             for join in left:
-                tablenames += db._adapter.tables(join)
+                tablenames = merge_tablemaps(tablenames, db._adapter.tables(join))
         tables = [db[tablename] for tablename in tablenames]
         if fields:
             # add missing tablename to virtual fields
@@ -2226,12 +2457,12 @@ class SQLFORM(FORM):
                 for k, f in iteritems(table):
                     if isinstance(f, Field.Virtual):
                         f.tablename = table._tablename
-            columns = [f for f in fields if f.tablename in tablenames]
+            columns = [f for f in fields if f.tablename in tablenames and f.listable]
         else:
             fields = []
             columns = []
-            filter1 = lambda f: isinstance(f, Field) and f.type != 'blob'
-            filter2 = lambda f: isinstance(f, Field) and f.readable
+            filter1 = lambda f: isinstance(f, Field) and (f.type!='blob' or showblobs)
+            filter2 = lambda f: isinstance(f, Field) and f.readable and f.listable
             for table in tables:
                 fields += filter(filter1, table)
                 columns += filter(filter2, table)
@@ -2443,13 +2674,14 @@ class SQLFORM(FORM):
                         if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
                             expcolumns.append(str(field))
 
+            expcolumns = ['"%s"' % '"."'.join(f.split('.')) for f in expcolumns]
             if export_type in exportManager and exportManager[export_type]:
                 if keywords:
                     try:
                         # the query should be constructed using searchable
                         # fields but not virtual fields
-                        sfields = reduce(lambda a, b: a + b,
-                            [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
+                        is_searchable = lambda f: f.readable and not isinstance(f, Field.Virtual) and f.searchable
+                        sfields = reduce(lambda a, b: a + b, [filter(is_searchable, t) for t in tables])
                         # use custom_query using searchable
                         if callable(searchable):
                             dbset = dbset(searchable(sfields, keywords))
@@ -2516,8 +2748,8 @@ class SQLFORM(FORM):
                           _id=skeywords_id, _class='form-control',
                           _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();" % (spanel_id, sfields_id) if advanced_search else ''
                           ),
-                    INPUT(_type='submit', _value=T('Search'), _class="btn btn-default"),
-                    INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default",
+                    INPUT(_type='submit', _value=T('Search'), _class="btn btn-default btn-secondary"),
+                    INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default btn-secondary",
                           _onclick="jQuery('#%s').val('');" % skeywords_id),
                     *hidden_fields,
                     _method="GET", _action=url), search_menu)
@@ -2752,7 +2984,7 @@ class SQLFORM(FORM):
                 for field in columns:
                     if not field.readable:
                         continue
-                    if field.type == 'blob':
+                    elif field.type == 'blob' and not showblobs:
                         continue
                     if isinstance(field, Field.Virtual) and field.tablename in row:
                         try:
@@ -2903,7 +3135,7 @@ class SQLFORM(FORM):
                     order=request.vars.order or '',
                     _export_type=k,
                     keywords=keywords or ''))
-                export_links.append(A(T(label), _href=link, _title=title, _class='btn btn-default'))
+                export_links.append(A(T(label), _href=link, _title=title, _class='btn btn-default btn-secondary'))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
         else:
@@ -2922,6 +3154,7 @@ class SQLFORM(FORM):
         res.view_form = view_form
         res.search_form = search_form
         res.rows = rows
+        res.dbset = dbset
         return res
 
     @staticmethod
@@ -3040,7 +3273,9 @@ class SQLFORM(FORM):
                 # if isinstance(linked_tables, dict):
                 #     linked_tables = linked_tables.get(table._tablename, [])
                 if linked_tables is None or referee in linked_tables:
-                    field.represent = lambda id, r=None, referee=referee, rep=field.represent: A(callable(rep) and rep(id) or id, cid=request.cid, _href=url(args=['view', referee, id]))
+                    field.represent = (lambda id, r=None, referee=referee, rep=field.represent:
+                                       A(callable(rep) and rep(id) or id,
+                                         cid=request.cid, _href=url(args=['view', referee, id])))
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
         if nargs == len(args) + 1:
@@ -3201,23 +3436,28 @@ class SQLTABLE(TABLE):
         if not sqlrows:
             return
         REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
+        fieldmap = dict(zip(sqlrows.colnames, sqlrows.fields))
+        tablemap = dict(((f.tablename, f.table) if isinstance(f, Field) else (f._table._tablename, f._table) for f in fieldmap.values()))
+        for table in tablemap.values():
+            pref = table._tablename + '.'
+            fieldmap.update(((pref+f.name, f) for f in table._virtual_fields))
+            fieldmap.update(((pref+f.name, f) for f in table._virtual_methods))
+        field_types = (Field, Field.Virtual, Field.Method)
         if not columns:
             columns = list(sqlrows.colnames)
-        if headers == 'fieldname:capitalize':
+        header_func = {
+            'fieldname:capitalize': lambda f: f.name.replace('_', ' ').title(),
+            'labels': lambda f: f.label
+        }
+        if isinstance(headers, str) and headers in header_func:
+            make_name = header_func[headers]
             headers = {}
             for c in columns:
-                tfmatch = REGEX_TABLE_DOT_FIELD.match(c)
-                if tfmatch:
-                    (t, f) = REGEX_TABLE_DOT_FIELD.match(c).groups()
-                    headers[t + '.' + f] = f.replace('_', ' ').title()
+                f = fieldmap.get(c)
+                if isinstance(f, field_types):
+                    headers[c] = make_name(f)
                 else:
                     headers[c] = REGEX_ALIAS_MATCH.sub(r'\2', c)
-        elif headers == 'labels':
-            headers = {}
-            for c in columns:
-                (t, f) = c.split('.')
-                field = sqlrows.db[t][f]
-                headers[c] = field.label
         if colgroup:
             cols = [COL(_id=c.replace('.', '-'), data={'column': i + 1})
                     for i, c in enumerate(columns)]
@@ -3270,9 +3510,8 @@ class SQLTABLE(TABLE):
                     _class += ' rowselected'
 
             for colname in columns:
-                matched_column_field = \
-                    sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD.match(colname)
-                if not matched_column_field:
+                field = fieldmap.get(colname)
+                if not isinstance(field, field_types):
                     if "_extra" in record and colname in record._extra:
                         r = record._extra[colname]
                         row.append(TD(r))
@@ -3280,12 +3519,9 @@ class SQLTABLE(TABLE):
                     else:
                         raise KeyError(
                             "Column %s not found (SQLTABLE)" % colname)
-                (tablename, fieldname) = matched_column_field.groups()
-                colname = tablename + '.' + fieldname
-                try:
-                    field = sqlrows.db[tablename][fieldname]
-                except (KeyError, AttributeError):
-                    field = None
+                # Virtual fields don't have parent table name...
+                tablename = colname.split('.', 1)[0]
+                fieldname = field.name
                 if tablename in record \
                         and isinstance(record, Row) \
                         and isinstance(record[tablename], Row):
@@ -3313,7 +3549,7 @@ class SQLTABLE(TABLE):
                             if ref.find('.') >= 0:
                                 tref, fref = ref.split('.')
                                 if hasattr(sqlrows.db[tref], '_primarykey'):
-                                    href = '%s/%s?%s' % (linkto, tref, urllib.urlencode({fref: r}))
+                                    href = '%s/%s?%s' % (linkto, tref, urlencode({fref: r}))
                         r = A(represent(field, r, record), _href=str(href))
                     elif field.represent:
                         if field not in repr_cache:
@@ -3324,7 +3560,7 @@ class SQLTABLE(TABLE):
                 elif linkto and hasattr(field._table, '_primarykey')\
                         and fieldname in field._table._primarykey:
                     # have to test this with multi-key tables
-                    key = urllib.urlencode(dict([
+                    key = urlencode(dict([
                                 ((tablename in record
                                       and isinstance(record, Row)
                                       and isinstance(record[tablename], Row)) and
@@ -3426,7 +3662,7 @@ class ExportClass(object):
             """
             if value is None:
                 return '<NULL>'
-            elif isinstance(value, unicode):
+            elif isinstance(value, unicodeT):
                 return value.encode('utf8')
             elif isinstance(value, Reference):
                 return int(value)
@@ -3444,7 +3680,9 @@ class ExportClass(object):
                 if not self.rows.db._adapter.REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
-                    (t, f) = col.split('.')
+                    # The grid code modifies rows.colnames, adding double quotes
+                    # around the table and field names -- so they must be removed here.
+                    (t, f) = [name.strip('"') for name in col.split('.')]
                     field = self.rows.db[t][f]
                     if isinstance(record.get(t, None), (Row, dict)):
                         value = record[t][f]
@@ -3487,7 +3725,7 @@ class ExporterTSV(ExportClass):
             import codecs
             final.write(codecs.BOM_UTF16)
             writer.writerow(
-                [unicode(col).encode("utf8") for col in self.rows.colnames])
+                [to_unicode(col, "utf8") for col in self.rows.colnames])
             data = out.getvalue().decode("utf8")
             data = data.encode("utf-16")
             data = data[2:]
@@ -3550,8 +3788,8 @@ class ExporterHTML(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        xml = self.rows.xml() if self.rows else ''
-        return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (xml or '')
+        table = SQLTABLE(self.rows, truncate=None) if self.rows else ''
+        return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (table or '')
 
 
 class ExporterXML(ExportClass):

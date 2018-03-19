@@ -12,16 +12,13 @@ import smtplib
 import datetime
 import unittest
 
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
-
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
 from pydal.objects import Table
 from gluon import tools
 from gluon.tools import Auth, Mail, Recaptcha, Recaptcha2, prettydate, Expose
+from gluon._compat import PY2
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
 from gluon.languages import translator
@@ -232,7 +229,7 @@ class TestAuthJWT(unittest.TestCase):
         from gluon.tools import AuthJWT
 
         from gluon import current
-        
+
         self.request = Request(env={})
         self.request.application = 'a'
         self.request.controller = 'c'
@@ -263,7 +260,7 @@ class TestAuthJWT(unittest.TestCase):
         self.token = self.jwtauth.jwt_token_manager()
         self.assertIsNotNone(self.token)
 
-        
+
     def test_allows_jwt(self):
         import gluon.serializers
         self.request.vars.update(self.user_data)
@@ -277,7 +274,7 @@ class TestAuthJWT(unittest.TestCase):
         def optional_auth():
             self.assertEqual(self.user_data['username'], self.auth.user.username)
         optional_auth()
-        
+
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 # class TestAuth(unittest.TestCase):
 #
@@ -498,7 +495,15 @@ class TestAuthJWT(unittest.TestCase):
 #     #     impersonate_form = auth.impersonate(user_id=omer_id)
 #     #     self.assertTrue(auth.is_impersonating())
 #     #     self.assertEqual(impersonate_form, 'test')
+
+
 class TestAuth(unittest.TestCase):
+
+    def myassertRaisesRegex(self, *args, **kwargs):
+        if PY2:
+            return getattr(self, 'assertRaisesRegexp')(*args, **kwargs)
+        return getattr(self, 'assertRaisesRegex')(*args, **kwargs)
+
     def setUp(self):
         self.request = Request(env={})
         self.request.application = 'a'
@@ -520,39 +525,58 @@ class TestAuth(unittest.TestCase):
         self.auth.define_tables(username=True, signature=False)
         self.db.define_table('t0', Field('tt'), self.auth.signature)
         self.auth.enable_record_versioning(self.db)
+        self.auth.settings.registration_requires_verification = False
+        self.auth.settings.registration_requires_approval = False
         # Create a user
-        self.auth.get_or_create_user(dict(first_name='Bart',
-                                          last_name='Simpson',
-                                          username='bart',
-                                          email='bart@simpson.com',
-                                          password='bart_password',
-                                          registration_key='bart',
-                                          registration_id=''
-                                          ),
-                                     login=False)
-        self.db.commit()
-        self.assertFalse(self.auth.is_logged_in())
-        # self.auth.settings.registration_requires_verification = False
-        # self.auth.settings.registration_requires_approval = False
+        # Note: get_or_create_user() doesn't seems to create user properly it better to use register_bare() and
+        #       prevent login_bare() test from succeed. db insert the user manually not properly work either.
+        # Not working
+        # self.auth.get_or_create_user(dict(first_name='Bart',
+        #                                   last_name='Simpson',
+        #                                   username='bart',
+        #                                   email='bart@simpson.com',
+        #                                   password='bart_password',
+        #                                   # registration_key=None,
+        #                                   #registration_id='bart@simpson.com'
+        #                                  ),
+        #                              login=False)
+        # Not working
+        # self.db.auth_user.insert(first_name='Bart',
+        #                         last_name='Simpson',
+        #                         username='bart',
+        #                         email='bart@simpson.com',
+        #                         password='bart_password')
+        # self.db.commit()
+        self.auth.register_bare(first_name='Bart',
+                                last_name='Simpson',
+                                username='bart',
+                                email='bart@simpson.com',
+                                password='bart_password')
 
     def test_assert_setup(self):
-        self.assertEqual(self.db(self.db.auth_user.username == 'bart').select().first()['username'], 'bart')
         self.assertTrue('auth_user' in self.db)
         self.assertTrue('auth_group' in self.db)
         self.assertTrue('auth_membership' in self.db)
         self.assertTrue('auth_permission' in self.db)
         self.assertTrue('auth_event' in self.db)
+        bart_record = self.db(self.db.auth_user.username == 'bart').select().first()
+        self.assertEqual(bart_record['username'], 'bart')
+        self.assertEqual(bart_record['registration_key'], '')
+        bart_id = self.db(self.db.auth_user.username == 'bart').select().first().id
+        bart_group_id = self.db(self.db.auth_group.role == 'user_{0}'.format(bart_id)).select().first().id
+        self.assertTrue(self.db((self.db.auth_membership.group_id == bart_group_id) &
+                                (self.db.auth_membership.user_id == bart_id)).select().first())
 
     # Just calling many form functions
     def test_basic_blank_forms(self):
         for f in ['login', 'retrieve_password', 'retrieve_username', 'register']:
             html_form = getattr(self.auth, f)().xml()
-            self.assertTrue('name="_formkey"' in html_form)
+            self.assertTrue(b'name="_formkey"' in html_form)
 
         for f in ['logout', 'verify_email', 'reset_password', 'change_password', 'profile', 'groups']:
-            self.assertRaisesRegexp(HTTP, "303*", getattr(self.auth, f))
+            self.myassertRaisesRegex(HTTP, "303*", getattr(self.auth, f))
 
-        self.assertRaisesRegexp(HTTP, "401*", self.auth.impersonate)
+        self.myassertRaisesRegex(HTTP, "401*", self.auth.impersonate)
 
         try:
             for t in ['t0_archive', 't0', 'auth_cas', 'auth_event',
@@ -647,16 +671,31 @@ class TestAuth(unittest.TestCase):
     # TODO: def test_login_user(self):
     # TODO: def test__get_login_settings(self):
 
-    # login_bare() seems broken see my post on web2py-developpers
-    # commented for now
-    # def test_login_bare(self):
-    #     # The following test case should succeed but failed as I never received the user record but False
-    #     self.auth.login_bare(username='bart', password='bart_password')
-    #     self.assertTrue(self.auth.is_logged_in())
-    #     # Failing login because bad_password
-    #     self.assertEqual(self.auth.login_bare(username='bart', password='wrong_password'), False)
-    #     self.auth.logout_bare()
-    #     self.db.auth_user.truncate()
+    def test_login_bare(self):
+        self.auth.login_bare(username='bart', password='bart_password')
+        self.assertTrue(self.auth.is_logged_in())
+        self.auth.logout_bare()
+        # Failing login because wrong_password
+        self.assertFalse(self.auth.login_bare(username='bart', password='wrong_password'))
+        # NOTE : The following failed for some reason, but I can't find out why
+        # self.auth = Auth(self.db)
+        # self.auth.define_tables(username=False, signature=False)
+        # self.auth.settings.registration_requires_verification = False
+        # self.auth.settings.registration_requires_approval = False
+        # self.auth.register_bare(first_name='Omer',
+        #                         last_name='Simpson',
+        #                         # no username field passed, failed with :
+        #                         # ValueError('register_bare: userfield not provided or invalid')
+        #                         # Or
+        #                         # username='omer',
+        #                         # Or
+        #                         # username='omer@simpson.com',
+        #                         # In either previous cases, it failed with :
+        #                         # self.assertTrue(self.auth.is_logged_in()) AssertionError: False is not true
+        #                         email='omer@simpson.com',
+        #                         password='omer_password')
+        # self.auth.login_bare(username='omer@sympson.com', password='omer_password')
+        # self.assertTrue(self.auth.is_logged_in())
 
     def test_register_bare(self):
         # corner case empty register call register_bare without args
@@ -712,7 +751,7 @@ class TestAuth(unittest.TestCase):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.auth.settings.bulk_register_enabled = True
         bulk_register_form = self.auth.bulk_register(max_emails=10).xml()
-        self.assertTrue('name="_formkey"' in bulk_register_form)
+        self.assertTrue(b'name="_formkey"' in bulk_register_form)
 
     # TODO: def test_manage_tokens(self):
     # TODO: def test_reset_password(self):
@@ -723,12 +762,12 @@ class TestAuth(unittest.TestCase):
     def test_change_password(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         change_password_form = getattr(self.auth, 'change_password')().xml()
-        self.assertTrue('name="_formkey"' in change_password_form)
+        self.assertTrue(b'name="_formkey"' in change_password_form)
 
     def test_profile(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         profile_form = getattr(self.auth, 'profile')().xml()
-        self.assertTrue('name="_formkey"' in profile_form)
+        self.assertTrue(b'name="_formkey"' in profile_form)
 
     # TODO: def test_run_login_onaccept(self):
     # TODO: def test_jwt(self):
@@ -766,7 +805,7 @@ class TestAuth(unittest.TestCase):
 
         # basic impersonate() test that return a read form
         self.assertEqual(self.auth.impersonate().xml(),
-                         '<form action="#" enctype="multipart/form-data" method="post"><table><tr id="no_table_user_id__row"><td class="w2p_fl"><label class="" for="no_table_user_id" id="no_table_user_id__label">User Id: </label></td><td class="w2p_fw"><input class="integer" id="no_table_user_id" name="user_id" type="text" value="" /></td><td class="w2p_fc"></td></tr><tr id="submit_record__row"><td class="w2p_fl"></td><td class="w2p_fw"><input type="submit" value="Submit" /></td><td class="w2p_fc"></td></tr></table></form>')
+                         b'<form action="#" enctype="multipart/form-data" method="post"><table><tr id="no_table_user_id__row"><td class="w2p_fl"><label class="" for="no_table_user_id" id="no_table_user_id__label">User Id: </label></td><td class="w2p_fw"><input class="integer" id="no_table_user_id" name="user_id" type="text" value="" /></td><td class="w2p_fc"></td></tr><tr id="submit_record__row"><td class="w2p_fl"></td><td class="w2p_fw"><input type="submit" value="Submit" /></td><td class="w2p_fc"></td></tr></table></form>')
         # bart impersonate itself
         self.assertEqual(self.auth.impersonate(bart_id), None)
         self.assertFalse(self.auth.is_impersonating())  # User shouldn't impersonate itself?
@@ -776,20 +815,20 @@ class TestAuth(unittest.TestCase):
         self.assertTrue(self.auth.is_impersonating())
         self.assertEqual(self.auth.user_id, omer_id)  # we make it really sure
         self.assertEqual(impersonate_form.xml(),
-                         '<form action="#" enctype="multipart/form-data" method="post"><table><tr id="auth_user_id__row"><td class="w2p_fl"><label class="readonly" for="auth_user_id" id="auth_user_id__label">Id: </label></td><td class="w2p_fw"><span id="auth_user_id">2</span></td><td class="w2p_fc"></td></tr><tr id="auth_user_first_name__row"><td class="w2p_fl"><label class="readonly" for="auth_user_first_name" id="auth_user_first_name__label">First name: </label></td><td class="w2p_fw">Omer</td><td class="w2p_fc"></td></tr><tr id="auth_user_last_name__row"><td class="w2p_fl"><label class="readonly" for="auth_user_last_name" id="auth_user_last_name__label">Last name: </label></td><td class="w2p_fw">Simpson</td><td class="w2p_fc"></td></tr><tr id="auth_user_email__row"><td class="w2p_fl"><label class="readonly" for="auth_user_email" id="auth_user_email__label">E-mail: </label></td><td class="w2p_fw">omer@test.com</td><td class="w2p_fc"></td></tr><tr id="auth_user_username__row"><td class="w2p_fl"><label class="readonly" for="auth_user_username" id="auth_user_username__label">Username: </label></td><td class="w2p_fw">omer</td><td class="w2p_fc"></td></tr></table><div style="display:none;"><input name="id" type="hidden" value="2" /></div></form>')
+                         b'<form action="#" enctype="multipart/form-data" method="post"><table><tr id="auth_user_id__row"><td class="w2p_fl"><label class="readonly" for="auth_user_id" id="auth_user_id__label">Id: </label></td><td class="w2p_fw"><span id="auth_user_id">2</span></td><td class="w2p_fc"></td></tr><tr id="auth_user_first_name__row"><td class="w2p_fl"><label class="readonly" for="auth_user_first_name" id="auth_user_first_name__label">First name: </label></td><td class="w2p_fw">Omer</td><td class="w2p_fc"></td></tr><tr id="auth_user_last_name__row"><td class="w2p_fl"><label class="readonly" for="auth_user_last_name" id="auth_user_last_name__label">Last name: </label></td><td class="w2p_fw">Simpson</td><td class="w2p_fc"></td></tr><tr id="auth_user_email__row"><td class="w2p_fl"><label class="readonly" for="auth_user_email" id="auth_user_email__label">E-mail: </label></td><td class="w2p_fw">omer@test.com</td><td class="w2p_fc"></td></tr><tr id="auth_user_username__row"><td class="w2p_fl"><label class="readonly" for="auth_user_username" id="auth_user_username__label">Username: </label></td><td class="w2p_fw">omer</td><td class="w2p_fc"></td></tr></table><div style="display:none;"><input name="id" type="hidden" value="2" /></div></form>')
         self.auth.logout_bare()
         # Failing impersonation
         # User lacking impersonate membership
         self.auth.login_user(self.db(self.db.auth_user.username == 'omer').select().first())  # bypass login_bare()
         # self.assertTrue(self.auth.is_logged_in())  # For developing test
         # self.assertFalse(self.auth.is_impersonating())  # For developing test
-        self.assertRaisesRegexp(HTTP, "403*", self.auth.impersonate, bart_id)
+        self.myassertRaisesRegex(HTTP, "403*", self.auth.impersonate, bart_id)
         self.auth.logout_bare()
         # Try impersonate a non existing user
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         # self.assertTrue(self.auth.is_logged_in())  # For developing test
         # self.assertFalse(self.auth.is_impersonating())  # For developing test
-        self.assertRaisesRegexp(HTTP, "401*", self.auth.impersonate, 1000)  # user with id 1000 shouldn't exist
+        self.myassertRaisesRegex(HTTP, "401*", self.auth.impersonate, 1000)  # user with id 1000 shouldn't exist
         # Try impersonate user with id = 0 or '0' when bart impersonating omer
         self.auth.impersonate(user_id=omer_id)
         self.assertTrue(self.auth.is_impersonating())
@@ -800,19 +839,22 @@ class TestAuth(unittest.TestCase):
     def test_groups(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.assertEqual(self.auth.groups().xml(),
-                         '<table><tr><td><h3>user_1(1)</h3></td></tr><tr><td><p></p></td></tr></table>')
+                         b'<table><tr><td><h3>user_1(1)</h3></td></tr><tr><td><p></p></td></tr></table>')
 
     def test_not_authorized(self):
         self.current.request.ajax = 'facke_ajax_request'
-        self.assertRaisesRegexp(HTTP, "403*", self.auth.not_authorized)
+        self.myassertRaisesRegex(HTTP, "403*", self.auth.not_authorized)
         self.current.request.ajax = None
         self.assertEqual(self.auth.not_authorized(), self.auth.messages.access_denied)
 
     def test_allows_jwt(self):
-        self.assertRaisesRegexp(HTTP, "400*", self.auth.allows_jwt)
+        self.myassertRaisesRegex(HTTP, "400*", self.auth.allows_jwt)
 
     # TODO: def test_requires(self):
-    # TODO: def test_requires_login(self):
+
+    # def test_login(self):
+    # Basic testing above in "test_basic_blank_forms()" could be refined here
+
     # TODO: def test_requires_login_or_token(self):
     # TODO: def test_requires_membership(self):
     # TODO: def test_requires_permission(self):
@@ -861,13 +903,62 @@ class TestAuth(unittest.TestCase):
         count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
         self.assertEqual(count_log_event_test_after, count_log_event_test_before)
 
-    # Waiting guidance : https://github.com/web2py/web2py/issues/1300
-    # def test_add_membership(self):
-    #     self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
-    #     # failing case
-    #     rtn = self.auth.add_membership('not_existing_role_name')
-    #     # self.assertEqual(rtn, 'test')
-    #     self.assertEqual(self.db(self.db.auth_group.role == 'not_existing_role_name').select().first(), 'test')
+    def test_add_membership(self):
+        user = self.db(self.db.auth_user.username == 'bart').select().first() # bypass login_bare()
+        user_id = user.id
+        role_name = 'test_add_membership_group'
+        group_id = self.auth.add_group(role_name)
+        self.assertFalse(self.auth.has_membership(role_name))
+
+        self.auth.add_membership(group_id=group_id, user_id=user_id)
+        self.assertTrue(self.auth.has_membership(group_id, user_id=user_id))
+        self.auth.del_membership(group_id=group_id, user_id=user_id)
+        self.assertFalse(self.auth.has_membership(group_id, user_id=user_id))
+
+        self.auth.add_membership(role=role_name, user_id=user_id)
+        self.assertTrue(self.auth.has_membership(group_id, user_id=user_id))
+        self.auth.del_membership(group_id=group_id, user_id=user_id)
+        self.assertFalse(self.auth.has_membership(group_id, user_id=user_id))
+
+        with self.myassertRaisesRegex(ValueError, '^group_id not provided or invalid$'):
+            self.auth.add_membership(group_id='not_existing_group_name', user_id=user_id)
+        with self.myassertRaisesRegex(ValueError, '^group_id not provided or invalid$'):
+            self.auth.add_membership(role='not_existing_role_name', user_id=user_id)
+        with self.myassertRaisesRegex(ValueError, '^user_id not provided or invalid$'):
+            self.auth.add_membership(group_id=group_id, user_id=None)
+        with self.myassertRaisesRegex(ValueError, '^user_id not provided or invalid$'):
+            self.auth.add_membership(role=role_name, user_id=None)
+
+        self.auth.login_user(user)
+
+        self.auth.add_membership(group_id=group_id)
+        self.assertTrue(self.auth.has_membership(group_id))
+        self.auth.del_membership(group_id=group_id)
+        self.assertFalse(self.auth.has_membership(group_id))
+
+        self.auth.add_membership(role=role_name)
+        self.assertTrue(self.auth.has_membership(group_id))
+        self.auth.del_membership(group_id=group_id)
+        self.assertFalse(self.auth.has_membership(group_id))
+
+        # default usage (group_id=role_name)
+        self.auth.add_membership(role_name)
+        self.assertTrue(self.auth.has_membership(group_id))
+        self.auth.del_membership(group_id=group_id)
+        self.assertFalse(self.auth.has_membership(group_id))
+
+        # re-adding a membership should return the existing membership
+        record0_id = self.auth.add_membership(group_id)
+        self.assertTrue(self.auth.has_membership(group_id))
+        record1_id = self.auth.add_membership(group_id)
+        self.assertEqual(record0_id, record1_id)
+        self.auth.del_membership(group_id=group_id)
+        self.assertFalse(self.auth.has_membership(group_id))
+
+        with self.myassertRaisesRegex(ValueError, '^group_id not provided or invalid$'):
+            self.auth.add_membership(group_id='not_existing_group_name')
+        with self.myassertRaisesRegex(ValueError, '^group_id not provided or invalid$'):
+            self.auth.add_membership(role='not_existing_role_name')
 
     def test_del_membership(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
@@ -1304,6 +1395,3 @@ class TestExpose(unittest.TestCase):
         with self.assertRaises(HTTP):
             self.make_expose(base='inside', show='link_to_file3')
 
-
-if __name__ == '__main__':
-    unittest.main()

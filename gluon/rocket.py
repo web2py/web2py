@@ -11,7 +11,8 @@ import errno
 import socket
 import logging
 import platform
-from gluon._compat import iteritems
+from gluon._compat import iteritems, to_bytes, StringIO
+from gluon._compat import urllib_unquote, to_native
 
 # Define Constants
 VERSION = '1.2.6'
@@ -182,13 +183,6 @@ class Connection(object):
 
 # Import System Modules
 import socket
-try:
-    from io import StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
 # Import Package Modules
 # package imports removed in monolithic build
 
@@ -313,13 +307,13 @@ try:
 except ImportError:
     has_futures = False
 
-    class Future:
+    class Future(object):
         pass
 
-    class ThreadPoolExecutor:
+    class ThreadPoolExecutor(object):
         pass
 
-    class _WorkItem:
+    class _WorkItem(object):
         pass
 
 
@@ -790,8 +784,7 @@ class Rocket(object):
                        the application developer.  Please update your \
                        applications to no longer call rocket.stop(True)"
                 try:
-                    import warnings
-                    raise warnings.DeprecationWarning(msg)
+                    raise DeprecationWarning(msg)
                 except ImportError:
                     raise RuntimeError(msg)
 
@@ -1180,19 +1173,6 @@ from threading import Thread
 from datetime import datetime
 
 try:
-    from urllib import unquote
-except ImportError:
-    from urllib.parse import unquote
-
-try:
-    from io import StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
-
-try:
     from ssl import SSLError
 except ImportError:
     class SSLError(socket.error):
@@ -1204,17 +1184,17 @@ except ImportError:
 # Define Constants
 re_SLASH = re.compile('%2F', re.IGNORECASE)
 re_REQUEST_LINE = re.compile(r"""^
-(?P<method>OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)   # Request Method
-\                                                            # (single space)
+(?P<method>OPTIONS|GET|HEAD|POST|PUT|DELETE|PATCH|TRACE|CONNECT) # Req Method
+\                                                                # single space
 (
-    (?P<scheme>[^:/]+)                                       # Scheme
+    (?P<scheme>[^:/]+)                                           # Scheme
     (://)  #
-    (?P<host>[^/]+)                                          # Host
+    (?P<host>[^/]+)                                              # Host
 )? #
-(?P<path>(\*|/[^ \?]*))                                      # Path
-(\? (?P<query_string>[^ ]*))?                                # Query String
-\                                                            # (single space)
-(?P<protocol>HTTPS?/1\.[01])                                 # Protocol
+(?P<path>(\*|/[^ \?]*))                                          # Path
+(\? (?P<query_string>[^ ]*))?                                    # Query String
+\                                                                # single space
+(?P<protocol>HTTPS?/1\.[01])                                     # Protocol
 $
 """, re.X)
 LOG_LINE = '%(client_ip)s - "%(request_line)s" - %(status)s %(size)s'
@@ -1436,7 +1416,7 @@ class Worker(Thread):
                 req[k] = ""
             if k == 'path':
                 req['path'] = r'%2F'.join(
-                    [unquote(x) for x in re_SLASH.split(v)])
+                    [urllib_unquote(x) for x in re_SLASH.split(v)])
 
         self.protocol = req['protocol']
         return req
@@ -1471,7 +1451,7 @@ class Worker(Thread):
         if '?' in path:
             path, query_string = path.split('?', 1)
 
-        path = r'%2F'.join([unquote(x) for x in re_SLASH.split(path)])
+        path = r'%2F'.join([urllib_unquote(x) for x in re_SLASH.split(path)])
 
         req.update(path=path,
                    query_string=query_string,
@@ -1681,7 +1661,7 @@ class WSGIWorker(Worker):
             try:
                 peercert = conn.socket.getpeercert(binary_form=True)
                 environ['SSL_CLIENT_RAW_CERT'] = \
-                    peercert and ssl.DER_cert_to_PEM_cert(peercert)
+                    peercert and to_native(ssl.DER_cert_to_PEM_cert(peercert))
             except Exception:
                 print(sys.exc_info()[1])
         else:
@@ -1770,9 +1750,9 @@ class WSGIWorker(Worker):
         if self.request_method != 'HEAD':
             try:
                 if self.chunked:
-                    self.conn.sendall(b('%x\r\n%s\r\n' % (len(data), data)))
+                    self.conn.sendall(b'%x\r\n%s\r\n' % (len(data), to_bytes(data, 'ISO-8859-1')))
                 else:
-                    self.conn.sendall(data)
+                    self.conn.sendall(to_bytes(data))
             except socket.timeout:
                 self.closeConnection = True
             except socket.error:

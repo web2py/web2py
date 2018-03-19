@@ -7,9 +7,6 @@
 import sys
 import os
 import unittest
-from .fix_path import fix_sys_path
-
-fix_sys_path(__file__)
 
 from gluon.dal import DAL, Field
 
@@ -110,16 +107,3 @@ class TestDALAdapters(unittest.TestCase):
             os.environ["DB"] = "mysql://root:@localhost/pydal"
             result = self._run_tests()
             self.assertTrue(result)
-
-    def test_pg8000(self):
-        if os.environ.get('APPVEYOR'):
-            return
-        if os.environ.get('TRAVIS'):
-            os.environ["DB"] = "postgres:pg8000://postgres:@localhost/pydal"
-            result = self._run_tests()
-            self.assertTrue(result)
-
-
-if __name__ == '__main__':
-    unittest.main()
-    tearDownModule()

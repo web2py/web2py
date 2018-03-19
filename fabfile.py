@@ -1,7 +1,8 @@
 from fabric.api import *
 from fabric.operations import put, get
-from fabric.contrib.files import exists
+from fabric.contrib.files import exists, append, uncomment
 import os
+import crypt
 import datetime
 import getpass
 
@@ -17,16 +18,14 @@ applications = '/home/www-data/web2py/applications'
 
 def create_user(username):
     """fab -H root@host create_user:username"""
-    password = getpass.getpass(name+' password for %s> ' % username)
-    run('useradd -m %s' % username)
-    run('usermod --password %s %s' % (crypt.crypt(password, 'salt'), username))
-    run('mkdir -p ~%s/.ssh' % username)
+    password = getpass.getpass('password for %s> ' % username)
+    run('useradd -m -G www-data -s /bin/bash -p %s %s' % (crypt.crypt(password, 'salt'), username))
+    local('ssh-copy-id %s' % env.hosts[0])
     run('cp /etc/sudoers /tmp/sudoers.new')
-    append('/tmp/sudoers.new', '%s ALL=NOPASSWD: ALL' % username, use_sudo=True)
+    append('/tmp/sudoers.new', '%s ALL=(ALL) NOPASSWD:ALL' % username, use_sudo=True)
     run('visudo -c -f /tmp/sudoers.new')
     run('EDITOR="cp /tmp/sudoers.new" visudo')
     uncomment('~%s/.bashrc' % username, '#force_color_prompt=yes')
-    local('ssh-copy-id %s' % env.hosts[0])
 
 def install_web2py():        
     """fab -H username@host install_web2py"""
@@ -124,7 +123,7 @@ def deploy(appname=None, all=False):
     if all=='all' or not backup:
         local('zip -r _update.zip * -x *~ -x .* -x \#* -x *.bak -x *.bak2')
     else:        
-        local('zip -r _update.zip */*.py views/*.html views/*/*.html static/*')
+        local('zip -r _update.zip */*.py */*/*.py views/*.html views/*/*.html static/*')
 
     put('_update.zip','/tmp/_update.zip')
     try:
@@ -138,6 +137,26 @@ def deploy(appname=None, all=False):
                
     if backup:
         print 'TO RESTORE: fab restore:%s' % backup
+
+def deploynobackup(appname=None):
+    """fab -H username@host deploy:appname,all"""
+    appname = appname or os.path.split(os.getcwd())[-1]
+    appfolder = applications+'/'+appname
+    zipfile = os.path.join(appfolder, '_update.zip')
+    if os.path.exists(zipfile):
+        os.unlink(zipfile)
+
+    local('zip -r _update.zip */*.py */*/*.py views/*.html views/*/*.html static/*')
+
+    put('_update.zip','/tmp/_update.zip')
+    try:
+        with cd(appfolder):
+            sudo('unzip -o /tmp/_update.zip')
+            sudo('chown -R www-data:www-data *')
+            sudo('echo "%s" > DATE_DEPLOYMENT' % now)
+    
+    finally:
+        sudo('rm /tmp/_update.zip')
              
 def restore(backup):
     """fab -H username@host restore:backupfilename"""

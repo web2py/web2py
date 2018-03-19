@@ -13,6 +13,7 @@
 *.orig
 Thumbs.db
 .DS_Store
+*.DS_Store
 index.yaml
 routes.py
 logging.conf

@@ -10,7 +10,6 @@
 Validators
 -----------
 """
-
 import os
 import re
 import datetime
@@ -21,7 +20,9 @@ import urllib
 import struct
 import decimal
 import unicodedata
-from gluon._compat import StringIO, long, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native
+
+from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, \
+    to_unicode, to_native, string_types, urlparse
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce
@@ -195,7 +196,7 @@ class IS_MATCH(Validator):
         self.is_unicode = is_unicode or (not(PY2))
 
     def __call__(self, value):
-        if not(PY2): # PY3 convert bytes to unicode
+        if not(PY2):  # PY3 convert bytes to unicode
             value = to_unicode(value)
 
         if self.is_unicode or not(PY2):
@@ -270,7 +271,7 @@ class IS_EXPR(Validator):
             return (value, self.expression(value))
         # for backward compatibility
         self.environment.update(value=value)
-        exec ('__ret__=' + self.expression, self.environment)
+        exec('__ret__=' + self.expression, self.environment)
         if self.environment['__ret__']:
             return (value, None)
         return (value, translate(self.error_message))
@@ -452,10 +453,10 @@ class IS_IN_SET(Validator):
         if not self.labels:
             items = [(k, k) for (i, k) in enumerate(self.theset)]
         else:
-            items = [(k, self.labels[i]) for (i, k) in enumerate(self.theset)]
+            items = [(k, list(self.labels)[i]) for (i, k) in enumerate(self.theset)]
         if self.sort:
             items.sort(key=lambda o: str(o[1]).upper())
-        if zero and not self.zero is None and not self.multiple:
+        if zero and self.zero is not None and not self.multiple:
             items.insert(0, ('', self.zero))
         return items
 
@@ -659,7 +660,7 @@ class IS_IN_DB(Validator):
                     return (values, None)
         else:
             if field.type in ('id', 'integer'):
-                if isinstance(value, (int, long)) or value.isdigit():
+                if isinstance(value, (int, long)) or (isinstance(value, string_types) and value.isdigit()):
                     value = int(value)
                 elif self.auto_add:
                     value = self.maybe_add(table, self.fieldnames[0], value)
@@ -823,7 +824,7 @@ class IS_INT_IN_RANGE(Validator):
 
 def str2dec(number):
     s = str(number)
-    if not '.' in s:
+    if '.' not in s:
         s += '.00'
     else:
         s += '0' * (2 - len(s.split('.')[1]))
@@ -989,14 +990,15 @@ class IS_DECIMAL_IN_RANGE(Validator):
 
 
 def is_empty(value, empty_regex=None):
+    _value = value
     """test empty field"""
     if isinstance(value, (str, unicodeT)):
         value = value.strip()
         if empty_regex is not None and empty_regex.match(value):
             value = ''
-    if value is None or value == '' or value == []:
-        return (value, True)
-    return (value, False)
+    if value is None or value == '' or value == b'' or value == []:
+        return (_value, True)
+    return (_value, False)
 
 
 class IS_NOT_EMPTY(Validator):
@@ -1156,15 +1158,16 @@ class IS_EMAIL(Validator):
 
     """
 
-    regex = re.compile('''
+    body_regex = re.compile('''
         ^(?!\.)                            # name may not begin with a dot
         (
           [-a-z0-9!\#$%&'*+/=?^_`{|}~]     # all legal characters except dot
           |
           (?<!\.)\.                        # single dots only
         )+
-        (?<!\.)                            # name may not end with a dot
-        @
+        (?<!\.)$                            # name may not end with a dot
+    ''', re.VERBOSE | re.IGNORECASE)
+    domain_regex = re.compile('''
         (
           localhost
           |
@@ -1196,14 +1199,27 @@ class IS_EMAIL(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
+        if not(isinstance(value, (basestring, unicodeT))) or not value or '@' not in value:
+            return (value, translate(self.error_message))
+
+        body, domain = value.rsplit('@', 1)
+
         try:
-            match = self.regex.match(value)
-        except TypeError:
+            match_body = self.body_regex.match(body)
+            match_domain = self.domain_regex.match(domain)
+
+            if not match_domain:
+                # check for Internationalized Domain Names
+                # see https://docs.python.org/2/library/codecs.html#module-encodings.idna
+                domain_encoded = to_unicode(domain).encode('idna').decode('ascii')
+                match_domain = self.domain_regex.match(domain_encoded)
+
+            match = (match_body is not None) and (match_domain is not None)
+        except (TypeError, UnicodeError):
             # Value may not be a string where we can look for matches.
             # Example: we're calling ANY_OF formatter and IS_EMAIL is asked to validate a date.
             match = None
         if match:
-            domain = value.split('@')[1]
             if (not self.banned or not self.banned.match(domain)) \
                     and (not self.forced or self.forced.match(domain)):
                 return (value, None)
@@ -1232,7 +1248,7 @@ class IS_LIST_OF_EMAILS(object):
         f = IS_EMAIL()
         for email in self.split_emails.findall(value):
             error = f(email)[1]
-            if error and not email in bad_emails:
+            if error and email not in bad_emails:
                 bad_emails.append(email)
         if not bad_emails:
             return (value, None)
@@ -1372,19 +1388,6 @@ unofficial_url_schemes = [
 all_url_schemes = [None] + official_url_schemes + unofficial_url_schemes
 http_schemes = [None, 'http', 'https']
 
-
-# This regex comes from RFC 2396, Appendix B. It's used to split a URL into
-# its component parts
-# Here are the regex groups that it extracts:
-#    scheme = group(2)
-#    authority = group(4)
-#    path = group(5)
-#    query = group(7)
-#    fragment = group(9)
-
-url_split_regex = \
-    re.compile('^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?')
-
 # Defined in RFC 3490, Section 3.1, Requirement #1
 # Use this regex to split the authority component of a unicode URL into
 # its component labels
@@ -1454,18 +1457,15 @@ def unicode_to_ascii_authority(authority):
     # We use the ToASCII operation because we are about to put the authority
     # into an IDN-unaware slot
     asciiLabels = []
-    try:
-        import encodings.idna
-        for label in labels:
-            if label:
-                asciiLabels.append(to_native(encodings.idna.ToASCII(label)))
-            else:
-                 # encodings.idna.ToASCII does not accept an empty string, but
-                 # it is necessary for us to allow for empty labels so that we
-                 # don't modify the URL
-                asciiLabels.append('')
-    except:
-        asciiLabels = [str(label) for label in labels]
+    import encodings.idna
+    for label in labels:
+        if label:
+            asciiLabels.append(to_native(encodings.idna.ToASCII(label)))
+        else:
+            # encodings.idna.ToASCII does not accept an empty string, but
+            # it is necessary for us to allow for empty labels so that we
+            # don't modify the URL
+            asciiLabels.append('')
     # RFC 3490, Section 4, Step 5
     return str(reduce(lambda x, y: x + unichr(0x002E) + y, asciiLabels))
 
@@ -1504,33 +1504,39 @@ def unicode_to_ascii_url(url, prepend_scheme):
     """
     # convert the authority component of the URL into an ASCII punycode string,
     # but encode the rest using the regular URI character encoding
-
-    groups = url_split_regex.match(url).groups()
+    components = urlparse.urlparse(url)
+    prepended = False
     # If no authority was found
-    if not groups[3]:
+    if not components.netloc:
         # Try appending a scheme to see if that fixes the problem
         scheme_to_prepend = prepend_scheme or 'http'
-        groups = url_split_regex.match(
-            to_unicode(scheme_to_prepend) + u'://' + url).groups()
+        components = urlparse.urlparse(to_unicode(scheme_to_prepend) + u'://' + url)
+        prepended = True
+
     # if we still can't find the authority
-    if not groups[3]:
+    if not components.netloc:
         raise Exception('No authority component found, ' +
                         'could not decode unicode to US-ASCII')
 
     # We're here if we found an authority, let's rebuild the URL
-    scheme = groups[1]
-    authority = groups[3]
-    path = groups[4] or ''
-    query = groups[5] or ''
-    fragment = groups[7] or ''
+    scheme = components.scheme
+    authority = components.netloc
+    path = components.path
+    query = components.query
+    fragment = components.fragment
 
-    if prepend_scheme:
-        scheme = str(scheme) + '://'
-    else:
+    if prepended:
         scheme = ''
 
-    return scheme + unicode_to_ascii_authority(authority) +\
-        escape_unicode(path) + escape_unicode(query) + str(fragment)
+    unparsed = urlparse.urlunparse((scheme,
+                                    unicode_to_ascii_authority(authority),
+                                    escape_unicode(path),
+                                    '',
+                                    escape_unicode(query),
+                                    str(fragment)))
+    if unparsed.startswith('//'):
+        unparsed = unparsed[2:]  # Remove the // urlunparse puts in the beginning
+    return unparsed
 
 
 class IS_GENERIC_URL(Validator):
@@ -1591,7 +1597,8 @@ class IS_GENERIC_URL(Validator):
                               % (self.prepend_scheme, self.allowed_schemes))
 
     GENERIC_URL = re.compile(r"%[^0-9A-Fa-f]{2}|%[^0-9A-Fa-f][0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f]|%$|%[0-9A-Fa-f]$|%[^0-9A-Fa-f]$")
-    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%#]+$")
+    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
+    URL_FRAGMENT_VALID = re.compile(r"[|A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
 
     def __call__(self, value):
         """
@@ -1603,211 +1610,338 @@ class IS_GENERIC_URL(Validator):
             prepended with prepend_scheme), and tuple[1] is either
             None (success!) or the string error_message
         """
-        try:
-            # if the URL does not misuse the '%' character
-            if not self.GENERIC_URL.search(value):
-                # if the URL is only composed of valid characters
-                if self.GENERIC_URL_VALID.match(value):
-                    # Then split up the URL into its components and check on
-                    # the scheme
-                    scheme = url_split_regex.match(value).group(2)
-                    # Clean up the scheme before we check it
-                    if not scheme is None:
-                        scheme = urllib_unquote(scheme).lower()
-                    # If the scheme really exists
-                    if scheme in self.allowed_schemes:
-                        # Then the URL is valid
-                        return (value, None)
-                    else:
-                        # else, for the possible case of abbreviated URLs with
-                        # ports, check to see if adding a valid scheme fixes
-                        # the problem (but only do this if it doesn't have
-                        # one already!)
-                        if value.find('://') < 0 and None in self.allowed_schemes:
-                            schemeToUse = self.prepend_scheme or 'http'
-                            prependTest = self.__call__(
-                                schemeToUse + '://' + value)
-                            # if the prepend test succeeded
-                            if prependTest[1] is None:
-                                # if prepending in the output is enabled
-                                if self.prepend_scheme:
-                                    return prependTest
-                                else:
-                                    # else return the original,
-                                    #  non-prepended value
-                                    return (value, None)
-        except:
-            pass
+
+        # if we dont have anything or the URL misuses the '%' character
+
+        if not value or self.GENERIC_URL.search(value):
+            return (value, translate(self.error_message))
+
+        if '#' in value:
+            url, fragment_part = value.split('#')
+        else:
+            url, fragment_part = value, ''
+        # if the URL is only composed of valid characters
+        if self.GENERIC_URL_VALID.match(url) and (not fragment_part or self.URL_FRAGMENT_VALID.match(fragment_part)):
+            # Then parse the URL into its components and check on
+            try:
+                components = urlparse.urlparse(urllib_unquote(value))._asdict()
+            except ValueError:
+                return (value, translate(self.error_message))
+
+            # Clean up the scheme before we check it
+            scheme = components['scheme']
+            if len(scheme) == 0:
+                scheme = None
+            else:
+                scheme = components['scheme'].lower()
+            # If the scheme doesn't really exists
+            if scheme not in self.allowed_schemes or not scheme and ':' in components['path']:
+                # for the possible case of abbreviated URLs with
+                # ports, check to see if adding a valid scheme fixes
+                # the problem (but only do this if it doesn't have
+                # one already!)
+                if '://' not in value and None in self.allowed_schemes:
+                    schemeToUse = self.prepend_scheme or 'http'
+                    prependTest = self.__call__(
+                        schemeToUse + '://' + value)
+                    # if the prepend test succeeded
+                    if prependTest[1] is None:
+                        # if prepending in the output is enabled
+                        if self.prepend_scheme:
+                            return prependTest
+                        else:
+                            return (value, None)
+            else:
+                return (value, None)
         # else the URL is not valid
         return (value, translate(self.error_message))
 
-# Sources (obtained 2015-Feb-24):
+# Sources (obtained 2017-Nov-11):
 #    http://data.iana.org/TLD/tlds-alpha-by-domain.txt
 # see scripts/parse_top_level_domains.py for an easy update
 
 official_top_level_domains = [
     # a
-    'abogado', 'ac', 'academy', 'accountants', 'active', 'actor',
-    'ad', 'adult', 'ae', 'aero', 'af', 'ag', 'agency', 'ai',
-    'airforce', 'al', 'allfinanz', 'alsace', 'am', 'amsterdam', 'an',
-    'android', 'ao', 'apartments', 'aq', 'aquarelle', 'ar', 'archi',
-    'army', 'arpa', 'as', 'asia', 'associates', 'at', 'attorney',
-    'au', 'auction', 'audio', 'autos', 'aw', 'ax', 'axa', 'az',
+    'aaa', 'aarp', 'abarth', 'abb', 'abbott', 'abbvie', 'abc',
+    'able', 'abogado', 'abudhabi', 'ac', 'academy', 'accenture',
+    'accountant', 'accountants', 'aco', 'active', 'actor', 'ad',
+    'adac', 'ads', 'adult', 'ae', 'aeg', 'aero', 'aetna', 'af',
+    'afamilycompany', 'afl', 'africa', 'ag', 'agakhan', 'agency',
+    'ai', 'aig', 'aigo', 'airbus', 'airforce', 'airtel', 'akdn',
+    'al', 'alfaromeo', 'alibaba', 'alipay', 'allfinanz', 'allstate',
+    'ally', 'alsace', 'alstom', 'am', 'americanexpress',
+    'americanfamily', 'amex', 'amfam', 'amica', 'amsterdam',
+    'analytics', 'android', 'anquan', 'anz', 'ao', 'aol',
+    'apartments', 'app', 'apple', 'aq', 'aquarelle', 'ar', 'arab',
+    'aramco', 'archi', 'army', 'arpa', 'art', 'arte', 'as', 'asda',
+    'asia', 'associates', 'at', 'athleta', 'attorney', 'au',
+    'auction', 'audi', 'audible', 'audio', 'auspost', 'author',
+    'auto', 'autos', 'avianca', 'aw', 'aws', 'ax', 'axa', 'az',
+    'azure',
     # b
-    'ba', 'band', 'bank', 'bar', 'barclaycard', 'barclays',
-    'bargains', 'bayern', 'bb', 'bd', 'be', 'beer', 'berlin', 'best',
-    'bf', 'bg', 'bh', 'bi', 'bid', 'bike', 'bingo', 'bio', 'biz',
-    'bj', 'black', 'blackfriday', 'bloomberg', 'blue', 'bm', 'bmw',
-    'bn', 'bnpparibas', 'bo', 'boo', 'boutique', 'br', 'brussels',
-    'bs', 'bt', 'budapest', 'build', 'builders', 'business', 'buzz',
-    'bv', 'bw', 'by', 'bz', 'bzh',
+    'ba', 'baby', 'baidu', 'banamex', 'bananarepublic', 'band',
+    'bank', 'bar', 'barcelona', 'barclaycard', 'barclays',
+    'barefoot', 'bargains', 'baseball', 'basketball', 'bauhaus',
+    'bayern', 'bb', 'bbc', 'bbt', 'bbva', 'bcg', 'bcn', 'bd', 'be',
+    'beats', 'beauty', 'beer', 'bentley', 'berlin', 'best',
+    'bestbuy', 'bet', 'bf', 'bg', 'bh', 'bharti', 'bi', 'bible',
+    'bid', 'bike', 'bing', 'bingo', 'bio', 'biz', 'bj', 'black',
+    'blackfriday', 'blanco', 'blockbuster', 'blog', 'bloomberg',
+    'blue', 'bm', 'bms', 'bmw', 'bn', 'bnl', 'bnpparibas', 'bo',
+    'boats', 'boehringer', 'bofa', 'bom', 'bond', 'boo', 'book',
+    'booking', 'boots', 'bosch', 'bostik', 'boston', 'bot',
+    'boutique', 'box', 'br', 'bradesco', 'bridgestone', 'broadway',
+    'broker', 'brother', 'brussels', 'bs', 'bt', 'budapest',
+    'bugatti', 'build', 'builders', 'business', 'buy', 'buzz', 'bv',
+    'bw', 'by', 'bz', 'bzh',
     # c
-    'ca', 'cab', 'cal', 'camera', 'camp', 'cancerresearch', 'canon',
-    'capetown', 'capital', 'caravan', 'cards', 'care', 'career',
-    'careers', 'cartier', 'casa', 'cash', 'casino', 'cat',
-    'catering', 'cbn', 'cc', 'cd', 'center', 'ceo', 'cern', 'cf',
-    'cg', 'ch', 'channel', 'chat', 'cheap', 'christmas', 'chrome',
-    'church', 'ci', 'citic', 'city', 'ck', 'cl', 'claims',
-    'cleaning', 'click', 'clinic', 'clothing', 'club', 'cm', 'cn',
-    'co', 'coach', 'codes', 'coffee', 'college', 'cologne', 'com',
-    'community', 'company', 'computer', 'condos', 'construction',
-    'consulting', 'contractors', 'cooking', 'cool', 'coop',
-    'country', 'cr', 'credit', 'creditcard', 'cricket', 'crs',
-    'cruises', 'cu', 'cuisinella', 'cv', 'cw', 'cx', 'cy', 'cymru',
-    'cz',
+    'ca', 'cab', 'cafe', 'cal', 'call', 'calvinklein', 'cam',
+    'camera', 'camp', 'cancerresearch', 'canon', 'capetown',
+    'capital', 'capitalone', 'car', 'caravan', 'cards', 'care',
+    'career', 'careers', 'cars', 'cartier', 'casa', 'case', 'caseih',
+    'cash', 'casino', 'cat', 'catering', 'catholic', 'cba', 'cbn',
+    'cbre', 'cbs', 'cc', 'cd', 'ceb', 'center', 'ceo', 'cern', 'cf',
+    'cfa', 'cfd', 'cg', 'ch', 'chanel', 'channel', 'chase', 'chat',
+    'cheap', 'chintai', 'christmas', 'chrome', 'chrysler', 'church',
+    'ci', 'cipriani', 'circle', 'cisco', 'citadel', 'citi', 'citic',
+    'city', 'cityeats', 'ck', 'cl', 'claims', 'cleaning', 'click',
+    'clinic', 'clinique', 'clothing', 'cloud', 'club', 'clubmed',
+    'cm', 'cn', 'co', 'coach', 'codes', 'coffee', 'college',
+    'cologne', 'com', 'comcast', 'commbank', 'community', 'company',
+    'compare', 'computer', 'comsec', 'condos', 'construction',
+    'consulting', 'contact', 'contractors', 'cooking',
+    'cookingchannel', 'cool', 'coop', 'corsica', 'country', 'coupon',
+    'coupons', 'courses', 'cr', 'credit', 'creditcard',
+    'creditunion', 'cricket', 'crown', 'crs', 'cruise', 'cruises',
+    'csc', 'cu', 'cuisinella', 'cv', 'cw', 'cx', 'cy', 'cymru',
+    'cyou', 'cz',
     # d
-    'dabur', 'dad', 'dance', 'dating', 'day', 'dclk', 'de', 'deals',
-    'degree', 'delivery', 'democrat', 'dental', 'dentist', 'desi',
-    'design', 'dev', 'diamonds', 'diet', 'digital', 'direct',
-    'directory', 'discount', 'dj', 'dk', 'dm', 'dnp', 'do', 'docs',
-    'domains', 'doosan', 'durban', 'dvag', 'dz',
+    'dabur', 'dad', 'dance', 'data', 'date', 'dating', 'datsun',
+    'day', 'dclk', 'dds', 'de', 'deal', 'dealer', 'deals', 'degree',
+    'delivery', 'dell', 'deloitte', 'delta', 'democrat', 'dental',
+    'dentist', 'desi', 'design', 'dev', 'dhl', 'diamonds', 'diet',
+    'digital', 'direct', 'directory', 'discount', 'discover', 'dish',
+    'diy', 'dj', 'dk', 'dm', 'dnp', 'do', 'docs', 'doctor', 'dodge',
+    'dog', 'doha', 'domains', 'dot', 'download', 'drive', 'dtv',
+    'dubai', 'duck', 'dunlop', 'duns', 'dupont', 'durban', 'dvag',
+    'dvr', 'dz',
     # e
-    'eat', 'ec', 'edu', 'education', 'ee', 'eg', 'email', 'emerck',
-    'energy', 'engineer', 'engineering', 'enterprises', 'equipment',
-    'er', 'es', 'esq', 'estate', 'et', 'eu', 'eurovision', 'eus',
-    'events', 'everbank', 'exchange', 'expert', 'exposed',
+    'earth', 'eat', 'ec', 'eco', 'edeka', 'edu', 'education', 'ee',
+    'eg', 'email', 'emerck', 'energy', 'engineer', 'engineering',
+    'enterprises', 'epost', 'epson', 'equipment', 'er', 'ericsson',
+    'erni', 'es', 'esq', 'estate', 'esurance', 'et', 'etisalat',
+    'eu', 'eurovision', 'eus', 'events', 'everbank', 'exchange',
+    'expert', 'exposed', 'express', 'extraspace',
     # f
-    'fail', 'fans', 'farm', 'fashion', 'feedback', 'fi', 'finance',
-    'financial', 'firmdale', 'fish', 'fishing', 'fit', 'fitness',
-    'fj', 'fk', 'flights', 'florist', 'flowers', 'flsmidth', 'fly',
-    'fm', 'fo', 'foo', 'football', 'forsale', 'foundation', 'fr',
-    'frl', 'frogans', 'fund', 'furniture', 'futbol',
+    'fage', 'fail', 'fairwinds', 'faith', 'family', 'fan', 'fans',
+    'farm', 'farmers', 'fashion', 'fast', 'fedex', 'feedback',
+    'ferrari', 'ferrero', 'fi', 'fiat', 'fidelity', 'fido', 'film',
+    'final', 'finance', 'financial', 'fire', 'firestone', 'firmdale',
+    'fish', 'fishing', 'fit', 'fitness', 'fj', 'fk', 'flickr',
+    'flights', 'flir', 'florist', 'flowers', 'fly', 'fm', 'fo',
+    'foo', 'food', 'foodnetwork', 'football', 'ford', 'forex',
+    'forsale', 'forum', 'foundation', 'fox', 'fr', 'free',
+    'fresenius', 'frl', 'frogans', 'frontdoor', 'frontier', 'ftr',
+    'fujitsu', 'fujixerox', 'fun', 'fund', 'furniture', 'futbol',
+    'fyi',
     # g
-    'ga', 'gal', 'gallery', 'garden', 'gb', 'gbiz', 'gd', 'gdn',
-    'ge', 'gent', 'gf', 'gg', 'ggee', 'gh', 'gi', 'gift', 'gifts',
-    'gives', 'gl', 'glass', 'gle', 'global', 'globo', 'gm', 'gmail',
-    'gmo', 'gmx', 'gn', 'goldpoint', 'goog', 'google', 'gop', 'gov',
-    'gp', 'gq', 'gr', 'graphics', 'gratis', 'green', 'gripe', 'gs',
-    'gt', 'gu', 'guide', 'guitars', 'guru', 'gw', 'gy',
+    'ga', 'gal', 'gallery', 'gallo', 'gallup', 'game', 'games',
+    'gap', 'garden', 'gb', 'gbiz', 'gd', 'gdn', 'ge', 'gea', 'gent',
+    'genting', 'george', 'gf', 'gg', 'ggee', 'gh', 'gi', 'gift',
+    'gifts', 'gives', 'giving', 'gl', 'glade', 'glass', 'gle',
+    'global', 'globo', 'gm', 'gmail', 'gmbh', 'gmo', 'gmx', 'gn',
+    'godaddy', 'gold', 'goldpoint', 'golf', 'goo', 'goodhands',
+    'goodyear', 'goog', 'google', 'gop', 'got', 'gov', 'gp', 'gq',
+    'gr', 'grainger', 'graphics', 'gratis', 'green', 'gripe',
+    'grocery', 'group', 'gs', 'gt', 'gu', 'guardian', 'gucci',
+    'guge', 'guide', 'guitars', 'guru', 'gw', 'gy',
     # h
-    'hamburg', 'hangout', 'haus', 'healthcare', 'help', 'here',
-    'hermes', 'hiphop', 'hiv', 'hk', 'hm', 'hn', 'holdings',
-    'holiday', 'homes', 'horse', 'host', 'hosting', 'house', 'how',
-    'hr', 'ht', 'hu',
+    'hair', 'hamburg', 'hangout', 'haus', 'hbo', 'hdfc', 'hdfcbank',
+    'health', 'healthcare', 'help', 'helsinki', 'here', 'hermes',
+    'hgtv', 'hiphop', 'hisamitsu', 'hitachi', 'hiv', 'hk', 'hkt',
+    'hm', 'hn', 'hockey', 'holdings', 'holiday', 'homedepot',
+    'homegoods', 'homes', 'homesense', 'honda', 'honeywell', 'horse',
+    'hospital', 'host', 'hosting', 'hot', 'hoteles', 'hotels',
+    'hotmail', 'house', 'how', 'hr', 'hsbc', 'ht', 'hu', 'hughes',
+    'hyatt', 'hyundai',
     # i
-    'ibm', 'id', 'ie', 'ifm', 'il', 'im', 'immo', 'immobilien', 'in',
-    'industries', 'info', 'ing', 'ink', 'institute', 'insure', 'int',
-    'international', 'investments', 'io', 'iq', 'ir', 'irish', 'is',
-    'it', 'iwc',
+    'ibm', 'icbc', 'ice', 'icu', 'id', 'ie', 'ieee', 'ifm', 'ikano',
+    'il', 'im', 'imamat', 'imdb', 'immo', 'immobilien', 'in',
+    'industries', 'infiniti', 'info', 'ing', 'ink', 'institute',
+    'insurance', 'insure', 'int', 'intel', 'international', 'intuit',
+    'investments', 'io', 'ipiranga', 'iq', 'ir', 'irish', 'is',
+    'iselect', 'ismaili', 'ist', 'istanbul', 'it', 'itau', 'itv',
+    'iveco', 'iwc',
     # j
-    'jcb', 'je', 'jetzt', 'jm', 'jo', 'jobs', 'joburg', 'jp',
-    'juegos',
+    'jaguar', 'java', 'jcb', 'jcp', 'je', 'jeep', 'jetzt', 'jewelry',
+    'jio', 'jlc', 'jll', 'jm', 'jmp', 'jnj', 'jo', 'jobs', 'joburg',
+    'jot', 'joy', 'jp', 'jpmorgan', 'jprs', 'juegos', 'juniper',
     # k
-    'kaufen', 'kddi', 'ke', 'kg', 'kh', 'ki', 'kim', 'kitchen',
-    'kiwi', 'km', 'kn', 'koeln', 'kp', 'kr', 'krd', 'kred', 'kw',
-    'ky', 'kyoto', 'kz',
+    'kaufen', 'kddi', 'ke', 'kerryhotels', 'kerrylogistics',
+    'kerryproperties', 'kfh', 'kg', 'kh', 'ki', 'kia', 'kim',
+    'kinder', 'kindle', 'kitchen', 'kiwi', 'km', 'kn', 'koeln',
+    'komatsu', 'kosher', 'kp', 'kpmg', 'kpn', 'kr', 'krd', 'kred',
+    'kuokgroup', 'kw', 'ky', 'kyoto', 'kz',
     # l
-    'la', 'lacaixa', 'land', 'lat', 'latrobe', 'lawyer', 'lb', 'lc',
-    'lds', 'lease', 'legal', 'lgbt', 'li', 'lidl', 'life',
-    'lighting', 'limited', 'limo', 'link', 'lk', 'loans',
-    'localhost', 'london', 'lotte', 'lotto', 'lr', 'ls', 'lt',
-    'ltda', 'lu', 'luxe', 'luxury', 'lv', 'ly',
+    'la', 'lacaixa', 'ladbrokes', 'lamborghini', 'lamer',
+    'lancaster', 'lancia', 'lancome', 'land', 'landrover', 'lanxess',
+    'lasalle', 'lat', 'latino', 'latrobe', 'law', 'lawyer', 'lb',
+    'lc', 'lds', 'lease', 'leclerc', 'lefrak', 'legal', 'lego',
+    'lexus', 'lgbt', 'li', 'liaison', 'lidl', 'life',
+    'lifeinsurance', 'lifestyle', 'lighting', 'like', 'lilly',
+    'limited', 'limo', 'lincoln', 'linde', 'link', 'lipsy', 'live',
+    'living', 'lixil', 'lk', 'loan', 'loans', 'localhost', 'locker',
+    'locus', 'loft', 'lol', 'london', 'lotte', 'lotto', 'love',
+    'lpl', 'lplfinancial', 'lr', 'ls', 'lt', 'ltd', 'ltda', 'lu',
+    'lundbeck', 'lupin', 'luxe', 'luxury', 'lv', 'ly',
     # m
-    'ma', 'madrid', 'maison', 'management', 'mango', 'market',
-    'marketing', 'marriott', 'mc', 'md', 'me', 'media', 'meet',
-    'melbourne', 'meme', 'memorial', 'menu', 'mg', 'mh', 'miami',
-    'mil', 'mini', 'mk', 'ml', 'mm', 'mn', 'mo', 'mobi', 'moda',
-    'moe', 'monash', 'money', 'mormon', 'mortgage', 'moscow',
-    'motorcycles', 'mov', 'mp', 'mq', 'mr', 'ms', 'mt', 'mu',
-    'museum', 'mv', 'mw', 'mx', 'my', 'mz',
+    'ma', 'macys', 'madrid', 'maif', 'maison', 'makeup', 'man',
+    'management', 'mango', 'map', 'market', 'marketing', 'markets',
+    'marriott', 'marshalls', 'maserati', 'mattel', 'mba', 'mc',
+    'mckinsey', 'md', 'me', 'med', 'media', 'meet', 'melbourne',
+    'meme', 'memorial', 'men', 'menu', 'meo', 'merckmsd', 'metlife',
+    'mg', 'mh', 'miami', 'microsoft', 'mil', 'mini', 'mint', 'mit',
+    'mitsubishi', 'mk', 'ml', 'mlb', 'mls', 'mm', 'mma', 'mn', 'mo',
+    'mobi', 'mobile', 'mobily', 'moda', 'moe', 'moi', 'mom',
+    'monash', 'money', 'monster', 'mopar', 'mormon', 'mortgage',
+    'moscow', 'moto', 'motorcycles', 'mov', 'movie', 'movistar',
+    'mp', 'mq', 'mr', 'ms', 'msd', 'mt', 'mtn', 'mtr', 'mu',
+    'museum', 'mutual', 'mv', 'mw', 'mx', 'my', 'mz',
     # n
-    'na', 'nagoya', 'name', 'navy', 'nc', 'ne', 'net', 'network',
-    'neustar', 'new', 'nexus', 'nf', 'ng', 'ngo', 'nhk', 'ni',
-    'nico', 'ninja', 'nl', 'no', 'np', 'nr', 'nra', 'nrw', 'ntt',
-    'nu', 'nyc', 'nz',
+    'na', 'nab', 'nadex', 'nagoya', 'name', 'nationwide', 'natura',
+    'navy', 'nba', 'nc', 'ne', 'nec', 'net', 'netbank', 'netflix',
+    'network', 'neustar', 'new', 'newholland', 'news', 'next',
+    'nextdirect', 'nexus', 'nf', 'nfl', 'ng', 'ngo', 'nhk', 'ni',
+    'nico', 'nike', 'nikon', 'ninja', 'nissan', 'nissay', 'nl', 'no',
+    'nokia', 'northwesternmutual', 'norton', 'now', 'nowruz',
+    'nowtv', 'np', 'nr', 'nra', 'nrw', 'ntt', 'nu', 'nyc', 'nz',
     # o
-    'okinawa', 'om', 'one', 'ong', 'onl', 'ooo', 'org', 'organic',
-    'osaka', 'otsuka', 'ovh',
+    'obi', 'observer', 'off', 'office', 'okinawa', 'olayan',
+    'olayangroup', 'oldnavy', 'ollo', 'om', 'omega', 'one', 'ong',
+    'onl', 'online', 'onyourside', 'ooo', 'open', 'oracle', 'orange',
+    'org', 'organic', 'origins', 'osaka', 'otsuka', 'ott', 'ovh',
     # p
-    'pa', 'paris', 'partners', 'parts', 'party', 'pe', 'pf', 'pg',
-    'ph', 'pharmacy', 'photo', 'photography', 'photos', 'physio',
-    'pics', 'pictures', 'pink', 'pizza', 'pk', 'pl', 'place',
-    'plumbing', 'pm', 'pn', 'pohl', 'poker', 'porn', 'post', 'pr',
-    'praxi', 'press', 'pro', 'prod', 'productions', 'prof',
-    'properties', 'property', 'ps', 'pt', 'pub', 'pw', 'py',
+    'pa', 'page', 'panasonic', 'panerai', 'paris', 'pars',
+    'partners', 'parts', 'party', 'passagens', 'pay', 'pccw', 'pe',
+    'pet', 'pf', 'pfizer', 'pg', 'ph', 'pharmacy', 'phd', 'philips',
+    'phone', 'photo', 'photography', 'photos', 'physio', 'piaget',
+    'pics', 'pictet', 'pictures', 'pid', 'pin', 'ping', 'pink',
+    'pioneer', 'pizza', 'pk', 'pl', 'place', 'play', 'playstation',
+    'plumbing', 'plus', 'pm', 'pn', 'pnc', 'pohl', 'poker',
+    'politie', 'porn', 'post', 'pr', 'pramerica', 'praxi', 'press',
+    'prime', 'pro', 'prod', 'productions', 'prof', 'progressive',
+    'promo', 'properties', 'property', 'protection', 'pru',
+    'prudential', 'ps', 'pt', 'pub', 'pw', 'pwc', 'py',
     # q
-    'qa', 'qpon', 'quebec',
+    'qa', 'qpon', 'quebec', 'quest', 'qvc',
     # r
-    're', 'realtor', 'recipes', 'red', 'rehab', 'reise', 'reisen',
-    'reit', 'ren', 'rentals', 'repair', 'report', 'republican',
-    'rest', 'restaurant', 'reviews', 'rich', 'rio', 'rip', 'ro',
-    'rocks', 'rodeo', 'rs', 'rsvp', 'ru', 'ruhr', 'rw', 'ryukyu',
+    'racing', 'radio', 'raid', 're', 'read', 'realestate', 'realtor',
+    'realty', 'recipes', 'red', 'redstone', 'redumbrella', 'rehab',
+    'reise', 'reisen', 'reit', 'reliance', 'ren', 'rent', 'rentals',
+    'repair', 'report', 'republican', 'rest', 'restaurant', 'review',
+    'reviews', 'rexroth', 'rich', 'richardli', 'ricoh',
+    'rightathome', 'ril', 'rio', 'rip', 'rmit', 'ro', 'rocher',
+    'rocks', 'rodeo', 'rogers', 'room', 'rs', 'rsvp', 'ru', 'rugby',
+    'ruhr', 'run', 'rw', 'rwe', 'ryukyu',
     # s
-    'sa', 'saarland', 'sale', 'samsung', 'sarl', 'saxo', 'sb', 'sc',
-    'sca', 'scb', 'schmidt', 'school', 'schule', 'schwarz',
-    'science', 'scot', 'sd', 'se', 'services', 'sew', 'sexy', 'sg',
-    'sh', 'shiksha', 'shoes', 'shriram', 'si', 'singles', 'sj', 'sk',
-    'sky', 'sl', 'sm', 'sn', 'so', 'social', 'software', 'sohu',
-    'solar', 'solutions', 'soy', 'space', 'spiegel', 'sr', 'st',
-    'style', 'su', 'supplies', 'supply', 'support', 'surf',
-    'surgery', 'suzuki', 'sv', 'sx', 'sy', 'sydney', 'systems', 'sz',
+    'sa', 'saarland', 'safe', 'safety', 'sakura', 'sale', 'salon',
+    'samsclub', 'samsung', 'sandvik', 'sandvikcoromant', 'sanofi',
+    'sap', 'sapo', 'sarl', 'sas', 'save', 'saxo', 'sb', 'sbi', 'sbs',
+    'sc', 'sca', 'scb', 'schaeffler', 'schmidt', 'scholarships',
+    'school', 'schule', 'schwarz', 'science', 'scjohnson', 'scor',
+    'scot', 'sd', 'se', 'search', 'seat', 'secure', 'security',
+    'seek', 'select', 'sener', 'services', 'ses', 'seven', 'sew',
+    'sex', 'sexy', 'sfr', 'sg', 'sh', 'shangrila', 'sharp', 'shaw',
+    'shell', 'shia', 'shiksha', 'shoes', 'shop', 'shopping',
+    'shouji', 'show', 'showtime', 'shriram', 'si', 'silk', 'sina',
+    'singles', 'site', 'sj', 'sk', 'ski', 'skin', 'sky', 'skype',
+    'sl', 'sling', 'sm', 'smart', 'smile', 'sn', 'sncf', 'so',
+    'soccer', 'social', 'softbank', 'software', 'sohu', 'solar',
+    'solutions', 'song', 'sony', 'soy', 'space', 'spiegel', 'spot',
+    'spreadbetting', 'sr', 'srl', 'srt', 'st', 'stada', 'staples',
+    'star', 'starhub', 'statebank', 'statefarm', 'statoil', 'stc',
+    'stcgroup', 'stockholm', 'storage', 'store', 'stream', 'studio',
+    'study', 'style', 'su', 'sucks', 'supplies', 'supply', 'support',
+    'surf', 'surgery', 'suzuki', 'sv', 'swatch', 'swiftcover',
+    'swiss', 'sx', 'sy', 'sydney', 'symantec', 'systems', 'sz',
     # t
-    'taipei', 'tatar', 'tattoo', 'tax', 'tc', 'td', 'technology',
-    'tel', 'temasek', 'tennis', 'tf', 'tg', 'th', 'tienda', 'tips',
-    'tires', 'tirol', 'tj', 'tk', 'tl', 'tm', 'tn', 'to', 'today',
-    'tokyo', 'tools', 'top', 'toshiba', 'town', 'toys', 'tp', 'tr',
-    'trade', 'training', 'travel', 'trust', 'tt', 'tui', 'tv', 'tw',
-    'tz',
+    'tab', 'taipei', 'talk', 'taobao', 'target', 'tatamotors',
+    'tatar', 'tattoo', 'tax', 'taxi', 'tc', 'tci', 'td', 'tdk',
+    'team', 'tech', 'technology', 'tel', 'telecity', 'telefonica',
+    'temasek', 'tennis', 'teva', 'tf', 'tg', 'th', 'thd', 'theater',
+    'theatre', 'tiaa', 'tickets', 'tienda', 'tiffany', 'tips',
+    'tires', 'tirol', 'tj', 'tjmaxx', 'tjx', 'tk', 'tkmaxx', 'tl',
+    'tm', 'tmall', 'tn', 'to', 'today', 'tokyo', 'tools', 'top',
+    'toray', 'toshiba', 'total', 'tours', 'town', 'toyota', 'toys',
+    'tr', 'trade', 'trading', 'training', 'travel', 'travelchannel',
+    'travelers', 'travelersinsurance', 'trust', 'trv', 'tt', 'tube',
+    'tui', 'tunes', 'tushu', 'tv', 'tvs', 'tw', 'tz',
     # u
-    'ua', 'ug', 'uk', 'university', 'uno', 'uol', 'us', 'uy', 'uz',
+    'ua', 'ubank', 'ubs', 'uconnect', 'ug', 'uk', 'unicom',
+    'university', 'uno', 'uol', 'ups', 'us', 'uy', 'uz',
     # v
-    'va', 'vacations', 'vc', 've', 'vegas', 'ventures',
-    'versicherung', 'vet', 'vg', 'vi', 'viajes', 'video', 'villas',
-    'vision', 'vlaanderen', 'vn', 'vodka', 'vote', 'voting', 'voto',
-    'voyage', 'vu',
+    'va', 'vacations', 'vana', 'vanguard', 'vc', 've', 'vegas',
+    'ventures', 'verisign', 'versicherung', 'vet', 'vg', 'vi',
+    'viajes', 'video', 'vig', 'viking', 'villas', 'vin', 'vip',
+    'virgin', 'visa', 'vision', 'vista', 'vistaprint', 'viva',
+    'vivo', 'vlaanderen', 'vn', 'vodka', 'volkswagen', 'volvo',
+    'vote', 'voting', 'voto', 'voyage', 'vu', 'vuelos',
     # w
-    'wales', 'wang', 'watch', 'webcam', 'website', 'wed', 'wedding',
-    'wf', 'whoswho', 'wien', 'wiki', 'williamhill', 'wme', 'work',
-    'works', 'world', 'ws', 'wtc', 'wtf',
+    'wales', 'walmart', 'walter', 'wang', 'wanggou', 'warman',
+    'watch', 'watches', 'weather', 'weatherchannel', 'webcam',
+    'weber', 'website', 'wed', 'wedding', 'weibo', 'weir', 'wf',
+    'whoswho', 'wien', 'wiki', 'williamhill', 'win', 'windows',
+    'wine', 'winners', 'wme', 'wolterskluwer', 'woodside', 'work',
+    'works', 'world', 'wow', 'ws', 'wtc', 'wtf',
     # x
-    'xn--1qqw23a', 'xn--3bst00m', 'xn--3ds443g', 'xn--3e0b707e',
-    'xn--45brj9c', 'xn--45q11c', 'xn--4gbrim', 'xn--55qw42g',
-    'xn--55qx5d', 'xn--6frz82g', 'xn--6qq986b3xl', 'xn--80adxhks',
-    'xn--80ao21a', 'xn--80asehdb', 'xn--80aswg', 'xn--90a3ac',
-    'xn--90ais', 'xn--b4w605ferd', 'xn--c1avg', 'xn--cg4bki',
-    'xn--clchc0ea0b2g2a9gcd', 'xn--czr694b', 'xn--czrs0t',
-    'xn--czru2d', 'xn--d1acj3b', 'xn--d1alf', 'xn--fiq228c5hs',
-    'xn--fiq64b', 'xn--fiqs8s', 'xn--fiqz9s', 'xn--flw351e',
-    'xn--fpcrj9c3d', 'xn--fzc2c9e2c', 'xn--gecrj9c', 'xn--h2brj9c',
-    'xn--hxt814e', 'xn--i1b6b1a6a2e', 'xn--io0a7i', 'xn--j1amh',
-    'xn--j6w193g', 'xn--kprw13d', 'xn--kpry57d', 'xn--kput3i',
-    'xn--l1acc', 'xn--lgbbat1ad8j', 'xn--mgb9awbf',
-    'xn--mgba3a4f16a', 'xn--mgbaam7a8h', 'xn--mgbab2bd',
-    'xn--mgbayh7gpa', 'xn--mgbbh1a71e', 'xn--mgbc0a9azcg',
-    'xn--mgberp4a5d4ar', 'xn--mgbx4cd0ab', 'xn--ngbc5azd',
-    'xn--node', 'xn--nqv7f', 'xn--nqv7fs00ema', 'xn--o3cw4h',
-    'xn--ogbpf8fl', 'xn--p1acf', 'xn--p1ai', 'xn--pgbs0dh',
-    'xn--q9jyb4c', 'xn--qcka1pmc', 'xn--rhqv96g', 'xn--s9brj9c',
-    'xn--ses554g', 'xn--unup4y', 'xn--vermgensberater-ctb',
-    'xn--vermgensberatung-pwb', 'xn--vhquv', 'xn--wgbh1c',
+    'xbox', 'xerox', 'xfinity', 'xihuan', 'xin', 'xn--11b4c3d',
+    'xn--1ck2e1b', 'xn--1qqw23a', 'xn--2scrj9c', 'xn--30rr7y',
+    'xn--3bst00m', 'xn--3ds443g', 'xn--3e0b707e', 'xn--3hcrj9c',
+    'xn--3oq18vl8pn36a', 'xn--3pxu8k', 'xn--42c2d9a', 'xn--45br5cyl',
+    'xn--45brj9c', 'xn--45q11c', 'xn--4gbrim', 'xn--54b7fta0cc',
+    'xn--55qw42g', 'xn--55qx5d', 'xn--5su34j936bgsg', 'xn--5tzm5g',
+    'xn--6frz82g', 'xn--6qq986b3xl', 'xn--80adxhks', 'xn--80ao21a',
+    'xn--80aqecdr1a', 'xn--80asehdb', 'xn--80aswg', 'xn--8y0a063a',
+    'xn--90a3ac', 'xn--90ae', 'xn--90ais', 'xn--9dbq2a',
+    'xn--9et52u', 'xn--9krt00a', 'xn--b4w605ferd',
+    'xn--bck1b9a5dre4c', 'xn--c1avg', 'xn--c2br7g', 'xn--cck2b3b',
+    'xn--cg4bki', 'xn--clchc0ea0b2g2a9gcd', 'xn--czr694b',
+    'xn--czrs0t', 'xn--czru2d', 'xn--d1acj3b', 'xn--d1alf',
+    'xn--e1a4c', 'xn--eckvdtc9d', 'xn--efvy88h', 'xn--estv75g',
+    'xn--fct429k', 'xn--fhbei', 'xn--fiq228c5hs', 'xn--fiq64b',
+    'xn--fiqs8s', 'xn--fiqz9s', 'xn--fjq720a', 'xn--flw351e',
+    'xn--fpcrj9c3d', 'xn--fzc2c9e2c', 'xn--fzys8d69uvgm',
+    'xn--g2xx48c', 'xn--gckr3f0f', 'xn--gecrj9c', 'xn--gk3at1e',
+    'xn--h2breg3eve', 'xn--h2brj9c', 'xn--h2brj9c8c', 'xn--hxt814e',
+    'xn--i1b6b1a6a2e', 'xn--imr513n', 'xn--io0a7i', 'xn--j1aef',
+    'xn--j1amh', 'xn--j6w193g', 'xn--jlq61u9w7b', 'xn--jvr189m',
+    'xn--kcrx77d1x4a', 'xn--kprw13d', 'xn--kpry57d', 'xn--kpu716f',
+    'xn--kput3i', 'xn--l1acc', 'xn--lgbbat1ad8j', 'xn--mgb9awbf',
+    'xn--mgba3a3ejt', 'xn--mgba3a4f16a', 'xn--mgba7c0bbn0a',
+    'xn--mgbaakc7dvf', 'xn--mgbaam7a8h', 'xn--mgbab2bd',
+    'xn--mgbai9azgqp6j', 'xn--mgbayh7gpa', 'xn--mgbb9fbpob',
+    'xn--mgbbh1a', 'xn--mgbbh1a71e', 'xn--mgbc0a9azcg',
+    'xn--mgbca7dzdo', 'xn--mgberp4a5d4ar', 'xn--mgbgu82a',
+    'xn--mgbi4ecexp', 'xn--mgbpl2fh', 'xn--mgbt3dhd', 'xn--mgbtx2b',
+    'xn--mgbx4cd0ab', 'xn--mix891f', 'xn--mk1bu44c', 'xn--mxtq1m',
+    'xn--ngbc5azd', 'xn--ngbe9e0a', 'xn--ngbrx', 'xn--node',
+    'xn--nqv7f', 'xn--nqv7fs00ema', 'xn--nyqy26a', 'xn--o3cw4h',
+    'xn--ogbpf8fl', 'xn--p1acf', 'xn--p1ai', 'xn--pbt977c',
+    'xn--pgbs0dh', 'xn--pssy2u', 'xn--q9jyb4c', 'xn--qcka1pmc',
+    'xn--qxam', 'xn--rhqv96g', 'xn--rovu88b', 'xn--rvc1e0am3e',
+    'xn--s9brj9c', 'xn--ses554g', 'xn--t60b56a', 'xn--tckwe',
+    'xn--tiq49xqyj', 'xn--unup4y', 'xn--vermgensberater-ctb',
+    'xn--vermgensberatung-pwb', 'xn--vhquv', 'xn--vuq861b',
+    'xn--w4r85el8fhu5dnra', 'xn--w4rs40l', 'xn--wgbh1c',
     'xn--wgbl6a', 'xn--xhq521b', 'xn--xkc2al3hye2a',
-    'xn--xkc2dl3a5ee0h', 'xn--yfro4i67o', 'xn--ygbi2ammx',
-    'xn--zfr164b', 'xxx', 'xyz',
+    'xn--xkc2dl3a5ee0h', 'xn--y9a3aq', 'xn--yfro4i67o',
+    'xn--ygbi2ammx', 'xn--zfr164b', 'xperia', 'xxx', 'xyz',
     # y
-    'yachts', 'yandex', 'ye', 'yodobashi', 'yoga', 'yokohama',
-    'youtube', 'yt',
+    'yachts', 'yahoo', 'yamaxun', 'yandex', 'ye', 'yodobashi',
+    'yoga', 'yokohama', 'you', 'youtube', 'yt', 'yun',
     # z
-    'za', 'zip', 'zm', 'zone', 'zuerich', 'zw'
+    'za', 'zappos', 'zara', 'zero', 'zip', 'zippo', 'zm', 'zone',
+    'zuerich', 'zw'
 ]
 
 
@@ -1904,15 +2038,14 @@ class IS_HTTP_URL(Validator):
             (possible prepended with prepend_scheme), and tuple[1] is either
             None (success!) or the string error_message
         """
-
         try:
             # if the URL passes generic validation
             x = IS_GENERIC_URL(error_message=self.error_message,
                                allowed_schemes=self.allowed_schemes,
                                prepend_scheme=self.prepend_scheme)
             if x(value)[1] is None:
-                componentsMatch = url_split_regex.match(value)
-                authority = componentsMatch.group(4)
+                components = urlparse.urlparse(value)
+                authority = components.netloc
                 # if there is an authority component
                 if authority:
                     # if authority is a valid IP address
@@ -1932,7 +2065,7 @@ class IS_HTTP_URL(Validator):
                 else:
                     # else this is a relative/abbreviated URL, which will parse
                     # into the URL's path component
-                    path = componentsMatch.group(5)
+                    path = components.path
                     # relative case: if this is a valid path (if it starts with
                     # a slash)
                     if path.startswith('/'):
@@ -1941,7 +2074,7 @@ class IS_HTTP_URL(Validator):
                     else:
                         # abbreviated case: if we haven't already, prepend a
                         # scheme and see if it fixes the problem
-                        if value.find('://') < 0:
+                        if '://' not in value and None in self.allowed_schemes:
                             schemeToUse = self.prepend_scheme or 'http'
                             prependTest = self.__call__(schemeToUse
                                                         + '://' + value)
@@ -2108,7 +2241,6 @@ class IS_URL(Validator):
                 # If we are not able to convert the unicode url into a
                 # US-ASCII URL, then the URL is not valid
                 return (value, translate(self.error_message))
-
             methodResult = subMethod(asciiValue)
             # if the validation of the US-ASCII version of the value failed
             if not methodResult[1] is None:
@@ -2470,7 +2602,7 @@ class IS_LIST_OF(Validator):
 
 class IS_LOWER(Validator):
     """
-    Converts to lower case::
+    Converts to lowercase::
 
         >>> IS_LOWER()('ABC')
         ('abc', None)
@@ -2480,12 +2612,18 @@ class IS_LOWER(Validator):
     """
 
     def __call__(self, value):
-        return (to_bytes(to_unicode(value).lower()), None)
+        cast_back = lambda x: x
+        if isinstance(value, str):
+            cast_back = to_native
+        elif isinstance(value, bytes):
+            cast_back = to_bytes
+        value = to_unicode(value).lower()
+        return (cast_back(value), None)
 
 
 class IS_UPPER(Validator):
     """
-    Converts to upper case::
+    Converts to uppercase::
 
         >>> IS_UPPER()('abc')
         ('ABC', None)
@@ -2495,7 +2633,13 @@ class IS_UPPER(Validator):
     """
 
     def __call__(self, value):
-        return (to_bytes(to_unicode(value).upper()), None)
+        cast_back = lambda x: x
+        if isinstance(value, str):
+            cast_back = to_native
+        elif isinstance(value, bytes):
+            cast_back = to_bytes
+        value = to_unicode(value).upper()
+        return (cast_back(value), None)
 
 
 def urlify(s, maxlen=80, keep_underscores=False):
@@ -2602,7 +2746,7 @@ class ANY_OF(Validator):
     def __call__(self, value):
         for validator in self.subs:
             value, error = validator(value)
-            if error == None:
+            if error is None:
                 break
         return value, error
 
@@ -2742,7 +2886,7 @@ class LazyCrypt(object):
         else:
             digest_alg, key = self.crypt.digest_alg, ''
         if self.crypt.salt:
-            if self.crypt.salt == True:
+            if self.crypt.salt is True:
                 salt = str(web2py_uuid()).replace('-', '')[-16:]
             else:
                 salt = self.crypt.salt
@@ -2827,7 +2971,7 @@ class CRYPT(object):
     Supports standard algorithms
 
         >>> for alg in ('md5','sha1','sha256','sha384','sha512'):
-        ...     print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+        ...     print(str(CRYPT(digest_alg=alg,salt=True)('test')[0]))
         md5$...$...
         sha1$...$...
         sha256$...$...
@@ -2839,13 +2983,13 @@ class CRYPT(object):
     Supports for pbkdf2
 
         >>> alg = 'pbkdf2(1000,20,sha512)'
-        >>> print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+        >>> print(str(CRYPT(digest_alg=alg,salt=True)('test')[0]))
         pbkdf2(1000,20,sha512)$...$...
 
     An optional hmac_key can be specified and it is used as salt prefix
 
         >>> a = str(CRYPT(digest_alg='md5',key='mykey',salt=True)('test')[0])
-        >>> print a
+        >>> print(a)
         md5$...$...
 
     Even if the algorithm changes the hash can still be validated
@@ -3025,22 +3169,22 @@ class IS_STRONG(object):
             all_upper = re.findall("[A-Z]", value)
             if self.upper > 0:
                 if not len(all_upper) >= self.upper:
-                    failures.append(translate("Must include at least %s upper case")
+                    failures.append(translate("Must include at least %s uppercase")
                                     % str(self.upper))
             else:
                 if len(all_upper) > 0:
                     failures.append(
-                        translate("May not include any upper case letters"))
+                        translate("May not include any uppercase letters"))
         if isinstance(self.lower, int):
             all_lower = re.findall("[a-z]", value)
             if self.lower > 0:
                 if not len(all_lower) >= self.lower:
-                    failures.append(translate("Must include at least %s lower case")
+                    failures.append(translate("Must include at least %s lowercase")
                                     % str(self.lower))
             else:
                 if len(all_lower) > 0:
                     failures.append(
-                        translate("May not include any lower case letters"))
+                        translate("May not include any lowercase letters"))
         if isinstance(self.number, int):
             all_number = re.findall("[0-9]", value)
             if self.number > 0:
@@ -3505,10 +3649,7 @@ class IS_IPV6(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        try:
-            import ipaddress
-        except ImportError:
-            from gluon.contrib import ipaddr as ipaddress
+        from gluon._compat import ipaddress
 
         try:
             ip = ipaddress.IPv6Address(to_unicode(value))
@@ -3732,12 +3873,10 @@ class IS_IPADDRESS(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        try:
-            from ipaddress import ip_address as IPAddress
-            from ipaddress import IPv6Address, IPv4Address
-        except ImportError:
-            from gluon.contrib.ipaddr import (IPAddress, IPv4Address,
-                                              IPv6Address)
+        from gluon._compat import ipaddress
+        IPAddress = ipaddress.ip_address
+        IPv6Address = ipaddress.IPv6Address
+        IPv4Address = ipaddress.IPv4Address
 
         try:
             ip = IPAddress(to_unicode(value))

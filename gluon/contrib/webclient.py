@@ -16,11 +16,9 @@ mostly for testing purposes
 Some examples at the bottom.
 """
 from __future__ import print_function
+from gluon._compat import urllib2, cookielib, iteritems, to_native, urlencode, to_bytes
 import re
 import time
-import urllib
-import urllib2
-import cookielib
 
 
 DEFAULT_HEADERS = {
@@ -45,9 +43,21 @@ class WebClient(object):
         self.forms = {}
         self.history = []
         self.cookies = {}
+        self.cookiejar = cookielib.CookieJar()
         self.default_headers = default_headers
         self.sessions = {}
         self.session_regex = session_regex and re.compile(session_regex)
+        self.headers = {}
+
+    def _parse_headers_in_cookies(self):
+        self.cookies = {}
+        if 'set-cookie' in self.headers:
+            for item in self.headers['set-cookie'].split(','):
+                cookie = item[:item.find(';')]
+                pos = cookie.find('=')
+                key = cookie[:pos]
+                value = cookie[pos+1:]
+                self.cookies[key.strip()] = value.strip()
 
     def get(self, url, cookies=None, headers=None, auth=None):
         return self.post(url, data=None, cookies=cookies,
@@ -70,9 +80,8 @@ class WebClient(object):
         cookies = cookies or {}
         headers = headers or {}
 
-        cj = cookielib.CookieJar()
         args = [
-            urllib2.HTTPCookieProcessor(cj),
+            urllib2.HTTPCookieProcessor(self.cookiejar),
             urllib2.HTTPHandler(debuglevel=0)
             ]
         # if required do basic auth
@@ -85,10 +94,10 @@ class WebClient(object):
 
         # copy headers from dict to list of key,value
         headers_list = []
-        for key, value in self.default_headers.iteritems():
+        for key, value in iteritems(self.default_headers):
             if not key in headers:
                 headers[key] = value
-        for key, value in headers.iteritems():
+        for key, value in iteritems(headers):
             if isinstance(value, (list, tuple)):
                 for v in value:
                     headers_list.append((key, v))
@@ -96,7 +105,7 @@ class WebClient(object):
                 headers_list.append((key, value))
 
         # move cookies to headers
-        for key, value in cookies.iteritems():
+        for key, value in iteritems(cookies):
             headers_list.append(('Cookie', '%s=%s' % (key, value)))
 
         # add headers to request
@@ -120,25 +129,29 @@ class WebClient(object):
                     data['_formkey'] = self.forms[data['_formname']]
 
                 # time the POST request
-                data = urllib.urlencode(data, doseq=True)
+                data = urlencode(data, doseq=True)
             else:
                 self.method = 'GET' if method=='auto' else method
                 data = None
             t0 = time.time()
-            self.response = opener.open(self.url, data)
+            self.response = opener.open(self.url, to_bytes(data))
             self.time = time.time() - t0
-        except urllib2.HTTPError as error:
+        except urllib2.HTTPError as er:
+            error = er
             # catch HTTP errors
             self.time = time.time() - t0
-            self.response = error
+            self.response = er
 
         if hasattr(self.response, 'getcode'):
             self.status = self.response.getcode()
         else:#python2.5
             self.status = None
 
-        self.text = self.response.read()
-        self.headers = dict(self.response.headers)
+        self.text = to_native(self.response.read())
+        # In PY3 self.response.headers are case sensitive
+        self.headers = dict()
+        for h in self.response.headers:
+            self.headers[h.lower()] = self.response.headers[h]
 
         # treat web2py tickets as special types of errors
         if error is not None:
@@ -147,16 +160,11 @@ class WebClient(object):
             else:
                 raise error
 
-        # parse headers into cookies
-        self.cookies = {}
-        if 'set-cookie' in self.headers:
-            for item in self.headers['set-cookie'].split(','):
-                key, value = item[:item.find(';')].split('=')
-            self.cookies[key.strip()] = value.strip()
+        self._parse_headers_in_cookies()
 
         # check is a new session id has been issued, symptom of broken session
         if self.session_regex is not None:
-            for cookie, value in self.cookies.iteritems():
+            for cookie, value in iteritems(self.cookies):
                 match = self.session_regex.match(cookie)
                 if match:
                     name = match.group('name')
@@ -166,7 +174,7 @@ class WebClient(object):
 
         # find all forms and formkeys in page
         self.forms = {}
-        for match in FORM_REGEX.finditer(self.text):
+        for match in FORM_REGEX.finditer(to_native(self.text)):
             self.forms[match.group('formname')] = match.group('formkey')
 
         # log this request

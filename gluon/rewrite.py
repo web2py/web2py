@@ -22,12 +22,11 @@ import re
 import logging
 import traceback
 import threading
-import urllib
 from gluon.storage import Storage, List
 from gluon.http import HTTP
 from gluon.fileutils import abspath, read_file
 from gluon.settings import global_settings
-from gluon._compat import urllib_unquote, urllib_quote, iteritems, xrange
+from gluon._compat import urllib_unquote, urllib_quote, iteritems, xrange, urllib_quote_plus
 
 isdir = os.path.isdir
 isfile = os.path.isfile
@@ -81,7 +80,7 @@ def _router_default():
         #  pathological backtracking from nested patterns.
         #
         file_match = r'([-+=@$%\w]|(?<=[-+=@$%\w])[./])*$', # legal static subpath
-        args_match=r'([\w@ -]|(?<=[\w@ -])[.=])*$',         # legal arg in args
+        args_match=r'([\w@ =-]|(?<=[\w@ -])[.])*$',
     )
     return router
 
@@ -206,8 +205,7 @@ def url_out(request, environ, application, controller, function,
     if host is True or (host is None and (scheme or port is not None)):
         host = request.env.http_host
     if not scheme or scheme is True:
-        scheme = request.env.get('wsgi_url_scheme', 'http').lower() \
-            if request else 'http'
+        scheme = request.env.get('wsgi_url_scheme', 'http').lower() if request else 'http'
     if host:
         host_port = host if not port else host.split(':', 1)[0] + ':%s' % port
         url = '%s://%s%s' % (scheme, host_port, url)
@@ -236,7 +234,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                     path_info, query_string = uri, ''
                 query_string += \
                     'code=%s&ticket=%s&requested_uri=%s&request_url=%s' % \
-                    (status, ticket, urllib.quote_plus(
+                    (status, ticket, urllib_quote_plus(
                         request.env.request_uri), request.url)
                 if uri.startswith('http://') or uri.startswith('https://'):
                     # make up a response
@@ -271,12 +269,12 @@ def try_redirect_on_error(http_object, request, ticket=None):
                 elif '?' in redir:
                     url = '%s&code=%s&ticket=%s&requested_uri=%s&request_url=%s' % \
                         (redir, status, ticket,
-                         urllib.quote_plus(request.env.request_uri),
+                         urllib_quote_plus(request.env.request_uri),
                          request.url)
                 else:
                     url = '%s?code=%s&ticket=%s&requested_uri=%s&request_url=%s' % \
                         (redir, status, ticket,
-                         urllib.quote_plus(request.env.request_uri),
+                         urllib_quote_plus(request.env.request_uri),
                          request.url)
                 return HTTP(303, 'You are being redirected <a href="%s">here</a>' % url, Location=url)
     return http_object
@@ -317,7 +315,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
 
         symbols = dict(app=app)
         try:
-            exec(data + '\n', symbols)
+            exec(data, symbols)
         except SyntaxError as e:
             logger.error(
                 '%s has a syntax error and will not be loaded\n' % path
@@ -638,9 +636,10 @@ def regex_url_in(request, environ):
         request.raw_args = request.raw_args[1:]
     if match.group('c') == 'static':
         application = match.group('a')
-        version, filename = None, match.group('z').replace(' ', '_')
+        version, filename = None, match.group('z')
         if not filename:
             raise HTTP(404)
+        filename = filename.replace(' ','_')
         items = filename.split('/', 1)
         if regex_version.match(items[0]):
             version, filename = items
@@ -1039,7 +1038,7 @@ class MapUrlIn(object):
         else:
             default_function = self.router.default_function  # str or None
         default_function = self.domain_function or default_function
-        if not arg0 or functions and arg0 not in functions:
+        if not arg0 or functions and arg0.split('.')[0] not in functions:
             self.function = default_function or ""
             self.pop_arg_if(arg0 and self.function == arg0)
         else:

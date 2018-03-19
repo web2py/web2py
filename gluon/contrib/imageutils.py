@@ -36,19 +36,19 @@ class RESIZE(object):
         if isinstance(value, str) and len(value) == 0:
             return (value, None)
         from PIL import Image
-        import cStringIO
+        from io import BytesIO
         try:
             img = Image.open(value.file)
             img.thumbnail((self.nx, self.ny), Image.ANTIALIAS)
-            s = cStringIO.StringIO()
+            s = BytesIO()
             if self.padding:
                 background = Image.new('RGBA', (self.nx, self.ny), (255, 255, 255, 0))
                 background.paste(
                     img,
-                    ((self.nx - img.size[0]) / 2, (self.ny - img.size[1]) / 2))
+                    ((self.nx - img.size[0]) // 2, (self.ny - img.size[1]) // 2))
                 background.save(s, 'JPEG', quality=self.quality)
             else:
-                img.save(s, 'JPEG', queality=self.quality)
+                img.save(s, 'JPEG', quality=self.quality)
             s.seek(0)
             value.file = s
         except:
