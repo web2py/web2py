@@ -792,7 +792,7 @@ class Mail(object):
                 from botocore.exceptions import ClientError
                 client = boto3.client('ses')
                 try:
-                    raw = payload.as_string()
+                    raw = {'Data': payload.as_string()}
                     response = client.send_raw_email(RawMessage=raw,
                                                      Source=sender, 
                                                      Destinations=to)
