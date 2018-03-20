@@ -35,7 +35,7 @@
   <body>
     <div class="w2p_flash alert alert-dismissable">{{=response.flash or ''}}</div>
     <!-- Navbar ======================================= -->
-    <nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+    <nav class="navbar navbar-expand-lg navbar-light bg-faded">
       <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -63,7 +63,7 @@
           <input class="form-control mr-sm-2" type="text" placeholder="Search">
         </form>      
         {{if 'auth' in globals():}}
-        <ul class="navbar-nav navbar-right">
+        <ul class="navbar-nav ml-lg-auto"">
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               {{if auth.user:}}{{=auth.user.first_name}}{{else:}}LOGIN{{pass}}
@@ -111,6 +111,7 @@
     </footer>
     {{end}}
     <!-- The javascript =============================== -->
+    <script src="{{=URL('static','js/popper.js')}}"></script>
     <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
     <script src="{{=URL('static','js/web2py-bootstrap4.js')}}"></script>
     {{block page_js}}{{end page_js}}
