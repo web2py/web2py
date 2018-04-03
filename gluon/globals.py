@@ -605,7 +605,7 @@ class Response(Storage):
             else:
                 attname = filename
             headers["Content-Disposition"] = \
-                'attachment;filename="%s"' % attname
+                'attachment; filename="%s"' % attname
 
         if not request:
             request = current.request
@@ -686,7 +686,7 @@ class Response(Storage):
                 download_filename = download_filename.encode('utf-8')
             download_filename = urllib_quote(download_filename)
             headers['Content-Disposition'] = \
-                'attachment; filename="%s"' % download_filename.replace('"', '\"')
+                'attachment; filename="%s"' % download_filename.replace('"', '\\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
     def json(self, data, default=None, indent=None):
