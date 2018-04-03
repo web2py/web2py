@@ -443,7 +443,9 @@ class AuthAPI(object):
         # log messages should not be translated
         if type(description).__name__ == 'lazyT':
             description = description.m
-        self.table_event().insert(description=str(description % vars), origin=origin, user_id=user_id)
+        if self.table_user()[user_id]:
+            self.table_event().insert(
+                description=str(description % vars), origin=origin, user_id=user_id)
 
     def id_group(self, role):
         """

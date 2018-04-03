@@ -3762,6 +3762,7 @@ class Auth(AuthAPI):
                      client_side=self.settings.client_side)
         passfield = self.settings.password_field
         table_user[passfield].writable = False
+        table_user['email'].writable = False
         request = current.request
         session = current.session
         if next is DEFAULT:
@@ -3772,6 +3773,7 @@ class Auth(AuthAPI):
             onaccept = self.settings.profile_onaccept
         if log is DEFAULT:
             log = self.messages['profile_log']
+        
         form = SQLFORM(
             table_user,
             self.user.id,
