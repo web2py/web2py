@@ -398,17 +398,25 @@ def ldap_auth(server='ldap',
             if manage_user:
                 logger.info('[%s] Manage user data' % str(username))
                 try:
+                    user_firstname = result[user_firstname_attrib][0]
                     if user_firstname_part is not None:
-                        store_user_firstname = result[user_firstname_attrib][0].split(' ', 1)[user_firstname_part]
+                        store_user_firstname = user_firstname.split(
+                            b' ' if isinstance(user_firstname, bytes) else ' ',
+                            1
+                        )[user_firstname_part]
                     else:
-                        store_user_firstname = result[user_firstname_attrib][0]
+                        store_user_firstname = user_firstname
                 except KeyError as e:
                     store_user_firstname = None
                 try:
+                    user_lastname = result[user_lastname_attrib][0]
                     if user_lastname_part is not None:
-                        store_user_lastname = result[user_lastname_attrib][0].split(' ', 1)[user_lastname_part]
+                        store_user_lastname = user_lastname.split(
+                            b' ' if isinstance(user_lastname, bytes) else ' ',
+                            1
+                        )[user_lastname_part]
                     else:
-                        store_user_lastname = result[user_lastname_attrib][0]
+                        store_user_lastname = user_lastname
                 except KeyError as e:
                     store_user_lastname = None
                 try:
