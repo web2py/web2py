@@ -967,7 +967,7 @@ class Session(Storage):
                     if row:
                         # rows[0].update_record(locked=True)
                         # Unpickle the data
-                        session_data = pickle.loads(row.session_data)
+                        session_data = pickle.loads(row[b'session_data'])
                         self.update(session_data)
                         response.session_new = False
                     else:
@@ -1049,7 +1049,9 @@ class Session(Storage):
             if record_id.isdigit() and long(record_id) > 0:
                 new_unique_key = web2py_uuid()
                 row = table(record_id)
-                if row and row.unique_key == unique_key:
+                if not isinstance(unique_key, bytes):
+                    unique_key = bytes(unique_key, 'utf8')
+                if row and row[b'unique_key'] == unique_key:
                     table._db(table.id == record_id).update(unique_key=new_unique_key)
                 else:
                     record_id = None
