@@ -13,6 +13,7 @@ from gluon import current
 from gluon.storage import Storage
 from gluon.contrib.redis_utils import acquire_lock, release_lock
 from gluon.contrib.redis_utils import register_release_lock
+from gluon._compat import to_bytes
 
 logger = logging.getLogger("web2py.session.redis")
 
@@ -185,9 +186,7 @@ class MockQuery(object):
             if rtn:
                 if self.unique_key:
                     # make sure the id and unique_key are correct
-                    if not isinstance(self.unique_key, bytes):
-                        self.unique_key = bytes(self.unique_key, 'utf8')
-                    if rtn[b'unique_key'] == self.unique_key:
+                    if rtn[b'unique_key'] == to_bytes(self.unique_key):
                         rtn[b'update_record'] = self.update  # update record support
                     else:
                         rtn = None
