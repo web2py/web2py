@@ -1167,7 +1167,7 @@ class Session(Storage):
                              compression_level=compression_level)
         rcookies = response.cookies
         rcookies.pop(name, None)
-        rcookies[name] = value
+        rcookies[name] = value.decode('utf8')
         rcookies[name]['path'] = '/'
         expires = response.session_cookie_expires
         if isinstance(expires, datetime.datetime):
