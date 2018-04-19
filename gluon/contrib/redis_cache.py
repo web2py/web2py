@@ -10,7 +10,7 @@ except:
 import time
 import re
 import logging
-import thread
+from threading import Lock
 import random
 from gluon import current
 from gluon.cache import CacheAbstract
@@ -19,7 +19,7 @@ from gluon.contrib.redis_utils import register_release_lock, RConnectionError
 
 logger = logging.getLogger("web2py.cache.redis")
 
-locker = thread.allocate_lock()
+locker = Lock()
 
 
 def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=False, db=None):

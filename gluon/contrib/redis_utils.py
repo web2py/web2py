@@ -11,7 +11,7 @@ to ensure compatibility with another - similar - library
 """
 
 import logging
-import thread
+from threading import Lock
 import time
 from gluon import current
 
@@ -26,7 +26,7 @@ except ImportError:
     raise RuntimeError('Needs redis library to work')
 
 
-locker = thread.allocate_lock()
+locker = Lock()
 
 
 def RConn(*args, **vars):
