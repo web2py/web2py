@@ -170,7 +170,9 @@ def ldap_auth(server='ldap',
     is "error" and can be set to error, warning, info, debug.
     """
     logger = logging.getLogger('web2py.auth.ldap_auth')
-    if logging_level == 'error':
+    if isinstance(logging_level, int):
+        logger.setLevel(logging_level)
+    elif logging_level == 'error':
         logger.setLevel(logging.ERROR)
     elif logging_level == 'warning':
         logger.setLevel(logging.WARNING)
