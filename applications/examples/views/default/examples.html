@@ -50,10 +50,10 @@ def hello3():
 
     <b>and view: simple_examples/hello3.html</b>
     {{=CODE(open(os.path.join(request.folder,'views/simple_examples/hello3.html'),'r').read(),language='html',link=URL('global','vars'),_class='boxCode')}}
-    <p>If you return a dictionary, the variables defined in the dictionery are visible to the view (template).
+    <p>If you return a dictionary, the variables defined in the dictionary are visible to the view (template).
     <br/>Try it here: <a class="btn" href="/{{=request.application}}/simple_examples/hello3.html">hello3</a></p>
 
-    <p>Actions can also be be rendered in other formsts like JSON, <a href="/{{=request.application}}/simple_examples/hello3.json">hello3.json</a>, and XML, <a href="/{{=request.application}}/simple_examples/hello3.xml">hello3.xml</a></p>
+    <p>Actions can also be be rendered in other forms like JSON, <a href="/{{=request.application}}/simple_examples/hello3.json">hello3.json</a>, and XML, <a href="/{{=request.application}}/simple_examples/hello3.xml">hello3.xml</a></p>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
     {{=CODE("""
@@ -69,7 +69,7 @@ def hello4():
 def hello5():
     return HTML(BODY(H1(T('Hello World'),_style="color: red;"))).xml() # .xml to serialize
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
-    <p>You can also generate HTML using helper objects HTML, BODY, H1, etc. Each of these tags is a class and the views know how to render the corresponding objects. The method .xml() serializes them and produce html/xml code for the page.
+    <p>You can also generate HTML using helper objects HTML, BODY, H1, etc. Each of these tags is a class and the views know how to render the corresponding objects. The method .xml() serializes them and produces html/xml code for the page.
     Each tag, DIV for example, takes three types of arguments:</p>
     <ul>
     <li>unnamed arguments, they correspond to nested tags</li>
@@ -201,11 +201,11 @@ def ajaxwiki_onclick():
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: session_examples.py </b>
     {{=CODE("""
 def counter():
-    session.counter = (sesstion.counter or 0) + 1
+    session.counter = (session.counter or 0) + 1
     return dict(counter=session.counter)
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}<b>and view: session_examples/counter.html</b>
     {{=CODE(open(os.path.join(request.folder,'views/session_examples/counter.html'),'r').read(),language='html',link=URL('global','vars'),_class='boxCode')}}
-    <p>Click to count. The session.counter is persistent for this user and application. Every applicaiton within the system has its own separate session management.
+    <p>Click to count. The session.counter is persistent for this user and application. Every application within the system has its own separate session management.
     <br/>Try it here: <a class="btn" href="/{{=request.application}}/session_examples/counter">counter</a></p>
 
     <h2 id="template_examples">Template Examples</h2>
@@ -390,7 +390,7 @@ db.purchase.quantity.requires = IS_INT_IN_RANGE(0, 10)
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
     <p>
     Tables are created if they do not exist (try... except).
-    Here "purchased" is an Query object, "db(purchased)" would be a Set objects. A Set object can be selected, updated, deleted. Sets can also be intersected. Allowed field types are string, integer, password, text, blob, upload, date, time, datetime, references(*), and id(*). The id field is there by default and must not be declared. references are for one to many and many to many as in the example above. For strings you should specify a length or you get length=32.<br/><br/>
+    Here "purchased" is an Query object, "db(purchased)" would be a Set objects. A Set object can be selected, updated, deleted. Sets can also be intersected. Allowed field types are string, integer, password, text, blob, upload, date, time, datetime, references(*), and id(*). The id field is there by default and must not be declared. References are for one to many and many to many as in the example above. For strings you should specify a length or you get length=32.<br/><br/>
     You can use db.tablename.fieldname.requires= to set restrictions on the field values. These restrictions are automatically converted into widgets when generating forms from the table with SQLFORM(db.tablename).
     <br/><br/>
     define_tables creates the table and attempts a migration if table has changed or if database name has changed since last time. If you know you already have the table in the database and you do not want to attempt a migration add one last argument to define_table <tt>migrate=False</tt>.</p>
@@ -551,7 +551,7 @@ def cache_controller_and_view():
     d=dict(time=t,link=A('click to reload',_href=URL(r=request)))
     return response.render(d)
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
-    <p><tt>response.render(d)</tt> renders the dictionary inside the controller, so everything is cached now for 5 seconds. This is best and fastest way of caching!
+    <p><tt>response.render(d)</tt> renders the dictionary inside the controller, so everything is cached now for 5 seconds. This is the best and fastest way of caching!
     <br/>Try it here: <a class="btn" href="/{{=request.application}}/cache_examples/cache_controller_and_view">cache_controller_and_view</a></p>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: cache_examples.py </b>
@@ -640,7 +640,7 @@ def streamer():
     <h2 id="xmlrpc_examples">XML-RPC Examples</h2>
 
     <h3>Example {{=c}}{{c+=1}}</h3>
-    <p>Web2py has native support for the XMLRPC protocol. Below is a controller function "handler" that exposes two functions, "add" and "sub" via XMLRPC. The controller "tester" executes the two function remotely via xmlrpc.</p>
+    <p>Web2py has native support for the XMLRPC protocol. Below is a controller function "handler" that exposes two functions, "add" and "sub" via XMLRPC. The controller "tester" executes the two functions remotely via xmlrpc.</p>
     {{=CODE("""
 from gluon.tools import Service
 service = Service(globals())

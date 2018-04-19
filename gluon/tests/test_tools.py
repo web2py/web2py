@@ -17,7 +17,7 @@ DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 from gluon.dal import DAL, Field
 from pydal.objects import Table
 from gluon import tools
-from gluon.tools import Auth, Mail, Recaptcha, Recaptcha2, prettydate, Expose
+from gluon.tools import Auth, Mail, Recaptcha2, prettydate, Expose
 from gluon._compat import PY2
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
@@ -208,14 +208,6 @@ class TestMail(unittest.TestCase):
         self.assertTrue('Content-Id: <trololo>' in message.payload)
 
 
-# class TestRecaptcha(unittest.TestCase):
-#     def test_Recaptcha(self):
-#         from html import FORM
-#         form = FORM(Recaptcha(public_key='public_key', private_key='private_key'))
-#         self.assertEqual(form.xml(),
-#                          '<form action="#" enctype="multipart/form-data" method="post"><div id="recaptcha"><script><!--\nvar RecaptchaOptions = {};\n//--></script><script src="http://www.google.com/recaptcha/api/challenge?k=public_key" type="text/javascript"></script><noscript><iframe frameborder="0" height="300" src="http://www.google.com/recaptcha/api/noscript?k=public_key" width="500"></iframe><br /><input name="recaptcha_response_field" type="hidden" value="manual_challenge" /></noscript></div></form>')
-#
-#
 # class TestRecaptcha2(unittest.TestCase):
 #     def test_Recaptcha2(self):
 #         from html import FORM
@@ -248,7 +240,6 @@ class TestAuthJWT(unittest.TestCase):
                                          self.user_data['password'])[0]))
         self.jwtauth = AuthJWT(self.auth, secret_key='secret', verify_expiration=True)
 
-
     def test_jwt_token_manager(self):
         import gluon.serializers
         self.request.vars.update(self.user_data)
@@ -260,7 +251,6 @@ class TestAuthJWT(unittest.TestCase):
         self.token = self.jwtauth.jwt_token_manager()
         self.assertIsNotNone(self.token)
 
-
     def test_allows_jwt(self):
         import gluon.serializers
         self.request.vars.update(self.user_data)
@@ -270,10 +260,12 @@ class TestAuthJWT(unittest.TestCase):
         del self.request.vars['password']
         self.token = self.jwtauth.jwt_token_manager()
         self.request.vars._token = gluon.serializers.json_parser.loads(self.token)['token']
+
         @self.jwtauth.allows_jwt()
         def optional_auth():
             self.assertEqual(self.user_data['username'], self.auth.user.username)
         optional_auth()
+
 
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 # class TestAuth(unittest.TestCase):
@@ -495,8 +487,6 @@ class TestAuthJWT(unittest.TestCase):
 #     #     impersonate_form = auth.impersonate(user_id=omer_id)
 #     #     self.assertTrue(auth.is_impersonating())
 #     #     self.assertEqual(impersonate_form, 'test')
-
-
 class TestAuth(unittest.TestCase):
 
     def myassertRaisesRegex(self, *args, **kwargs):
@@ -904,7 +894,7 @@ class TestAuth(unittest.TestCase):
         self.assertEqual(count_log_event_test_after, count_log_event_test_before)
 
     def test_add_membership(self):
-        user = self.db(self.db.auth_user.username == 'bart').select().first() # bypass login_bare()
+        user = self.db(self.db.auth_user.username == 'bart').select().first()  # bypass login_bare()
         user_id = user.id
         role_name = 'test_add_membership_group'
         group_id = self.auth.add_group(role_name)
@@ -1174,6 +1164,7 @@ class TestToolsFunctions(unittest.TestCase):
 
 pjoin = os.path.join
 
+
 def have_symlinks():
     return os.name == 'posix'
 
@@ -1181,18 +1172,20 @@ def have_symlinks():
 class Test_Expose__in_base(unittest.TestCase):
 
     def test_in_base(self):
-        are_under = [ # (sub, base)
+        are_under = [
+            # (sub, base)
             ('/foo/bar', '/foo'),
             ('/foo', '/foo'),
             ('/foo', '/'),
             ('/', '/'),
         ]
         for sub, base in are_under:
-            self.assertTrue( Expose._Expose__in_base(subdir=sub, basedir=base, sep='/'),
-                             '%s is not under %s' % (sub, base) )
+            self.assertTrue(Expose._Expose__in_base(subdir=sub, basedir=base, sep='/'),
+                            '%s is not under %s' % (sub, base))
 
     def test_not_in_base(self):
-        are_not_under = [ # (sub, base)
+        are_not_under = [
+            # (sub, base)
             ('/foobar', '/foo'),
             ('/foo', '/foo/bar'),
             ('/bar', '/foo'),
@@ -1200,8 +1193,8 @@ class Test_Expose__in_base(unittest.TestCase):
             ('/', '/x'),
         ]
         for sub, base in are_not_under:
-            self.assertFalse( Expose._Expose__in_base(subdir=sub, basedir=base, sep='/'),
-                              '%s should not be under %s' % (sub, base) )
+            self.assertFalse(Expose._Expose__in_base(subdir=sub, basedir=base, sep='/'),
+                             '%s should not be under %s' % (sub, base))
 
 
 class TestExpose(unittest.TestCase):
@@ -1237,7 +1230,7 @@ class TestExpose(unittest.TestCase):
         shutil.rmtree(self.base_dir)
 
     def make_dirs(self):
-        """setup direcotry strucutre"""
+        """setup directory structure"""
         for d in (['inside'],
                   ['inside', 'dir1'],
                   ['inside', 'dir2'],
@@ -1257,7 +1250,7 @@ class TestExpose(unittest.TestCase):
             f.write('README content')
 
     def make_symlinks(self):
-        """setup extenstion for posix systems"""
+        """setup extension for posix systems"""
         # inside links
         os.symlink(
             pjoin(self.base_dir, 'inside', 'dir1'),

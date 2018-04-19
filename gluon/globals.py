@@ -14,7 +14,7 @@ Contains the classes for the global used variables:
 
 """
 from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, \
-    unicodeT, long, hashlib_md5, urllib_quote
+    to_bytes, unicodeT, long, hashlib_md5, urllib_quote
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -225,7 +225,7 @@ class Request(Storage):
                 # instead of load.
                 # This line can be simplified to json_vars = json_parser.load(body)
                 # if and when we drop support for python versions under 3.6
-                json_vars = json_parser.loads(to_native(body.read())) 
+                json_vars = json_parser.loads(to_native(body.read()))
             except:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}
@@ -344,8 +344,8 @@ class Request(Storage):
         user_agent = Storage(user_agent)
         user_agent.is_mobile = 'Mobile' in http_user_agent
         user_agent.is_tablet = 'Tablet' in http_user_agent
-        session._user_agent = user_agent 
-        
+        session._user_agent = user_agent
+
         return user_agent
 
     def requires_https(self):
@@ -485,12 +485,12 @@ class Response(Storage):
         #
         # We will only minify and concat adjacent internal files as there's
         # no way to know if changing the order with which the files are apppended
-        # will break things since the order matters in both CSS and JS and 
+        # will break things since the order matters in both CSS and JS and
         # internal files may be interleaved with external ones.
         files = []
         # For the adjacent list we're going to use storage List to both distinguish
         # from the regular list and so we can add attributes
-        internal = List()  
+        internal = List()
         internal.has_js = False
         internal.has_css = False
         done = set() # to remove duplicates
@@ -513,7 +513,7 @@ class Response(Storage):
             if item.endswith('.js'):
                 internal.has_js = True
             if item.endswith('.css'):
-                internal.has_css = True            
+                internal.has_css = True
         if internal:
             files.append(internal)
 
@@ -537,7 +537,7 @@ class Response(Storage):
                                             time_expire)
                     else:
                         files[i] = call_minify()
-        
+
         def static_map(s, item):
             if isinstance(item, str):
                 f = item.lower().split('?')[0]
@@ -967,7 +967,7 @@ class Session(Storage):
                     if row:
                         # rows[0].update_record(locked=True)
                         # Unpickle the data
-                        session_data = pickle.loads(row.session_data)
+                        session_data = pickle.loads(row[b'session_data'])
                         self.update(session_data)
                         response.session_new = False
                     else:
@@ -1049,7 +1049,7 @@ class Session(Storage):
             if record_id.isdigit() and long(record_id) > 0:
                 new_unique_key = web2py_uuid()
                 row = table(record_id)
-                if row and row.unique_key == unique_key:
+                if row and row[b'unique_key'] == to_bytes(unique_key):
                     table._db(table.id == record_id).update(unique_key=new_unique_key)
                 else:
                     record_id = None
@@ -1167,7 +1167,7 @@ class Session(Storage):
                              compression_level=compression_level)
         rcookies = response.cookies
         rcookies.pop(name, None)
-        rcookies[name] = value
+        rcookies[name] = to_native(value)
         rcookies[name]['path'] = '/'
         expires = response.session_cookie_expires
         if isinstance(expires, datetime.datetime):
