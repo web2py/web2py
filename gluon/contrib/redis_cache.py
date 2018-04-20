@@ -160,12 +160,14 @@ class RedisClient(object):
                     randomvalue = time.time()
                     al = acquire_lock(self.r_server, lock_key, randomvalue)
                     # someone may have computed it
-                    obj = self.r_server.get(newKey)
-                    if obj is None:
-                        value = self.cache_it(newKey, f, time_expire)
-                    else:
-                        value = pickle.loads(obj)
-                    release_lock(self, lock_key, al)
+                    try:
+                        obj = self.r_server.get(newKey)
+                        if obj is None:
+                            value = self.cache_it(newKey, f, time_expire)
+                        else:
+                            value = pickle.loads(obj)
+                    finally:
+                        release_lock(self, lock_key, al)
                 else:
                     # without distributed locking
                     value = self.cache_it(newKey, f, time_expire)
