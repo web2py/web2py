@@ -148,7 +148,7 @@ def env(
     request.env.web2py_runtime_gae = global_settings.web2py_runtime_gae
 
     for k, v in extra_request.items():
-        request[k] = v
+        setattr(request, k, v)
 
     path_info = '/%s/%s/%s' % (a, c, f)
     if request.args:
@@ -210,7 +210,7 @@ def run(
     - a/c : exec the controller c into the application environment
     """
 
-    (a, c, f, args, vars) = parse_path_info(appname, av=True)
+    (a, c, f, args, vars) = parse_path_info(appname, av=True)    
     errmsg = 'invalid application name: %s' % appname
     if not a:
         die(errmsg)
@@ -246,7 +246,8 @@ def run(
     if args:
         extra_request['args'] = args
     if vars:
-        extra_request['vars'] = vars
+        # underscore necessary because request.vars is a property
+        extra_request['_vars'] = vars
     _env = env(a, c=c, f=f, import_models=import_models, extra_request=extra_request)
     if c:
         pyfile = os.path.join('applications', a, 'controllers', c + '.py')

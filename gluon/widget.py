@@ -766,7 +766,7 @@ def console():
 
     msg = ('run web2py in interactive shell or IPython (if installed) with '
            'specified appname (if app does not exist it will be created). '
-           'APPNAME like a/c/f (c,f optional)')
+           'APPNAME like a/c/f?x=y (c,f and vars x,y optional)')
     parser.add_option('-S',
                       '--shell',
                       dest='shell',
