@@ -36,10 +36,10 @@
     <div class="w2p_flash alert alert-dismissable">{{=response.flash or ''}}</div>
     <!-- Navbar ======================================= -->
     <nav class="navbar navbar-expand-lg navbar-light bg-faded">
-      <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+      <a class="navbar-brand" href="http://web2py.com">web2py</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-      <a class="navbar-brand" href="http://web2py.com">web2py</a>
       <div id="navbarNavDropdown" class="collapse navbar-collapse">
         <ul class="navbar-nav">
           {{for _item in response.menu or []:}}
@@ -63,20 +63,26 @@
           <input class="form-control mr-sm-2" type="text" placeholder="Search">
         </form>      
         {{if 'auth' in globals():}}
-        <ul class="navbar-nav ml-lg-auto"">
+        <ul class="navbar-nav ml-lg-auto">
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               {{if auth.user:}}{{=auth.user.first_name}}{{else:}}LOGIN{{pass}}
             </a>
-            <div class="dropdown-menu">
+            <div class="dropdown-menu dropdown-menu-right">
               {{if auth.user:}}
               <a class="dropdown-item" href="{{=URL('default','user/profile')}}">{{=T('Profile')}}</a>
+              {{if 'change_password' not in auth.settings.actions_disabled:}}
               <a class="dropdown-item" href="{{=URL('default','user/change_password')}}">{{=T('Change Password')}}</a>
+              {{pass}}
               <a class="dropdown-item" href="{{=URL('default','user/logout')}}">{{=T('Logout')}}</a>
               {{else:}}
               <a class="dropdown-item" href="{{=URL('default','user/login')}}">{{=T('Login')}}</a>
+              {{if 'register' not in auth.settings.actions_disabled:}}
               <a class="dropdown-item" href="{{=URL('default','user/register')}}">{{=T('Sign up')}}</a>
+              {{pass}}
+              {{if 'retrieve_password' not in auth.settings.actions_disabled:}}
               <a class="dropdown-item" href="{{=URL('default','user/retrieve_password')}}">{{=T('Lost Password')}}</a>
+              {{pass}}
               {{pass}}
             </div>
           </li>
