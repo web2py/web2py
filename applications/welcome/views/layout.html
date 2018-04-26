@@ -99,14 +99,16 @@
       </div>
     </div>
 
-    {{block footer}} <!-- this is default footer -->      
-    <footer class="footer">
-      <div class="container-fluid">
-        <div class="copyright pull-left">{{=T('Copyright')}} &#169; {{=request.now.year}}</div>
+    {{block footer}} <!-- this is default footer -->
+    <footer class="footer container-fluid">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="copyright pull-left">{{=T('Copyright')}} &#169; {{=request.now.year}}</div>
           <div id="poweredBy" class="pull-right">
             {{=T('Powered by')}}
             <a href="http://www.web2py.com/">web2py</a>
           </div>
+        </div>
       </div>
     </footer>
     {{end}}

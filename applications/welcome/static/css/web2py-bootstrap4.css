@@ -104,10 +104,11 @@ select.autocomplete {
 #web2py-logo:hover {
     color: #FFF;
 }
-.footer > .container-fluid {
+.footer > .row {
     padding-left: 15px;
     padding-right: 15px;
-    margin: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 .background {
     background: url(../images/background.jpg) no-repeat center center;
