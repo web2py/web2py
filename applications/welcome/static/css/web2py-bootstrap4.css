@@ -317,6 +317,22 @@ td.w2p_fc,
     width: 100%;
 }
 
+/* form submit block */
+#submit_record__row .btn {
+    margin-bottom: .25rem;
+}
+@media (min-width: 577px) {
+    #submit_record__row .btn {
+        margin-left: .25rem;
+    }
+}
+@media (max-width: 576px) {
+    #submit_record__row .btn {
+        width: 100%;
+        margin-left: 0;
+    }
+}
+
 /* for backward compatbility with pre-font-awesome */
 .icon.plus,.icon.arrowleft,.icon.download,.icon.trash,.icon.pen,.icon.arrowright,.icon.magnifier {
     display: inline-block;
