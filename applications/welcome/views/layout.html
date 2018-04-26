@@ -97,11 +97,13 @@
     <!-- Main ========================================= -->
     <!-- Begin page content -->
     <div class="container-fluid main-container">
-      <div class="col-md-12">
-        {{block center}}
-        {{include}}
-        {{end}}
-        {{=response.toolbar() if response.show_toolbar else ''}}
+      <div class="row">
+        <div class="col-md-12">
+          {{block center}}
+          {{include}}
+          {{end}}
+          {{=response.toolbar() if response.show_toolbar else ''}}
+        </div>
       </div>
     </div>
 
