@@ -104,10 +104,10 @@ select.autocomplete {
 #web2py-logo:hover {
     color: #FFF;
 }
-.footer > .container-fluid {
+.footer > .row {
     padding-left: 15px;
     padding-right: 15px;
-    margin: 20px;
+    margin-top: 20px;
 }
 .background {
     background: url(../images/background.jpg) no-repeat center center;
@@ -314,6 +314,22 @@ td.w2p_fc,
 .web2py_grid,
 .web2py_grid table {
     width: 100%;
+}
+
+/* form submit block */
+#submit_record__row .btn {
+    margin-bottom: .25rem;
+}
+@media (min-width: 577px) {
+    #submit_record__row .btn {
+        margin-left: .25rem;
+    }
+}
+@media (max-width: 576px) {
+    #submit_record__row .btn {
+        width: 100%;
+        margin-left: 0;
+    }
 }
 
 /* for backward compatbility with pre-font-awesome */
