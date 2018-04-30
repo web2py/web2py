@@ -53,7 +53,7 @@ def hello3():
     <p>If you return a dictionary, the variables defined in the dictionary are visible to the view (template).
     <br/>Try it here: <a class="btn" href="/{{=request.application}}/simple_examples/hello3.html">hello3</a></p>
 
-    <p>Actions can also be be rendered in other forms like JSON, <a href="/{{=request.application}}/simple_examples/hello3.json">hello3.json</a>, and XML, <a href="/{{=request.application}}/simple_examples/hello3.xml">hello3.xml</a></p>
+    <p>Actions can also be be rendered in other formats like JSON, <a href="/{{=request.application}}/simple_examples/hello3.json">hello3.json</a>, and XML, <a href="/{{=request.application}}/simple_examples/hello3.xml">hello3.xml</a></p>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
     {{=CODE("""
