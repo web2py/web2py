@@ -443,7 +443,7 @@ def buy():
         Field('product_id',requires=IS_IN_DB(db,db.product.id,'%(name)s')),
         Field('quantity','integer',requires=IS_INT_IN_RANGE(1,100))).process()
     if form.accepted:
-        # get previous purchese for same product
+        # get previous purchase for same product
         purchase = db((db.purchase.buyer_id == form.vars.buyer_id)&
             (db.purchase.product_id==form.vars.product_id)).select().first()
 
@@ -633,7 +633,7 @@ def streamer():
     path=os.path.join(request.folder,'private','largefile.mpeg4')
     return response.stream(open(path,'rb'),chunk_size=4096)
 """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
-    <p>By default all static files and files stored in 'upload' fields in the database are streamed when larger than 1MByte.</p>
+    <p>By default all static files and files stored in 'upload' fields in the database are streamed when larger than 1 MByte.</p>
 
     </p>web2py automatically and transparently handles PARTIAL_CONTENT and RANGE requests.</p>
 
