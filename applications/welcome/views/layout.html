@@ -97,14 +97,8 @@
     <!-- Main ========================================= -->
     <!-- Begin page content -->
     <div class="container-fluid main-container">
-      <div class="row">
-        <div class="col-md-12">
-          {{block center}}
-          {{include}}
-          {{end}}
-          {{=response.toolbar() if response.show_toolbar else ''}}
-        </div>
-      </div>
+      {{include}}
+      {{=response.toolbar() if response.show_toolbar else ''}}
     </div>
 
     {{block footer}} <!-- this is default footer -->
