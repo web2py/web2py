@@ -974,7 +974,7 @@ class translator(object):
                     word = w[1:]
                     fun = cap_fun
                 s = fun(self.plural(word, n))
-                return s.encode()
+                return to_unicode(s).encode()
 
             s = m.group(1)
             part = regex_plural_tuple.sub(sub_tuple, s)
