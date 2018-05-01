@@ -88,7 +88,7 @@ def exec_environment(
         mo = re.match(r'(|.*/)applications/(?P<appname>[^/]+)', pyfile)
         if mo:
             appname = mo.group('appname')
-            request.folder = os.path.join('applications', appname)
+            request.folder = os.path.abspath(os.path.join('applications', appname))
         else:
             request.folder = ''
     env = build_environment(request, response, session, store_current=False)
