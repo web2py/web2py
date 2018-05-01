@@ -973,7 +973,8 @@ class translator(object):
                 else:
                     word = w[1:]
                     fun = cap_fun
-                return fun(self.plural(word, n))
+                s = fun(self.plural(word, n))
+                return s if PY2 else to_unicode(s)
 
             s = m.group(1)
             part = regex_plural_tuple.sub(sub_tuple, s)
