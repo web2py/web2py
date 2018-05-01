@@ -165,6 +165,7 @@ class Request(Storage):
     - folder
     - application
     - function
+    - method
     - args
     - extension
     - now: datetime.datetime.now()
@@ -180,6 +181,7 @@ class Request(Storage):
         self.env.web2py_path = global_settings.applications_parent
         self.env.update(global_settings)
         self.cookies = Cookie.SimpleCookie()
+        self.method = self.env.get('REQUEST_METHOD')
         self._get_vars = None
         self._post_vars = None
         self._vars = None
