@@ -2568,12 +2568,12 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
 
 class IS_LIST_OF(Validator):
 
-    def __init__(self, other=None, minimum=0, maximum=100,
+    def __init__(self, other=None, minimum=None, maximum=None,
                  error_message=None):
         self.other = other
         self.minimum = minimum
         self.maximum = maximum
-        self.error_message = error_message or "Enter between %(min)g and %(max)g values"
+        self.error_message = error_message
 
     def __call__(self, value):
         ivalue = value
@@ -2581,9 +2581,11 @@ class IS_LIST_OF(Validator):
             ivalue = [ivalue]
         ivalue = [i for i in ivalue if str(i).strip()]
         if self.minimum is not None and len(ivalue) < self.minimum:
-            return (ivalue, translate(self.error_message) % dict(min=self.minimum, max=self.maximum))
+            return (ivalue, translate(self.error_message or
+                                'Minimum length is %(min)s') % dict(min=self.minimum, max=self.maximum))
         if self.maximum is not None and len(ivalue) > self.maximum:
-            return (ivalue, translate(self.error_message) % dict(min=self.minimum, max=self.maximum))
+            return (ivalue, translate(self.error_message or
+                                'Maximum length is %(max)s') % dict(min=self.minimum, max=self.maximum))
         new_value = []
         other = self.other
         if self.other:
