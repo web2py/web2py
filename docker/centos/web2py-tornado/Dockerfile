@@ -1,5 +1,7 @@
 FROM centos:latest
 
+#LABEL your_label
+
 RUN yum install -y epel-release && \
  yum install -y python python-pip python-setuptools unzip wget python-tornado --nogpgcheck && \
  pip install --upgrade pip && \

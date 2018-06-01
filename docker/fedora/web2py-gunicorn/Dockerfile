@@ -1,5 +1,7 @@
 FROM fedora:latest
 
+#LABEL your_label
+
 RUN dnf install -y python python-pip python-setuptools unzip wget python-gunicorn --nogpgcheck && \
  pip install --upgrade pip && \
  pip install virtualenv 
