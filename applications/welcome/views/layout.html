@@ -35,13 +35,13 @@
   <body>
     <div class="w2p_flash alert alert-dismissable">{{=response.flash or ''}}</div>
     <!-- Navbar ======================================= -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-faded">
-      <a class="navbar-brand" href="http://web2py.com">web2py</a>
+   <nav class="navbar navbar-light navbar-expand-md bg-faded justify-content-center">
+       <a href="http://web2py.com" class="navbar-brand d-flex w-50 mr-auto">web2py</a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-      <div id="navbarNavDropdown" class="collapse navbar-collapse">
-        <ul class="navbar-nav">
+      <div class="navbar-collapse collapse w-100" id="navbarNavDropdown">
+         <ul class="navbar-nav w-100 justify-content-center">
           {{for _item in response.menu or []:}}
           {{if len(_item)<4 or not _item[3]:}}
           <li class="nav-item {{if _item[1]:}}active{{pass}}">
@@ -57,13 +57,13 @@
             </div>
           </li>
           {{pass}}
-          {{pass}}          
+          {{pass}}
         </ul>
-        <form class="form-inline my-2 my-lg-0">
-          <input class="form-control mr-sm-2" type="text" placeholder="Search">
-        </form>      
+         <form class="form-inline my-2 my-lg-0">
+             <input class="form-control mr-sm-2" type="text" placeholder="Search">
+         </form>
         {{if 'auth' in globals():}}
-        <ul class="navbar-nav ml-lg-auto">
+        <ul class="nav navbar-nav ml-auto w-100 justify-content-end">
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               {{if auth.user:}}{{=auth.user.first_name}}{{else:}}LOGIN{{pass}}
@@ -86,12 +86,12 @@
               {{pass}}
             </div>
           </li>
-        </ul>        
+        </ul>
         {{pass}}
       </div>
     </nav>
 
-    <!-- Masthead ===================================== -->    
+    <!-- Masthead ===================================== -->
     {{block header}}
     {{end}}
     <!-- Main ========================================= -->
