@@ -130,7 +130,7 @@ response.google_analytics_id = configuration.get('google.analytics_id')
 # -------------------------------------------------------------------------
 if configuration.get('scheduler.enabled'):
     from gluon.scheduler import Scheduler
-    scheduler = Scheduler(db, heartbeat=configuration.get('heartbeat'))
+    scheduler = Scheduler(db, heartbeat=configuration.get('scheduler.heartbeat'))
 
 # -------------------------------------------------------------------------
 # Define your tables below (or better in another model file) for example
