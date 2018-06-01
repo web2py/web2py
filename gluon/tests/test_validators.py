@@ -770,7 +770,7 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ([1, 2, 3], 'Maximum length is 2'))
         # regression test for issue 742
         rtn = IS_LIST_OF(minimum=1)('')
-        self.assertEqual(rtn, ([], 'Enter between 1 and 100 values'))
+        self.assertEqual(rtn, ([], 'Minimum length is 1'))
 
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
