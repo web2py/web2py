@@ -43,8 +43,8 @@ class Servers:
 
     @staticmethod
     def cherrypy(app, address, **options):
-        from cherrypy import wsgiserver
-        server = wsgiserver.CherryPyWSGIServer(address, app)
+        from cheroot.wsgi import Server as WSGIServer
+        server = WSGIServer(address, app)
         server.start()
 
     @staticmethod
