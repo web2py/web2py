@@ -477,8 +477,8 @@ def executor(queue, task, out):
             # Get controller-specific subdirectory if task.app is of
             # form 'app/controller'
             (a, c, f) = parse_path_info(task.app)
-            _env = env(a=a, c=c, import_models=True,
-                       extra_request={'is_scheduler': True})
+            _env = env(a='oneapp', c=c, import_models=True,
+                       extra_request={'is_scheduler': True, 'client_name': a, 'is_quicket_web2py': True})
             logging.getLogger().setLevel(level)
             f = task.function
             functions = current._scheduler.tasks
