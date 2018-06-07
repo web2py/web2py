@@ -10,8 +10,8 @@
     <a href="{{=URL('user/register')}}">{{=T('Register')}}</a>
     <br/>
     {{pass}}
-    {{if request.args(0)=='login' and not 'request_reset_password' in auth.settings.actions_disabled:}}
-    <a href="{{=URL('user/request_reset_password')}}">{{=T('Lost your password?')}}</a>
+    {{if request.args(0)=='login' and not 'retrieve_password' in auth.settings.actions_disabled:}}
+    <a href="{{=URL('user/retrieve_password')}}">{{=T('Lost your password?')}}</a>
     {{pass}}
     {{if request.args(0)=='register':}}
     <a href="{{=URL('user/login')}}">{{=T('Login')}}</a>
