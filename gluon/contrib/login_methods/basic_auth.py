@@ -1,5 +1,5 @@
-import urllib
-import urllib2
+from gluon._compat import urlopen
+from gluon._compat import urllib2
 import base64
 
 
@@ -17,7 +17,7 @@ def basic_auth(server="http://127.0.0.1"):
         headers = {'Authorization': 'Basic ' + key}
         request = urllib2.Request(server, None, headers)
         try:
-            urllib2.urlopen(request)
+            urlopen(request)
             return True
         except (urllib2.URLError, urllib2.HTTPError):
             return False
