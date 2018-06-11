@@ -2,7 +2,7 @@ default_application = 'Quicket'
 
 routes_app = ((r'/(?P<app>admin|app)\b.*', r'\g<app>'),
               (
-              r'/(?P<app>sumter_test|arms_test|northlake_old|peoria_test|lemont_test|champaign_test|payticket|buffalo_grove|perry_county|mundelein_test)\b.*',
+              r'/(?P<app>arms_test|northlake_old|peoria_test|lemont_test|champaign_test|payticket)\b.*',
               r'\g<app>')
               )
 
