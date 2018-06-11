@@ -1,3 +1,18 @@
 [submodule "gluon/packages/dal"]
 	path = gluon/packages/dal
 	url = https://github.com/web2py/pydal.git
+[submodule "applications/northlake"]
+	path = applications/northlake
+	url = https://github.com/QuicketSolutions/northlake.git
+[submodule "applications/oneapp"]
+	path = applications/oneapp
+	url = https://github.com/QuicketSolutions/northlake.git
+[submodule "applications/peoria"]
+	path = applications/peoria
+	url = https://github.com/QuicketSolutions/northlake.git
+[submodule "applications/lemont"]
+	path = applications/lemont
+	url = https://github.com/QuicketSolutions/test_production.git
+[submodule "applications/payticket"]
+	path = applications/payticket
+	url = https://github.com/QuicketSolutions/payticket.git
