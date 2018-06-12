@@ -10,7 +10,7 @@ except:
 import time
 import re
 import logging
-import thread
+from threading import Lock
 import random
 from gluon import current
 from gluon.cache import CacheAbstract
@@ -19,7 +19,7 @@ from gluon.contrib.redis_utils import register_release_lock, RConnectionError
 
 logger = logging.getLogger("web2py.cache.redis")
 
-locker = thread.allocate_lock()
+locker = Lock()
 
 
 def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=False, db=None):
@@ -159,13 +159,15 @@ class RedisClient(object):
                     lock_key = '%s:__lock' % newKey
                     randomvalue = time.time()
                     al = acquire_lock(self.r_server, lock_key, randomvalue)
-                    # someone may have computed it
-                    obj = self.r_server.get(newKey)
-                    if obj is None:
-                        value = self.cache_it(newKey, f, time_expire)
-                    else:
-                        value = pickle.loads(obj)
-                    release_lock(self, lock_key, al)
+                    try:
+                        # someone may have computed it
+                        obj = self.r_server.get(newKey)
+                        if obj is None:
+                            value = self.cache_it(newKey, f, time_expire)
+                        else:
+                            value = pickle.loads(obj)
+                    finally:
+                        release_lock(self, lock_key, al)
                 else:
                     # without distributed locking
                     value = self.cache_it(newKey, f, time_expire)

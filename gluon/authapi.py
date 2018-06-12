@@ -8,7 +8,8 @@ from gluon._compat import long
 from gluon import current
 from gluon.storage import Messages, Settings, Storage
 from gluon.utils import web2py_uuid
-from gluon.validators import CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE, IS_LOWER, IS_MATCH, IS_NOT_EMPTY, IS_NOT_IN_DB
+from gluon.validators import CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE, IS_LOWER, IS_MATCH, IS_NOT_EMPTY, \
+    IS_NOT_IN_DB
 from pydal.objects import Table, Field, Row
 import datetime
 from gluon.settings import global_settings
@@ -19,10 +20,10 @@ DEFAULT = lambda: None
 class AuthAPI(object):
     """
     AuthAPI is a barebones Auth implementation which does not have a concept of
-    HTML forms or redirects, emailing or even an URL, you are responsible for 
+    HTML forms or redirects, emailing or even an URL, you are responsible for
     all that if you use it.
     The main Auth functions such as login, logout, register, profile are designed
-    in a Dict In -> Dict Out logic so, for instance, if you set 
+    in a Dict In -> Dict Out logic so, for instance, if you set
     registration_requires_verification you are responsible for sending the key to
     the user and even rolling back the transaction if you can't do it.
 
@@ -114,7 +115,7 @@ class AuthAPI(object):
             if auth.last_visit and auth.last_visit + delta > now:
                 self.user = auth.user
                 # this is a trick to speed up sessions to avoid many writes
-                if (now - auth.last_visit).seconds > (auth.expiration / 10):
+                if (now - auth.last_visit).seconds > (auth.expiration // 10):
                     auth.last_visit = now
             else:
                 self.user = None
@@ -153,7 +154,7 @@ class AuthAPI(object):
 
         if type(migrate).__name__ == 'str':
             return (migrate + tablename + '.table')
-        elif migrate == False:
+        elif not migrate:
             return False
         else:
             return True
@@ -244,11 +245,13 @@ class AuthAPI(object):
             migrate = db._migrate
         if fake_migrate is None:
             fake_migrate = db._fake_migrate
+
         settings = self.settings
         if username is None:
             username = settings.use_username
         else:
             settings.use_username = username
+
         if not self.signature:
             self.define_signature()
         if signature is True:
@@ -259,6 +262,8 @@ class AuthAPI(object):
             signature_list = [signature]
         else:
             signature_list = signature
+        self._table_signature_list = signature_list  # Should it defined in __init__ first??
+
         is_not_empty = IS_NOT_EMPTY(error_message=self.messages.is_empty)
         is_crypted = CRYPT(key=settings.hmac_key,
                            min_length=settings.password_min_length)
@@ -272,7 +277,8 @@ class AuthAPI(object):
             passfield = settings.password_field
             extra_fields = settings.extra_fields.get(
                 settings.table_user_name, []) + signature_list
-            if username or settings.cas_provider: # cas_provider Will always be None here but we compare it anyway so subclasses can use our define_tables
+            # cas_provider Will always be None here but we compare it anyway so subclasses can use our define_tables
+            if username or settings.cas_provider:
                 is_unique_username = \
                     [IS_MATCH('[\w\.\-]+', strict=True,
                               error_message=self.messages.invalid_username),
@@ -309,7 +315,7 @@ class AuthAPI(object):
                     *extra_fields,
                     **dict(
                         migrate=self._get_migrate(settings.table_user_name,
-                                                   migrate),
+                                                  migrate),
                         fake_migrate=fake_migrate,
                         format='%(username)s'))
             else:
@@ -339,7 +345,7 @@ class AuthAPI(object):
                     *extra_fields,
                     **dict(
                         migrate=self._get_migrate(settings.table_user_name,
-                                                   migrate),
+                                                  migrate),
                         fake_migrate=fake_migrate,
                         format='%(first_name)s %(last_name)s (%(id)s)'))
         reference_table_user = 'reference %s' % settings.table_user_name
@@ -437,7 +443,9 @@ class AuthAPI(object):
         # log messages should not be translated
         if type(description).__name__ == 'lazyT':
             description = description.m
-        self.table_event().insert(description=str(description % vars), origin=origin, user_id=user_id)
+        if not user_id or self.table_user()[user_id]:
+            self.table_event().insert(
+                description=str(description % vars), origin=origin, user_id=user_id)
 
     def id_group(self, role):
         """
@@ -526,7 +534,7 @@ class AuthAPI(object):
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
-        if role:
+        if role and user_id == self.user_id:
             self.user_groups[group_id] = role
         else:
             self.update_groups()
@@ -551,27 +559,43 @@ class AuthAPI(object):
         self.log_event(self.messages['del_membership_log'],
                        dict(user_id=user_id, group_id=group_id))
         ret = self.db(membership.user_id == user_id)(membership.group_id == group_id).delete()
-        if group_id in self.user_groups:
+        if group_id in self.user_groups and user_id == self.user_id:
             del self.user_groups[group_id]
         return ret
 
-    def has_membership(self, group_id=None, user_id=None, role=None):
+    def has_membership(self, group_id=None, user_id=None, role=None, cached=False):
         """
         Checks if user is member of group_id or role
+
+        NOTE: To avoid database query at each page load that use auth.has_membership, someone can use cached=True.
+              If cached is set to True has_membership() check group_id or role only against auth.user_groups variable
+              which is populated properly only at login time. This means that if an user membership change during a
+              given session the user has to log off and log in again in order to auth.user_groups to be properly
+              recreated and reflecting the user membership modification. There is one exception to this log off and
+              log in process which is in case that the user change his own membership, in this case auth.user_groups
+              can be properly update for the actual connected user because web2py has access to the proper session
+              user_groups variable. To make use of this exception someone has to place an "auth.update_groups()"
+              instruction in his app code to force auth.user_groups to be updated. As mention this will only work if it
+              the user itself that change it membership not if another user, let say an administrator, change someone
+              else's membership.
         """
-        group_id = group_id or self.id_group(role)
-        try:
-            group_id = int(group_id)
-        except:
-            group_id = self.id_group(group_id)  # interpret group_id as a role
         if not user_id and self.user:
             user_id = self.user.id
-        membership = self.table_membership()
-        if group_id and user_id and self.db((membership.user_id == user_id) &
-                                            (membership.group_id == group_id)).select():
-            r = True
+        if cached:
+            id_role = group_id or role
+            r = (user_id and id_role in self.user_groups.values()) or (user_id and id_role in self.user_groups)
         else:
-            r = False
+            group_id = group_id or self.id_group(role)
+            try:
+                group_id = int(group_id)
+            except:
+                group_id = self.id_group(group_id)  # interpret group_id as a role
+            membership = self.table_membership()
+            if group_id and user_id and self.db((membership.user_id == user_id) &
+                                                (membership.group_id == group_id)).select():
+                r = True
+            else:
+                r = False
         self.log_event(self.messages['has_membership_log'],
                        dict(user_id=user_id, group_id=group_id, check=r))
         return r
@@ -767,7 +791,8 @@ class AuthAPI(object):
         user = table_user(**{userfield: validated})
 
         if user is None:
-            return {'errors': {userfield: self.messages.invalid_user}, 'message': self.messages.invalid_login, 'user': None}
+            return {'errors': {userfield: self.messages.invalid_user},
+                    'message': self.messages.invalid_login, 'user': None}
 
         if (user.registration_key or '').startswith('pending'):
             return {'errors': None, 'message': self.messages.registration_pending, 'user': None}
@@ -788,10 +813,12 @@ class AuthAPI(object):
                 settings.expiration
             session.auth.remember_me = kwargs.get('remember_me', False)
             self.log_event(log, user)
-            return {'errors': None, 'message': self.messages.logged_in, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {'errors': None, 'message': self.messages.logged_in,
+                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
         else:
             self.log_event(self.messages['login_failed_log'], kwargs)
-            return {'errors': {passfield: self.messages.invalid_password}, 'message': self.messages.invalid_login, 'user': None}
+            return {'errors': {passfield: self.messages.invalid_password},
+                    'message': self.messages.invalid_login, 'user': None}
 
     def logout(self, log=DEFAULT, onlogout=DEFAULT, **kwargs):
         """
@@ -885,7 +912,7 @@ class AuthAPI(object):
 
         if settings.registration_requires_verification:
             d = {k: user[k] for k in table_user.fields if table_user[k].readable}
-            d['key']= key
+            d['key'] = key
             if settings.login_after_registration and not settings.registration_requires_approval:
                 self.login_user(user)
             return {'errors': None, 'message': None, 'user': d}
@@ -900,7 +927,8 @@ class AuthAPI(object):
 
         self.log_event(log, user)
 
-        return {'errors': None, 'message': message, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+        return {'errors': None, 'message': message,
+                'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
     def profile(self, log=DEFAULT, **kwargs):
         """
@@ -916,20 +944,23 @@ class AuthAPI(object):
 
         if not kwargs:
             user = table_user[self.user.id]
-            return {'errors': None, 'message': None, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {'errors': None, 'message': None,
+                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
         result = self.db(table_user.id == self.user.id).validate_and_update(**kwargs)
         user = table_user[self.user.id]
 
         if result.errors:
-            return {'errors': result.errors, 'message': None, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {'errors': result.errors, 'message': None,
+                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
         if log is DEFAULT:
             log = self.messages['profile_log']
 
         self.log_event(log, user)
         self._update_session_user(user)
-        return {'errors': None, 'message': self.messages.profile_updated, 'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+        return {'errors': None, 'message': self.messages.profile_updated,
+                'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
 
     def change_password(self, log=DEFAULT, **kwargs):
         """
@@ -959,7 +990,8 @@ class AuthAPI(object):
             requires = [requires]
         requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
         if requires:
-            requires[0].min_length = 0
+            requires[0] = CRYPT(**requires[0].__dict__) # Copy the existing CRYPT attributes
+            requires[0].min_length = 0 # But do not enforce minimum length for the old password
 
         old_password = kwargs.get('old_password', '')
         new_password = kwargs.get('new_password', '')
@@ -993,13 +1025,13 @@ class AuthAPI(object):
             return {'errors': None, 'message': messages.password_changed}
 
     def verify_key(self,
-                     key=None,
-                     ignore_approval=False,
-                     log=DEFAULT,
-                     ):
+                   key=None,
+                   ignore_approval=False,
+                   log=DEFAULT,
+                   ):
         """
         Verify a given registration_key actually exists in the user table.
-        Resets the key to empty string '' or 'pending' if 
+        Resets the key to empty string '' or 'pending' if
         setttings.registration_requires_approval is true.
 
         Keyword Args:
@@ -1008,7 +1040,7 @@ class AuthAPI(object):
         table_user = self.table_user()
         user = table_user(registration_key=key)
         if (user is None) or (key is None):
-            return {'errors': {'key': self.messages.invalid_key}, 'message': self.messages.invalid_key }
+            return {'errors': {'key': self.messages.invalid_key}, 'message': self.messages.invalid_key}
 
         if self.settings.registration_requires_approval:
             user.update_record(registration_key='pending')

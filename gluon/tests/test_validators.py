@@ -235,6 +235,11 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
         rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
         self.assertEqual(rtn, [('', ''), ('%d' % costanza_id, 'costanza'), ('%d' % george_id, 'george')])
+        # Test None
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
+        rtn = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')(None)
+        self.assertEqual(rtn, (None, 'oops'))
         # Test using the set it made for options
         vldtr = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')
         vldtr.options()
@@ -273,8 +278,68 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('jerry', 'oops'))
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', auto_add=True)('jerry')
         self.assertEqual(rtn, (3, None))
+        # Test it works with reference table
+        db.define_table('ref_table',
+                        Field('name'),
+                        Field('person_id', 'reference person')
+                        )
+        ret = db.ref_table.validate_and_insert(name='test reference table')
+        self.assertFalse(list(ret.errors))
+        ret = db.ref_table.validate_and_insert(name='test reference table', person_id=george_id)
+        self.assertFalse(list(ret.errors))
+        rtn = IS_IN_DB(db, 'ref_table.person_id', '%(name)s')(george_id)
+        self.assertEqual(rtn, (george_id, None))
+        # Test it works with reference table.field and keyed table
+        db.define_table('person_keyed',
+                        Field('name'),
+                        primarykey=['name'])
+        db.person_keyed.insert(name='george')
+        db.person_keyed.insert(name='costanza')
+        rtn = IS_IN_DB(db, 'person_keyed.name')('george')
+        self.assertEqual(rtn, ('george', None))
+        db.define_table('ref_table_field',
+                        Field('name'),
+                        Field('person_name', 'reference person_keyed.name')
+                        )
+        ret = db.ref_table_field.validate_and_insert(name='test reference table.field')
+        self.assertFalse(list(ret.errors))
+        ret = db.ref_table_field.validate_and_insert(name='test reference table.field', person_name='george')
+        self.assertFalse(list(ret.errors))
+        vldtr = IS_IN_DB(db, 'ref_table_field.person_name', '%(name)s')
+        vldtr.options()
+        rtn = vldtr('george')
+        self.assertEqual(rtn, ('george', None))
+        # Test it works with list:reference table
+        db.define_table('list_ref_table',
+                        Field('name'),
+                        Field('person_list', 'list:reference person'))
+        ret = db.list_ref_table.validate_and_insert(name='test list:reference table')
+        self.assertFalse(list(ret.errors))
+        ret = db.list_ref_table.validate_and_insert(name='test list:reference table', person_list=[george_id,costanza_id])
+        self.assertFalse(list(ret.errors))
+        vldtr = IS_IN_DB(db, 'list_ref_table.person_list')
+        vldtr.options()
+        rtn = vldtr([george_id,costanza_id])
+        self.assertEqual(rtn, ([george_id,costanza_id], None))
+        # Test it works with list:reference table.field and keyed table
+        #db.define_table('list_ref_table_field',
+        #                Field('name'),
+        #                Field('person_list', 'list:reference person_keyed.name'))
+        #ret = db.list_ref_table_field.validate_and_insert(name='test list:reference table.field')
+        #self.assertFalse(list(ret.errors))
+        #ret = db.list_ref_table_field.validate_and_insert(name='test list:reference table.field', person_list=['george','costanza'])
+        #self.assertFalse(list(ret.errors))
+        #vldtr = IS_IN_DB(db, 'list_ref_table_field.person_list')
+        #vldtr.options()
+        #rtn = vldtr(['george','costanza'])
+        #self.assertEqual(rtn, (['george','costanza'], None))
         db.person.drop()
         db.category.drop()
+        db.person_keyed.drop()
+        db.ref_table.drop()
+        db.ref_table_field.drop()
+        db.list_ref_table.drop()
+        #db.list_ref_table_field.drop()
 
     def test_IS_NOT_IN_DB(self):
         from gluon.dal import DAL, Field
@@ -439,6 +504,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (None, 'Enter a value'))
         rtn = IS_NOT_EMPTY()('')
         self.assertEqual(rtn, ('', 'Enter a value'))
+        rtn = IS_NOT_EMPTY()(b'')
+        self.assertEqual(rtn, (b'', 'Enter a value'))
         rtn = IS_NOT_EMPTY()('  ')
         self.assertEqual(rtn, ('  ', 'Enter a value'))
         rtn = IS_NOT_EMPTY()(' \n\t')
@@ -698,12 +765,12 @@ class TestValidators(unittest.TestCase):
         rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10))(1)
         self.assertEqual(rtn, ([1], None))
         rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10), minimum=10)([1, 2])
-        self.assertEqual(rtn, ([1, 2], 'Enter between 10 and 100 values'))
+        self.assertEqual(rtn, ([1, 2], 'Minimum length is 10'))
         rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10), maximum=2)([1, 2, 3])
-        self.assertEqual(rtn, ([1, 2, 3], 'Enter between 0 and 2 values'))
+        self.assertEqual(rtn, ([1, 2, 3], 'Maximum length is 2'))
         # regression test for issue 742
         rtn = IS_LIST_OF(minimum=1)('')
-        self.assertEqual(rtn, ([], 'Enter between 1 and 100 values'))
+        self.assertEqual(rtn, ([], 'Minimum length is 1'))
 
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
@@ -794,6 +861,10 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, [('', ''), ('id1', 'first label'), ('id2', 'second label')])
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options()
         self.assertEqual(rtn, [('', 'zero'), ('id1', 'first label'), ('id2', 'second label')])
+        rtn = IS_EMPTY_OR((IS_LOWER(), IS_EMAIL()))('AAA')
+        self.assertEqual(rtn, ('aaa', 'Enter a valid email address'))
+        rtn = IS_EMPTY_OR([IS_LOWER(), IS_EMAIL()])('AAA')
+        self.assertEqual(rtn, ('aaa', 'Enter a valid email address'))
 
     def test_CLEANUP(self):
         rtn = CLEANUP()('helloò')

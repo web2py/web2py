@@ -18,10 +18,11 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-from gluon.utf8 import Utf8
+
 from gluon.utils import local_html_escape
 
 from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
+
 from pydal.contrib.portalocker import read_locked, LockedFile
 
 from gluon.fileutils import listdir
@@ -49,8 +50,10 @@ DEFAULT_CONSTRUCT_PLURAL_FORM = lambda word, plural_id: word
 
 if PY2:
     NUMBERS = (int, long, float)
+    from gluon.utf8 import Utf8
 else:
     NUMBERS = (int, float)
+    Utf8 = str
 
 # pattern to find T(blah blah blah) expressions
 PY_STRING_LITERAL_RE = r'(?<=[^\w]T\()(?P<name>'\
@@ -107,15 +110,17 @@ def markmin(s):
 
 
 def upper_fun(s):
-    return unicode(s, 'utf-8').upper().encode('utf-8')
+    return to_bytes(to_unicode(s).upper())
 
 
 def title_fun(s):
-    return unicode(s, 'utf-8').title().encode('utf-8')
+    return to_bytes(to_unicode(s).title())
 
 
 def cap_fun(s):
-    return unicode(s, 'utf-8').capitalize().encode('utf-8')
+    return to_bytes(to_unicode(s).capitalize())
+
+
 ttab_in = maketrans("\\%{}", '\x1c\x1d\x1e\x1f')
 ttab_out = maketrans('\x1c\x1d\x1e\x1f', "\\%{}")
 
@@ -426,10 +431,16 @@ class lazyT(object):
         return str(self) if self.M else local_html_escape(str(self), quote=False)
 
     def encode(self, *a, **b):
-        return str(self).encode(*a, **b)
+        if PY2 and a[0] != 'utf8':
+            return to_unicode(str(self)).encode(*a, **b)
+        else:
+            return str(self)
 
     def decode(self, *a, **b):
-        return str(self).decode(*a, **b)
+        if PY2:
+            return str(self).decode(*a, **b)
+        else:
+            return str(self)
 
     def read(self):
         return str(self)
@@ -787,7 +798,7 @@ class translator(object):
         """
         Use ## to add a comment into a translation string
         the comment can be useful do discriminate different possible
-        translations for the same string (for example different locations)::
+        translations for the same string (for example different locations):
 
             T(' hello world ') -> ' hello world '
             T(' hello world ## token') -> ' hello world '
@@ -830,24 +841,71 @@ class translator(object):
         """
         def sub_plural(m):
             """String in `%{}` is transformed by this rules:
-               If string starts with  `\\`, `!` or `?` such transformations
-               take place::
+               If string starts with  `!` or `?` such transformations
+               take place:
 
                    "!string of words" -> "String of word" (Capitalize)
                    "!!string of words" -> "String Of Word" (Title)
                    "!!!string of words" -> "STRING OF WORD" (Upper)
-                   "\\!string of words" -> "!string of word"
-                                 (remove \\ and disable transformations)
-                   "?word?number" -> "word" (return word, if number == 1)
-                   "?number" or "??number" -> "" (remove number,
-                                                  if number == 1)
-                   "?word?number" -> "number" (if number != 1)
 
+                   "?word1?number" -> "word1" or "number"
+                                 (return word1 if number == 1,
+                                  return number otherwise)
+                   "??number" or "?number" -> "" or "number"
+                                 (as above with word1 = "")
+
+                   "?word1?number?word0" -> "word1" or "number" or "word0"
+                                 (return word1 if number == 1,
+                                  return word0 if number == 0,
+                                  return number otherwise)
+                   "?word1?number?" -> "word1" or "number" or ""
+                                 (as above with word0 = "")
+                   "??number?word0" -> "number" or "word0"
+                                 (as above with word1 = "")
+                   "??number?" -> "number" or ""
+                                 (as above with word1 = word0 = "")
+
+                   "?word1?word[number]" -> "word1" or "word"
+                                 (return word1 if symbols[number] == 1,
+                                  return word otherwise)
+                   "?word1?[number]" -> "" or "word1"
+                                 (as above with word = "")
+                   "??word[number]" or "?word[number]" -> "" or "word"
+                                 (as above with word1 = "")
+
+                   "?word1?word?word0[number]" -> "word1" or "word" or "word0"
+                                 (return word1 if symbols[number] == 1,
+                                  return word0 if symbols[number] == 0,
+                                  return word otherwise)
+                   "?word1?word?[number]" -> "word1" or "word" or ""
+                                 (as above with word0 = "")
+                   "??word?word0[number]" -> "" or "word" or "word0"
+                                 (as above with word1 = "")
+                   "??word?[number]" -> "" or "word"
+                                 (as above with word1 = word0 = "")
+
+               Other strings, (those not starting with  `!` or `?`)
+               are processed by self.plural
             """
             def sub_tuple(m):
-                """ word[number], !word[number], !!word[number], !!!word[number]
-                    word, !word, !!word, !!!word, ?word?number, ??number, ?number
-                    ?word?word[number], ?word?[number], ??word[number]
+                """ word
+                    !word, !!word, !!!word
+                    ?word1?number
+                         ??number, ?number
+                    ?word1?number?word0
+                    ?word1?number?
+                         ??number?word0
+                         ??number?
+
+                    word[number]
+                    !word[number], !!word[number], !!!word[number]
+                    ?word1?word[number]
+                    ?word1?[number]
+                         ??word[number], ?word[number]
+                    ?word1?word?word0[number]
+                    ?word1?word?[number]
+                         ??word?word0[number]
+                         ??word?[number]
                 """
                 w, i = m.group('w', 'i')
                 c = w[0]
@@ -865,7 +923,7 @@ class translator(object):
                             return m.group(0)
                         num = int(part2)
                     else:
-                        # ?[word]?word2[?word3][number]
+                        # ?[word1]?word[?word0][number]
                         num = int(symbols[int(i or 0)])
                     return part1 if num == 1 else part3 if num == 0 else part2
                 elif w.startswith('!!!'):
@@ -882,10 +940,15 @@ class translator(object):
                 return fun(word)
 
             def sub_dict(m):
-                """ word(var), !word(var), !!word(var), !!!word(var)
-                    word(num), !word(num), !!word(num), !!!word(num)
-                    ?word2(var), ?word1?word2(var), ?word1?word2?word0(var)
-                    ?word2(num), ?word1?word2(num), ?word1?word2?word0(num)
+                """ word(key or num)
+                    !word(key or num), !!word(key or num), !!!word(key or num)
+                    ?word1?word(key or num)
+                         ??word(key or num), ?word(key or num)
+                    ?word1?word?word0(key or num)
+                    ?word1?word?(key or num)
+                         ??word?word0(key or num)
+                    ?word1?word?(key or num)
+                         ??word?(key or num), ?word?(key or num)
                 """
                 w, n = m.group('w', 'n')
                 c = w[0]
@@ -893,7 +956,7 @@ class translator(object):
                 if c not in '!?':
                     return self.plural(w, n)
                 elif c == '?':
-                    # ?[word1]?word2[?word0](var or num), ?[word1]?word2(var or num) or ?word2(var or num)
+                    # ?[word1]?word[?word0](key or num), ?[word1]?word(key or num) or ?word(key or num)
                     (p1, sep, p2) = w[1:].partition("?")
                     part1 = p1 if sep else ""
                     (part2, sep, part3) = (p2 if sep else p1).partition("?")
@@ -910,7 +973,8 @@ class translator(object):
                 else:
                     word = w[1:]
                     fun = cap_fun
-                return fun(self.plural(word, n))
+                s = fun(self.plural(word, n))
+                return s if PY2 else to_unicode(s)
 
             s = m.group(1)
             part = regex_plural_tuple.sub(sub_tuple, s)

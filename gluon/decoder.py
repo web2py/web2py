@@ -9,19 +9,19 @@ Based on http://code.activestate.com/recipes/52257/
 
 Licensed under the PSF License
 """
-
+from gluon._compat import to_unicode
 import codecs
 
 # None represents a potentially variable byte. "##" in the XML spec...
 autodetect_dict = {  # bytepattern     : ("name",
                                          (0x00, 0x00, 0xFE, 0xFF): ("ucs4_be"),
-    (0xFF, 0xFE, 0x00, 0x00): ("ucs4_le"),
-    (0xFE, 0xFF, None, None): ("utf_16_be"),
-    (0xFF, 0xFE, None, None): ("utf_16_le"),
-    (0x00, 0x3C, 0x00, 0x3F): ("utf_16_be"),
-    (0x3C, 0x00, 0x3F, 0x00): ("utf_16_le"),
-    (0x3C, 0x3F, 0x78, 0x6D): ("utf_8"),
-    (0x4C, 0x6F, 0xA7, 0x94): ("EBCDIC")
+                                         (0xFF, 0xFE, 0x00, 0x00): ("ucs4_le"),
+                                         (0xFE, 0xFF, None, None): ("utf_16_be"),
+                                         (0xFF, 0xFE, None, None): ("utf_16_le"),
+                                         (0x00, 0x3C, 0x00, 0x3F): ("utf_16_be"),
+                                         (0x3C, 0x00, 0x3F, 0x00): ("utf_16_le"),
+                                         (0x3C, 0x3F, 0x78, 0x6D): ("utf_8"),
+                                         (0x4C, 0x6F, 0xA7, 0x94): ("EBCDIC")
 }
 
 
@@ -36,10 +36,10 @@ def autoDetectXMLEncoding(buffer):
     # buffer at once but otherwise we'd have to decode a character at
     # a time looking for the quote character...that's a pain
 
-    encoding = "utf_8"    # according to the XML spec, this is the default
-                          # this code successively tries to refine the default
-                          # whenever it fails to refine, it falls back to
-                          # the last place encoding was set.
+    encoding = "utf_8"
+    # according to the XML spec, this is the default this code successively tries to refine the default
+    # whenever it fails to refine, it falls back to the last place encoding was set.
+
     if len(buffer) >= 4:
         bytes = (byte1, byte2, byte3, byte4) = tuple(map(ord, buffer[0:4]))
         enc_info = autodetect_dict.get(bytes, None)
@@ -51,8 +51,7 @@ def autoDetectXMLEncoding(buffer):
         enc_info = None
 
     if enc_info:
-        encoding = enc_info  # we've got a guess... these are
-                             #the new defaults
+        encoding = enc_info  # we've got a guess... these are the new defaults
 
         # try to find a more precise encoding using xml declaration
         secret_decoder_ring = codecs.lookup(encoding)[1]
@@ -77,4 +76,4 @@ def autoDetectXMLEncoding(buffer):
 
 def decoder(buffer):
     encoding = autoDetectXMLEncoding(buffer)
-    return buffer.decode(encoding).encode('utf8')
+    return to_unicode(buffer, charset=encoding)

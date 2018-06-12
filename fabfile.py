@@ -122,7 +122,7 @@ def deploy(appname=None, all=False):
             
     if all=='all' or not backup:
         local('zip -r _update.zip * -x *~ -x .* -x \#* -x *.bak -x *.bak2')
-    else:        
+    else:
         local('zip -r _update.zip */*.py */*/*.py views/*.html views/*/*.html static/*')
 
     put('_update.zip','/tmp/_update.zip')

@@ -138,6 +138,9 @@ class TestAuthAPI(unittest.TestCase):
         self.assertTrue('new_password2' in result['errors'])
         result = self.auth.change_password(old_password='bart_password', new_password='1234', new_password2='1234')
         self.assertTrue('old_password' in result['errors'])
+        # Test the default 4 min_length is enforced on change password
+        result = self.auth.change_password(old_password='1234', new_password='123', new_password2='123')
+        self.assertTrue('new_password' in result['errors'])
 
     def test_verify_key(self):
         self.auth.settings.registration_requires_verification = True

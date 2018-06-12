@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 
 # -------------------------------------------------------------------------
+# AppConfig configuration made easy. Look inside private/appconfig.ini
+# Auth is for authenticaiton and access control
+# -------------------------------------------------------------------------
+from gluon.contrib.appconfig import AppConfig
+from gluon.tools import Auth
+
+# -------------------------------------------------------------------------
 # This scaffolding model makes your app work on Google App Engine too
 # File is released under public domain and you can use without limitations
 # -------------------------------------------------------------------------
 
-if request.global_settings.web2py_version < "2.14.1":
-    raise HTTP(500, "Requires web2py 2.13.3 or newer")
+if request.global_settings.web2py_version < "2.15.5":
+    raise HTTP(500, "Requires web2py 2.15.5 or newer")
 
 # -------------------------------------------------------------------------
 # if SSL/HTTPS is properly configured and you want all HTTP requests to
@@ -15,22 +22,17 @@ if request.global_settings.web2py_version < "2.14.1":
 # request.requires_https()
 
 # -------------------------------------------------------------------------
-# app configuration made easy. Look inside private/appconfig.ini
-# -------------------------------------------------------------------------
-from gluon.contrib.appconfig import AppConfig
-
-# -------------------------------------------------------------------------
 # once in production, remove reload=True to gain full speed
 # -------------------------------------------------------------------------
-myconf = AppConfig(reload=True)
+configuration = AppConfig(reload=True)
 
 if not request.env.web2py_runtime_gae:
     # ---------------------------------------------------------------------
     # if NOT running on Google App Engine use SQLite or other DB
     # ---------------------------------------------------------------------
-    db = DAL(myconf.get('db.uri'),
-             pool_size=myconf.get('db.pool_size'),
-             migrate_enabled=myconf.get('db.migrate'),
+    db = DAL(configuration.get('db.uri'),
+             pool_size=configuration.get('db.pool_size'),
+             migrate_enabled=configuration.get('db.migrate'),
              check_reserved=['all'])
 else:
     # ---------------------------------------------------------------------
@@ -52,12 +54,15 @@ else:
 # by default give a view/generic.extension to all actions from localhost
 # none otherwise. a pattern can be 'controller/function.extension'
 # -------------------------------------------------------------------------
-response.generic_patterns = ['*'] if request.is_local else []
+response.generic_patterns = [] 
+if request.is_local and not configuration.get('app.production'):
+    response.generic_patterns.append('*')
+
 # -------------------------------------------------------------------------
 # choose a style for forms
 # -------------------------------------------------------------------------
-response.formstyle = myconf.get('forms.formstyle')  # or 'bootstrap3_stacked' or 'bootstrap2' or other
-response.form_label_separator = myconf.get('forms.separator') or ''
+response.formstyle = 'bootstrap4_inline'
+response.form_label_separator = ''
 
 # -------------------------------------------------------------------------
 # (optional) optimize handling of static files
@@ -80,27 +85,24 @@ response.form_label_separator = myconf.get('forms.separator') or ''
 # (more options discussed in gluon/tools.py)
 # -------------------------------------------------------------------------
 
-from gluon.tools import Auth, Service, PluginManager
-
 # host names must be a list of allowed host names (glob syntax allowed)
-auth = Auth(db, host_names=myconf.get('host.names'))
-service = Service()
-plugins = PluginManager()
+auth = Auth(db, host_names=configuration.get('host.names'))
 
 # -------------------------------------------------------------------------
-# create all tables needed by auth if not custom tables
+# create all tables needed by auth, maybe add a list of extra fields
 # -------------------------------------------------------------------------
+auth.settings.extra_fields['auth_user'] = []
 auth.define_tables(username=False, signature=False)
 
 # -------------------------------------------------------------------------
 # configure email
 # -------------------------------------------------------------------------
 mail = auth.settings.mailer
-mail.settings.server = 'logging' if request.is_local else myconf.get('smtp.server')
-mail.settings.sender = myconf.get('smtp.sender')
-mail.settings.login = myconf.get('smtp.login')
-mail.settings.tls = myconf.get('smtp.tls') or False
-mail.settings.ssl = myconf.get('smtp.ssl') or False
+mail.settings.server = 'logging' if request.is_local else configuration.get('smtp.server')
+mail.settings.sender = configuration.get('smtp.sender')
+mail.settings.login = configuration.get('smtp.login')
+mail.settings.tls = configuration.get('smtp.tls') or False
+mail.settings.ssl = configuration.get('smtp.ssl') or False
 
 # -------------------------------------------------------------------------
 # configure auth policy
@@ -108,6 +110,27 @@ mail.settings.ssl = myconf.get('smtp.ssl') or False
 auth.settings.registration_requires_verification = False
 auth.settings.registration_requires_approval = False
 auth.settings.reset_password_requires_verification = True
+
+# -------------------------------------------------------------------------  
+# read more at http://dev.w3.org/html5/markup/meta.name.html               
+# -------------------------------------------------------------------------
+response.meta.author = configuration.get('app.author')
+response.meta.description = configuration.get('app.description')
+response.meta.keywords = configuration.get('app.keywords')
+response.meta.generator = configuration.get('app.generator')
+response.show_toolbar = configuration.get('app.toolbar')
+
+# -------------------------------------------------------------------------
+# your http://google.com/analytics id                                      
+# -------------------------------------------------------------------------
+response.google_analytics_id = configuration.get('google.analytics_id')
+
+# -------------------------------------------------------------------------
+# maybe use the scheduler
+# -------------------------------------------------------------------------
+if configuration.get('scheduler.enabled'):
+    from gluon.scheduler import Scheduler
+    scheduler = Scheduler(db, heartbeat=configuration.get('scheduler.heartbeat'))
 
 # -------------------------------------------------------------------------
 # Define your tables below (or better in another model file) for example

@@ -7,14 +7,12 @@ db = get_db()
 """
 import os
 from gluon import *
-from pydal.adapters import ADAPTERS, PostgreSQLAdapter
-from pydal.helpers.classes import UseDatabaseStoredFile
+from pydal.adapters import adapters, PostgrePsyco
+from pydal.helpers.classes import DatabaseStoredFile
 
-class HerokuPostgresAdapter(UseDatabaseStoredFile,PostgreSQLAdapter):
-    drivers = ('psycopg2',)
+@adapters.register_for('postgres')
+class HerokuPostgresAdapter(DatabaseStoredFile, PostgrePsyco):
     uploads_in_blob = True
-
-ADAPTERS['postgres'] = HerokuPostgresAdapter
 
 def get_db(name = None, pool_size=10):
     if not name:

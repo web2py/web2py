@@ -17,6 +17,7 @@ from gluon import fileutils
 from gluon.dal import DAL, Field, Table
 from gluon.http import HTTP
 from gluon.fileutils import open_file
+from gluon.cache import CacheInRam
 
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
@@ -103,6 +104,21 @@ class TestAppAdmin(unittest.TestCase):
         compile_application(appname_path)
         self._test_index()
         remove_compiled_application(appname_path)
+
+    def test_index_minify(self):
+        # test for gluon/contrib/minify
+        self.env['response'].optimize_css = 'concat|minify'
+        self.env['response'].optimize_js = 'concat|minify'
+        self.env['current'].cache = Storage({'ram':CacheInRam()})
+        appname_path = os.path.join(os.getcwd(), 'applications', 'welcome')
+        self._test_index()
+        file_l = os.listdir(os.path.join(appname_path, 'static', 'temp'))
+        file_l.sort()
+        self.assertTrue(len(file_l) == 2)
+        self.assertEqual(file_l[0][0:10], 'compressed')
+        self.assertEqual(file_l[1][0:10], 'compressed')
+        self.assertEqual(file_l[0][-3:], 'css')
+        self.assertEqual(file_l[1][-2:], 'js')
 
     def test_select(self):
         request = self.env['request']

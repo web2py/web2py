@@ -156,12 +156,12 @@ def get_digest(value):
         raise ValueError("Invalid digest algorithm: %s" % value)
 
 DIGEST_ALG_BY_SIZE = {
-    128 / 4: 'md5',
-    160 / 4: 'sha1',
-    224 / 4: 'sha224',
-    256 / 4: 'sha256',
-    384 / 4: 'sha384',
-    512 / 4: 'sha512',
+    128 // 4: 'md5',
+    160 // 4: 'sha1',
+    224 // 4: 'sha224',
+    256 // 4: 'sha256',
+    384 // 4: 'sha384',
+    512 // 4: 'sha512',
 }
 
 
@@ -207,6 +207,7 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
 
 
 def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+    data = to_bytes(data)
     components = data.count(b':')
     if components == 1:
         return secure_loads_deprecated(data, encryption_key, hash_key, compression_level)

@@ -307,13 +307,13 @@ try:
 except ImportError:
     has_futures = False
 
-    class Future:
+    class Future(object):
         pass
 
-    class ThreadPoolExecutor:
+    class ThreadPoolExecutor(object):
         pass
 
-    class _WorkItem:
+    class _WorkItem(object):
         pass
 
 
@@ -784,8 +784,7 @@ class Rocket(object):
                        the application developer.  Please update your \
                        applications to no longer call rocket.stop(True)"
                 try:
-                    import warnings
-                    raise warnings.DeprecationWarning(msg)
+                    raise DeprecationWarning(msg)
                 except ImportError:
                     raise RuntimeError(msg)
 
@@ -1751,7 +1750,7 @@ class WSGIWorker(Worker):
         if self.request_method != 'HEAD':
             try:
                 if self.chunked:
-                    self.conn.sendall(b('%x\r\n%s\r\n' % (len(data), data)))
+                    self.conn.sendall(b'%x\r\n%s\r\n' % (len(data), to_bytes(data, 'ISO-8859-1')))
                 else:
                     self.conn.sendall(to_bytes(data))
             except socket.timeout:

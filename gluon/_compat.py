@@ -26,7 +26,7 @@ if PY2:
     from email.MIMEText import MIMEText
     from email.Charset import add_charset, QP as charset_QP
     from urllib import FancyURLopener, urlencode, urlopen
-    from urllib import quote as urllib_quote, unquote as urllib_unquote
+    from urllib import quote as urllib_quote, unquote as urllib_unquote, quote_plus as urllib_quote_plus
     from string import maketrans
     from types import ClassType
     import cgi
@@ -35,6 +35,7 @@ if PY2:
     from gluon.contrib import ipaddress
     BytesIO = StringIO
     reduce = reduce
+    reload = reload
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
     itervalues = lambda d: d.itervalues()
@@ -63,7 +64,7 @@ if PY2:
             return None
         if isinstance(obj, (bytes, bytearray, buffer)):
             return bytes(obj)
-        if isinstance(obj, unicode):
+        if hasattr(obj, 'encode'):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
 
@@ -77,6 +78,7 @@ else:
     import pickle
     from io import StringIO, BytesIO
     import copyreg
+    from importlib import reload
     from functools import reduce
     from html.parser import HTMLParser
     from http import cookies as Cookie
@@ -94,7 +96,7 @@ else:
     from email.header import Header
     from email.charset import Charset, add_charset, QP as charset_QP
     from urllib.request import FancyURLopener, urlopen
-    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode
+    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode, quote_plus as urllib_quote_plus
     from http import cookiejar as cookielib
     from xmlrpc.client import ProtocolError
     import html # warning, this is the python3 module and not the web2py html module
@@ -122,7 +124,7 @@ else:
             return None
         if isinstance(obj, (bytes, bytearray, memoryview)):
             return bytes(obj)
-        if isinstance(obj, str):
+        if hasattr(obj, 'encode'):
             return obj.encode(charset, errors)
         raise TypeError('Expected bytes')
 
@@ -151,7 +153,7 @@ def with_metaclass(meta, *bases):
 def to_unicode(obj, charset='utf-8', errors='strict'):
     if obj is None:
         return None
-    if not isinstance(obj, bytes):
+    if not hasattr(obj, 'decode'):
         return text_type(obj)
     return obj.decode(charset, errors)
 

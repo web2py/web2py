@@ -140,7 +140,7 @@ class web2pyDialog(object):
         else:
             import tkinter
             from tkinter import messagebox
-        
+
 
         bg_color = 'white'
         root.withdraw()
@@ -463,7 +463,7 @@ class web2pyDialog(object):
             import tkMessageBox as messagebox
         else:
             from tkinter import messagebox
-        
+
         messagebox.showerror('web2py start server', message)
 
     def start(self):
@@ -766,7 +766,7 @@ def console():
 
     msg = ('run web2py in interactive shell or IPython (if installed) with '
            'specified appname (if app does not exist it will be created). '
-           'APPNAME like a/c/f (c,f optional)')
+           'APPNAME like a/c/f?x=y (c,f and vars x,y optional)')
     parser.add_option('-S',
                       '--shell',
                       dest='shell',
@@ -943,7 +943,9 @@ def console():
         k = len(sys.argv)
     sys.argv, other_args = sys.argv[:k], sys.argv[k + 1:]
     (options, args) = parser.parse_args()
-    options.args = [options.run] + other_args
+    options.args = other_args
+    if options.run:
+        options.args.insert(0, options.run)
 
     copy_options = copy.deepcopy(options)
     copy_options.password = '******'
@@ -1076,7 +1078,10 @@ def start_schedulers(options):
         return
 
     # Work around OS X problem: http://bugs.python.org/issue9405
-    import urllib
+    if PY2:
+        import urllib
+    else:
+        import urllib.request as urllib
     urllib.getproxies()
 
     for app in apps:

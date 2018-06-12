@@ -14,7 +14,7 @@ def zip_static(filelist=[]):
         extension = os.path.splitext(fi)
         extension = len(extension) > 1 and extension[1] or None
         if not extension or extension not in ALLOWED_EXTS:
-            print 'skipping %s' % os.path.basename(fi)
+            print('skipping %s' % os.path.basename(fi))
             continue
         fstats = os.stat(fi)
         atime, mtime = fstats.st_atime, fstats.st_mtime
@@ -23,10 +23,10 @@ def zip_static(filelist=[]):
             zstats = os.stat(gfi)
             zatime, zmtime = zstats.st_atime, zstats.st_mtime
             if zatime == atime and zmtime == mtime:
-                print 'skipping %s, already gzipped to the latest version' % os.path.basename(fi)
+                print('skipping %s, already gzipped to the latest version' % os.path.basename(fi))
                 continue
-        print 'gzipping %s to %s' % (
-            os.path.basename(fi), os.path.basename(gfi))
+        print('gzipping %s to %s' % (
+            os.path.basename(fi), os.path.basename(gfi)))
         f_in = open(fi, 'rb')
         f_out = gzip.open(gfi, 'wb')
         f_out.writelines(f_in)
@@ -36,7 +36,7 @@ def zip_static(filelist=[]):
         saved = fstats.st_size - os.stat(gfi).st_size
         tsave += saved
 
-    print 'saved %s KB' % (int(tsave) / 1000.0)
+    print('saved %s KB' % (int(tsave) / 1000.0))
 
 if __name__ == '__main__':
     ALLOWED_EXTS = ['.css', '.js']

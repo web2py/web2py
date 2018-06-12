@@ -12,12 +12,6 @@ import gluon.contenttype
 import gluon.fileutils
 from gluon._compat import iteritems
 
-# d3_graph_model added but leaving pygraphviz code as is for initial tests.
-try:
-    import pygraphviz as pgv
-except ImportError:
-    pgv = None
-
 is_gae = request.env.web2py_runtime_gae or False
 
 # ## critical --- make a copy of the environment
@@ -230,15 +224,15 @@ def select():
     session.last_orderby = orderby
     session.last_query = request.vars.query
     form = FORM(TABLE(TR(T('Query:'), '', INPUT(_style='width:400px',
-                _name='query', _value=request.vars.query or '',
+                _name='query', _value=request.vars.query or '', _class="form-control",
                 requires=IS_NOT_EMPTY(
                     error_message=T("Cannot be empty")))), TR(T('Update:'),
                 INPUT(_name='update_check', _type='checkbox',
                 value=False), INPUT(_style='width:400px',
                 _name='update_fields', _value=request.vars.update_fields
-                                    or '')), TR(T('Delete:'), INPUT(_name='delete_check',
+                                    or '', _class="form-control")), TR(T('Delete:'), INPUT(_name='delete_check',
                 _class='delete', _type='checkbox', value=False), ''),
-                TR('', '', INPUT(_type='submit', _value=T('submit')))),
+                TR('', '', INPUT(_type='submit', _value=T('submit'), _class="btn btn-primary"))),
                 _action=URL(r=request, args=request.args))
 
     tb = None
@@ -280,7 +274,7 @@ def select():
         formcsv = FORM(str(T('or import from csv file')) + " ",
                        INPUT(_type='file', _name='csvfile'),
                        INPUT(_type='hidden', _value=csv_table, _name='table'),
-                       INPUT(_type='submit', _value=T('import')))
+                       INPUT(_type='submit', _value=T('import'), _class="btn btn-primary"))
     else:
         formcsv = None
     if formcsv and formcsv.process().accepted:
@@ -400,10 +394,9 @@ def ccache():
         redirect(URL(r=request))
 
     try:
-        from guppy import hpy
-        hp = hpy()
+        from pympler.asizeof import asizeof
     except ImportError:
-        hp = False
+        asizeof = False
 
     import shelve
     import os
@@ -457,9 +450,9 @@ def ccache():
             ram['ratio'] = 0
 
         for key, value in iteritems(cache.ram.storage):
-            if hp:
-                ram['bytes'] += hp.iso(value[1]).size
-                ram['objects'] += hp.iso(value[1]).count
+            if asizeof:
+                ram['bytes'] += asizeof(value[1])
+                ram['objects'] += 1
             ram['entries'] += 1
             if value[0] < ram['oldest']:
                 ram['oldest'] = value[0]
@@ -475,9 +468,9 @@ def ccache():
                 except (KeyError, ZeroDivisionError):
                     disk['ratio'] = 0
             else:
-                if hp:
-                    disk['bytes'] += hp.iso(value[1]).size
-                    disk['objects'] += hp.iso(value[1]).count
+                if asizeof:
+                    disk['bytes'] += asizeof(value[1])
+                    disk['objects'] += 1
                 disk['entries'] += 1
                 if value[0] < disk['oldest']:
                     disk['oldest'] = value[0]
@@ -517,7 +510,7 @@ def ccache():
         total['keys'] = key_table(total['keys'])
 
     return dict(form=form, total=total,
-                ram=ram, disk=disk, object_stats=hp != False)
+                ram=ram, disk=disk, object_stats=asizeof != False)
 
 
 def table_template(table):
@@ -566,60 +559,6 @@ def table_template(table):
                                           _cellborder=0, _cellspacing=0)
                              ).xml()
 
-
-# d3_graph_model added but leaving pygraphviz code as is for initial tests.
-# The Graph Model button in admin app  views/default/design.html has been redirected 
-# to the d3_graph_model function.
-def bg_graph_model():
-    graph = pgv.AGraph(layout='dot',  directed=True,  strict=False,  rankdir='LR')
-
-    subgraphs = dict()
-    for tablename in db.tables:
-        if hasattr(db[tablename],'_meta_graphmodel'):
-            meta_graphmodel = db[tablename]._meta_graphmodel
-        else:
-            meta_graphmodel = dict(group=request.application, color='#ECECEC')
-
-        group = meta_graphmodel['group'].replace(' ', '')
-        if group not in subgraphs:
-            subgraphs[group] = dict(meta=meta_graphmodel, tables=[])
-        subgraphs[group]['tables'].append(tablename)
-
-        graph.add_node(tablename, name=tablename, shape='plaintext',
-                       label=table_template(tablename))
-
-    for n, key in enumerate(subgraphs.iterkeys()):
-        graph.subgraph(nbunch=subgraphs[key]['tables'],
-                    name='cluster%d' % n,
-                    style='filled',
-                    color=subgraphs[key]['meta']['color'],
-                    label=subgraphs[key]['meta']['group'])
-
-    for tablename in db.tables:
-        for field in db[tablename]:
-            f_type = field.type
-            if isinstance(f_type,str) and (
-                f_type.startswith('reference') or
-                f_type.startswith('list:reference')):
-                referenced_table = f_type.split()[1].split('.')[0]
-                n1 = graph.get_node(tablename)
-                n2 = graph.get_node(referenced_table)
-                graph.add_edge(n1, n2, color="#4C4C4C", label='')
-
-    graph.layout()
-    if not request.args:
-        response.headers['Content-Type'] = 'image/png'
-        return graph.draw(format='png', prog='dot')
-    else:
-        response.headers['Content-Disposition']='attachment;filename=graph.%s'%request.args(0)
-        if request.args(0) == 'dot':
-            return graph.string()
-        else:
-            return graph.draw(format=request.args(0), prog='dot')
-
-def graph_model():
-    return dict(databases=databases, pgv=pgv)
-
 def manage():
     tables = manager_action['tables']
     if isinstance(tables[0], str):
@@ -649,7 +588,7 @@ def manage():
         auth.table_permission().group_id.label = T('Role')
         auth.table_permission().name.label = T('Permission')
         if table == auth.table_user():
-            linked_tables=[auth.settings.table_membership_name]
+            linked_tables = [auth.settings.table_membership_name]
         elif table == auth.table_group():
             orderby = 'role' if not request.args(3) or '.group_id' not in request.args(3) else None
         elif table == auth.table_permission():
@@ -665,13 +604,13 @@ def manage():
 def hooks():
     import functools
     import inspect
-    list_op=['_%s_%s' %(h,m) for h in ['before', 'after'] for m in ['insert','update','delete']]
-    tables=[]
-    with_build_it=False
+    list_op = ['_%s_%s' %(h,m) for h in ['before', 'after'] for m in ['insert','update','delete']]
+    tables = []
+    with_build_it = False
     for db_str in sorted(databases):
         db = databases[db_str]
         for t in db.tables:
-            method_hooks=[]
+            method_hooks = []
             for op in list_op:
                 functions = []
                 for f in getattr(db[t], op):
@@ -691,16 +630,16 @@ def hooks():
                         except:
                             pass
                 if len(functions):
-                    method_hooks.append({'name':op, 'functions':functions})
+                    method_hooks.append({'name': op, 'functions':functions})
             if len(method_hooks):
-                tables.append({'name':"%s.%s" % (db_str,t), 'slug': IS_SLUG()("%s.%s" % (db_str,t))[0], 'method_hooks':method_hooks})
+                tables.append({'name': "%s.%s" % (db_str, t), 'slug': IS_SLUG()("%s.%s" % (db_str,t))[0], 'method_hooks':method_hooks})
     # Render
     ul_main = UL(_class='nav nav-list')
     for t in tables:
         ul_main.append(A(t['name'], _onclick="collapse('a_%s')" % t['slug']))
         ul_t = UL(_class='nav nav-list', _id="a_%s" % t['slug'], _style='display:none')
         for op in t['method_hooks']:
-            ul_t.append(LI (op['name']))
+            ul_t.append(LI(op['name']))
             ul_t.append(UL([LI(A(f['funcname'], _class="editor_filelink", _href=f['url']if 'url' in f else None, **{'_data-lineno':f['lineno']-1})) for f in op['functions']]))
         ul_main.append(ul_t)
     return ul_main
@@ -713,43 +652,42 @@ def hooks():
 def d3_graph_model():
     """ See https://www.facebook.com/web2py/posts/145613995589010 from Bruno Rocha
     and also the app_admin bg_graph_model function
-    
+
     Create a list of table dicts, called "nodes"
     """
-    
-    data = {}
+
     nodes = []
     links = []
 
-    subgraphs = dict()
+    for database in databases:
+        db = eval_in_global_env(database)
+        for tablename in db.tables:
+            fields = []
+            for field in db[tablename]:
+                f_type = field.type
+                if not isinstance(f_type, str):
+                    disp = ' '
+                elif f_type == 'string':
+                    disp = field.length
+                elif f_type == 'id':
+                    disp = "PK"
+                elif f_type.startswith('reference') or \
+                    f_type.startswith('list:reference'):
+                    disp = "FK"
+                else:
+                    disp = ' '
+                fields.append(dict(name=field.name, type=field.type, disp=disp))
 
-    for tablename in db.tables:
-        fields = []
-        for field in db[tablename]:
-            f_type = field.type
-            if not isinstance(f_type,str):
-                disp = ' '
-            elif f_type == 'string':
-                disp =  field.length
-            elif f_type == 'id':
-                disp =  "PK"
-            elif f_type.startswith('reference') or \
-                f_type.startswith('list:reference'):
-                disp = "FK"
-            else:
-                disp = ' '
-            fields.append(dict(name= field.name, type=field.type, disp = disp))
+                if isinstance(f_type, str) and (
+                    f_type.startswith('reference') or
+                    f_type.startswith('list:reference')):
+                    referenced_table = f_type.split()[1].split('.')[0]
 
-            if isinstance(f_type,str) and (
-                f_type.startswith('reference') or
-                f_type.startswith('list:reference')):
-                referenced_table = f_type.split()[1].split('.')[0]
+                    links.append(dict(source=tablename, target = referenced_table))
 
-                links.append(dict(source=tablename, target = referenced_table))
-
-        nodes.append(dict(name=tablename, type="table", fields = fields))
+            nodes.append(dict(name=tablename, type="table", fields = fields))
 
     # d3 v4 allows individual modules to be specified.  The complete d3 library is included below.
-    response.files.append(URL('static','js/d3.min.js'))
-    response.files.append(URL('static','js/d3_graph.js'))
-    return dict(nodes=nodes, links=links)
+    response.files.append(URL('admin','static','js/d3.min.js'))
+    response.files.append(URL('admin','static','js/d3_graph.js'))
+    return dict(databases=databases, nodes=nodes, links=links)

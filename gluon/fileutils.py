@@ -264,13 +264,20 @@ def w2p_pack(filename, path, compiled=False, filenames=None):
 
 
 def create_welcome_w2p():
-    if not os.path.exists('welcome.w2p') or os.path.exists('NEWINSTALL'):
+    is_newinstall_file = os.path.exists('NEWINSTALL')
+    if not os.path.exists('welcome.w2p') or is_newinstall_file:
         try:
             w2p_pack('welcome.w2p', 'applications/welcome')
-            os.unlink('NEWINSTALL')
             logging.info("New installation: created welcome.w2p file")
         except:
             logging.error("New installation error: unable to create welcome.w2p file")
+            return
+        if is_newinstall_file:
+            try:
+                os.unlink('NEWINSTALL')
+                logging.info("New installation: removed NEWINSTALL file")
+            except:
+                logging.error("New installation error: unable to remove NEWINSTALL file")
 
 
 def w2p_unpack(filename, path, delete_tar=True):
@@ -415,10 +422,10 @@ def fix_newlines(path):
 |\r|
 )''')
     for filename in listdir(path, '.*\.(py|html)$', drop=False):
-        rdata = read_file(filename, 'rb')
+        rdata = read_file(filename, 'r')
         wdata = regex.sub('\n', rdata)
         if wdata != rdata:
-            write_file(filename, wdata, 'wb')
+            write_file(filename, wdata, 'w')
 
 
 def copystream(

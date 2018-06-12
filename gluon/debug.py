@@ -89,7 +89,7 @@ def communicate(command=None):
 
 # New debugger implementation using dbg and a web UI
 
-import gluon.contrib.dbg as dbg
+import gluon.contrib.dbg as c_dbg
 from threading import RLock
 
 interact_lock = RLock()
@@ -109,11 +109,11 @@ def check_interaction(fn):
     return check_fn
 
 
-class WebDebugger(dbg.Frontend):
+class WebDebugger(c_dbg.Frontend):
     """Qdb web2py interface"""
 
     def __init__(self, pipe, completekey='tab', stdin=None, stdout=None):
-        dbg.Frontend.__init__(self, pipe)
+        c_dbg.Frontend.__init__(self, pipe)
         self.clear_interaction()
 
     def clear_interaction(self):
@@ -128,7 +128,7 @@ class WebDebugger(dbg.Frontend):
         run_lock.acquire()
         try:
             while self.pipe.poll():
-                dbg.Frontend.run(self)
+                c_dbg.Frontend.run(self)
         finally:
             run_lock.release()
 
@@ -149,23 +149,23 @@ class WebDebugger(dbg.Frontend):
 
     @check_interaction
     def do_continue(self):
-        dbg.Frontend.do_continue(self)
+        c_dbg.Frontend.do_continue(self)
 
     @check_interaction
     def do_step(self):
-        dbg.Frontend.do_step(self)
+        c_dbg.Frontend.do_step(self)
 
     @check_interaction
     def do_return(self):
-        dbg.Frontend.do_return(self)
+        c_dbg.Frontend.do_return(self)
 
     @check_interaction
     def do_next(self):
-        dbg.Frontend.do_next(self)
+        c_dbg.Frontend.do_next(self)
 
     @check_interaction
     def do_quit(self):
-        dbg.Frontend.do_quit(self)
+        c_dbg.Frontend.do_quit(self)
 
     def do_exec(self, statement):
         interact_lock.acquire()
@@ -175,18 +175,18 @@ class WebDebugger(dbg.Frontend):
                 # avoid spurious interaction notifications:
                 self.set_burst(2)
                 # execute the statement in the remote debugger:
-                return dbg.Frontend.do_exec(self, statement)
+                return c_dbg.Frontend.do_exec(self, statement)
         finally:
             interact_lock.release()
 
 # create the connection between threads:
 
 parent_queue, child_queue = Queue.Queue(), Queue.Queue()
-front_conn = dbg.QueuePipe("parent", parent_queue, child_queue)
-child_conn = dbg.QueuePipe("child", child_queue, parent_queue)
+front_conn = c_dbg.QueuePipe("parent", parent_queue, child_queue)
+child_conn = c_dbg.QueuePipe("child", child_queue, parent_queue)
 
 web_debugger = WebDebugger(front_conn)                                     # frontend
-dbg_debugger = dbg.Qdb(pipe=child_conn, redirect_stdio=False, skip=None)   # backend
+dbg_debugger = c_dbg.Qdb(pipe=child_conn, redirect_stdio=False, skip=None)   # backend
 dbg = dbg_debugger
 
 # enable getting context (stack, globals/locals) at interaction

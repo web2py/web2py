@@ -30,11 +30,7 @@ update:
 	wget -O gluon/contrib/feedparser.py http://feedparser.googlecode.com/svn/trunk/feedparser/feedparser.py
 	wget -O gluon/contrib/simplejsonrpc.py http://rad2py.googlecode.com/hg/ide2py/simplejsonrpc.py
 	echo "remember that pymysql was tweaked"
-src:
-	### Use semantic versioning
-	echo 'Version 2.14.6-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
-	### rm -f all junk files
-	make clean
+rmfiles:
 	### clean up baisc apps
 	rm -f routes.py 
 	rm -rf applications/*/sessions/*
@@ -46,6 +42,12 @@ src:
 	rm -rf applications/admin/uploads/*                 
 	rm -rf applications/welcome/uploads/*               
 	rm -rf applications/examples/uploads/* 
+src:
+	### Use semantic versioning
+	echo 'Version 2.16.1-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	### rm -f all junk files
+	#make clean
+	# make rmfiles
 	### make welcome layout and appadmin the default
 	cp applications/welcome/views/appadmin.html applications/admin/views
 	cp applications/welcome/views/appadmin.html applications/examples/views
@@ -54,7 +56,7 @@ src:
 	### build web2py_src.zip
 	echo '' > NEWINSTALL
 	mv web2py_src.zip web2py_src_old.zip | echo 'no old'
-	cd ..; zip -r web2py/web2py_src.zip web2py/web2py.py web2py/anyserver.py web2py/gluon/* web2py/extras/* web2py/handlers/* web2py/examples/* web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/MANIFEST.in web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
+	cd ..; zip -r --exclude=**.git** web2py/web2py_src.zip web2py/web2py.py web2py/anyserver.py web2py/fabfile.py web2py/gluon/* web2py/extras/* web2py/handlers/* web2py/examples/* web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/MANIFEST.in web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
 
 mdp:
 	make src
@@ -97,6 +99,8 @@ win:
 	cp -r applications/welcome ../web2py_win/web2py/applications
 	cp -r applications/examples ../web2py_win/web2py/applications
 	cp applications/__init__.py ../web2py_win/web2py/applications
+	# per https://github.com/web2py/web2py/issues/1716
+	mv ../web2py_win/web2py/_ssl.pyd ../web2py_win/web2py/_ssl.pyd.legacy | echo 'done'
 	cd ../web2py_win; zip -r web2py_win.zip web2py
 	mv ../web2py_win/web2py_win.zip .
 run:

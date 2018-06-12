@@ -525,7 +525,7 @@ class MetaScheduler(threading.Thread):
         self.have_heartbeat = True   # set to False to kill
         self.empty_runs = 0
 
-    def async(self, task):
+    def local_async(self, task):
         """Start the background process.
 
         Args:
@@ -913,7 +913,7 @@ class Scheduler(MetaScheduler):
                     self.w_stats.empty_runs = 0
                     self.w_stats.status = RUNNING
                     self.w_stats.total += 1
-                    self.wrapped_report_task(task, self.async(task))
+                    self.wrapped_report_task(task, self.local_async(task))
                     if not self.w_stats.status == DISABLED:
                         self.w_stats.status = ACTIVE
                 else:
@@ -1158,7 +1158,7 @@ class Scheduler(MetaScheduler):
         if not self.db_thread:
             logger.debug('thread building own DAL object')
             self.db_thread = DAL(
-                self.db._uri, folder=self.db._adapter.folder)
+                self.db._uri, folder=self.db._adapter.folder, decode_credentials=True)
             self.define_tables(self.db_thread, migrate=False)
         try:
             db = self.db_thread
@@ -1698,7 +1698,7 @@ def main():
     print('groups for this worker: ' + ', '.join(group_names))
     print('connecting to database in folder: ' + options.db_folder or './')
     print('using URI: ' + options.db_uri)
-    db = DAL(options.db_uri, folder=options.db_folder)
+    db = DAL(options.db_uri, folder=options.db_folder, decode_credentials=True)
     print('instantiating scheduler...')
     scheduler = Scheduler(db=db,
                           worker_name=options.worker_name,

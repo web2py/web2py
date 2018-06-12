@@ -26,6 +26,14 @@ Typical usage:
     def delete_sessions():
         single_loop(auth.settings.expiration)
 
+Command lines options specific to session2trash.py:
+NOTE: They should be preceeded by web2py command line option "-A" to be passed to script.
+
+-f, --force : Ignore session expiration. Force expiry based on -x option or auth.settings.expiration.
+-o, --once : Delete sessions, then exit. Essential when trigger trash sessions from system CRON JOB
+-s, --sleep : Number of seconds to sleep between executions. Default 300.
+-v, --verbose : print verbose output, a second -v increases verbosity
+-x, --expiration : Expiration value for sessions without expiration (in seconds)
 """
 
 from __future__ import with_statement

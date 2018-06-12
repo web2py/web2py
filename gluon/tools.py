@@ -12,8 +12,8 @@ Auth, Mail, PluginManager and various utilities
 
 import base64
 from functools import reduce
-from gluon._compat import pickle, thread, urllib2, Cookie, StringIO
-from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText
+from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, urlencode
+from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText, Header
 from gluon._compat import Encoders, Charset, long, urllib_quote, iteritems
 from gluon._compat import to_bytes, to_native, add_charset
 from gluon._compat import charset_QP, basestring, unicodeT, to_unicode
@@ -27,7 +27,6 @@ import time
 import fnmatch
 import traceback
 import smtplib
-import urllib
 import email.utils
 import random
 import hmac
@@ -53,7 +52,7 @@ import gluon.serializers as serializers
 Table = DAL.Table
 Field = DAL.Field
 
-__all__ = ['Mail', 'Auth', 'Recaptcha', 'Recaptcha2', 'Crud', 'Service', 'Wiki',
+__all__ = ['Mail', 'Auth', 'Recaptcha2', 'Crud', 'Service', 'Wiki',
            'PluginManager', 'fetch', 'geocode', 'reverse_geocode', 'prettydate']
 
 # mind there are two loggers here (logger and crud.settings.logger)!
@@ -266,7 +265,7 @@ class Mail(object):
         settings.sender = sender
         settings.login = login
         settings.tls = tls
-        settings.timeout = 60  # seconds
+        settings.timeout = 5  # seconds
         settings.hostname = None
         settings.ssl = False
         settings.cipher_type = None
@@ -776,32 +775,47 @@ class Mail(object):
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=to_unicode(subject, encoding), body=to_unicode(text, encoding), html=html,
+                        subject=to_unicode(subject, encoding), 
+                        body=to_unicode(text or '', encoding), 
+                        html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=to_unicode(subject, encoding), body=to_unicode(text, encoding), html=html, **xcc)
+                        subject=to_unicode(subject, encoding), body=to_unicode(text or '', encoding), html=html, **xcc)
                 else:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=to_unicode(subject, encoding), body=to_unicode(text, encoding), **xcc)
+                        subject=to_unicode(subject, encoding), body=to_unicode(text or '', encoding), **xcc)
+            elif self.settings.server == 'aws':
+                import boto3
+                from botocore.exceptions import ClientError
+                client = boto3.client('ses')
+                try:
+                    raw = {'Data': payload.as_string()}
+                    response = client.send_raw_email(RawMessage=raw,
+                                                     Source=sender, 
+                                                     Destinations=to)
+                    return True
+                except ClientError as e:
+                    # we should log this error:
+                    # print e.response['Error']['Message']
+                    return False
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
-                if self.settings.ssl:
-                    server = smtplib.SMTP_SSL(*smtp_args, **kwargs)
-                else:
-                    server = smtplib.SMTP(*smtp_args, **kwargs)
-                if self.settings.tls and not self.settings.ssl:
-                    server.ehlo(self.settings.hostname)
-                    server.starttls()
-                    server.ehlo(self.settings.hostname)
-                if self.settings.login:
-                    server.login(*self.settings.login.split(':', 1))
-                result = server.sendmail(
-                    sender, to, payload.as_string())
-                server.quit()
+                func = smtplib.SMTP_SSL if self.settings.ssl else smtplib.SMTP
+                server = func(*smtp_args, **kwargs)
+                try:
+                    if self.settings.tls and not self.settings.ssl:
+                        server.ehlo(self.settings.hostname)
+                        server.starttls()
+                        server.ehlo(self.settings.hostname)
+                    if self.settings.login:
+                        server.login(*self.settings.login.split(':', 1))
+                    result = server.sendmail(sender, to, payload.as_string())
+                finally:
+                    server.quit()
         except Exception as e:
             logger.warning('Mail.send failure:%s' % e)
             self.result = result
@@ -810,149 +824,6 @@ class Mail(object):
         self.result = result
         self.error = None
         return True
-
-
-class Recaptcha(DIV):
-
-    """
-    Examples:
-        Use as::
-
-            form = FORM(Recaptcha(public_key='...', private_key='...'))
-
-        or::
-
-            form = SQLFORM(...)
-            form.append(Recaptcha(public_key='...', private_key='...'))
-
-    """
-
-    API_SSL_SERVER = 'https://www.google.com/recaptcha/api'
-    API_SERVER = 'http://www.google.com/recaptcha/api'
-    VERIFY_SERVER = 'http://www.google.com/recaptcha/api/verify'
-
-    def __init__(self,
-                 request=None,
-                 public_key='',
-                 private_key='',
-                 use_ssl=False,
-                 error=None,
-                 error_message='invalid',
-                 label='Verify:',
-                 options='',
-                 comment='',
-                 ajax=False
-                 ):
-        request = request or current.request
-        self.request_vars = request and request.vars or current.request.vars
-        self.remote_addr = request.env.remote_addr
-        self.public_key = public_key
-        self.private_key = private_key
-        self.use_ssl = use_ssl
-        self.error = error
-        self.errors = Storage()
-        self.error_message = error_message
-        self.components = []
-        self.attributes = {}
-        self.label = label
-        self.options = options
-        self.comment = comment
-        self.ajax = ajax
-
-    def _validate(self):
-
-        # for local testing:
-
-        recaptcha_challenge_field = \
-            self.request_vars.recaptcha_challenge_field
-        recaptcha_response_field = \
-            self.request_vars.recaptcha_response_field
-        private_key = self.private_key
-        remoteip = self.remote_addr
-        if not (recaptcha_response_field and recaptcha_challenge_field
-                and len(recaptcha_response_field)
-                and len(recaptcha_challenge_field)):
-            self.errors['captcha'] = self.error_message
-            return False
-        params = urllib.urlencode({
-            'privatekey': private_key,
-            'remoteip': remoteip,
-            'challenge': recaptcha_challenge_field,
-            'response': recaptcha_response_field,
-        })
-        request = urllib2.Request(
-            url=self.VERIFY_SERVER,
-            data=params,
-            headers={'Content-type': 'application/x-www-form-urlencoded',
-                     'User-agent': 'reCAPTCHA Python'})
-        httpresp = urllib2.urlopen(request)
-        return_values = httpresp.read().splitlines()
-        httpresp.close()
-        return_code = return_values[0]
-        if return_code == 'true':
-            del self.request_vars.recaptcha_challenge_field
-            del self.request_vars.recaptcha_response_field
-            self.request_vars.captcha = ''
-            return True
-        else:
-            # In case we get an error code, store it so we can get an error message
-            # from the /api/challenge URL as described in the reCAPTCHA api docs.
-            self.error = return_values[1]
-            self.errors['captcha'] = self.error_message
-            return False
-
-    def xml(self):
-        public_key = self.public_key
-        use_ssl = self.use_ssl
-        error_param = ''
-        if self.error:
-            error_param = '&error=%s' % self.error
-        if use_ssl:
-            server = self.API_SSL_SERVER
-        else:
-            server = self.API_SERVER
-        if not self.ajax:
-            captcha = DIV(
-                SCRIPT("var RecaptchaOptions = {%s};" % self.options),
-                SCRIPT(_type="text/javascript",
-                       _src="%s/challenge?k=%s%s" % (server, public_key, error_param)),
-                TAG.noscript(
-                    IFRAME(
-                        _src="%s/noscript?k=%s%s" % (
-                            server, public_key, error_param),
-                        _height="300", _width="500", _frameborder="0"), BR(),
-                    INPUT(
-                        _type='hidden', _name='recaptcha_response_field',
-                        _value='manual_challenge')), _id='recaptcha')
-
-        else:  # use Google's ajax interface, needed for LOADed components
-
-            url_recaptcha_js = "%s/js/recaptcha_ajax.js" % server
-            RecaptchaOptions = "var RecaptchaOptions = {%s}" % self.options
-            script = """%(options)s;
-            jQuery.getScript('%(url)s',function() {
-                Recaptcha.create('%(public_key)s',
-                    'recaptcha',jQuery.extend(RecaptchaOptions,{'callback':Recaptcha.focus_response_field}))
-                }) """ % ({'options': RecaptchaOptions, 'url': url_recaptcha_js, 'public_key': public_key})
-            captcha = DIV(
-                SCRIPT(
-                    script,
-                    _type="text/javascript",
-                ),
-                TAG.noscript(
-                    IFRAME(
-                        _src="%s/noscript?k=%s%s" % (
-                            server, public_key, error_param),
-                        _height="300", _width="500", _frameborder="0"), BR(),
-                    INPUT(
-                        _type='hidden', _name='recaptcha_response_field',
-                        _value='manual_challenge')), _id='recaptcha')
-
-        if not self.errors.captcha:
-            return XML(captcha).xml()
-        else:
-            captcha.append(DIV(self.errors['captcha'], _class='error'))
-            return XML(captcha).xml()
 
 
 class Recaptcha2(DIV):
@@ -1027,7 +898,7 @@ class Recaptcha2(DIV):
         if not recaptcha_response_field:
             self.errors['captcha'] = self.error_message
             return False
-        params = urllib.urlencode({
+        params = urlencode({
             'secret': self.private_key,
             'remoteip': remoteip,
             'response': recaptcha_response_field,
@@ -1128,7 +999,6 @@ def addrow(form, a, b, c, style, _id, position=-1):
 
 
 class AuthJWT(object):
-
     """
     Experimental!
 
@@ -1322,7 +1192,7 @@ class AuthJWT(object):
         # is the following safe or should we use
         # calendar.timegm(datetime.datetime.utcnow().timetuple())
         # result seem to be the same (seconds since epoch, in UTC)
-        now = time.mktime(datetime.datetime.now().timetuple())
+        now = time.mktime(datetime.datetime.utcnow().timetuple())
         expires = now + self.expiration
         payload = dict(
             hmac_key=session_auth['hmac_key'],
@@ -1334,7 +1204,7 @@ class AuthJWT(object):
         return payload
 
     def refresh_token(self, orig_payload):
-        now = time.mktime(datetime.datetime.now().timetuple())
+        now = time.mktime(datetime.datetime.utcnow().timetuple())
         if self.verify_expiration:
             orig_exp = orig_payload['exp']
             if orig_exp + self.leeway < now:
@@ -1538,7 +1408,8 @@ class Auth(AuthAPI):
     # ## these are messages that can be customized
     default_messages = dict(AuthAPI.default_messages,
                             access_denied='Insufficient privileges',
-                            bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete the process',
+                            bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete '
+                                             'the process',
                             bulk_invite_subject='Invitation to join %(site)s',
                             delete_label='Check to delete',
                             email_sent='Email sent',
@@ -1763,7 +1634,7 @@ class Auth(AuthAPI):
             if auth.last_visit and auth.last_visit + delta > now:
                 self.user = auth.user
                 # this is a trick to speed up sessions to avoid many writes
-                if (now - auth.last_visit).seconds > (auth.expiration / 10):
+                if (now - auth.last_visit).seconds > (auth.expiration // 10):
                     auth.last_visit = now
             else:
                 self.user = None
@@ -1793,6 +1664,7 @@ class Auth(AuthAPI):
                              servicevalidate='serviceValidate',
                              proxyvalidate='proxyValidate',
                              logout='logout'),
+            cas_create_user=True,
             extra_fields={},
             actions_disabled=[],
             controller=controller,
@@ -1841,14 +1713,15 @@ class Auth(AuthAPI):
         # ## these are messages that can be customized
         messages = self.messages = Messages(current.T)
         messages.update(Auth.default_messages)
-        messages.update(ajax_failed_authentication=DIV(H4('NOT AUTHORIZED'),
-                                                       'Please ',
-                                                       A('login',
-                                                         _href=self.settings.login_url +
-                                                         ('?_next=' + urllib_quote(current.request.env.http_web2py_component_location))
-                                                         if current.request.env.http_web2py_component_location else ''),
-                                                       ' to view this content.',
-                                                       _class='not-authorized alert alert-block'))
+        messages.update(ajax_failed_authentication=
+                        DIV(H4('NOT AUTHORIZED'),
+                            'Please ',
+                            A('login',
+                              _href=self.settings.login_url +
+                                    ('?_next=' + urllib_quote(current.request.env.http_web2py_component_location))
+                              if current.request.env.http_web2py_component_location else ''),
+                            ' to view this content.',
+                            _class='not-authorized alert alert-block'))
         messages.lock_keys = True
 
         # for "remember me" option
@@ -1877,7 +1750,7 @@ class Auth(AuthAPI):
         # _next variable in the request.
         if next:
             parts = next.split('/')
-            if not ':' in parts[0]:
+            if ':' not in parts[0]:
                 return next
             elif len(parts) > 2 and parts[0].endswith(':') and parts[1:3] == ['', host]:
                 return next
@@ -2009,8 +1882,7 @@ class Auth(AuthAPI):
                 items.append({'name': T('Lost password?'),
                               'href': href('request_reset_password'),
                               'icon': 'icon-lock'})
-            if (self.settings.use_username and not
-                    'retrieve_username' in self.settings.actions_disabled):
+            if self.settings.use_username and 'retrieve_username' not in self.settings.actions_disabled:
                 items.append({'name': T('Forgot username?'),
                               'href': href('retrieve_username'),
                               'icon': 'icon-edit'})
@@ -2182,9 +2054,7 @@ class Auth(AuthAPI):
             current_record.replace('_', ' ').title())
         for table in tables:
             fieldnames = table.fields()
-            if ('id' in fieldnames and
-                    'modified_on' in fieldnames and
-                    not current_record in fieldnames):
+            if 'id' in fieldnames and 'modified_on' in fieldnames and current_record not in fieldnames:
                 table._enable_record_versioning(archive_db=archive_db,
                                                 archive_name=archive_names,
                                                 current_record=current_record,
@@ -2214,7 +2084,8 @@ class Auth(AuthAPI):
             fake_migrate = db._fake_migrate
         settings = self.settings
         settings.enable_tokens = enable_tokens
-        super(Auth, self).define_tables(username, signature, migrate, fake_migrate)
+        signature_list = \
+            super(Auth, self).define_tables(username, signature, migrate, fake_migrate)._table_signature_list
 
         now = current.request.now
         reference_table_user = 'reference %s' % settings.table_user_name
@@ -2286,6 +2157,7 @@ class Auth(AuthAPI):
         If the user doesn't yet exist, then they are created.
         """
         table_user = self.table_user()
+        create_user = self.settings.cas_create_user
         user = None
         checks = []
         # make a guess about who this user is
@@ -2318,6 +2190,11 @@ class Auth(AuthAPI):
                     update_keys[key] = keys[key]
             user.update_record(**update_keys)
         elif checks:
+            if create_user is False:
+                # Remove current open session a send message
+                self.logout(next=None, onlogout=None, log=None)
+                raise HTTP(403, "Forbidden. User need to be created first.")
+
             if 'first_name' not in keys and 'first_name' in table_user.fields:
                 guess = keys.get('email', 'anonymous').split('@')[0]
                 keys['first_name'] = keys.get('username', guess)
@@ -2361,7 +2238,7 @@ class Auth(AuthAPI):
             if callable(basic_auth_realm):
                 basic_auth_realm = basic_auth_realm()
             elif isinstance(basic_auth_realm, (unicode, str)):
-                basic_realm = unicode(basic_auth_realm)
+                basic_realm = unicode(basic_auth_realm)  # Warning python 3.5 does not have method unicod
             elif basic_auth_realm is True:
                 basic_realm = u'' + current.request.application
             http_401 = HTTP(401, u'Not Authorized', **{'WWW-Authenticate': u'Basic realm="' + basic_realm + '"'})
@@ -2463,7 +2340,7 @@ class Auth(AuthAPI):
                          _href=service + query_sep + "ticket=" + ticket)
             else:
                 redirect(service + query_sep + "ticket=" + ticket)
-        if self.is_logged_in() and not 'renew' in request.vars:
+        if self.is_logged_in() and 'renew' not in request.vars:
             return allow_access()
         elif not self.is_logged_in() and 'gateway' in request.vars:
             redirect(session._cas_service)
@@ -2493,9 +2370,9 @@ class Auth(AuthAPI):
                 success = True
 
         def build_response(body):
-            return '<?xml version="1.0" encoding="UTF-8"?>\n' +\
-                TAG['cas:serviceResponse'](
-                    body, **{'_xmlns:cas': 'http://www.yale.edu/tp/cas'}).xml()
+            xml_body = to_native(TAG['cas:serviceResponse'](
+                    body, **{'_xmlns:cas': 'http://www.yale.edu/tp/cas'}).xml())
+            return '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_body
         if success:
             if version == 1:
                 message = 'yes\n%s' % user[userfield]
@@ -2780,7 +2657,7 @@ class Auth(AuthAPI):
         # If auth.settings.auth_two_factor_enabled it will enable two factor
         # for all the app. Another way to anble two factor is that the user
         # must be part of a group that is called auth.settings.two_factor_authentication_group
-        if user and self.settings.auth_two_factor_enabled == True:
+        if user and self.settings.auth_two_factor_enabled is True:
             session.auth_two_factor_enabled = True
         elif user and self.settings.two_factor_authentication_group:
             role = self.settings.two_factor_authentication_group
@@ -2810,7 +2687,7 @@ class Auth(AuthAPI):
                 # Set the way we generate the code or we send the code. For example using SMS...
                 two_factor_methods = self.settings.two_factor_methods
 
-                if two_factor_methods == []:
+                if not two_factor_methods:
                     # TODO: Add some error checking to handle cases where email cannot be sent
                     self.settings.mailer.send(
                         to=user.email,
@@ -2833,47 +2710,49 @@ class Auth(AuthAPI):
                             hideerror=settings.hideerror):
                 accepted_form = True
 
-                '''
+                """
                 The lists is executed after form validation for each of the corresponding action.
                 For example, in your model:
 
                 In your models copy and paste:
 
-                #Before define tables, we add some extra field to auth_user
+                # Before define tables, we add some extra field to auth_user
                 auth.settings.extra_fields['auth_user'] = [
                     Field('motp_secret', 'password', length=512, default='', label='MOTP Secret'),
                     Field('motp_pin', 'string', length=128, default='', label='MOTP PIN')]
 
-                OFFSET = 60 #Be sure is the same in your OTP Client
+                OFFSET = 60  # Be sure is the same in your OTP Client
 
-                #Set session.auth_two_factor to None. Because the code is generated by external app.
+                # Set session.auth_two_factor to None. Because the code is generated by external app.
                 # This will avoid to use the default setting and send a code by email.
                 def _set_two_factor(user, auth_two_factor):
                     return None
 
                 def verify_otp(user, otp):
-                import time
-                from hashlib import md5
-                epoch_time = int(time.time())
-                time_start = int(str(epoch_time - OFFSET)[:-1])
-                time_end = int(str(epoch_time + OFFSET)[:-1])
-                for t in range(time_start - 1, time_end + 1):
-                    to_hash = str(t) + user.motp_secret + user.motp_pin
-                    hash = md5(to_hash).hexdigest()[:6]
-                    if otp == hash:
-                    return hash
+                    import time
+                    from hashlib import md5
+                    epoch_time = int(time.time())
+                    time_start = int(str(epoch_time - OFFSET)[:-1])
+                    time_end = int(str(epoch_time + OFFSET)[:-1])
+                    for t in range(time_start - 1, time_end + 1):
+                        to_hash = str(t) + user.motp_secret + user.motp_pin
+                        hash = md5(to_hash).hexdigest()[:6]
+                        if otp == hash:
+                        return hash
 
                 auth.settings.auth_two_factor_enabled = True
                 auth.messages.two_factor_comment = "Verify your OTP Client for the code."
-                auth.settings.two_factor_methods = [lambda user, auth_two_factor: _set_two_factor(user, auth_two_factor)]
+                auth.settings.two_factor_methods = [lambda user,
+                                                           auth_two_factor: _set_two_factor(user, auth_two_factor)]
                 auth.settings.two_factor_onvalidation = [lambda user, otp: verify_otp(user, otp)]
 
-                '''
-                if self.settings.two_factor_onvalidation != []:
+                """
+                if self.settings.two_factor_onvalidation:
 
                     for two_factor_onvalidation in self.settings.two_factor_onvalidation:
                         try:
-                            session.auth_two_factor = two_factor_onvalidation(session.auth_two_factor_user, form.vars['authentication_code'])
+                            session.auth_two_factor = \
+                                two_factor_onvalidation(session.auth_two_factor_user, form.vars['authentication_code'])
                         except:
                             pass
                         else:
@@ -3044,7 +2923,7 @@ class Auth(AuthAPI):
 
         if self.settings.register_verify_password:
             if self.settings.register_fields is None:
-                self.settings.register_fields = [f.name for f in table_user if f.writable]
+                self.settings.register_fields = [f.name for f in table_user if f.writable and not f.compute]
                 k = self.settings.register_fields.index(passfield)
                 self.settings.register_fields.insert(k + 1, "password_two")
             extra_fields = [
@@ -3656,6 +3535,16 @@ class Auth(AuthAPI):
         if not self.is_logged_in():
             redirect(self.settings.login_url,
                      client_side=self.settings.client_side)
+
+        # Go to external link to change the password
+        if self.settings.login_form != self:
+            cas = self.settings.login_form
+            # To prevent error if change_password_url function is not defined in alternate login
+            if hasattr(cas, 'change_password_url'):
+                next = cas.change_password_url(next)
+                if next is not None:
+                    redirect(next)
+
         db = self.db
         table_user = self.table_user()
         s = db(table_user.id == self.user.id)
@@ -3676,7 +3565,8 @@ class Auth(AuthAPI):
             requires = [requires]
         requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
         if requires:
-            requires[0].min_length = 0
+            requires[0] = CRYPT(**requires[0].__dict__) # Copy the existing CRYPT attributes
+            requires[0].min_length = 0 # But do not enforce minimum length for the old password
         form = SQLFORM.factory(
             Field('old_password', 'password', requires=requires,
                   label=self.messages.old_password),
@@ -3729,6 +3619,7 @@ class Auth(AuthAPI):
                      client_side=self.settings.client_side)
         passfield = self.settings.password_field
         table_user[passfield].writable = False
+        table_user['email'].writable = False
         request = current.request
         session = current.session
         if next is DEFAULT:
@@ -3739,6 +3630,7 @@ class Auth(AuthAPI):
             onaccept = self.settings.profile_onaccept
         if log is DEFAULT:
             log = self.messages['profile_log']
+        
         form = SQLFORM(
             table_user,
             self.user.id,
@@ -3759,11 +3651,10 @@ class Auth(AuthAPI):
             extra_fields = self.settings.extra_fields.get(self.settings.table_user_name, [])
             if any(f.compute for f in extra_fields):
                 user = table_user[self.user.id]
-                self._update_session_user(user) 
+                self._update_session_user(user)
+                self.update_groups()
             else:
                 self.user.update(table_user._filter_fields(form.vars))
-
-            
             session.flash = self.messages.profile_updated
             self.log_event(log, self.user)
             callback(onaccept, form)
@@ -4148,7 +4039,7 @@ class Auth(AuthAPI):
             archive_table = table._db[archive_table_name]
         new_record = {current_record: form.vars.id}
         for fieldname in archive_table.fields:
-            if not fieldname in ['id', current_record]:
+            if fieldname not in ['id', current_record]:
                 if archive_current and fieldname in form.vars:
                     new_record[fieldname] = form.vars[fieldname]
                 elif form.record and fieldname in form.record:
@@ -4220,15 +4111,15 @@ class Auth(AuthAPI):
 class Crud(object):  # pragma: no cover
 
     default_messages = dict(
-        submit_button = 'Submit',
-        delete_label = 'Check to delete',
-        record_created = 'Record Created',
-        record_updated = 'Record Updated',
-        record_deleted = 'Record Deleted',
-        update_log = 'Record %(id)s updated',
-        create_log = 'Record %(id)s created',
-        read_log = 'Record %(id)s read',
-        delete_log = 'Record %(id)s deleted',
+        submit_button='Submit',
+        delete_label='Check to delete',
+        record_created='Record Created',
+        record_updated='Record Updated',
+        record_deleted='Record Deleted',
+        update_log='Record %(id)s updated',
+        create_log='Record %(id)s created',
+        read_log='Record %(id)s read',
+        delete_log='Record %(id)s deleted',
     )
 
     def url(self, f=None, args=None, vars=None):
@@ -4721,7 +4612,7 @@ def fetch(url, data=None, headers=None,
           user_agent='Mozilla/5.0'):
     headers = headers or {}
     if data is not None:
-        data = urllib.urlencode(data)
+        data = urlencode(data)
     if user_agent:
         headers['User-agent'] = user_agent
     headers['Cookie'] = ' '.join(
@@ -4809,7 +4700,7 @@ class Service(object):
 
     def __init__(self, environment=None, check_args=False):
         self.check_args = check_args
-        
+
         self.run_procedures = {}
         self.csv_procedures = {}
         self.xml_procedures = {}
@@ -4958,7 +4849,10 @@ class Service(object):
 
             Then call it with:
 
-                wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "myfunction", "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2
+                wget --post-data '{"jsonrpc": "2.0",
+                                   "id": 1,
+                                   "method": "myfunction",
+                                   "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2
 
         """
         self.jsonrpc2_procedures[f.__name__] = f
@@ -5033,7 +4927,7 @@ class Service(object):
             return f
         return _amfrpc3
 
-    def soap(self, name=None, returns=None, args=None, doc=None):
+    def soap(self, name=None, returns=None, args=None, doc=None, response_element_name=None):
         """
         Example:
             Use as::
@@ -5057,7 +4951,7 @@ class Service(object):
         """
 
         def _soap(f):
-            self.soap_procedures[name or f.__name__] = f, returns, args, doc
+            self.soap_procedures[name or f.__name__] = f, returns, args, doc, response_element_name
             return f
         return _soap
 
@@ -5067,7 +4961,7 @@ class Service(object):
             args = request.args
         if args and args[0] in self.run_procedures:
             return str(self.call_service_function(self.run_procedures[args[0]],
-                                        *args[1:], **dict(request.vars)))
+                                                  *args[1:], **dict(request.vars)))
         self.error()
 
     def serve_csv(self, args=None):
@@ -5088,7 +4982,7 @@ class Service(object):
         if args and args[0] in self.csv_procedures:
             import types
             r = self.call_service_function(self.csv_procedures[args[0]],
-                                 *args[1:], **dict(request.vars))
+                                           *args[1:], **dict(request.vars))
             s = StringIO()
             if hasattr(r, 'export_to_csv_file'):
                 r.export_to_csv_file(s)
@@ -5115,7 +5009,7 @@ class Service(object):
             args = request.args
         if args and args[0] in self.xml_procedures:
             s = self.call_service_function(self.xml_procedures[args[0]],
-                                 *args[1:], **dict(request.vars))
+                                           *args[1:], **dict(request.vars))
             if hasattr(s, 'as_list'):
                 s = s.as_list()
             return serializers.xml(s, quote=False)
@@ -5128,7 +5022,7 @@ class Service(object):
             args = request.args
         if args and args[0] in self.rss_procedures:
             feed = self.call_service_function(self.rss_procedures[args[0]],
-                                    *args[1:], **dict(request.vars))
+                                              *args[1:], **dict(request.vars))
         else:
             self.error()
         response.headers['Content-Type'] = 'application/rss+xml'
@@ -5363,8 +5257,8 @@ class Service(object):
             prefix='pys',
             documentation=documentation,
             ns=True)
-        for method, (function, returns, args, doc) in iteritems(procedures):
-            dispatcher.register_function(method, function, returns, args, doc)
+        for method, (function, returns, args, doc, resp_elem_name) in iteritems(procedures):
+            dispatcher.register_function(method, function, returns, args, doc, resp_elem_name)
         if request.env.request_method == 'POST':
             fault = {}
             # Process normal Soap Operation
@@ -5476,7 +5370,7 @@ class Service(object):
 
     def error(self):
         raise HTTP(404, "Object does not exist")
-    
+
     # we make this a method so that subclasses can override it if they want to do more specific argument-checking
     # but the default implmentation is the simplest: just pass the arguments we got, with no checking
     def call_service_function(self, f, *a, **b):
@@ -5484,7 +5378,8 @@ class Service(object):
             return universal_caller(f, *a, **b)
         else:
             return f(*a, **b)
-  
+
+
 def completion(callback):
     """
     Executes a task on completion of the called action.
@@ -5528,15 +5423,15 @@ def prettydate(d, T=lambda x: x, utc=False):
     else:
         suffix = ' ago'
     if dt.days >= 2 * 365:
-        return T('%d years' + suffix) % int(dt.days / 365)
+        return T('%d years' + suffix) % int(dt.days // 365)
     elif dt.days >= 365:
         return T('1 year' + suffix)
     elif dt.days >= 60:
-        return T('%d months' + suffix) % int(dt.days / 30)
+        return T('%d months' + suffix) % int(dt.days // 30)
     elif dt.days >= 27:  # 4 weeks ugly
         return T('1 month' + suffix)
     elif dt.days >= 14:
-        return T('%d weeks' + suffix) % int(dt.days / 7)
+        return T('%d weeks' + suffix) % int(dt.days // 7)
     elif dt.days >= 7:
         return T('1 week' + suffix)
     elif dt.days > 1:
@@ -5544,11 +5439,11 @@ def prettydate(d, T=lambda x: x, utc=False):
     elif dt.days == 1:
         return T('1 day' + suffix)
     elif dt.seconds >= 2 * 60 * 60:
-        return T('%d hours' + suffix) % int(dt.seconds / 3600)
+        return T('%d hours' + suffix) % int(dt.seconds // 3600)
     elif dt.seconds >= 60 * 60:
         return T('1 hour' + suffix)
     elif dt.seconds >= 2 * 60:
-        return T('%d minutes' + suffix) % int(dt.seconds / 60)
+        return T('%d minutes' + suffix) % int(dt.seconds // 60)
     elif dt.seconds >= 60:
         return T('1 minute' + suffix)
     elif dt.seconds > 1:
@@ -5601,12 +5496,12 @@ class PluginManager(object):
 
         where the plugin is used::
 
-            >>> print plugins.me.param1
+            >>> print(plugins.me.param1)
             3
-            >>> print plugins.me.param2
+            >>> print(plugins.me.param2)
             6
             >>> plugins.me.param3 = 8
-            >>> print plugins.me.param3
+            >>> print(plugins.me.param3)
             8
 
         Here are some tests::
@@ -5614,25 +5509,25 @@ class PluginManager(object):
             >>> a=PluginManager()
             >>> a.x=6
             >>> b=PluginManager('check')
-            >>> print b.x
+            >>> print(b.x)
             6
             >>> b=PluginManager() # reset settings
-            >>> print b.x
+            >>> print(b.x)
             <Storage {}>
             >>> b.x=7
-            >>> print a.x
+            >>> print(a.x)
             7
             >>> a.y.z=8
-            >>> print b.y.z
+            >>> print(b.y.z)
             8
             >>> test_thread_separation()
             5
             >>> plugins=PluginManager('me',db='mydb')
-            >>> print plugins.me.db
+            >>> print(plugins.me.db)
             mydb
-            >>> print 'me' in plugins
+            >>> print('me' in plugins)
             True
-            >>> print plugins.me.installed
+            >>> print(plugins.me.installed)
             True
 
     """
@@ -5781,11 +5676,14 @@ class Expose(object):
             return os.path.realpath(f)
 
     def issymlink_out(self, f):
-        "True if f is a symlink and is pointing outside of self.base"
+        """True if f is a symlink and is pointing outside of self.base"""
         return os.path.islink(f) and not self.in_base(f)
 
     @staticmethod
     def isprivate(f):
+        # remove '/private' prefix to deal with symbolic links on OSX
+        if f.startswith('/private/'):
+            f = f[8:]
         return 'private' in f or f.startswith('.') or f.endswith('~')
 
     @staticmethod
@@ -6422,7 +6320,7 @@ class Wiki(object):
                 query = (db.wiki_page.id == db.wiki_tag.wiki_page) &\
                     (db.wiki_tag.name.belongs(tags))
                 query = query | db.wiki_page.title.contains(request.vars.q)
-            if self.settings.restrict_search and not self.manage():
+            if self.settings.restrict_search and not self.can_manage():
                 query = query & (db.wiki_page.created_by == self.auth.user_id)
             pages = db(query).select(count,
                                      *fields, **dict(orderby=orderby or ~count,

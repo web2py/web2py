@@ -27,7 +27,7 @@ class Highlighter(object):
     ):
         """
         Initialize highlighter:
-            mode = language (PYTHON, WEB2PY,C, CPP, HTML, HTML_PLAIN)
+            mode = language (PYTHON, WEB2PY, C, CPP, HTML, HTML_PLAIN)
         """
         styles = styles or {}
         mode = mode.upper()
@@ -182,8 +182,8 @@ class Highlighter(object):
         )),
         'PYTHONMultilineString': (python_tokenizer,
                                   (('ENDMULTILINESTRING',
-                                  re.compile(r'.*?("""|\'\'\')',
-                                  re.DOTALL), 'color: darkred'), )),
+                                    re.compile(r'.*?("""|\'\'\')',
+                                               re.DOTALL), 'color: darkred'), )),
         'HTML': (html_tokenizer, (
             ('GOTOPYTHON', re.compile(r'\{\{'), 'color: red'),
             ('COMMENT', re.compile(r'<!--[^>]*-->|<!>'),
@@ -209,7 +209,7 @@ class Highlighter(object):
         mode = self.mode
         while i < len(data):
             for (token, o_re, style) in Highlighter.all_styles[mode][1]:
-                if not token in self.suppress_tokens:
+                if token not in self.suppress_tokens:
                     match = o_re.match(data, i)
                     if match:
                         if style:
@@ -221,7 +221,7 @@ class Highlighter(object):
                             new_mode = \
                                 Highlighter.all_styles[mode][0](self,
                                                                 token, match, style)
-                        if not new_mode is None:
+                        if new_mode is not None:
                             mode = new_mode
                         i += max(1, len(match.group()))
                         break
@@ -241,9 +241,9 @@ class Highlighter(object):
             style = self.styles[token]
         if self.span_style != style:
             if style != 'Keep':
-                if not self.span_style is None:
+                if self.span_style is not None:
                     self.output.append('</span>')
-                if not style is None:
+                if style is not None:
                     self.output.append('<span style="%s">' % style)
                 self.span_style = style
 
@@ -260,33 +260,27 @@ def highlight(
 ):
     styles = styles or {}
     attributes = attributes or {}
-    if not 'CODE' in styles:
-        code_style = """
-        font-size: 11px;
-        font-family: Bitstream Vera Sans Mono,monospace;
-        background-color: transparent;
-        margin: 0;
-        padding: 5px;
-        border: none;
-        overflow: auto;
-        white-space: pre !important;\n"""
-    else:
-        code_style = styles['CODE']
-    if not 'LINENUMBERS' in styles:
-        linenumbers_style = """
-        font-size: 11px;
-        font-family: Bitstream Vera Sans Mono,monospace;
-        background-color: transparent;
-        margin: 0;
-        padding: 5px;
-        border: none;
-        color: #A0A0A0;\n"""
-    else:
-        linenumbers_style = styles['LINENUMBERS']
-    if not 'LINEHIGHLIGHT' in styles:
-        linehighlight_style = "background-color: #EBDDE2;"
-    else:
-        linehighlight_style = styles['LINEHIGHLIGHT']
+    code_style = styles.get('CODE', None) or '''
+font-size: 11px;
+font-family: Bitstream Vera Sans Mono,monospace;
+background-color: transparent;
+margin: 0;
+padding: 5px;
+border: none;
+overflow: auto;
+white-space: pre !important;
+'''
+    linenumbers_style = styles.get('LINENUMBERS', None) or '''
+font-size: 11px;
+font-family: Bitstream Vera Sans Mono,monospace;
+background-color: transparent;
+margin: 0;
+padding: 5px;
+border: none;
+color: #A0A0A0;
+'''
+    linehighlight_style = styles.get('LINEHIGHLIGHT', None) or \
+        'background-color: #EBDDE2;'
 
     if language and language.upper() in ['PYTHON', 'C', 'CPP', 'HTML',
                                          'WEB2PY']:
@@ -309,18 +303,20 @@ def highlight(
         else:
             lineno = highlight_line
         if lineno < len(lines):
-            lines[lineno] = '<div style="%s">%s</div>' % (
+            lines[lineno] = '<span style="%s">%s</span>' % (
                 linehighlight_style, lines[lineno])
-            linenumbers[lineno] = '<div style="%s">%s</div>' % (
+            linenumbers[lineno] = '<span style="%s">%s</span>' % (
                 linehighlight_style, linenumbers[lineno])
 
         if context_lines:
             if lineno + context_lines < len(lines):
-                del lines[lineno + context_lines:]
-                del linenumbers[lineno + context_lines:]
+                delslice = slice(lineno + context_lines + 1, len(lines))
+                del lines[delslice]
+                del linenumbers[delslice]
             if lineno - context_lines > 0:
-                del lines[0:lineno - context_lines]
-                del linenumbers[0:lineno - context_lines]
+                delslice = slice(0, lineno - context_lines)
+                del lines[delslice]
+                del linenumbers[delslice]
 
     code = '<br/>'.join(lines)
     numbers = '<br/>'.join(linenumbers)
@@ -333,8 +329,9 @@ def highlight(
                   == '_' and value])
     if fa:
         fa = ' ' + fa
-    return '<table%s><tr style="vertical-align:top;"><td style="min-width:40px; text-align: right;"><pre style="%s">%s</pre></td><td><pre style="%s">%s</pre></td></tr></table>'\
-        % (fa, linenumbers_style, numbers, code_style, code)
+    return '<table%s><tr style="vertical-align:top;">' \
+           '<td style="min-width:40px; text-align: right;"><pre style="%s">%s</pre></td>' \
+           '<td><pre style="%s">%s</pre></td></tr></table>' % (fa, linenumbers_style, numbers, code_style, code)
 
 
 if __name__ == '__main__':
@@ -342,5 +339,4 @@ if __name__ == '__main__':
     argfp = open(sys.argv[1])
     data = argfp.read()
     argfp.close()
-    print('<html><body>' + highlight(data, sys.argv[2])\
-        + '</body></html>')
+    print('<html><body>' + highlight(data, sys.argv[2]) + '</body></html>')
