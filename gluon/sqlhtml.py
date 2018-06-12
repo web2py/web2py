@@ -2027,12 +2027,6 @@ class SQLFORM(FORM):
                     value_input = widget_.widget(field, field.default, _id=_id,
                                                  _class=widget_._class + ' form-control',
                                                  **iso_format)
-                elif hasattr(field.requires, 'options'):
-                    value_input = SELECT(
-                        *[OPTION(v, _value=k)
-                          for k, v in field.requires.options()],
-                         _class='form-control',
-                         **dict(_id=_id))
                 elif (field_type.startswith('integer') or
                       field_type.startswith('reference ') or
                       field_type.startswith('list:integer') or
@@ -2045,6 +2039,13 @@ class SQLFORM(FORM):
                     value_input = INPUT(
                         _type='text', _id=_id,
                         _class="%s %s" % ((field_type or ''), 'form-control'))
+
+                if hasattr(field.requires, 'options'):
+                    value_input = SELECT(
+                        *[OPTION(v, _value=k)
+                          for k, v in field.requires.options()],
+                         _class='form-control',
+                         **dict(_id=_id))
 
                 new_button = INPUT(
                     _type="button", _value=T('New Search'), _class="btn btn-default", _title=T('Start building a new search'),
