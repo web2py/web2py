@@ -35,12 +35,12 @@
   <body>
     <div class="w2p_flash alert alert-dismissable">{{=response.flash or ''}}</div>
     <!-- Navbar ======================================= -->
-   <nav class="navbar navbar-light navbar-expand-md bg-faded justify-content-center">
+    <nav class="navbar navbar-light navbar-expand-md bg-faded justify-content-center">
        <a href="http://web2py.com" class="navbar-brand d-flex w-50 mr-auto">web2py</a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="navbar-collapse collapse w-100" id="navbarNavDropdown">
+       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+         <span class="navbar-toggler-icon"></span>
+       </button>
+       <div class="navbar-collapse collapse w-100" id="navbarNavDropdown">
          <ul class="navbar-nav w-100 justify-content-center">
           {{for _item in response.menu or []:}}
           {{if len(_item)<4 or not _item[3]:}}
