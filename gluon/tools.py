@@ -1335,6 +1335,8 @@ class AuthJWT(object):
                     if required:
                         raise e
                     token = None
+                if not token:
+                    raise HTTP(400, 'Invalid token')
                 if token and len(token) < self.max_header_length:
                     old_verify_expiration = self.verify_expiration
                     try:
