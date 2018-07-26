@@ -1311,6 +1311,8 @@ class AuthJWT(object):
             token = parts[1]
         else:
             token = current.request.vars.get(token_param)
+            if token is None:
+                raise HTTP(400, 'JWT header not found and JWT parameter {} missing in request'.format(token_param))
 
         self.recvd_token = token
         return token
@@ -1335,8 +1337,6 @@ class AuthJWT(object):
                     if required:
                         raise e
                     token = None
-                if not token and required:
-                    raise HTTP(400, 'Invalid token')
                 if token and len(token) < self.max_header_length:
                     old_verify_expiration = self.verify_expiration
                     try:
