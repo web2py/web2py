@@ -103,17 +103,18 @@ class CacheRepresenter(object):
                 cache[field][value] = nvalue
         return nvalue
 
+
 def safe_int(x, i=0):
     try:
         return int(x)
-    except ValueError:
+    except (ValueError, TypeError):
         return i
 
 
 def safe_float(x):
     try:
         return float(x)
-    except ValueError:
+    except (ValueError, TypeError):
         return 0
 
 
@@ -2055,7 +2056,7 @@ class SQLFORM(FORM):
                         reduce(lambda a,b: a|b, [
                                 field.contains(k) for field in sfields]
                                ) for k in key.split()])
-                    
+
             # from https://groups.google.com/forum/#!topic/web2py/hKe6lI25Bv4
             # needs testing...
             #words = key.split(' ') if key else []
