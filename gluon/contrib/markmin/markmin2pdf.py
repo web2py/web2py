@@ -10,7 +10,7 @@ import os.path
 import re
 import sys
 from tempfile import mkstemp, mkdtemp, NamedTemporaryFile
-from markmin2latex import markmin2latex
+from gluon.contrib.markmin.markmin2latex import markmin2latex
 
 __all__ = ['markmin2pdf']
 
