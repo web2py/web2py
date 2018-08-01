@@ -670,7 +670,7 @@ class IS_IN_DB(Validator):
                 try:
                     value = int(value)
                 except TypeError:
-                    return (values, translate(self.error_message))
+                    return (value, translate(self.error_message))
 
             if self.theset:
                 if str(value) in self.theset:

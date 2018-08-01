@@ -19,7 +19,7 @@ import re
 import copy
 
 import os
-from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native, to_unicode, urlencode
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, integer_types, unicodeT, to_native, to_unicode, urlencode
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -103,11 +103,11 @@ class CacheRepresenter(object):
                 cache[field][value] = nvalue
         return nvalue
 
-def safe_int(x):
+def safe_int(x, i=0):
     try:
         return int(x)
     except ValueError:
-        return 0
+        return i
 
 
 def safe_float(x):
@@ -1382,7 +1382,6 @@ class SQLFORM(FORM):
 
         self.field_parent = {}
         xfields = []
-        self.fields = fields
         self.custom = Storage()
         self.custom.dspval = Storage()
         self.custom.inpval = Storage()
@@ -1669,12 +1668,12 @@ class SQLFORM(FORM):
 
         """
         Similar to `FORM.accepts` but also does insert, update or delete in DAL.
-        If detect_record_change is `True` than:
+        If detect_record_change is `True` then:
 
           - `form.record_changed = False` (record is properly validated/submitted)
           - `form.record_changed = True` (record cannot be submitted because changed)
 
-        If detect_record_change == False than:
+        If detect_record_change == False then:
 
           - `form.record_changed = None`
         """
@@ -2028,7 +2027,7 @@ class SQLFORM(FORM):
 
         table_name = attributes.get('table_name', 'no_table')
 
-        # So it won't interfere with SQLDB.define_table
+        # So it won't interfere with DAL.define_table
         if 'table_name' in attributes:
             del attributes['table_name']
 
@@ -2363,7 +2362,7 @@ class SQLFORM(FORM):
                     nrows = dbset.db._adapter.count(dbset.query, limit=1000)
                 else:
                     nrows = dbset.count(cache=cache_count)
-            elif isinstance(cache_count, (int, long)):
+            elif isinstance(cache_count, integer_types):
                     nrows = cache_count
             elif callable(cache_count):
                 nrows = cache_count(dbset, request.vars)
@@ -2851,19 +2850,13 @@ class SQLFORM(FORM):
         head = TR(*headcols, **dict(_class=ui.get('header')))
 
         cursor = True
-        # figure out what page we are one to setup the limitby
+        # figure out what page we are on to setup the limitby
         if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             cursor = request.vars.cursor or True
             limitby = (0, paginate)
-            try:
-                page = int(request.vars.page or 1) - 1
-            except ValueError:
-                page = 0
+            page = safe_int(request.vars.page, 1) - 1
         elif paginate and paginate < nrows:
-            try:
-                page = int(request.vars.page or 1) - 1
-            except ValueError:
-                page = 0
+            page = safe_int(request.vars.page, 1) - 1
             limitby = (paginate * page, paginate * (page + 1))
         else:
             limitby = None
@@ -2905,10 +2898,7 @@ class SQLFORM(FORM):
         paginator = UL()
         if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             # this means we may have a large table with an unknown number of rows.
-            try:
-                page = int(request.vars.page or 1) - 1
-            except ValueError:
-                page = 0
+            page = safe_int(request.vars.page, 1) - 1
             paginator.append(LI('page %s' % (page + 1)))
             if next_cursor:
                 d = dict(page=page + 2, cursor=next_cursor)
@@ -2927,10 +2917,7 @@ class SQLFORM(FORM):
             npages, reminder = divmod(nrows, paginate)
             if reminder:
                 npages += 1
-            try:
-                page = int(request.vars.page or 1) - 1
-            except ValueError:
-                page = 0
+            page = safe_int(request.vars.page, 1) - 1
 
             def self_link(name, p):
                 d = dict(page=p + 1)
@@ -3289,7 +3276,7 @@ class SQLFORM(FORM):
             links = links.get(table._tablename, [])
         for key in ('fields', 'field_id', 'left', 'headers', 'orderby', 'groupby', 'searchable',
                     'sortable', 'paginate', 'deletable', 'editable', 'details', 'selectable',
-                    'create', 'csv', 'links', 'links_in_grid', 'upload', 'maxtextlengths',
+                    'create', 'csv', 'upload', 'maxtextlengths',
                     'maxtextlength', 'onvalidation', 'onfailure', 'oncreate', 'onupdate',
                     'ondelete', 'sorter_icons', 'ui', 'showbuttontext', '_class', 'formname',
                     'search_widget', 'advanced_search', 'ignore_rw', 'formstyle', 'exportclasses',

@@ -47,6 +47,8 @@ class Test_safe_int(unittest.TestCase):
         self.assertEqual(safe_int(1), 1)
         # not safe int
         self.assertEqual(safe_int('1x'), 0)
+        # not safe int (alternate default)
+        self.assertEqual(safe_int('1x', 1), 1)
 
 
 # class Test_safe_float(unittest.TestCase):
