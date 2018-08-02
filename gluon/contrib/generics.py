@@ -25,7 +25,7 @@ def wrapper(f):
 
 def latex_from_html(html):
     markmin = TAG(html).element('body').flatten(markmin_serializer)
-    return XML(markmin2latex(markmin))
+    return markmin2latex(markmin)
 
 
 def pdflatex_from_html(html):
@@ -39,7 +39,7 @@ def pdflatex_from_html(html):
                                       H1('warnings'),
                                       UL(*warnings))).xml())
         else:
-            return XML(out)
+            return out
 
 
 def pyfpdf_from_html(html):

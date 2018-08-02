@@ -58,7 +58,7 @@ def latex2pdf(latex, pdflatex='pdflatex', passes=3):
 
     # setup the envoriment
     tmpdir = mkdtemp()
-    texfile = open(tmpdir + '/test.tex', 'wb')
+    texfile = open(tmpdir + '/test.tex', 'wt',encoding="utf-8")
     texfile.write(latex)
     texfile.seek(0)
     texfile.close()
@@ -90,15 +90,14 @@ def latex2pdf(latex, pdflatex='pdflatex', passes=3):
         os.unlink(logname)
 
     pdffile = texfile.rsplit('.', 1)[0] + '.pdf'
+    data = None
+
     if os.path.isfile(pdffile):
-        fpdf = open(pdffile, 'rb')
-        try:
+        with open(pdffile,'rb') as fpdf :
             data = fpdf.read()
-        finally:
-            fpdf.close()
-    else:
-        data = None
+
     removeall(tmpdir)
+
     return data, warnings, errors
 
 
