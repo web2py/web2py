@@ -103,17 +103,18 @@ class CacheRepresenter(object):
                 cache[field][value] = nvalue
         return nvalue
 
+
 def safe_int(x, i=0):
     try:
         return int(x)
-    except ValueError:
+    except (ValueError, TypeError):
         return i
 
 
 def safe_float(x):
     try:
         return float(x)
-    except ValueError:
+    except (ValueError, TypeError):
         return 0
 
 
