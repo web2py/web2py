@@ -1311,6 +1311,8 @@ class AuthJWT(object):
             token = parts[1]
         else:
             token = current.request.vars.get(token_param)
+            if token is None:
+                raise HTTP(400, 'JWT header not found and JWT parameter {} missing in request'.format(token_param))
 
         self.recvd_token = token
         return token
