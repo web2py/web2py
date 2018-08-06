@@ -19,7 +19,7 @@ import re
 import copy
 
 import os
-from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, integer_types, unicodeT, to_native, to_unicode, urlencode
+from gluon._compat import StringIO,unichr, urllib_quote, iteritems, basestring, long, integer_types, unicodeT, to_native, to_unicode, urlencode
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -2055,7 +2055,7 @@ class SQLFORM(FORM):
                         reduce(lambda a,b: a|b, [
                                 field.contains(k) for field in sfields]
                                ) for k in key.split()])
-                    
+
             # from https://groups.google.com/forum/#!topic/web2py/hKe6lI25Bv4
             # needs testing...
             #words = key.split(' ') if key else []
@@ -2630,8 +2630,7 @@ class SQLFORM(FORM):
             xml=(ExporterXML, 'XML', T('XML export of columns shown')),
             html=(ExporterHTML, 'HTML', T('HTML export of visible columns')),
             json=(ExporterJSON, 'JSON', T('JSON export of visible columns')),
-            tsv_with_hidden_cols=
-                (ExporterTSV, 'TSV (Spreadsheets, hidden cols)', T('Spreadsheet-optimised export of tab-separated content including hidden columns. May be slow')),
+            tsv_with_hidden_cols=(ExporterTSV_hidden, 'TSV (Spreadsheets, hidden cols)', T('Spreadsheet-optimised export of tab-separated content including hidden columns. May be slow')),
             tsv=(ExporterTSV, 'TSV (Spreadsheets)', T('Spreadsheet-optimised export of tab-separated content, visible columns only. May be slow.')))
         if exportclasses is not None:
             """
@@ -3697,40 +3696,38 @@ class ExportClass(object):
 
 
 class ExporterTSV(ExportClass):
+    # TSV, represent == True
     label = 'TSV'
-    file_ext = "csv"
+    file_ext = "tsv"
     content_type = "text/tab-separated-values"
 
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self):
-        out = StringIO()
-        final = StringIO()
-        import csv
-        writer = csv.writer(out, delimiter='\t')
+    def export(self):  # export TSV with rows.represent
         if self.rows:
-            import codecs
-            final.write(codecs.BOM_UTF16)
-            writer.writerow(
-                [to_unicode(col, "utf8") for col in self.rows.colnames])
-            data = out.getvalue().decode("utf8")
-            data = data.encode("utf-16")
-            data = data[2:]
-            final.write(data)
-            out.truncate(0)
+            s = StringIO()
+            self.rows.export_to_csv_file(s, represent=True,delimiter='\t',newline='\n')
+            return s.getvalue()
+        else:
+            return None
 
-        records = self.represented()
-        for row in records:
-            writer.writerow(
-                [str(col).decode('utf8').encode("utf-8") for col in row])
-            data = out.getvalue().decode("utf8")
-            data = data.encode("utf-16")
-            data = data[2:]
-            final.write(data)
 
-            out.truncate(0)
-        return str(final.getvalue())
+class ExporterTSV_hidden(ExportClass):
+    label = 'TSV'
+    file_ext = "tsv"
+    content_type = "text/tab-separated-values"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+
+    def export(self):  # export TSV with rows.represent
+        if self.rows:
+            s = StringIO()
+            self.rows.export_to_csv_file(s,delimiter='\t',newline='\n')
+            return s.getvalue()
+        else:
+            return None
 
 
 class ExporterCSV(ExportClass):
