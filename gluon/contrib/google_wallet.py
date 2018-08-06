@@ -1,4 +1,4 @@
-from gluon import XML
+from gluon.html import XML
 
 def button(merchant_id="123456789012345",
            products=[dict(name="shoes",
