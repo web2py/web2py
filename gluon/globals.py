@@ -287,10 +287,6 @@ class Request(Storage):
         for key, value in iteritems(self.post_vars):
             if key not in self._vars:
                 self._vars[key] = value
-            else:
-                if not isinstance(self._vars[key], list):
-                    self._vars[key] = [self._vars[key]]
-                self._vars[key] += value if isinstance(value, list) else [value]
 
     @property
     def get_vars(self):
