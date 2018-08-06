@@ -1,5 +1,7 @@
 FROM opensuse:latest
 
+#LABEL your_label
+
 RUN zypper in -y python python-pip python-setuptools unzip wget && \
  pip install --upgrade pip && \
  pip install virtualenv 
