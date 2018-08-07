@@ -147,6 +147,7 @@ smmap2==2.0.3
 spark-parser==1.6.1
 SquareMap==1.0.4
 statistics==1.0.3.5
+stripe==2.0.3
 suds==0.4
 terminado==0.8.1
 testpath==0.3.1
