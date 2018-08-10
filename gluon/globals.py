@@ -969,7 +969,7 @@ class Session(Storage):
                     if row:
                         # rows[0].update_record(locked=True)
                         # Unpickle the data
-                        session_data = pickle.loads(row[b'session_data'])
+                        session_data = pickle.loads(row['session_data'])
                         self.update(session_data)
                         response.session_new = False
                     else:
