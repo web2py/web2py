@@ -775,8 +775,8 @@ class Mail(object):
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=to_unicode(subject, encoding), 
-                        body=to_unicode(text or '', encoding), 
+                        subject=to_unicode(subject, encoding),
+                        body=to_unicode(text or '', encoding),
                         html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
@@ -794,7 +794,7 @@ class Mail(object):
                 try:
                     raw = {'Data': payload.as_string()}
                     response = client.send_raw_email(RawMessage=raw,
-                                                     Source=sender, 
+                                                     Source=sender,
                                                      Destinations=to)
                     return True
                 except ClientError as e:
@@ -1311,6 +1311,8 @@ class AuthJWT(object):
             token = parts[1]
         else:
             token = current.request.vars.get(token_param)
+            if token is None:
+                raise HTTP(400, 'JWT header not found and JWT parameter {} missing in request'.format(token_param))
 
         self.recvd_token = token
         return token
@@ -2161,7 +2163,10 @@ class Auth(AuthAPI):
         user = None
         checks = []
         # make a guess about who this user is
-        for fieldname in ['registration_id', 'username', 'email']:
+        guess_fields = ['registration_id', 'username', 'email']
+        if self.settings.login_userfield:
+            guess_fields.append(self.settings.login_userfield)
+        for fieldname in guess_fields:
             if fieldname in table_user.fields() and \
                     keys.get(fieldname, None):
                 checks.append(fieldname)
@@ -2255,7 +2260,8 @@ class Auth(AuthAPI):
     def _get_login_settings(self):
         table_user = self.table_user()
         userfield = self.settings.login_userfield or 'username' \
-            if 'username' in table_user.fields else 'email'
+            if self.settings.login_userfield or 'username' \
+            in table_user.fields else 'email'
         passfield = self.settings.password_field
         return Storage({'table_user': table_user,
                         'userfield': userfield,
@@ -3630,7 +3636,7 @@ class Auth(AuthAPI):
             onaccept = self.settings.profile_onaccept
         if log is DEFAULT:
             log = self.messages['profile_log']
-        
+
         form = SQLFORM(
             table_user,
             self.user.id,

@@ -943,9 +943,7 @@ def console():
         k = len(sys.argv)
     sys.argv, other_args = sys.argv[:k], sys.argv[k + 1:]
     (options, args) = parser.parse_args()
-    options.args = other_args
-    if options.run:
-        options.args.insert(0, options.run)
+    options.args = [options.run] + other_args
 
     copy_options = copy.deepcopy(options)
     copy_options.password = '******'

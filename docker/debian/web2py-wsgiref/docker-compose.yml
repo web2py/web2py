@@ -1,0 +1,12 @@
+version: '3.1'
+
+services:
+  web2py-wsgiref:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - applications:/home/web2py/web2py/applications
+
+volumes:
+  applications:

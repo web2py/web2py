@@ -667,7 +667,7 @@ class Response(Storage):
         (t, f) = (items.group('table'), items.group('field'))
         try:
             field = db[t][f]
-        except AttributeError:
+        except (AttributeError, KeyError):
             raise HTTP(404)
         try:
             (filename, stream) = field.retrieve(name, nameonly=True)

@@ -103,17 +103,18 @@ class CacheRepresenter(object):
                 cache[field][value] = nvalue
         return nvalue
 
+
 def safe_int(x, i=0):
     try:
         return int(x)
-    except ValueError:
+    except (ValueError, TypeError):
         return i
 
 
 def safe_float(x):
     try:
         return float(x)
-    except ValueError:
+    except (ValueError, TypeError):
         return 0
 
 
@@ -698,18 +699,20 @@ class AutocompleteWidget(object):
             if isinstance(field, Field.Virtual):
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
-                count = 0
+                count = self.limitby[1] if self.limitby else -1
                 for row in table_rows:
                     if self.at_beginning:
                         if row[field.name].lower().startswith(kword):
-                            count += 1
+                            count -= 1
                             records.append(row)
                     else:
                         if kword in row[field.name].lower():
-                            count += 1
+                            count -= 1
                             records.append(row)
-                    if count == 10:
+                    if count == 0:
                         break
+                if self.limitby and self.limitby[0]:
+                    records = records[self.limitby[0]:]
                 rows = Rows(self.db, records, table_rows.colnames,
                             compact=table_rows.compact)
             elif settings and settings.global_settings.web2py_runtime_gae:
@@ -1089,7 +1092,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
 
 # bootstrap 4
 def formstyle_bootstrap4_stacked(form, fields):
-    """ bootstrap 3 format form layout
+    """ bootstrap 4 format form layout
 
     Note:
         Experimental!
@@ -1138,7 +1141,7 @@ def formstyle_bootstrap4_stacked(form, fields):
 
 
 def formstyle_bootstrap4_inline_factory(col_label_size=3):
-    """ bootstrap 3 horizontal form layout
+    """ bootstrap 4 horizontal form layout
 
     Note:
         Experimental!
@@ -2146,12 +2149,6 @@ class SQLFORM(FORM):
                     value_input = widget_.widget(field, field.default, _id=_id,
                                                  _class=widget_._class + ' form-control',
                                                  **iso_format)
-                elif hasattr(field.requires, 'options'):
-                    value_input = SELECT(
-                        *[OPTION(v, _value=k)
-                          for k, v in field.requires.options()],
-                         _class='form-control',
-                         **dict(_id=_id))
                 elif (field_type.startswith('integer') or
                       field_type.startswith('reference ') or
                       field_type.startswith('list:integer') or
@@ -2164,6 +2161,13 @@ class SQLFORM(FORM):
                     value_input = INPUT(
                         _type='text', _id=_id,
                         _class="%s %s" % ((field_type or ''), 'form-control'))
+
+                if hasattr(field.requires, 'options'):
+                    value_input = SELECT(
+                        *[OPTION(v, _value=k)
+                          for k, v in field.requires.options()],
+                         _class='form-control',
+                         **dict(_id=_id))
 
                 new_button = INPUT(
                     _type="button", _value=T('New Search'), _class="btn btn-default", _title=T('Start building a new search'),
@@ -2853,9 +2857,9 @@ class SQLFORM(FORM):
         if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             cursor = request.vars.cursor or True
             limitby = (0, paginate)
-            page = safe_int(request.vars.page, 1) - 1
+            page = safe_int(request.vars.page or 1, 1) - 1
         elif paginate and paginate < nrows:
-            page = safe_int(request.vars.page, 1) - 1
+            page = safe_int(request.vars.page or 1, 1) - 1
             limitby = (paginate * page, paginate * (page + 1))
         else:
             limitby = None
@@ -2897,7 +2901,7 @@ class SQLFORM(FORM):
         paginator = UL()
         if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             # this means we may have a large table with an unknown number of rows.
-            page = safe_int(request.vars.page, 1) - 1
+            page = safe_int(request.vars.page or 1, 1) - 1
             paginator.append(LI('page %s' % (page + 1)))
             if next_cursor:
                 d = dict(page=page + 2, cursor=next_cursor)
@@ -2916,7 +2920,7 @@ class SQLFORM(FORM):
             npages, reminder = divmod(nrows, paginate)
             if reminder:
                 npages += 1
-            page = safe_int(request.vars.page, 1) - 1
+            page = safe_int(request.vars.page or 1, 1) - 1
 
             def self_link(name, p):
                 d = dict(page=p + 1)

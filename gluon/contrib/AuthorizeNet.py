@@ -18,7 +18,7 @@ from __future__ import print_function
 __all__ = ['AIM']
 
 from operator import itemgetter
-import urllib
+from gluon._compat import urlopen, urlencode, FancyURLopener
 
 _known_tuple_types = {}
 
@@ -116,17 +116,17 @@ class AIM:
         self.setParameter('x_tran_key', transkey)
 
     def process(self):
-        encoded_args = urllib.urlencode(self.parameters)
+        encoded_args = urlencode(self.parameters)
         if self.testmode == True:
             url = 'https://test.authorize.net/gateway/transact.dll'
         else:
             url = 'https://secure.authorize.net/gateway/transact.dll'
 
         if self.proxy is None:
-            self.results += str(urllib.urlopen(
+            self.results += str(urlopen(
                 url, encoded_args).read()).split(self.delimiter)
         else:
-            opener = urllib.FancyURLopener(self.proxy)
+            opener = FancyURLopener(self.proxy)
             opened = opener.open(url, encoded_args)
             try:
                 self.results += str(opened.read()).split(self.delimiter)

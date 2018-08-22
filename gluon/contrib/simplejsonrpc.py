@@ -20,11 +20,12 @@ __version__ = "0.05"
 import sys
 PY2 = sys.version_info[0] == 2
 
-import urllib
 if PY2:
+    import urllib
     from xmlrpclib import Transport, SafeTransport
     from cStringIO import StringIO
 else:
+    import urllib.request as urllib
     from xmlrpc.client import Transport, SafeTransport
     from io import StringIO
 import random
@@ -47,7 +48,7 @@ class JSONDummyParser:
         self.buf = StringIO()
 
     def feed(self, data):
-        self.buf.write(data)
+        self.buf.write(data.decode('utf-8'))
 
     def close(self):
         return self.buf.getvalue()
@@ -61,7 +62,7 @@ class JSONTransportMixin:
         connection.putheader("Content-Length", str(len(request_body)))
         connection.endheaders()
         if request_body:
-            connection.send(request_body)
+            connection.send(str.encode(request_body))
         # todo: add gzip compression
 
     def getparser(self):
