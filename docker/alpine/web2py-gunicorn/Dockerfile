@@ -1,5 +1,7 @@
 FROM alpine:latest
 
+#LABEL your_label
+
 RUN apk add --no-cache python py-pip py-setuptools unzip wget py-gunicorn && \
  pip install --upgrade pip && \
  pip install virtualenv 

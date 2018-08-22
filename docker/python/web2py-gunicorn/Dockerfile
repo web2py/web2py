@@ -1,7 +1,10 @@
 FROM python:2.7
 
+#LABEL your_label
+
 RUN apt update && \
  apt install -y unzip wget python-pip && \
+ pip install --upgrade pip && \
  pip install gunicorn
 
 RUN groupadd -r web2py && \

@@ -1,8 +1,9 @@
 FROM debian:latest
 
+#LABEL your_label
+
 RUN apt update && \
- apt install -y python python-pip python-setuptools unzip wget gunicorn && \
- pip install --upgrade pip && \
+ apt install -y python python-pip python-setuptools unzip wget python-gunicorn && \
  pip install virtualenv 
 
 RUN groupadd -r web2py && \

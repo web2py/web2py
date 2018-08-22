@@ -1,8 +1,9 @@
 FROM ubuntu:latest
 
+#LABEL your_label
+
 RUN apt update && \
  apt install -y python python-pip python-setuptools unzip wget python-tornado && \
- pip install --upgrade pip && \
  pip install virtualenv 
 
 RUN groupadd -r web2py && \
