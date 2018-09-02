@@ -180,7 +180,7 @@ class RedisClient(object):
             self.r_server.incr('web2py_cache_statistics:misses')
         cache_set_key = self.cache_set_key
         expire_at = int(time.time() + time_expire) + 120
-        bucket_key = "%s:%s" % (cache_set_key, expire_at / 60)
+        bucket_key = "%s:%s" % (cache_set_key, expire_at // 60)
         value = f()
         value_ = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
         if time_expire == 0:
@@ -196,7 +196,7 @@ class RedisClient(object):
         # add the key to the bucket
         p.sadd(bucket_key, key)
         # expire the bucket properly
-        p.expireat(bucket_key, ((expire_at / 60) + 1) * 60)
+        p.expireat(bucket_key, ((expire_at // 60) + 1) * 60)
         p.execute()
         return value
 
