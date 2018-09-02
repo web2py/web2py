@@ -48,7 +48,7 @@ def main():
     global REQUIRED, IGNORED
 
     if len(sys.argv) < 2:
-        print USAGE
+        print(USAGE)
 
     # make target folder
     target = sys.argv[1]
