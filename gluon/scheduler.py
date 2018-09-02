@@ -1156,6 +1156,15 @@ class Scheduler(MetaScheduler):
         - does "housecleaning" for dead workers
         - triggers tasks assignment to workers
         """
+        if self.db_thread:
+            # BKR 20180612 check if connection still works
+            try:
+                query = self.db_thread.scheduler_worker.worker_name == self.worker_name
+                self.db_thread(query).count()
+            except self.db_thread._adapter.connection.OperationalError:
+                # if not -> throw away self.db_thread and force reconnect
+                self.db_thread = None
+
         if not self.db_thread:
             logger.debug('thread building own DAL object')
             self.db_thread = DAL(
