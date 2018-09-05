@@ -27,7 +27,7 @@ class Highlighter(object):
     ):
         """
         Initialize highlighter:
-            mode = language (PYTHON, WEB2PY,C, CPP, HTML, HTML_PLAIN)
+            mode = language (PYTHON, WEB2PY, C, CPP, HTML, HTML_PLAIN)
         """
         styles = styles or {}
         mode = mode.upper()
@@ -260,33 +260,27 @@ def highlight(
 ):
     styles = styles or {}
     attributes = attributes or {}
-    if 'CODE' not in styles:
-        code_style = """
-        font-size: 11px;
-        font-family: Bitstream Vera Sans Mono,monospace;
-        background-color: transparent;
-        margin: 0;
-        padding: 5px;
-        border: none;
-        overflow: auto;
-        white-space: pre !important;\n"""
-    else:
-        code_style = styles['CODE']
-    if 'LINENUMBERS' not in styles:
-        linenumbers_style = """
-        font-size: 11px;
-        font-family: Bitstream Vera Sans Mono,monospace;
-        background-color: transparent;
-        margin: 0;
-        padding: 5px;
-        border: none;
-        color: #A0A0A0;\n"""
-    else:
-        linenumbers_style = styles['LINENUMBERS']
-    if 'LINEHIGHLIGHT' not in styles:
-        linehighlight_style = "background-color: #EBDDE2;"
-    else:
-        linehighlight_style = styles['LINEHIGHLIGHT']
+    code_style = styles.get('CODE', None) or '''
+font-size: 11px;
+font-family: Bitstream Vera Sans Mono,monospace;
+background-color: transparent;
+margin: 0;
+padding: 5px;
+border: none;
+overflow: auto;
+white-space: pre !important;
+'''
+    linenumbers_style = styles.get('LINENUMBERS', None) or '''
+font-size: 11px;
+font-family: Bitstream Vera Sans Mono,monospace;
+background-color: transparent;
+margin: 0;
+padding: 5px;
+border: none;
+color: #A0A0A0;
+'''
+    linehighlight_style = styles.get('LINEHIGHLIGHT', None) or \
+        'background-color: #EBDDE2;'
 
     if language and language.upper() in ['PYTHON', 'C', 'CPP', 'HTML',
                                          'WEB2PY']:
@@ -309,18 +303,20 @@ def highlight(
         else:
             lineno = highlight_line
         if lineno < len(lines):
-            lines[lineno] = '<div style="%s">%s</div>' % (
+            lines[lineno] = '<span style="%s">%s</span>' % (
                 linehighlight_style, lines[lineno])
-            linenumbers[lineno] = '<div style="%s">%s</div>' % (
+            linenumbers[lineno] = '<span style="%s">%s</span>' % (
                 linehighlight_style, linenumbers[lineno])
 
         if context_lines:
             if lineno + context_lines < len(lines):
-                del lines[lineno + context_lines:]
-                del linenumbers[lineno + context_lines:]
+                delslice = slice(lineno + context_lines + 1, len(lines))
+                del lines[delslice]
+                del linenumbers[delslice]
             if lineno - context_lines > 0:
-                del lines[0:lineno - context_lines]
-                del linenumbers[0:lineno - context_lines]
+                delslice = slice(0, lineno - context_lines)
+                del lines[delslice]
+                del linenumbers[delslice]
 
     code = '<br/>'.join(lines)
     numbers = '<br/>'.join(linenumbers)

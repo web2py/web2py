@@ -470,8 +470,8 @@ class Record(object):
         while length:
             try:
                 data = sock.recv(length)
-            except socket.error, e:
-                if e[0] == errno.EAGAIN:
+            except socket.error as e:
+                if e.errno == errno.EAGAIN:
                     select.select([sock], [], [])
                     continue
                 else:
@@ -527,8 +527,8 @@ class Record(object):
         while length:
             try:
                 sent = sock.send(data)
-            except socket.error, e:
-                if e[0] == errno.EAGAIN:
+            except socket.error as e:
+                if e.errno == errno.EAGAIN:
                     select.select([], [sock], [])
                     continue
                 else:
@@ -665,7 +665,7 @@ class Connection(object):
             except EOFError:
                 break
             except (select.error, socket.error), e:
-                if e[0] == errno.EBADF: # Socket was closed by Request.
+                if e.errno == errno.EBADF: # Socket was closed by Request.
                     break
                 raise
 
@@ -990,11 +990,11 @@ class Server(object):
                                  socket.SOCK_STREAM)
             try:
                 sock.getpeername()
-            except socket.error, e:
-                if e[0] == errno.ENOTSOCK:
+            except socket.error as e:
+                if e.errno == errno.ENOTSOCK:
                     # Not a socket, assume CGI context.
                     isFCGI = False
-                elif e[0] != errno.ENOTCONN:
+                elif e.errno != errno.ENOTCONN:
                     raise
 
             # FastCGI/CGI discrimination is broken on Mac OS X.
@@ -1078,15 +1078,15 @@ class Server(object):
             try:
                 r, w, e = select.select([sock], [], [], timeout)
             except select.error, e:
-                if e[0] == errno.EINTR:
+                if e.errno == errno.EINTR:
                     continue
                 raise
 
             if r:
                 try:
                     clientSock, addr = sock.accept()
-                except socket.error, e:
-                    if e[0] in (errno.EINTR, errno.EAGAIN):
+                except socket.error as e:
+                    if e.errno in (errno.EINTR, errno.EAGAIN):
                         continue
                     raise
 
@@ -1273,8 +1273,8 @@ class WSGIServer(Server):
                 finally:
                     if hasattr(result, 'close'):
                         result.close()
-            except socket.error, e:
-                if e[0] != errno.EPIPE:
+            except socket.error as e:
+                if e.errno != errno.EPIPE:
                     raise # Don't let EPIPE propagate beyond server
         finally:
             if not self.multithreaded:
@@ -1329,4 +1329,3 @@ if __name__ == '__main__':
               '</body></html>\n'
 
     WSGIServer(test_app).run()
-

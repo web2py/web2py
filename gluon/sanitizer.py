@@ -145,7 +145,7 @@ class XssCleaner(HTMLParser):
         if url.startswith('#'):
             return True
         else:
-            parsed = urlparse(url)
+            parsed = urlparse.urlparse(url)
             return ((parsed[0] in self.allowed_schemes and '.' in parsed[1]) or
                     (parsed[0] in self.allowed_schemes and '@' in parsed[2]) or
                     (parsed[0] == '' and parsed[2].startswith('/')))

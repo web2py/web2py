@@ -340,18 +340,20 @@ class TestBareHelpers(unittest.TestCase):
 
     def test_SCRIPT(self):
         self.assertEqual(SCRIPT('<>', _a='1', _b='2').xml(),
-                         '''<script a="1" b="2"><!--
+                         b'''<script a="1" b="2"><!--
 <>
 //--></script>''')
         self.assertEqual(SCRIPT('<>').xml(),
-                         '''<script><!--
+                         b'''<script><!--
 <>
 //--></script>''')
         self.assertEqual(SCRIPT().xml(), b'<script></script>')
+        self.assertEqual(SCRIPT(';').xml() + DIV().xml(), 
+                         b'<script><!--\n;\n//--></script><div></div>')
 
     def test_STYLE(self):
         self.assertEqual(STYLE('<>', _a='1', _b='2').xml(),
-                         '<style a="1" b="2"><!--/*--><![CDATA[/*><!--*/\n<>\n/*]]>*/--></style>')
+                         b'<style a="1" b="2"><!--/*--><![CDATA[/*><!--*/\n<>\n/*]]>*/--></style>')
         # Try to hit : return DIV.xml(self)
         self.assertEqual(STYLE().xml(), b'<style></style>')
 
@@ -477,7 +479,7 @@ class TestBareHelpers(unittest.TestCase):
                               counter=1,
                               styles={},
                               highlight_line=None).xml(),
-                         '<table><tr style="vertical-align:top;"><td style="min-width:40px; text-align: right;"><pre style="\n        font-size: 11px;\n        font-family: Bitstream Vera Sans Mono,monospace;\n        background-color: transparent;\n        margin: 0;\n        padding: 5px;\n        border: none;\n        color: #A0A0A0;\n">1.</pre></td><td><pre style="\n        font-size: 11px;\n        font-family: Bitstream Vera Sans Mono,monospace;\n        background-color: transparent;\n        margin: 0;\n        padding: 5px;\n        border: none;\n        overflow: auto;\n        white-space: pre !important;\n"><span style="color:#185369; font-weight: bold">print </span><span style="color: #FF9966">\'hello world\'</span></pre></td></tr></table>')
+                         '<table><tr style="vertical-align:top;"><td style="min-width:40px; text-align: right;"><pre style="\nfont-size: 11px;\nfont-family: Bitstream Vera Sans Mono,monospace;\nbackground-color: transparent;\nmargin: 0;\npadding: 5px;\nborder: none;\ncolor: #A0A0A0;\n">1.</pre></td><td><pre style="\nfont-size: 11px;\nfont-family: Bitstream Vera Sans Mono,monospace;\nbackground-color: transparent;\nmargin: 0;\npadding: 5px;\nborder: none;\noverflow: auto;\nwhite-space: pre !important;\n"><span style="color:#185369; font-weight: bold">print </span><span style="color: #FF9966">\'hello world\'</span></pre></td></tr></table>')
 
     def test_LABEL(self):
         self.assertEqual(LABEL('<>', _a='1', _b='2').xml(),

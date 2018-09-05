@@ -29,5 +29,14 @@ jQuery(function(){
   }
   hoverMenu(); // first page load
   jQuery(window).resize(hoverMenu); // on resize event
-  jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
+  jQuery('ul.nav li.dropdown a').click(function(){ 
+    if(jQuery(this).attr("target")){
+        window.open(
+            jQuery(this).attr('href'),
+            jQuery(this).attr('target') // <- This is what makes it open in a new window.
+        );
+    } else {
+        window.location=jQuery(this).attr('href'); 
+    }
+  });
 });

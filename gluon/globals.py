@@ -14,7 +14,7 @@ Contains the classes for the global used variables:
 
 """
 from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, \
-    unicodeT, long, hashlib_md5
+    to_bytes, unicodeT, long, hashlib_md5, urllib_quote
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -165,6 +165,7 @@ class Request(Storage):
     - folder
     - application
     - function
+    - method
     - args
     - extension
     - now: datetime.datetime.now()
@@ -180,6 +181,7 @@ class Request(Storage):
         self.env.web2py_path = global_settings.applications_parent
         self.env.update(global_settings)
         self.cookies = Cookie.SimpleCookie()
+        self.method = self.env.get('REQUEST_METHOD')
         self._get_vars = None
         self._post_vars = None
         self._vars = None
@@ -220,7 +222,12 @@ class Request(Storage):
 
         if is_json:
             try:
-                json_vars = json_parser.load(body)
+                # In Python 3 versions prior to 3.6 load doesn't accept bytes and
+                # bytearray, so we read the body convert to native and use loads
+                # instead of load.
+                # This line can be simplified to json_vars = json_parser.load(body)
+                # if and when we drop support for python versions under 3.6
+                json_vars = json_parser.loads(to_native(body.read()))
             except:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}
@@ -331,11 +338,16 @@ class Request(Storage):
         user_agent = session._user_agent
         if user_agent:
             return user_agent
-        user_agent = user_agent_parser.detect(self.env.http_user_agent)
+        http_user_agent = self.env.http_user_agent or ''
+        user_agent = user_agent_parser.detect(http_user_agent)
         for key, value in user_agent.items():
             if isinstance(value, dict):
                 user_agent[key] = Storage(value)
-        user_agent = session._user_agent = Storage(user_agent)
+        user_agent = Storage(user_agent)
+        user_agent.is_mobile = 'Mobile' in http_user_agent
+        user_agent.is_tablet = 'Tablet' in http_user_agent
+        session._user_agent = user_agent
+
         return user_agent
 
     def requires_https(self):
@@ -454,7 +466,7 @@ class Response(Storage):
         for meta in iteritems((self.meta or {})):
             k, v = meta
             if isinstance(v, dict):
-                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key),
+                s += '<meta' + ''.join(' %s="%s"' % (to_native(xmlescape(key)),
                                                      to_native(xmlescape(v[key]))) for key in v) + ' />\n'
             else:
                 s += '<meta name="%s" content="%s" />\n' % (k, to_native(xmlescape(v)))
@@ -468,45 +480,67 @@ class Response(Storage):
         response.cache_includes = (cache_method, time_expire).
         Example: (cache.disk, 60) # caches to disk for 1 minute.
         """
+        app = current.request.application
+
+        # We start by building a files list in which adjacent files internal to
+        # the application are placed in a list inside the files list.
+        #
+        # We will only minify and concat adjacent internal files as there's
+        # no way to know if changing the order with which the files are apppended
+        # will break things since the order matters in both CSS and JS and
+        # internal files may be interleaved with external ones.
         files = []
-        ext_files = []
-        has_js = has_css = False
+        # For the adjacent list we're going to use storage List to both distinguish
+        # from the regular list and so we can add attributes
+        internal = List()
+        internal.has_js = False
+        internal.has_css = False
+        done = set() # to remove duplicates
         for item in self.files:
-            if isinstance(item, (list, tuple)):
-                ext_files.append(item)
+            if not isinstance(item, list):
+                if item in done:
+                    continue
+                done.add(item)
+            if isinstance(item, (list, tuple)) or not item.startswith('/' + app): # also consider items in other web2py applications to be external
+                if internal:
+                    files.append(internal)
+                    internal = List()
+                    internal.has_js = False
+                    internal.has_css = False
+                files.append(item)
                 continue
             if extensions and not item.rpartition('.')[2] in extensions:
                 continue
-            if item in files:
-                continue
+            internal.append(item)
             if item.endswith('.js'):
-                has_js = True
+                internal.has_js = True
             if item.endswith('.css'):
-                has_css = True
-            files.append(item)
+                internal.has_css = True
+        if internal:
+            files.append(internal)
 
-        if have_minify and ((self.optimize_css and has_css) or (self.optimize_js and has_js)):
-            # cache for 5 minutes by default
-            key = hashlib_md5(repr(files)).hexdigest()
-            cache = self.cache_includes or (current.cache.ram, 60 * 5)
+        # We're done we can now minify
+        if have_minify:
+            for i, f in enumerate(files):
+                if isinstance(f, List) and ((self.optimize_css and f.has_css) or (self.optimize_js and f.has_js)):
+                    # cache for 5 minutes by default
+                    key = hashlib_md5(repr(f)).hexdigest()
+                    cache = self.cache_includes or (current.cache.ram, 60 * 5)
+                    def call_minify(files=f):
+                        return List(minify.minify(files,
+                                             URL('static', 'temp'),
+                                             current.request.folder,
+                                             self.optimize_css,
+                                             self.optimize_js))
+                    if cache:
+                        cache_model, time_expire = cache
+                        files[i] = cache_model('response.files.minified/' + key,
+                                            call_minify,
+                                            time_expire)
+                    else:
+                        files[i] = call_minify()
 
-            def call_minify(files=files):
-                return minify.minify(files,
-                                     URL('static', 'temp'),
-                                     current.request.folder,
-                                     self.optimize_css,
-                                     self.optimize_js)
-            if cache:
-                cache_model, time_expire = cache
-                files = cache_model('response.files.minified/' + key,
-                                    call_minify,
-                                    time_expire)
-            else:
-                files = call_minify()
-
-        files.extend(ext_files)
-        s = []
-        for item in files:
+        def static_map(s, item):
             if isinstance(item, str):
                 f = item.lower().split('?')[0]
                 ext = f.rpartition('.')[2]
@@ -526,6 +560,13 @@ class Response(Storage):
                 if tmpl:
                     s.append(tmpl % item[1])
 
+        s = []
+        for item in files:
+            if isinstance(item, List):
+                for f in item:
+                    static_map(s, f)
+            else:
+                static_map(s, item)
         self.write(''.join(s), escape=False)
 
     def stream(self,
@@ -566,7 +607,7 @@ class Response(Storage):
             else:
                 attname = filename
             headers["Content-Disposition"] = \
-                'attachment;filename="%s"' % attname
+                'attachment; filename="%s"' % attname
 
         if not request:
             request = current.request
@@ -626,7 +667,7 @@ class Response(Storage):
         (t, f) = (items.group('table'), items.group('field'))
         try:
             field = db[t][f]
-        except AttributeError:
+        except (AttributeError, KeyError):
             raise HTTP(404)
         try:
             (filename, stream) = field.retrieve(name, nameonly=True)
@@ -641,8 +682,13 @@ class Response(Storage):
         if download_filename is None:
             download_filename = filename
         if attachment:
+            # Browsers still don't have a simple uniform way to have non ascii
+            # characters in the filename so for now we are percent encoding it
+            if isinstance(download_filename, unicodeT):
+                download_filename = download_filename.encode('utf-8')
+            download_filename = urllib_quote(download_filename)
             headers['Content-Disposition'] = \
-                'attachment; filename="%s"' % download_filename.replace('"', '\"')
+                'attachment; filename="%s"' % download_filename.replace('"', '\\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
     def json(self, data, default=None, indent=None):
@@ -923,7 +969,7 @@ class Session(Storage):
                     if row:
                         # rows[0].update_record(locked=True)
                         # Unpickle the data
-                        session_data = pickle.loads(row.session_data)
+                        session_data = pickle.loads(row['session_data'])
                         self.update(session_data)
                         response.session_new = False
                     else:
@@ -1005,7 +1051,7 @@ class Session(Storage):
             if record_id.isdigit() and long(record_id) > 0:
                 new_unique_key = web2py_uuid()
                 row = table(record_id)
-                if row and row.unique_key == unique_key:
+                if row and row[b'unique_key'] == to_bytes(unique_key):
                     table._db(table.id == record_id).update(unique_key=new_unique_key)
                 else:
                     record_id = None
@@ -1123,7 +1169,7 @@ class Session(Storage):
                              compression_level=compression_level)
         rcookies = response.cookies
         rcookies.pop(name, None)
-        rcookies[name] = value
+        rcookies[name] = to_native(value)
         rcookies[name]['path'] = '/'
         expires = response.session_cookie_expires
         if isinstance(expires, datetime.datetime):

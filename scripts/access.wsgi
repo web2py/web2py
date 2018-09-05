@@ -35,11 +35,17 @@
 #
 
 URL_CHECK_ACCESS = 'http://127.0.0.1:8002/%(app)s/default/check_access'
+PY2 = sys.version_info[0] == 2
 
 def allow_access(environ,host):
+    if PY2:
+        import urllib2
+        from urllib import urlencode
+    else:
+        from urllib import request as urllib2
+        from urllib.parse import urlencode
+
     import os
-    import urllib
-    import urllib2
     import datetime
     header = '%s @ %s ' % (datetime.datetime.now(),host) + '='*20
     pprint = '\n'.join('%s:%s' % item for item in environ.items())
@@ -56,7 +62,7 @@ def allow_access(environ,host):
         if key.startswith('HTTP_'):
             headers[key[5:]] = environ[key] # this passes the cookies through!
     try:
-        data = urllib.urlencode({'request_uri':environ['REQUEST_URI']})
+        data = urlencode({'request_uri':environ['REQUEST_URI']})
         request = urllib2.Request(URL_CHECK_ACCESS % dict(app=app),data,headers)
         response = urllib2.urlopen(request).read().strip().lower()
         if response.startswith('true'): return True

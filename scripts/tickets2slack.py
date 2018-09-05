@@ -22,7 +22,7 @@ import json
 try:
     import requests
 except ImportError as e:
-    print "missing module 'Requests', aborting."
+    print("missing module 'Requests', aborting.")
     sys.exit(1)
 
 from gluon import URL

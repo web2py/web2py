@@ -300,7 +300,7 @@ class SoapClient(object):
         }
 
         if self.action is not None:
-            headers['SOAPAction'] = soap_action
+            headers['SOAPAction'] = '"' + soap_action + '"'
 
         headers.update(self.http_headers)
         log.info("POST %s" % location)

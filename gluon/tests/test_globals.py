@@ -158,10 +158,10 @@ class testResponse(unittest.TestCase):
         response.files.append(URL('a', 'static', 'css/file.ts'))
         content = return_includes(response)
         self.assertEqual(content,
+                         '<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>' +
                          '<script src="https://code.jquery.com/jquery-1.11.3.min.js?var=0" type="text/javascript"></script>' +
                          '<link href="/a/static/css/file.css" rel="stylesheet" type="text/css" />' +
-                         '<script src="/a/static/css/file.ts" type="text/typescript"></script>' +
-                         '<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>'
+                         '<script src="/a/static/css/file.ts" type="text/typescript"></script>'
                          )
 
         response = Response()
@@ -230,3 +230,14 @@ class testResponse(unittest.TestCase):
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
         self.assertTrue('httponly' not in cookie.lower())
+
+    def test_include_meta(self):
+        response = Response()
+        response.meta[u'web2py'] = 'web2py'
+        response.include_meta()
+        self.assertEqual(response.body.getvalue(), '\n<meta name="web2py" content="web2py" />\n')
+        response = Response()
+        response.meta[u'meta_dict'] = {u'tag_name':'tag_value'}
+        response.include_meta()
+        self.assertEqual(response.body.getvalue(), '\n<meta tag_name="tag_value" />\n')
+

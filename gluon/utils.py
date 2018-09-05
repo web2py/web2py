@@ -207,6 +207,7 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
 
 
 def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+    data = to_bytes(data)
     components = data.count(b':')
     if components == 1:
         return secure_loads_deprecated(data, encryption_key, hash_key, compression_level)

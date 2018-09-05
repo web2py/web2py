@@ -13,12 +13,11 @@
 
 import os
 import re
-import urllib
 from gluon import *
 from gluon.tools import fetch
 from gluon.storage import Storage
 import json
-
+from gluon._compat import urlencode
 
 class RPXAccount(object):
 
@@ -78,10 +77,13 @@ class RPXAccount(object):
 
     def get_user(self):
         request = self.request
-        if request.vars.token:
+        # Janrain now sends the token via both a POST body and the query
+        # string, so we should keep only one of these.
+        token = request.post_vars.token or request.get_vars.token
+        if token:
             user = Storage()
-            data = urllib.urlencode(
-                dict(apiKey=self.api_key, token=request.vars.token))
+            data = urlencode(
+                dict(apiKey=self.api_key, token=token))
             auth_info_json = fetch(self.auth_url + '?' + data)
             auth_info = json.loads(auth_info_json)
 

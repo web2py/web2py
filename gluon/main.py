@@ -183,12 +183,13 @@ def serve_controller(request, response, session):
         response._view_environment.update(page)
         page = run_view_in(response._view_environment)
 
-    # logic to garbage collect after exec, not always, once every 100 requests
-    global requests
-    requests = ('requests' in globals()) and (requests + 1) % 100 or 0
-    if not requests:
-        gc.collect()
-    # end garbage collection logic
+    if not request.env.web2py_disable_garbage_collect:
+        # logic to garbage collect after exec, not always, once every 100 requests
+        global requests
+        requests = ('requests' in globals()) and (requests + 1) % 100 or 0
+        if not requests:
+            gc.collect()
+        # end garbage collection logic
 
     # ##################################################
     # set default headers it not set
@@ -231,7 +232,7 @@ class LazyWSGI(object):
 
         to call third party WSGI applications
         """
-        self.response.status = str(status).split(' ', 1)[0]
+        self.response.status = int(str(status).split(' ', 1)[0])
         self.response.headers = dict(headers)
         return lambda *args, **kargs: \
             self.response.write(escape=False, *args, **kargs)
@@ -391,7 +392,7 @@ def wsgibase(environ, responder):
                 elif not request.is_local and exists(disabled):
                     five0three = os.path.join(request.folder, 'static', '503.html')
                     if os.path.exists(five0three):
-                        raise HTTP(503, file(five0three, 'r').read())
+                        raise HTTP(503, open(five0three, 'r').read())
                     else:
                         raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
 
@@ -745,7 +746,7 @@ class HttpServer(object):
         sock_list = [ip, port]
         if not ssl_certificate or not ssl_private_key:
             logger.info('SSL is off')
-        elif not rocket.ssl:
+        elif not rocket.has_ssl:
             logger.warning('Python "ssl" module unavailable. SSL is OFF')
         elif not exists(ssl_certificate):
             logger.warning('unable to open SSL certificate. SSL is OFF')

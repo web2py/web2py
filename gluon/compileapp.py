@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring, reduce, xrange, long
+from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring, reduce, xrange, long, reload
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -205,7 +205,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
         other_response = Response()
         other_request.env.path_info = '/' + \
             '/'.join([request.application, c, f] +
-                     map(str, other_request.args))
+                     [str(a) for a in other_request.args])
         other_request.env.query_string = \
             vars and URL(vars=vars).split('?')[1] or ''
         other_request.env.http_web2py_component_location = \
@@ -288,7 +288,7 @@ class LoadFactory(object):
             other_response = globals.Response()
             other_request.env.path_info = '/' + \
                 '/'.join([request.application, c, f] +
-                         map(str, other_request.args))
+                         [str(a) for a in other_request.args])
             other_request.env.query_string = \
                 vars and html.URL(vars=vars).split('?')[1] or ''
             other_request.env.http_web2py_component_location = \
@@ -676,8 +676,9 @@ def run_view_in(environment):
     badv = 'invalid view (%s)' % view
     patterns = response.get('generic_patterns')
     layer = None
+    scode = None
     if patterns:
-        regex = re_compile('|'.join(map(fnmatch.translate, patterns)))
+        regex = re_compile('|'.join(fnmatch.translate(p) for p in patterns))
         short_action = '%(controller)s/%(function)s.%(extension)s' % request
         allow_generic = regex.search(short_action)
     else:
@@ -708,22 +709,23 @@ def run_view_in(environment):
                         ccode = getcfs(compiled, compiled, lambda: read_pyc(compiled))
                         layer = compiled
                         break
-        if not os.path.exists(filename) and allow_generic:
-            view = 'generic.' + request.extension
-            filename = pjoin(folder, 'views', view)
-        if not os.path.exists(filename):
-            raise HTTP(404,
-                       rewrite.THREAD_LOCAL.routes.error_message % badv,
-                       web2py_error=badv)
-
         # if the view is not compiled
         if not layer:
-            # Compile the template
-            ccode = parse_template(view,
+            if not os.path.exists(filename) and allow_generic:
+                view = 'generic.' + request.extension
+                filename = pjoin(folder, 'views', view)
+            if not os.path.exists(filename):
+                raise HTTP(404,
+                           rewrite.THREAD_LOCAL.routes.error_message % badv,
+                           web2py_error=badv)
+            # Parse template
+            scode = parse_template(view,
                                    pjoin(folder, 'views'),
                                    context=environment)
-        layer = filename
-    restricted(ccode, environment, layer=layer)
+            # Compile template
+            ccode = compile2(scode, filename)
+            layer = filename        
+    restricted(ccode, environment, layer=layer, scode=scode)
     # parse_template saves everything in response body
     return environment['response'].body.getvalue()
 
