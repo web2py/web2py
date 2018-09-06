@@ -3447,7 +3447,8 @@ class Auth(AuthAPI):
         if log is DEFAULT:
             log = self.messages['reset_password_log']
         userfield = self.settings.login_userfield or 'username' \
-            if 'username' in table_user.fields else 'email'
+            if self.settings.login_userfield or 'username' \
+            in table_user.fields else 'email'
         if userfield == 'email':
             table_user.email.requires = [
                 IS_EMAIL(error_message=self.messages.invalid_email),
@@ -3456,11 +3457,11 @@ class Auth(AuthAPI):
             if not self.settings.email_case_sensitive:
                 table_user.email.requires.insert(0, IS_LOWER())
         else:
-            table_user.username.requires = [
-                IS_IN_DB(self.db, table_user.username,
+            table_user[userfield].requires = [
+                IS_IN_DB(self.db, table_user[userfield],
                          error_message=self.messages.invalid_username)]
             if not self.settings.username_case_sensitive:
-                table_user.username.requires.insert(0, IS_LOWER())
+                table_user[userfield].requires.insert(0, IS_LOWER())
 
         form = SQLFORM(table_user,
                        fields=[userfield],
