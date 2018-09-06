@@ -462,3 +462,51 @@ def local_html_escape(data, quote=False):
             data = data.replace(b'"', b"&quot;")
             data = data.replace(b'\'', b"&#x27;")
         return data
+
+
+def unlocalised_http_header_date(data):
+    """
+    Converts input datetime to format defined by RFC 7231, section 7.1.1.1
+
+    Previously, %a and %b formats were used for weekday and month names, but
+    those are not locale-safe. uWSGI requires latin1-encodable headers and
+    for example in cs_CS locale, fourth day in week is not encodable in latin1,
+    as it's "Čt".
+
+    Example output: Sun, 06 Nov 1994 08:49:37 GMT
+    """
+
+    short_weekday = {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat",
+    }.get(time.strftime("%w", data))
+
+    day_of_month = time.strftime("%d", data)
+
+    short_month = {
+        "01": "Jan",
+        "02": "Feb",
+        "03": "Mar",
+        "04": "Apr",
+        "05": "May",
+        "06": "Jun",
+        "07": "Jul",
+        "08": "Aug",
+        "09": "Sep",
+        "10": "Oct",
+        "11": "Nov",
+        "12": "Dec",
+    }.get(time.strftime("%m", data))
+
+    year_and_time = time.strftime("%Y %H:%M:%S GMT")
+
+    return "{}, {} {} {}".format(
+        short_weekday,
+        day_of_month,
+        short_month,
+        year_and_time)

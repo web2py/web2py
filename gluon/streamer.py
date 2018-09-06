@@ -16,6 +16,7 @@ import time
 import re
 import errno
 from gluon.http import HTTP
+from gluon.utils import unlocalised_http_header_date
 from gluon.contenttype import contenttype
 from gluon._compat import PY2
 
@@ -74,7 +75,7 @@ def stream_file_or_304_or_206(
     stat_file = os.stat(static_file)
     fsize = stat_file[stat.ST_SIZE]
     modified = stat_file[stat.ST_MTIME]
-    mtime = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(modified))
+    mtime = unlocalised_http_header_date(time.gmtime(modified))
     headers.setdefault('Content-Type', contenttype(static_file))
     headers.setdefault('Last-Modified', mtime)
     headers.setdefault('Pragma', 'cache')
