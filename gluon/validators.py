@@ -21,7 +21,7 @@ import struct
 import decimal
 import unicodedata
 
-from gluon._compat import StringIO, long, basestring, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, \
+from gluon._compat import StringIO, integer_types, basestring, unicodeT, urllib_unquote, unichr, to_bytes, PY2, \
     to_unicode, to_native, string_types, urlparse
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
@@ -104,7 +104,7 @@ class Validator(object):
 
     Here is an example of how to require a validator for a table field::
 
-        db.define_table('person', SQLField('name'))
+        db.define_table('person', Field('name'))
         db.person.name.requires=IS_NOT_EMPTY()
 
     Validators are always assigned using the requires attribute of a field. A
@@ -633,7 +633,7 @@ class IS_IN_DB(Validator):
             if field.type in ('id', 'integer'):
                 new_values = []
                 for value in values:
-                    if not (isinstance(value, (int, long)) or value.isdigit()):
+                    if not (isinstance(value, integer_types) or value.isdigit()):
                         if self.auto_add:
                             value = str(self.maybe_add(table, self.fieldnames[0], value))
                         else:
@@ -660,7 +660,7 @@ class IS_IN_DB(Validator):
                     return (values, None)
         else:
             if field.type in ('id', 'integer'):
-                if isinstance(value, (int, long)) or (isinstance(value, string_types) and value.isdigit()):
+                if isinstance(value, integer_types) or (isinstance(value, string_types) and value.isdigit()):
                     value = int(value)
                 elif self.auto_add:
                     value = self.maybe_add(table, self.fieldnames[0], value)
@@ -670,7 +670,7 @@ class IS_IN_DB(Validator):
                 try:
                     value = int(value)
                 except TypeError:
-                    return (values, translate(self.error_message))
+                    return (value, translate(self.error_message))
 
             if self.theset:
                 if str(value) in self.theset:
@@ -757,7 +757,7 @@ def range_error_message(error_message, what_to_enter, minimum, maximum):
             error_message += ' greater than or equal to %(min)g'
         elif maximum is not None:
             error_message += ' less than or equal to %(max)g'
-    if type(maximum) in [int, long]:
+    if type(maximum) in integer_types:
         maximum -= 1
     return translate(error_message) % dict(min=minimum, max=maximum)
 
@@ -1231,12 +1231,12 @@ class IS_LIST_OF_EMAILS(object):
     Example:
         Used as::
 
-            Field('emails','list:string',
-                  widget=SQLFORM.widgets.text.widget,
-                  requires=IS_LIST_OF_EMAILS(),
-                  represent=lambda v,r: \
-                     SPAN(*[A(x,_href='mailto:'+x) for x in (v or [])])
-                  )
+        Field('emails', 'list:string',
+              widget=SQLFORM.widgets.text.widget,
+              requires=IS_LIST_OF_EMAILS(),
+              represent=lambda v, r: \
+                XML(', '.join([A(x, _href='mailto:'+x).xml() for x in (v or [])]))
+             )
     """
     split_emails = re.compile('[^,;\s]+')
 
@@ -2568,12 +2568,11 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
 
 class IS_LIST_OF(Validator):
 
-    def __init__(self, other=None, minimum=0, maximum=100,
-                 error_message=None):
+    def __init__(self, other=None, minimum=None, maximum=None, error_message=None):                 
         self.other = other
         self.minimum = minimum
         self.maximum = maximum
-        self.error_message = error_message or "Enter between %(min)g and %(max)g values"
+        self.error_message = error_message
 
     def __call__(self, value):
         ivalue = value
@@ -2581,9 +2580,11 @@ class IS_LIST_OF(Validator):
             ivalue = [ivalue]
         ivalue = [i for i in ivalue if str(i).strip()]
         if self.minimum is not None and len(ivalue) < self.minimum:
-            return (ivalue, translate(self.error_message) % dict(min=self.minimum, max=self.maximum))
+            return (ivalue, translate(self.error_message or
+                                'Minimum length is %(min)s') % dict(min=self.minimum, max=self.maximum))
         if self.maximum is not None and len(ivalue) > self.maximum:
-            return (ivalue, translate(self.error_message) % dict(min=self.minimum, max=self.maximum))
+            return (ivalue, translate(self.error_message or
+                                'Maximum length is %(max)s') % dict(min=self.minimum, max=self.maximum))
         new_value = []
         other = self.other
         if self.other:
@@ -2740,14 +2741,17 @@ class ANY_OF(Validator):
 
     """
 
-    def __init__(self, subs):
+    def __init__(self, subs, error_message=None):
         self.subs = subs
+        self.error_message = error_message
 
     def __call__(self, value):
         for validator in self.subs:
             value, error = validator(value)
             if error is None:
                 break
+        if error is not None and self.error_message is not None:
+            error = translate(self.error_message)
         return value, error
 
     def formatter(self, value):
@@ -3545,14 +3549,14 @@ class IS_IPV4(Validator):
             for bottom, top in zip(self.minip, self.maxip):
                 if self.invert != (bottom <= number <= top):
                     ok = True
-            if not (self.is_localhost is None or self.is_localhost ==
-                    (number == self.localhost)):
+            if ok and self.is_localhost is not None and \
+                    self.is_localhost != (number == self.localhost):
                 ok = False
-            if not (self.is_private is None or self.is_private ==
-                    (sum([private_number[0] <= number <= private_number[1]
-                          for private_number in self.private]) > 0)):
+            if ok and self.is_private is not None and (self.is_private !=
+                    any([private_number[0] <= number <= private_number[1]
+                         for private_number in self.private])):
                 ok = False
-            if not (self.is_automatic is None or self.is_automatic ==
+            if ok and self.is_automatic is not None and (self.is_automatic !=
                     (self.automatic[0] <= number <= self.automatic[1])):
                 ok = False
             if ok:
@@ -3562,9 +3566,10 @@ class IS_IPV4(Validator):
 
 class IS_IPV6(Validator):
     """
-    Checks if field's value is an IP version 6 address. First attempts to
-    use the ipaddress library and falls back to contrib/ipaddr.py from Google
-    (https://code.google.com/p/ipaddr-py/)
+    Checks if field's value is an IP version 6 address.
+
+    Uses the ipaddress from the Python 3 standard library
+    and its Python 2 backport (in contrib/ipaddress.py).
 
     Args:
         is_private: None (default): indifferent
@@ -3572,7 +3577,7 @@ class IS_IPV6(Validator):
                     False (forbid): address must NOT be in fc00::/7 range
         is_link_local: Same as above but uses fe80::/10 range
         is_reserved: Same as above but uses IETF reserved range
-        is_mulicast: Same as above but uses ff00::/8 range
+        is_multicast: Same as above but uses ff00::/8 range
         is_routeable: Similar to above but enforces not private, link_local,
                       reserved or multicast
         is_6to4: Same as above but uses 2002::/16 range
@@ -3672,27 +3677,26 @@ class IS_IPV6(Validator):
 
         if self.is_routeable:
             self.is_private = False
-            self.is_link_local = False
             self.is_reserved = False
             self.is_multicast = False
 
-        if not (self.is_private is None or self.is_private ==
-                ip.is_private):
+        if ok and self.is_private is not None and \
+                  self.is_private != ip.is_private:
             ok = False
-        if not (self.is_link_local is None or self.is_link_local ==
-                ip.is_link_local):
+        if ok and self.is_link_local is not None and \
+                  self.is_link_local != ip.is_link_local:
             ok = False
-        if not (self.is_reserved is None or self.is_reserved ==
-                ip.is_reserved):
+        if ok and self.is_reserved is not None and \
+                  self.is_reserved != ip.is_reserved:
             ok = False
-        if not (self.is_multicast is None or self.is_multicast ==
-                ip.is_multicast):
+        if ok and self.is_multicast is not None and \
+                  self.is_multicast != ip.is_multicast:
             ok = False
-        if not (self.is_6to4 is None or self.is_6to4 ==
-                ip.is_6to4):
+        if ok and self.is_6to4 is not None and \
+                  self.is_6to4 != bool(ip.sixtofour):
             ok = False
-        if not (self.is_teredo is None or self.is_teredo ==
-                ip.is_teredo):
+        if ok and self.is_teredo is not None and \
+                  self.is_teredo != bool(ip.teredo):
             ok = False
 
         if ok:
@@ -3707,8 +3711,8 @@ class IS_IPADDRESS(Validator):
     addresses from within a specific range. Checks are done with the correct
     IS_IPV4 and IS_IPV6 validators.
 
-    Uses ipaddress library if found, falls back to PEP-3144 ipaddr.py from
-    Google (in contrib).
+    Uses the ipaddress from the Python 3 standard library
+    and its Python 2 backport (in contrib/ipaddress.py).
 
     Args:
         minip: lowest allowed address; accepts:
@@ -3741,7 +3745,7 @@ class IS_IPADDRESS(Validator):
 
         - is_link_local: Same as above but uses fe80::/10 range
         - is_reserved: Same as above but uses IETF reserved range
-        - is_mulicast: Same as above but uses ff00::/8 range
+        - is_multicast: Same as above but uses ff00::/8 range
         - is_routeable: Similar to above but enforces not private, link_local,
           reserved or multicast
         - is_6to4: Same as above but uses 2002::/16 range
@@ -3860,7 +3864,7 @@ class IS_IPADDRESS(Validator):
         self.is_localhost = is_localhost
         self.is_private = is_private
         self.is_automatic = is_automatic
-        self.is_ipv4 = is_ipv4
+        self.is_ipv4 = is_ipv4 or is_ipv6 is False
         self.is_private = is_private
         self.is_link_local = is_link_local
         self.is_reserved = is_reserved
@@ -3869,7 +3873,7 @@ class IS_IPADDRESS(Validator):
         self.is_6to4 = is_6to4
         self.is_teredo = is_teredo
         self.subnets = subnets
-        self.is_ipv6 = is_ipv6
+        self.is_ipv6 = is_ipv6 or is_ipv4 is False
         self.error_message = error_message
 
     def __call__(self, value):

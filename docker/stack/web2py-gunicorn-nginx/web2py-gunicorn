@@ -1,0 +1,22 @@
+FROM python:2.7
+
+RUN apt update && apt install -y unzip wget
+
+ENV PATH=/usr/local/bin:$PATH
+
+RUN pip install gunicorn
+RUN useradd -m -r  web2py
+
+USER web2py
+
+WORKDIR /home/web2py
+
+RUN wget -c http://web2py.com/examples/static/web2py_src.zip && \
+ unzip -o web2py_src.zip && \
+ rm -f web2py_src.zip
+
+WORKDIR /home/web2py/web2py
+
+RUN cp handlers/wsgihandler.py .
+
+CMD /usr/local/bin/gunicorn --workers 4 --timeout=90 --graceful-timeout=10 --bind :9005 wsgihandler:application

@@ -1,0 +1,12 @@
+version: '3.1'
+
+services:
+  web2py-rocket-ssl:
+    build: .
+    ports:
+      - "443:443"
+    volumes:
+      - applications:/web2py/applications
+
+volumes:
+  applications:

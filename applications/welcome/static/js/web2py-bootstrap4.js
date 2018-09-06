@@ -52,7 +52,7 @@
         });
       }
       var ul = this;
-      $(ul).find(":text").addClass('form-control').wrap("<div class='input-group'></div>").after('<div class="input-group-addon"><i class="glyphicon glyphicon-plus"></i></div><div class="input-group-addon"><i class="glyphicon glyphicon-minus"></i></div>').keypress(function(e) {
+      $(ul).find(":text").addClass('form-control').wrap("<div class='input-group'></div>").after('<div class="input-group-append"><i class="fa fa-plus-circle"></i></div>&nbsp;<div class="input-group-append"><i class="fa fa-minus-circle"></i></div>').keypress(function(e) {
         return (e.which == 13) ? pe(ul, e) : true;
       }).next().click(function(e) {
         pe(ul, e);

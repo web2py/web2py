@@ -1,0 +1,34 @@
+version: '3.1'
+
+services:
+  web2py-rocket-ssl:
+    build:
+      context: .
+      dockerfile: web2py-rocket-ssl
+    container_name: web2py-rocket-ssl
+    ports:
+      - "443:443"
+    networks:
+      web2py-net:
+        ipv4_address: 172.25.0.22
+    volumes:
+      - applications:/home/web2py/web2py/applications
+
+  web2py-nginx:
+    build:
+      context: .
+      dockerfile: web2py-nginx
+    container_name: web2py-nginx
+    networks:
+      web2py-net:
+        ipv4_address: 172.25.0.23
+
+networks:
+  web2py-net:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.25.0.0/16
+
+volumes:
+  applications:

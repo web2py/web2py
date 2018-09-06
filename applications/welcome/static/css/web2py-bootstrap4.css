@@ -104,10 +104,10 @@ select.autocomplete {
 #web2py-logo:hover {
     color: #FFF;
 }
-.footer > .container-fluid {
+.footer > .row {
     padding-left: 15px;
     padding-right: 15px;
-    margin: 20px;
+    margin-top: 20px;
 }
 .background {
     background: url(../images/background.jpg) no-repeat center center;
@@ -316,6 +316,22 @@ td.w2p_fc,
     width: 100%;
 }
 
+/* form submit block */
+#submit_record__row .btn {
+    margin-bottom: .25rem;
+}
+@media (min-width: 577px) {
+    #submit_record__row .btn {
+        margin-left: .25rem;
+    }
+}
+@media (max-width: 576px) {
+    #submit_record__row .btn {
+        width: 100%;
+        margin-left: 0;
+    }
+}
+
 /* for backward compatbility with pre-font-awesome */
 .icon.plus,.icon.arrowleft,.icon.download,.icon.trash,.icon.pen,.icon.arrowright,.icon.magnifier {
     display: inline-block;
@@ -332,3 +348,13 @@ td.w2p_fc,
 .icon.pen:before { content: "\f040";}
 .icon.arrowright:before { content: "\f061";}
 .icon.magnifier:before { content: "\f002";}
+
+.web2py_table_selectable_actions {
+   padding-top: 10px;
+   float: right;
+}
+
+.web2py_table_selectable_actions input {
+   padding: 5px 7px;
+   margin-right: 10px;
+}

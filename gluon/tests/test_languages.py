@@ -93,20 +93,162 @@ class TestTranslations(unittest.TestCase):
                          'Hello World')
         self.assertEqual(str(T('Hello World## comment')),
                          'Hello World')
+        self.assertEqual(str(T.M('**Hello World**')),
+                         '<strong>Hello World</strong>')
+		# sub_tuple testing
         self.assertEqual(str(T('%s %%{shop}', 1)),
                          '1 shop')
         self.assertEqual(str(T('%s %%{shop}', 2)),
                          '2 shops')
+        self.assertEqual(str(T('%%{quark(%s)}', 1)),
+                         'quark')
+        self.assertEqual(str(T('%%{quark(%i)}', 2)),
+                         'quarks')
+        self.assertEqual(str(T('%%{!quark(%s)}', 1)),
+                         'Quark')
+        self.assertEqual(str(T('%%{!!quark(%i)}', 2)),
+                         'Quarks')
+        self.assertEqual(str(T('%%{!!!quark(%s)}', 0)),
+                         'QUARKS')
+        self.assertEqual(str(T('%%{?an?%i}', 1)),
+                         'an')
+        self.assertEqual(str(T('%%{?an?%s}', 0)),
+                         '0')
+        self.assertEqual(str(T('%%{??%i}', 1)),
+                         '')
+        self.assertEqual(str(T('%%{??%s}', 2)),
+                         '2')
+        self.assertEqual(str(T('%%{?%i}', 1)),
+                         '')
+        self.assertEqual(str(T('%%{?%s}', 0)),
+                         '0')
+        self.assertEqual(str(T('%%{?one?%i?zero}', 1)),
+                         'one')
+        self.assertEqual(str(T('%%{?one?%s?zero}', 23)),
+                         '23')
+        self.assertEqual(str(T('%%{?one?%i?zero}', 0)),
+                         'zero')
+        self.assertEqual(str(T('%%{?one?%s?}', 1)),
+                         'one')
+        self.assertEqual(str(T('%%{?one?%i?}', 23)),
+                         '23')
+        self.assertEqual(str(T('%%{?one?%s?}', 0)),
+                         '')
+        self.assertEqual(str(T('%%{??%i?zero}', 1)),
+                         '')
+        self.assertEqual(str(T('%%{??%s?zero}', 23)),
+                         '23')
+        self.assertEqual(str(T('%%{??%i?zero}', 0)),
+                         'zero')
+        self.assertEqual(str(T('%%{??1?}%s', '')),
+                         '')
+        self.assertEqual(str(T('%%{??%s?}', 23)),
+                         '23')
+        self.assertEqual(str(T('%%{??0?}%s', '')),
+                         '')
         self.assertEqual(str(T('%s %%{shop[0]}', 1)),
                          '1 shop')
         self.assertEqual(str(T('%s %%{shop[0]}', 2)),
                          '2 shops')
-        self.assertEqual(str(T('%s %%{quark[0]}', 1)),
-                         '1 quark')
-        self.assertEqual(str(T('%s %%{quark[0]}', 2)),
-                         '2 quarks')
-        self.assertEqual(str(T.M('**Hello World**')),
-                         '<strong>Hello World</strong>')
+        self.assertEqual(str(T('%i %%{?one?not_one[0]}', 1)),
+                         '1 one')
+        self.assertEqual(str(T('%i %%{?one?not_one[0]}', 2)),
+                         '2 not_one')
+        self.assertEqual(str(T('%%{??on[0]} %i', 1)),
+                         ' 1')
+        self.assertEqual(str(T('%%{??on[0]} %s', 0)),
+                         'on 0')
+        self.assertEqual(str(T('%%{?on[0]} %s', 1)),
+                         ' 1')
+        self.assertEqual(str(T('%%{?on[0]} %i', 2)),
+                         'on 2')
+        self.assertEqual(str(T('%i %%{?one?or_more?zero[0]}', 1)),
+                         '1 one')
+        self.assertEqual(str(T('%i %%{?one?or_more?zero[0]}', 2)),
+                         '2 or_more')
+        self.assertEqual(str(T('%i %%{?one?or_more?zero[0]}', 0)),
+                         '0 zero')
+        self.assertEqual(str(T('%i %%{?one?hands?[0]}', 1)),
+                         '1 one')
+        self.assertEqual(str(T('%s %%{?one?hands?[0]}', 2)),
+                         '2 hands')
+        self.assertEqual(str(T('%i %%{?one?hands?[0]}', 0)),
+                         '0 ')
+        self.assertEqual(str(T('%s %%{??or_more?zero[0]}', 1)),
+                         '1 ')
+        self.assertEqual(str(T('%i %%{??or_more?zero[0]}', 2)),
+                         '2 or_more')
+        self.assertEqual(str(T('%s %%{??or_more?zero[0]}', 0)),
+                         '0 zero')
+        self.assertEqual(str(T('%i%%{??nd?[0]}', 1)),
+                         '1')
+        self.assertEqual(str(T('%i%%{??nd?[0]}', 2)),
+                         '2nd')
+        self.assertEqual(str(T('%i%%{??nd?[0]}', 0)),
+                         '0')
+        self.assertEqual(str(T('%i%%{?st?[0]}', 1)),
+                         '1st')
+        self.assertEqual(str(T('%i%%{?st?[0]}', 2)),
+                         '2')
+        self.assertEqual(str(T('%i%%{?st?[0]}', 0)),
+                         '0')
+		# sub_dict testing
+        self.assertEqual(str(T('%(key)s %%{is(key)}', dict(key=1))),
+                         '1 is')
+        self.assertEqual(str(T('%(key)i %%{is(key)}', dict(key=2))),
+                         '2 are')
+        self.assertEqual(str(T('%%{!!!is(%(key)s)}', dict(key=2))),
+                         'ARE')
+        self.assertEqual(str(T('%(key)i %%{?not_one(key)}', dict(key=1))),
+                         '1 ')
+        self.assertEqual(str(T('%(key)s %%{?not_one(key)}', dict(key=2))),
+                         '2 not_one')
+        self.assertEqual(str(T('%(key)i %%{?not_one(key)}', dict(key=0))),
+                         '0 not_one')
+        self.assertEqual(str(T('%(key)s %%{?one?not_one(key)}', dict(key=1))),
+                         '1 one')
+        self.assertEqual(str(T('%(key)i %%{?one?not_one(key)}', dict(key=2))),
+                         '2 not_one')
+        self.assertEqual(str(T('%(key)s %%{?one?not_one(key)}', dict(key=0))),
+                         '0 not_one')
+        self.assertEqual(str(T('%(key)i %%{?one?(key)}', dict(key=1))),
+                         '1 one')
+        self.assertEqual(str(T('%(key)s %%{?one?(key)}', dict(key=2))),
+                         '2 ')
+        self.assertEqual(str(T('%(key)i %%{?one?(key)}', dict(key=0))),
+                         '0 ')
+        self.assertEqual(str(T('%(key)s %%{??not_one(key)}', dict(key=1))),
+                         '1 ')
+        self.assertEqual(str(T('%(key)i %%{??not_one(key)}', dict(key=2))),
+                         '2 not_one')
+        self.assertEqual(str(T('%(key)s %%{?not_one(key)}', dict(key=1))),
+                         '1 ')
+        self.assertEqual(str(T('%(key)i %%{?not_one(key)}', dict(key=0))),
+                         '0 not_one')
+        self.assertEqual(str(T('%(key)s %%{?one?other?zero(key)}', dict(key=1))),
+                         '1 one')
+        self.assertEqual(str(T('%(key)i %%{?one?other?zero(key)}', dict(key=4))),
+                         '4 other')
+        self.assertEqual(str(T('%(key)s %%{?one?other?zero(key)}', dict(key=0))),
+                         '0 zero')
+        self.assertEqual(str(T('%(key)i %%{?one?two_or_more?(key)}', dict(key=1))),
+                         '1 one')
+        self.assertEqual(str(T('%(key)s %%{?one?two_or_more?(key)}', dict(key=2))),
+                         '2 two_or_more')
+        self.assertEqual(str(T('%(key)i %%{?one?two_or_more?(key)}', dict(key=0))),
+                         '0 ')
+        self.assertEqual(str(T('%(key)s %%{??two_or_more?zero(key)}', dict(key=1))),
+                         '1 ')
+        self.assertEqual(str(T('%(key)i %%{??two_or_more?zero(key)}', dict(key=2))),
+                         '2 two_or_more')
+        self.assertEqual(str(T('%(key)s %%{??two_or_more?zero(key)}', dict(key=0))),
+                         '0 zero')
+        self.assertEqual(str(T('%(key)i %%{??two_or_more?(key)}', dict(key=1))),
+                         '1 ')
+        self.assertEqual(str(T('%(key)s %%{??two_or_more?(key)}', dict(key=0))),
+                         '0 ')
+        self.assertEqual(str(T('%(key)i %%{??two_or_more?(key)}', dict(key=2))),
+                         '2 two_or_more')
         T.force('it')
         self.assertEqual(str(T('Hello World')),
                          'Salve Mondo')

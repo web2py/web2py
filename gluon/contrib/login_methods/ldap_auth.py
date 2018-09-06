@@ -170,7 +170,9 @@ def ldap_auth(server='ldap',
     is "error" and can be set to error, warning, info, debug.
     """
     logger = logging.getLogger('web2py.auth.ldap_auth')
-    if logging_level == 'error':
+    if isinstance(logging_level, int):
+        logger.setLevel(logging_level)
+    elif logging_level == 'error':
         logger.setLevel(logging.ERROR)
     elif logging_level == 'warning':
         logger.setLevel(logging.WARNING)
@@ -398,17 +400,25 @@ def ldap_auth(server='ldap',
             if manage_user:
                 logger.info('[%s] Manage user data' % str(username))
                 try:
+                    user_firstname = result[user_firstname_attrib][0]
                     if user_firstname_part is not None:
-                        store_user_firstname = result[user_firstname_attrib][0].split(' ', 1)[user_firstname_part]
+                        store_user_firstname = user_firstname.split(
+                            b' ' if isinstance(user_firstname, bytes) else ' ',
+                            1
+                        )[user_firstname_part]
                     else:
-                        store_user_firstname = result[user_firstname_attrib][0]
+                        store_user_firstname = user_firstname
                 except KeyError as e:
                     store_user_firstname = None
                 try:
+                    user_lastname = result[user_lastname_attrib][0]
                     if user_lastname_part is not None:
-                        store_user_lastname = result[user_lastname_attrib][0].split(' ', 1)[user_lastname_part]
+                        store_user_lastname = user_lastname.split(
+                            b' ' if isinstance(user_lastname, bytes) else ' ',
+                            1
+                        )[user_lastname_part]
                     else:
-                        store_user_lastname = result[user_lastname_attrib][0]
+                        store_user_lastname = user_lastname
                 except KeyError as e:
                     store_user_lastname = None
                 try:

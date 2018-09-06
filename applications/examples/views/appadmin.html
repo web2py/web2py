@@ -9,16 +9,19 @@
 });
 //--></script>
 
+<div class="row">
+  <div class="col-md-12">
+
 {{if request.function=='index':}}
 <h2>{{=T("Available Databases and Tables")}}</h2>
   {{if not databases:}}{{=T("No databases in this application")}}{{pass}}
   <ul class="nav nav-tabs" id="myTab">
-  <li class="active" ><a href="#alltables" data-toggle="tab">Tables</a></li>
-  <li><a href="#hooks" data-toggle="tab">Hooks</a></li>
+    <li class="nav-item"><a href="#alltables" data-toggle="tab" class="nav-link active">Tables</a></li>
+    <li class="nav-item"><a href="#hooks" data-toggle="tab" class="nav-link">Hooks</a></li>
   </ul>
   <div class="tab-content">
       <div class="tab-pane active" id="alltables">
-        <table class="table">
+        <table class="table table-striped">
           {{for db in sorted(databases):}}
             {{for table in databases[db].tables:}}
               {{qry='%s.%s.id>0'%(db,table)}}
@@ -37,10 +40,10 @@
               {{pass}}
           <tr>
             <th style="font-size: 1.75em;">
-              {{=A("%s.%s" % (db,table),_href=URL('select',args=[db],vars=dict(query=qry)))}}
+              &raquo; {{=A("%s.%s" % (db,table),_href=URL('select',args=[db],vars=dict(query=qry)))}}
             </th>
             <td>
-              {{=A(str(T('New Record')),_href=URL('insert',args=[db,table]),_class="btn btn-default")}}
+              {{=A(str(T('New Record')),_href=URL('insert',args=[db,table]),_class="btn btn-primary")}}
             </td>
           </tr>
           {{pass}}
@@ -61,28 +64,31 @@
   </pre>
   {{pass}}
   {{if table:}}
-  {{=A(str(T('New Record')),_href=URL('insert',args=[request.args[0],table]),_class="btn btn-default")}}<br/><br/>
+  {{=A(str(T('New Record')),_href=URL('insert',args=[request.args[0],table]),_class="btn btn-primary", _role="button")}}<br/><br/>
+  <hr />
     <h3>{{=T("Rows in Table")}}</h3><br/>
    {{else:}}
     <h3>{{=T("Rows selected")}}</h3><br/>
    {{pass}}
    {{=form}}
-   <p>{{=T('The "query" is a condition like "db.table1.field1==\'value\'". Something like "db.table1.field1==db.table2.field2" results in a SQL JOIN.')}}<br/>
+   <p class="text-muted">{{=T('The "query" is a condition like "db.table1.field1==\'value\'". Something like "db.table1.field1==db.table2.field2" results in a SQL JOIN.')}}<br/>
       {{=T('Use (...)&(...) for AND, (...)|(...) for OR, and ~(...)  for NOT to build more complex queries.')}}<br/>
       {{=T('"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN')}}</p>
     <br/><br/>
     <h4>{{=T("%s selected", nrows)}}</h4>
-    {{if start>0:}}{{=A(T('previous %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start-step)),_class="btn btn-default")}}{{pass}}
-    {{if stop<nrows:}}{{=A(T('next %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start+step)),_class="btn btn-default")}}{{pass}}
+    {{if start>0:}}{{=A(T('previous %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start-step)),_class="btn btn-primary")}}{{pass}}
+    {{if stop<nrows:}}{{=A(T('next %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start+step)),_class="btn btn-primary")}}{{pass}}
     {{if rows:}}
        <div style="overflow:auto; width:80%;">
        {{linkto = lambda f, t, r: URL('update', args=[request.args[0], r, f]) if f else "#"}}
        {{upload=URL('download',args=request.args[0])}}
-       {{=SQLTABLE(rows,linkto,upload,orderby=True,_class='sortable')}}
+       {{=SQLTABLE(rows,linkto,upload,orderby=True,_class='table table-striped table-bordered sortable')}}
        </div>
     {{pass}}
-    <br/><br/><h3>{{=T("Import/Export")}}</h3><br/>
-    <a href="{{=URL('csv',args=request.args[0],vars=dict(query=query))}}" class="btn btn-default">{{=T("export as csv file")}}</a>
+    <br/><br/>
+    <hr />
+    <h3>{{=T("Import/Export")}}</h3><br/>
+    <a href="{{=URL('csv',args=request.args[0],vars=dict(query=query))}}" class="btn btn-primary">{{=T("export as csv file")}}</a>
   {{=formcsv or ''}}
 
 {{elif request.function=='insert':}}
@@ -268,3 +274,6 @@
   {{pass}}
 </div>
 {{pass}}
+
+  </div>
+</div>

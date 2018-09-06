@@ -392,7 +392,7 @@ def wsgibase(environ, responder):
                 elif not request.is_local and exists(disabled):
                     five0three = os.path.join(request.folder, 'static', '503.html')
                     if os.path.exists(five0three):
-                        raise HTTP(503, file(five0three, 'r').read())
+                        raise HTTP(503, open(five0three, 'r').read())
                     else:
                         raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
 
