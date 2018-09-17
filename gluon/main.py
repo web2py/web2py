@@ -31,7 +31,7 @@ from gluon._compat import Cookie, urllib2
 
 from gluon.fileutils import abspath, write_file
 from gluon.settings import global_settings
-from gluon.utils import web2py_uuid
+from gluon.utils import web2py_uuid, unlocalised_http_header_date
 from gluon.admin import add_path_first, create_missing_folders, create_missing_app_folders
 from gluon.globals import current
 
@@ -199,8 +199,7 @@ def serve_controller(request, response, session):
         ('Content-Type', contenttype('.' + request.extension)),
         ('Cache-Control',
          'no-store, no-cache, must-revalidate, post-check=0, pre-check=0'),
-        ('Expires', time.strftime('%a, %d %b %Y %H:%M:%S GMT',
-                                  time.gmtime())),
+        ('Expires', unlocalised_http_header_date(time.gmtime())),
         ('Pragma', 'no-cache')]
     for key, value in default_headers:
         response.headers.setdefault(key, value)
