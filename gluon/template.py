@@ -18,7 +18,7 @@ import os
 import cgi
 import logging
 from re import compile, sub, escape, DOTALL
-from gluon._compat import StringIO, unicodeT, to_unicode, to_bytes, to_native
+from gluon._compat import StringIO, unicodeT, to_unicode, to_bytes, to_native, basestring
 
 try:
     # have web2py
@@ -778,7 +778,7 @@ def parse_template(filename,
     """
 
     # First, if we have a str try to open the file
-    if isinstance(filename, str):
+    if isinstance(filename, basestring):
         fname = os.path.join(path, filename)
         try:
             with open(fname, 'rb') as fp:
