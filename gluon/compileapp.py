@@ -15,7 +15,7 @@ Note:
 
 import re
 import fnmatch
-import os
+import os, sys
 import copy
 import random
 from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring, reduce, xrange, long, reload
@@ -52,7 +52,10 @@ is_gae = settings.global_settings.web2py_runtime_gae
 is_jython = settings.global_settings.is_jython
 pjoin = os.path.join
 
-marshal_header_size = 8 if PY2 else 12
+if PY2:
+    marshal_header_size = 8
+else:
+    marshal_header_size = 16 if sys.version_info[1] >= 7 else 12
 
 TEST_CODE = \
     r"""

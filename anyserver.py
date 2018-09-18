@@ -212,16 +212,16 @@ def mongrel2_handler(application, conn, debug=False):
 
     while True:
         if debug:
-            print "WAITING FOR REQUEST"
+            print("WAITING FOR REQUEST")
 
         # receive a request
         req = conn.recv()
         if debug:
-            print "REQUEST BODY: %r\n" % req.body
+            print("REQUEST BODY: %r\n" % req.body)
 
         if req.is_disconnect():
             if debug:
-                print "DISCONNECT"
+                print("DISCONNECT")
             continue  # effectively ignore the disconnect from the client
 
         # Set a couple of environment attributes a.k.a. header attributes
@@ -247,7 +247,7 @@ def mongrel2_handler(application, conn, debug=False):
         environ['wsgi.input'] = req.body
 
         if debug:
-            print "ENVIRON: %r\n" % environ
+            print("ENVIRON: %r\n" % environ)
 
         # SimpleHandler needs file-like stream objects for
         # requests, errors and responses
@@ -282,10 +282,10 @@ def mongrel2_handler(application, conn, debug=False):
 
         # return the response
         if debug:
-            print "RESPONSE: %r\n" % response
+            print("RESPONSE: %r\n" % response)
         if errors:
             if debug:
-                print "ERRORS: %r" % errors
+                print("ERRORS: %r" % errors)
             data = "%s\r\n\r\n%s" % (data, errors)
         conn.reply_http(
             req, data, code=code, status=status, headers=headers)
@@ -355,8 +355,8 @@ def main():
                       dest='workers',
                       help='number of workers number')
     (options, args) = parser.parse_args()
-    print 'starting %s on %s:%s...' % (
-        options.server, options.ip, options.port)
+    print('starting %s on %s:%s...' % (
+        options.server, options.ip, options.port))
     run(options.server, options.ip, options.port,
         logging=options.logging, profiler=options.profiler_dir,
         options=options)
