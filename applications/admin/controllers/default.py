@@ -562,7 +562,11 @@ def enable():
         os.unlink(filename)
         return SPAN(T('Disable'), _style='color:green')
     else:
-        safe_open(filename, 'wb').write('disabled: True\ntime-disabled: %s' % request.now)
+        if PY2:
+            safe_open(filename, 'wb').write('disabled: True\ntime-disabled: %s' % request.now)
+        else:
+            str_ = 'disabled: True\ntime-disabled: %s' % request.now
+            safe_open(filename, 'wb').write(str_.encode('utf-8'))
         return SPAN(T('Enable'), _style='color:red')
 
 
