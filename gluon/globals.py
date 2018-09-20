@@ -1075,7 +1075,15 @@ class Session(Storage):
             scookies['HttpOnly'] = True
         if self._secure:
             scookies['secure'] = True
+        if self._same_site is None:
+            # Using SameSite Lax Mode is the default
+            # You actually have to call session.samesite(False) if you really
+            # dont want the extra protection provided by the SameSite header 
+            self._same_site = 'Lax'
         if self._same_site:
+            if 'samesite' not in Cookie.Morsel._reserved:
+                # Python version 3.7 and lower needs this
+                Cookie.Morsel._reserved['samesite'] = 'SameSite'
             scookies['samesite'] = self._same_site
 
     def clear_session_cookies(self):
@@ -1156,9 +1164,6 @@ class Session(Storage):
         self._secure = True
 
     def samesite(self, mode='Lax'):
-        if 'samesite' not in Cookie.Morsel._reserved:
-            # Python version 3.7 and lower needs this
-            Cookie.Morsel._reserved['samesite'] = 'SameSite'
         self._same_site = mode
 
     def forget(self, response=None):

@@ -232,17 +232,18 @@ class testResponse(unittest.TestCase):
         self.assertTrue('httponly' not in cookie.lower())
 
     def test_cookies_samesite(self):
+        # Test Lax is the default mode
         current = setup_clean_session()
-        current.session._fixup_before_save()
-        cookie = str(current.response.cookies)
-        self.assertTrue('samesite' not in cookie.lower())
-
-        current = setup_clean_session()
-        current.session.samesite()
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
         self.assertTrue('samesite=lax' in cookie.lower())
-
+        # Test you can disable samesite
+        current = setup_clean_session()
+        current.session.samesite(False)
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('samesite' not in cookie.lower())
+        # Test you can change mode
         current = setup_clean_session()
         current.session.samesite('Strict')
         current.session._fixup_before_save()
