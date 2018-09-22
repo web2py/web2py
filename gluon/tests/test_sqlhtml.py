@@ -329,11 +329,8 @@ class TestSQLFORM(unittest.TestCase):
         # Fake the formkey
         current.session['_formkey[no_table/create]'] = ['123']
 
-        if factory_form.process().accepted:
-            self.assertTrue(True)
-            self.assertIsInstance(factory_form.vars.a_date, datetime.date)
-        else:
-            self.assertFalse(True, 'Setup for test failed. Form was not accepted.')
+        self.assertTrue(factory_form.process().accepted)
+        self.assertIsInstance(factory_form.vars.a_date, datetime.date)
 
     #  def test_build_query(self):
     #     pass
