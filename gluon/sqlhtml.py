@@ -2023,7 +2023,7 @@ class SQLFORM(FORM):
         to hold the fields.
         """
         # this is here to avoid circular references
-        from gluon.dal import DAL
+        from gluon.dal import DAL, _default_validators
         # Define a table name, this way it can be logical to our CSS.
         # And if you switch from using SQLFORM to SQLFORM.factory
         # your same css definitions will still apply.
@@ -2036,8 +2036,9 @@ class SQLFORM(FORM):
 
         # Clone fields, while passing tables straight through
         fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
-
-        return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
+        dummy_dal = DAL(None)
+        dummy_dal.validators_method = lambda f: _default_validators(dummy_dal, f) # See https://github.com/web2py/web2py/issues/2007
+        return SQLFORM(dummy_dal.define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
     def build_query(fields, keywords):
