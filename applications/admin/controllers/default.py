@@ -562,7 +562,11 @@ def enable():
         os.unlink(filename)
         return SPAN(T('Disable'), _style='color:green')
     else:
-        safe_open(filename, 'wb').write('disabled: True\ntime-disabled: %s' % request.now)
+        if PY2:
+            safe_open(filename, 'wb').write('disabled: True\ntime-disabled: %s' % request.now)
+        else:
+            str_ = 'disabled: True\ntime-disabled: %s' % request.now
+            safe_open(filename, 'wb').write(str_.encode('utf-8'))
         return SPAN(T('Enable'), _style='color:red')
 
 
@@ -642,7 +646,10 @@ def edit():
     # show settings tab and save prefernces
     if 'settings' in request.vars:
         if request.post_vars:  # save new preferences
-            post_vars = request.post_vars.items()
+            if PY2:
+                post_vars = request.post_vars.items()
+            else:
+                post_vars = list(request.post_vars.items())
             # Since unchecked checkbox are not serialized, we must set them as false by hand to store the correct preference in the settings
             post_vars += [(opt, 'false') for opt in preferences if opt not in request.post_vars]
             if config.save(post_vars):
