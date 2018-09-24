@@ -2315,7 +2315,7 @@ class SQLFORM(FORM):
                       button='button btn btn-default btn-secondary',
                       buttontext='buttontext button',
                       buttonadd='icon plus icon-plus glyphicon glyphicon-plus',
-                      buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
+                      buttonback='icon arrowleft icon-arrow-left glyphicon glyphicon-arrow-left',
                       buttonexport='icon downarrow icon-download glyphicon glyphicon-download',
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
                       buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
