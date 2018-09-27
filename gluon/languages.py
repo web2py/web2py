@@ -311,7 +311,7 @@ def write_plural_dict(filename, contents):
     try:
         fp = LockedFile(filename, 'w')
         fp.write('#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n{\n# "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],\n')
-        for key in sorted(contents, sort_function):
+        for key in sorted(contents, cmp=sort_function):
             forms = '[' + ','.join([repr(Utf8(form))
                                     for form in contents[key]]) + ']'
             fp.write('%s: %s,\n' % (repr(Utf8(key)), forms))
@@ -936,8 +936,8 @@ class translator(object):
                     word = w[1:]
                     fun = cap_fun
                 if i is not None:
-                    return fun(self.plural(word, symbols[int(i)]))
-                return fun(word)
+                    return to_native(fun(self.plural(word, symbols[int(i)])))
+                return to_native(fun(word))
 
             def sub_dict(m):
                 """ word(key or num)
