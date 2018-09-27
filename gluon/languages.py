@@ -325,7 +325,7 @@ def write_plural_dict(filename, contents):
             fp.close()
 
 
-def sort_function(x, y):
+def sort_function(x):
     return unicode(x, 'utf-8').lower()
 
 
