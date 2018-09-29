@@ -1,4 +1,5 @@
 .*
+!.gitignore
 *.pyc
 *.pyo
 *~
