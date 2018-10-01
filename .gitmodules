@@ -6,7 +6,7 @@
 	url = https://github.com/QuicketSolutions/northlake.git
 [submodule "applications/oneapp"]
 	path = applications/oneapp
-	url = https://github.com/QuicketSolutions/northlake.git
+	url = https://github.com/QuicketSolutions/oneapp.git
 [submodule "applications/peoria"]
 	path = applications/peoria
 	url = https://github.com/QuicketSolutions/northlake.git
