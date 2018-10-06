@@ -2693,13 +2693,13 @@ class SQLFORM(FORM):
                             dbset = dbset(SQLFORM.build_query(
                                 sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
-                                            cacheable=True, *selectable_columns)
+                                            cacheable=True, *expcolumns)
                     except Exception as e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
                     rows = dbset.select(left=left, orderby=orderby,
-                                        cacheable=True, *selectable_columns)
+                                        cacheable=True, *expcolumns)
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
