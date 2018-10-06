@@ -1351,7 +1351,7 @@ class SQLFORM(FORM):
             if not readonly:
                 if not record:
                     # create form should only show writable fields
-                    fields = [f.name for f in table if (ignore_rw or f.writable) and not f.compute]
+                    fields = [f.name for f in table if (ignore_rw or f.writable or (f.readable and f.default)) and not f.compute]
                 else:
                     # update form should also show readable fields and computed fields (but in reaodnly mode)
                     fields = [f.name for f in table if (ignore_rw or f.writable or f.readable)]
