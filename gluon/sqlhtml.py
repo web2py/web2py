@@ -1351,7 +1351,7 @@ class SQLFORM(FORM):
             if not readonly:
                 if not record:
                     # create form should only show writable fields
-                    fields = [f.name for f in table if (ignore_rw or f.writable) and not f.compute]
+                    fields = [f.name for f in table if (ignore_rw or f.writable or (f.readable and f.default)) and not f.compute]
                 else:
                     # update form should also show readable fields and computed fields (but in reaodnly mode)
                     fields = [f.name for f in table if (ignore_rw or f.writable or f.readable)]
@@ -2023,7 +2023,7 @@ class SQLFORM(FORM):
         to hold the fields.
         """
         # this is here to avoid circular references
-        from gluon.dal import DAL
+        from gluon.dal import DAL, _default_validators
         # Define a table name, this way it can be logical to our CSS.
         # And if you switch from using SQLFORM to SQLFORM.factory
         # your same css definitions will still apply.
@@ -2036,8 +2036,9 @@ class SQLFORM(FORM):
 
         # Clone fields, while passing tables straight through
         fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
-
-        return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
+        dummy_dal = DAL(None)
+        dummy_dal.validators_method = lambda f: _default_validators(dummy_dal, f) # See https://github.com/web2py/web2py/issues/2007
+        return SQLFORM(dummy_dal.define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
     def build_query(fields, keywords):
@@ -2314,7 +2315,7 @@ class SQLFORM(FORM):
                       button='button btn btn-default btn-secondary',
                       buttontext='buttontext button',
                       buttonadd='icon plus icon-plus glyphicon glyphicon-plus',
-                      buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
+                      buttonback='icon arrowleft icon-arrow-left glyphicon glyphicon-arrow-left',
                       buttonexport='icon downarrow icon-download glyphicon glyphicon-download',
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
                       buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
@@ -2692,13 +2693,13 @@ class SQLFORM(FORM):
                             dbset = dbset(SQLFORM.build_query(
                                 sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
-                                            cacheable=True, *selectable_columns)
+                                            cacheable=True, *expcolumns)
                     except Exception as e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
                     rows = dbset.select(left=left, orderby=orderby,
-                                        cacheable=True, *selectable_columns)
+                                        cacheable=True, *expcolumns)
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
