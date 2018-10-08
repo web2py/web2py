@@ -2252,7 +2252,7 @@ class Auth(AuthAPI):
             if basic_auth_realm:
                 raise http_401
             return (True, False, False)
-        (username, sep, password) = base64.b64decode(basic[6:]).partition(':')
+        (username, sep, password) = base64.b64decode(basic[6:]).partition(b':')
         is_valid_user = sep and self.login_bare(username, password)
         if not is_valid_user and basic_auth_realm:
             raise http_401
