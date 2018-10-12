@@ -12,9 +12,6 @@ from gluon.tools import Auth
 # File is released under public domain and you can use without limitations
 # -------------------------------------------------------------------------
 
-if request.global_settings.web2py_version < "2.15.5":
-    raise HTTP(500, "Requires web2py 2.15.5 or newer")
-
 # -------------------------------------------------------------------------
 # if SSL/HTTPS is properly configured and you want all HTTP requests to
 # be redirected to HTTPS, uncomment the line below:
@@ -26,29 +23,18 @@ if request.global_settings.web2py_version < "2.15.5":
 # -------------------------------------------------------------------------
 configuration = AppConfig(reload=True)
 
-if not request.env.web2py_runtime_gae:
-    # ---------------------------------------------------------------------
-    # if NOT running on Google App Engine use SQLite or other DB
-    # ---------------------------------------------------------------------
-    db = DAL(configuration.get('db.uri'),
-             pool_size=configuration.get('db.pool_size'),
-             migrate_enabled=configuration.get('db.migrate'),
-             check_reserved=['all'])
+from web2pytest import web2pytest
+is_running_under_test = web2pytest.is_running_under_test(request, request.application)
+if is_running_under_test:
+    from tempfile import mkdtemp
+    folder = mkdtemp()
+    db = DAL('sqlite://test.sqlite', pool_size=10,
+             check_reserved=['all'], folder=folder)
 else:
-    # ---------------------------------------------------------------------
-    # connect to Google BigTable (optional 'google:datastore://namespace')
-    # ---------------------------------------------------------------------
-    db = DAL('google:datastore+ndb')
-    # ---------------------------------------------------------------------
-    # store sessions and tickets there
-    # ---------------------------------------------------------------------
-    session.connect(request, response, db=db)
-    # ---------------------------------------------------------------------
-    # or store session in Memcache, Redis, etc.
-    # from gluon.contrib.memdb import MEMDB
-    # from google.appengine.api.memcache import Client
-    # session.connect(request, response, db = MEMDB(Client()))
-    # ---------------------------------------------------------------------
+    db = DAL('sqlite://storage.sqlite', pool_size=1,
+             check_reserved=['all'], migrate=True, lazy_tables=False)
+from gluon import current
+current.db = db
 
 # -------------------------------------------------------------------------
 # by default give a view/generic.extension to all actions from localhost
