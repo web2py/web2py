@@ -905,14 +905,14 @@ class Recaptcha2(DIV):
         })
         request = urllib2.Request(
             url=self.VERIFY_SERVER,
-            data=params,
+            data=to_bytes(params),
             headers={'Content-type': 'application/x-www-form-urlencoded',
                      'User-agent': 'reCAPTCHA Python'})
         httpresp = urllib2.urlopen(request)
         content = httpresp.read()
         httpresp.close()
         try:
-            response_dict = json.loads(content)
+            response_dict = json.loads(to_native(content))
         except:
             self.errors['captcha'] = self.error_message
             return False
