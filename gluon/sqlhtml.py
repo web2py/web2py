@@ -3093,7 +3093,7 @@ class SQLFORM(FORM):
                 if formstyle == 'bootstrap':
                     # add space between buttons
                     htmltable = FORM(htmltable, DIV(_class='form-actions', *inputs))
-                elif 'bootstrap' in formstyle : # Same for bootstrap 3 & 4
+                elif not callable(formstyle) and 'bootstrap' in formstyle: # Same for bootstrap 3 & 4
                      htmltable = FORM(htmltable, DIV(_class='form-group web2py_table_selectable_actions', *inputs))
                 else:
                     htmltable = FORM(htmltable, *inputs)
