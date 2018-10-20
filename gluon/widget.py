@@ -1294,11 +1294,11 @@ end tell
                         if lineno == i + 1:
                             break
                     else:
-                        line = None
+                        line = ''
                 finally:
                     f.close()
             except (IOError, OSError):
-                line = None
+                line = ''
         return line
     linecache.getline = getline
 
