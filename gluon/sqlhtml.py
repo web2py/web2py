@@ -699,18 +699,20 @@ class AutocompleteWidget(object):
             if isinstance(field, Field.Virtual):
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
-                count = 0
+                count = self.limitby[1] if self.limitby else -1
                 for row in table_rows:
                     if self.at_beginning:
                         if row[field.name].lower().startswith(kword):
-                            count += 1
+                            count -= 1
                             records.append(row)
                     else:
                         if kword in row[field.name].lower():
-                            count += 1
+                            count -= 1
                             records.append(row)
-                    if count == 10:
+                    if count == 0:
                         break
+                if self.limitby and self.limitby[0]:
+                    records = records[self.limitby[0]:]
                 rows = Rows(self.db, records, table_rows.colnames,
                             compact=table_rows.compact)
             elif settings and settings.global_settings.web2py_runtime_gae:
@@ -1090,7 +1092,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
 
 # bootstrap 4
 def formstyle_bootstrap4_stacked(form, fields):
-    """ bootstrap 3 format form layout
+    """ bootstrap 4 format form layout
 
     Note:
         Experimental!
@@ -1139,7 +1141,7 @@ def formstyle_bootstrap4_stacked(form, fields):
 
 
 def formstyle_bootstrap4_inline_factory(col_label_size=3):
-    """ bootstrap 3 horizontal form layout
+    """ bootstrap 4 horizontal form layout
 
     Note:
         Experimental!
@@ -1349,7 +1351,7 @@ class SQLFORM(FORM):
             if not readonly:
                 if not record:
                     # create form should only show writable fields
-                    fields = [f.name for f in table if (ignore_rw or f.writable) and not f.compute]
+                    fields = [f.name for f in table if (ignore_rw or f.writable or (f.readable and f.default)) and not f.compute]
                 else:
                     # update form should also show readable fields and computed fields (but in reaodnly mode)
                     fields = [f.name for f in table if (ignore_rw or f.writable or f.readable)]
@@ -2021,7 +2023,7 @@ class SQLFORM(FORM):
         to hold the fields.
         """
         # this is here to avoid circular references
-        from gluon.dal import DAL
+        from gluon.dal import DAL, _default_validators
         # Define a table name, this way it can be logical to our CSS.
         # And if you switch from using SQLFORM to SQLFORM.factory
         # your same css definitions will still apply.
@@ -2034,8 +2036,9 @@ class SQLFORM(FORM):
 
         # Clone fields, while passing tables straight through
         fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
-
-        return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
+        dummy_dal = DAL(None)
+        dummy_dal.validators_method = lambda f: _default_validators(dummy_dal, f) # See https://github.com/web2py/web2py/issues/2007
+        return SQLFORM(dummy_dal.define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
     def build_query(fields, keywords):
@@ -2312,7 +2315,7 @@ class SQLFORM(FORM):
                       button='button btn btn-default btn-secondary',
                       buttontext='buttontext button',
                       buttonadd='icon plus icon-plus glyphicon glyphicon-plus',
-                      buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
+                      buttonback='icon arrowleft icon-arrow-left glyphicon glyphicon-arrow-left',
                       buttonexport='icon downarrow icon-download glyphicon glyphicon-download',
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
                       buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
@@ -2690,13 +2693,13 @@ class SQLFORM(FORM):
                             dbset = dbset(SQLFORM.build_query(
                                 sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
-                                            cacheable=True, *selectable_columns)
+                                            cacheable=True, *expcolumns)
                     except Exception as e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
                     rows = dbset.select(left=left, orderby=orderby,
-                                        cacheable=True, *selectable_columns)
+                                        cacheable=True, *expcolumns)
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
@@ -2855,9 +2858,9 @@ class SQLFORM(FORM):
         if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             cursor = request.vars.cursor or True
             limitby = (0, paginate)
-            page = safe_int(request.vars.page, 1) - 1
+            page = safe_int(request.vars.page or 1, 1) - 1
         elif paginate and paginate < nrows:
-            page = safe_int(request.vars.page, 1) - 1
+            page = safe_int(request.vars.page or 1, 1) - 1
             limitby = (paginate * page, paginate * (page + 1))
         else:
             limitby = None
@@ -2899,7 +2902,7 @@ class SQLFORM(FORM):
         paginator = UL()
         if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             # this means we may have a large table with an unknown number of rows.
-            page = safe_int(request.vars.page, 1) - 1
+            page = safe_int(request.vars.page or 1, 1) - 1
             paginator.append(LI('page %s' % (page + 1)))
             if next_cursor:
                 d = dict(page=page + 2, cursor=next_cursor)
@@ -2918,7 +2921,7 @@ class SQLFORM(FORM):
             npages, reminder = divmod(nrows, paginate)
             if reminder:
                 npages += 1
-            page = safe_int(request.vars.page, 1) - 1
+            page = safe_int(request.vars.page or 1, 1) - 1
 
             def self_link(name, p):
                 d = dict(page=p + 1)
@@ -3089,8 +3092,9 @@ class SQLFORM(FORM):
 
                 if formstyle == 'bootstrap':
                     # add space between buttons
-                    # inputs = sum([[inp, ' '] for inp in inputs], [])[:-1]
                     htmltable = FORM(htmltable, DIV(_class='form-actions', *inputs))
+                elif 'bootstrap' in formstyle : # Same for bootstrap 3 & 4
+                     htmltable = FORM(htmltable, DIV(_class='form-group web2py_table_selectable_actions', *inputs))
                 else:
                     htmltable = FORM(htmltable, *inputs)
 

@@ -1378,6 +1378,7 @@ class Auth(AuthAPI):
                             login_after_password_change=True,
                             login_after_registration=False,
                             login_captcha=None,
+                            login_specify_error=False,
                             long_expiration=3600 * 30 * 24,  # one month
                             mailer=None,
                             manager_actions={},
@@ -2567,6 +2568,8 @@ class Auth(AuthAPI):
                            settings.formstyle, 'captcha__row')
                 accepted_form = False
 
+                specific_error = self.messages.invalid_user
+
                 if form.accepts(request, session if self.csrf_prevention else None,
                                 formname='login', dbio=False,
                                 onvalidation=onvalidation,
@@ -2582,6 +2585,7 @@ class Auth(AuthAPI):
                         user = table_user(**{username: entered_username})
                     if user:
                         # user in db, check if registration pending or disabled
+                        specific_error = self.messages.invalid_password
                         temp_user = user
                         if (temp_user.registration_key or '').startswith('pending'):
                             response.flash = self.messages.registration_pending
@@ -2631,7 +2635,7 @@ class Auth(AuthAPI):
                         self.log_event(self.messages['login_failed_log'],
                                        request.post_vars)
                         # invalid login
-                        session.flash = self.messages.invalid_login
+                        session.flash = specific_error if self.settings.login_specify_error else self.messages.invalid_login
                         callback(onfail, None)
                         redirect(
                             self.url(args=request.args, vars=request.get_vars),
@@ -3447,7 +3451,8 @@ class Auth(AuthAPI):
         if log is DEFAULT:
             log = self.messages['reset_password_log']
         userfield = self.settings.login_userfield or 'username' \
-            if 'username' in table_user.fields else 'email'
+            if self.settings.login_userfield or 'username' \
+            in table_user.fields else 'email'
         if userfield == 'email':
             table_user.email.requires = [
                 IS_EMAIL(error_message=self.messages.invalid_email),
@@ -3455,7 +3460,7 @@ class Auth(AuthAPI):
                          error_message=self.messages.invalid_email)]
             if not self.settings.email_case_sensitive:
                 table_user.email.requires.insert(0, IS_LOWER())
-        else:
+        elif userfield == 'username':
             table_user.username.requires = [
                 IS_IN_DB(self.db, table_user.username,
                          error_message=self.messages.invalid_username)]

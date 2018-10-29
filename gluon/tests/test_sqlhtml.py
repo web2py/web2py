@@ -4,6 +4,7 @@
 """
     Unit tests for gluon.sqlhtml
 """
+import datetime
 import os
 import sys
 import unittest
@@ -312,12 +313,31 @@ class TestSQLFORM(unittest.TestCase):
                                        Field('field_two', 'string'))
         self.assertEqual(factory_form.xml()[:5], b'<form')
 
+    def test_factory_applies_default_validators(self):
+        from gluon import current
+
+        factory_form = SQLFORM.factory(
+            Field('a_date', type='date'),
+        )
+        # Fake user input
+        current.request.post_vars.update({
+            '_formname': 'no_table/create',
+            'a_date': '2018-09-14',
+            '_formkey': '123',
+
+        })
+        # Fake the formkey
+        current.session['_formkey[no_table/create]'] = ['123']
+
+        self.assertTrue(factory_form.process().accepted)
+        self.assertIsInstance(factory_form.vars.a_date, datetime.date)
+
     #  def test_build_query(self):
     #     pass
 
     #  def test_search_menu(self):
     #     pass
-
+   
     def test_grid(self):
         grid_form = SQLFORM.grid(self.db.auth_user)
         self.assertEqual(grid_form.xml()[:4], b'<div')
