@@ -3680,7 +3680,7 @@ class ExportClass(object):
                     if isinstance(record.get(t, None), (Row, dict)):
                         value = record[t][f]
                     else:
-                        value = record[f]
+                        value = record[col]
                     if field.type == 'blob' and value is not None:
                         value = ''
                     elif field.represent:
