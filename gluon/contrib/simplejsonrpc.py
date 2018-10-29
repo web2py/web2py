@@ -82,13 +82,14 @@ class JSONSafeTransport(JSONTransportMixin, SafeTransport):
 class ServerProxy(object):
     "JSON RPC Simple Client Service Proxy"
 
-    def __init__(self, uri, transport=None, encoding=None, verbose=0,version=None):
+    def __init__(self, uri, transport=None, encoding=None, verbose=0, version=None, json_encoder=None):
         self.location = uri             # server location (url)
         self.trace = verbose            # show debug messages
         self.exceptions = True          # raise errors? (JSONRPCError)
         self.timeout = None
         self.json_request = self.json_response = ''
         self.version = version          # '2.0' for jsonrpc2
+        self.json_encoder = json_encoder  # Allow for a custom JSON encoding class
 
         type, uri = urllib.splittype(uri)
         if type not in ("http", "https"):
@@ -116,7 +117,7 @@ class ServerProxy(object):
         data = {'id': request_id, 'method': method, 'params': args or vars, }
         if self.version:
             data['jsonrpc'] = self.version #mandatory key/value for jsonrpc2 validation else err -32600
-        request = json.dumps(data)
+        request = json.dumps(data, cls=self.json_encoder)
 
         # make HTTP request (retry if connection is lost)
         response = self.__transport.request(
