@@ -1,0 +1,17 @@
+{{"""Usage:
+
+  def controller():
+      return {"": db().select(db.thing.ALL)}
+
+And then visit that controller with a .csv extention name
+"""
+}}{{if len(response._vars)==1:}}{{
+# Not yet find a Python 2/3 compatible StringIO pattern,
+# we avoid this solution http://web2py.com/books/default/chapter/29/10/services#CSV
+# Here we buffer the entire csv file instead (it is your controller's job to limit the volume anyway),
+# based on: http://web2py.com/books/default/chapter/29/06/the-database-abstraction-layer#CSV-one-Table-at-a-time-
+
+content = response._vars[next(iter(response._vars))]
+response.headers['Content-Type'] = 'application/vnd.ms-excel'
+response.write(str(content), escape=False)
+}}{{pass}}
