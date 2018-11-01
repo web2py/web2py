@@ -1288,17 +1288,18 @@ end tell
         line = py2exe_getline(filename, lineno, *args, **kwargs)
         if not line:
             try:
-                f = open(filename, "r")
+                f = open(filename, "rb")
                 try:
                     for i, line in enumerate(f):
+                        line = line.decode('utf-8')
                         if lineno == i + 1:
                             break
                     else:
-                        line = None
+                        line = ''
                 finally:
                     f.close()
             except (IOError, OSError):
-                line = None
+                line = ''
         return line
     linecache.getline = getline
 
