@@ -186,8 +186,8 @@ class MockQuery(object):
             if rtn:
                 if self.unique_key:
                     # make sure the id and unique_key are correct
-                    if rtn[b'unique_key'] == to_bytes(self.unique_key):
-                        rtn[b'update_record'] = self.update  # update record support
+                    if rtn['unique_key'] == self.unique_key:
+                        rtn['update_record'] = self.update  # update record support
                     else:
                         rtn = None
             return [Storage(rtn)] if rtn else []
