@@ -977,6 +977,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (img, 'oops'))
         rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
         self.assertEqual(rtn, (img, 'oops'))
+        rtn = IS_IMAGE(error_message='oops', aspectratio=(1, 1))(img)
+        self.assertEqual(rtn, (img, 'oops'))
 
         img = DummyImageFile('test', 'gif', 50, 100)
         rtn = IS_IMAGE()(img)
@@ -984,6 +986,8 @@ class TestValidators(unittest.TestCase):
         rtn = IS_IMAGE(error_message='oops', maxsize=(100, 50))(img)
         self.assertEqual(rtn, (img, 'oops'))
         rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+        rtn = IS_IMAGE(error_message='oops', aspectratio=(1, 1))(img)
         self.assertEqual(rtn, (img, 'oops'))
 
         img = DummyImageFile('test', 'jpeg', 50, 100)
@@ -993,6 +997,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (img, 'oops'))
         rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
         self.assertEqual(rtn, (img, 'oops'))
+        rtn = IS_IMAGE(error_message='oops', aspectratio=(1, 1))(img)
+        self.assertEqual(rtn, (img, 'oops'))
 
         img = DummyImageFile('test', 'png', 50, 100)
         rtn = IS_IMAGE()(img)
@@ -1000,6 +1006,8 @@ class TestValidators(unittest.TestCase):
         rtn = IS_IMAGE(error_message='oops', maxsize=(100, 50))(img)
         self.assertEqual(rtn, (img, 'oops'))
         rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+        rtn = IS_IMAGE(error_message='oops', aspectratio=(1, 1))(img)
         self.assertEqual(rtn, (img, 'oops'))
 
         img = DummyImageFile('test', 'xls', 50, 100)
