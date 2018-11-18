@@ -3230,8 +3230,10 @@ class IS_IMAGE(Validator):
         ('jpg' extension of uploaded file counts as 'jpeg')
         maxsize: iterable containing maximum width and height of the image
         minsize: iterable containing minimum width and height of the image
+        aspectratio: iterable containing target aspect ratio
 
     Use (-1, -1) as minsize to pass image size check.
+    Use (-1, -1) as aspectratio to pass aspect ratio check.
 
     Examples:
         Check if uploaded file is in any of supported image formats:
@@ -3247,17 +3249,24 @@ class IS_IMAGE(Validator):
 
             INPUT(_type='file', _name='name',
                 requires=IS_IMAGE(extensions=('png'), maxsize=(200, 200)))
+
+        Check if uploaded file has a 16:9 aspect ratio:
+
+            INPUT(_type='file', _name='name',
+                requires=IS_IMAGE(aspectratio=(16, 9)))
     """
 
     def __init__(self,
                  extensions=('bmp', 'gif', 'jpeg', 'png'),
                  maxsize=(10000, 10000),
                  minsize=(0, 0),
+                 aspectratio=(-1, -1),
                  error_message='Invalid image'):
 
         self.extensions = extensions
         self.maxsize = maxsize
         self.minsize = minsize
+        self.aspectratio = aspectratio
         self.error_message = error_message
 
     def __call__(self, value):
@@ -3279,8 +3288,16 @@ class IS_IMAGE(Validator):
             else:
                 width = -1
                 height = -1
+
             assert self.minsize[0] <= width <= self.maxsize[0] \
                 and self.minsize[1] <= height <= self.maxsize[1]
+
+            if self.aspectratio > (-1, -1):
+                target_ratio = (1.0 * self.aspectratio[1]) / self.aspectratio[0]
+                actual_ratio = (1.0 * height) / width
+
+                assert actual_ratio == target_ratio
+
             value.file.seek(0)
             return (value, None)
         except Exception as e:
