@@ -487,7 +487,7 @@ class RScheduler(Scheduler):
             # calc next_run_time based on available slots
             # see #1191
             next_run_time = task.start_time
-            secondspassed = self.total_seconds(now - next_run_time)
+            secondspassed = (now - next_run_time).total_seconds()
             steps = secondspassed // task.period + 1
             next_run_time += datetime.timedelta(seconds=task.period * steps)
 
