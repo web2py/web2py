@@ -802,8 +802,8 @@ class AutocompleteWidget(object):
                     $('#%(key3)s').val('');
                     var e=e_.which?e_.which:e_.keyCode;
                     function %(u)s(){
-                        $('#%(id)s').val($('#%(key)s :selected').text());
-                        $('#%(key3)s').val($('#%(key)s').val())
+                        $('#%(id)s').val($('#%(key)s option:selected').text());
+                        $('#%(key3)s').val($('#%(key)s option:selected').val())
                     };
                     if(e==39) %(u)s();
                     else if(e==40) {
@@ -824,7 +824,7 @@ class AutocompleteWidget(object):
                                     $('#%(id)s').next('.error').hide();
                                     $('#%(div_id)s').html(data).show().focus();
                                     $('#%(div_id)s select').css('width',$('#%(id)s').css('width'));
-                                    $('#%(key3)s').val($('#%(key)s').val());
+                                    $('#%(key3)s').val($('#%(key)s option:selected').val());
                                     $('#%(key)s').change(%(u)s).click(%(u)s);
                                 };
                             });
@@ -855,7 +855,7 @@ class AutocompleteWidget(object):
             function doit(e_) {
                 var e=e_.which?e_.which:e_.keyCode;
                 function %(u)s(){
-                    $('#%(id)s').val($('#%(key)s').val())
+                    $('#%(id)s').val($('#%(key)s option:selected').val())
                 };
                 if(e==39) %(u)s();
                 else if(e==40) {
