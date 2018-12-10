@@ -1912,23 +1912,10 @@ class SQLFORM(FORM):
                     fields[fieldname] = [safe_int(
                         x) for x in (value and [value] or [])]
             elif field.type == 'integer':
-                if value is not None:
-                    fields[fieldname] = safe_int(value)
+                fields[fieldname] = safe_int(value, None)
             elif field.type.startswith('reference'):
-                ## Avoid "constraint violation" exception when you have a
-                ## optional reference field without the dropdown in form. I.e.,
-                ## a field with code to be typed, in a data-entry form.
-                ##
-                ## When your reference field doesn't have IS_EMPTY_OR()
-                ## validator, "value" will come here as a string. So,
-                ## safe_int() will return 0. In this case, insert will raise
-                ## the constraint violation because there's no id=0 in
-                ## referenced table.
                 if isinstance(self.table, Table) and not keyed:
-                    if not value:
-                        fields[fieldname] = None
-                    else:
-                        fields[fieldname] = safe_int(value)
+                    fields[fieldname] = safe_int(value, None)
             elif field.type == 'double':
                 if value is not None:
                     fields[fieldname] = safe_float(value)
