@@ -1006,4 +1006,3 @@ if __name__ == '__main__':
     def test():
         return dict(a=3)
     assert test() == '<div>0</div><div>1</div><div>2</div>'
-    print 'ok'

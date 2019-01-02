@@ -23,7 +23,6 @@ try:
     import pydal
     sys.modules['pydal'] = pydal
 except ImportError:
-    raise
     raise RuntimeError(
         "web2py depends on pydal, which apparently you have not installed.\n" +
         "Probably you cloned the repository using git without '--recursive'" +
@@ -31,6 +30,7 @@ except ImportError:
         "     git submodule update --init --recursive\n\n" +
         "You can also download a complete copy from http://www.web2py.com."
     )
+
 
 from .globals import current
 from .html import *
