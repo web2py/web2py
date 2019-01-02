@@ -980,12 +980,13 @@ def render(content="hello world",
 
 class template(object):
 
-    def __init__(self, filename='{name}.html', body=None, path=None, lexers=None, delimiters=None):
+    def __init__(self, filename='{name}.html', body=None, path=None, lexers=None, delimiters=None, reader=None):
         self.filename = filename
         self.body = body
         self.path = path
         self.lexers = lexers
         self.delimiters = delimiters
+        self.reader = reader or file_reader
 
     def __call__(self, func):
         @wraps(func)
@@ -996,7 +997,7 @@ class template(object):
                 if self.body:
                     body = self.body
                 else:
-                    body = file_reader(filename)
+                    body = self.reader(filename)
                 return render(
                     content=body,
                     path=self.path, 
