@@ -35,7 +35,7 @@ else:
         return bytes(obj) if isinstance(obj, (bytes, bytearray, memoryview)) else obj.encode(charset, errors)
 
     def to_native(obj, charset='utf8', errors='strict'):
-        return ibj if isinstance(obj, str) else obj.decode(charset, errors)
+        return obj if isinstance(obj, str) else obj.decode(charset, errors)
 
 
 DEFAULT_DELIMITERS = ('{{', '}}')
@@ -566,7 +566,7 @@ class TemplateParser(object):
         # Use a list to store everything in
         # This is because later the code will "look ahead"
         # for missing strings or brackets.
-        ij = self.r_tag.split(text)
+        ij = self.r_tag.split(to_native(text))
         # j = current index
         # i = current item
         stack = self.stack
