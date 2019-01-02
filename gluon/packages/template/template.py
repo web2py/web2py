@@ -37,18 +37,14 @@ else:
     def to_native(obj, charset='utf8', errors='strict'):
         return ibj if isinstance(obj, str) else obj.decode(charset, errors)
 
-CACHE = {}
 
-def cached_read(filename, mode='rb'):
-    if filename in CACHE:
-        return CACHE[filename]
-    try:
-        with open(filename, mode) as fp:
-            body = fp.read()
-            CACHE[filename] = body
-            return body
-    except IOError:
-        raise RestrictedError(filename, '', 'Unable to find the file')
+DEFAULT_DELIMITERS = ('{{', '}}')
+
+
+def file_reader(filename, mode='rb'):
+    with open(filename, mode) as fp:
+        body = fp.read()
+        return body
 
 try:
     # have web2py
@@ -118,14 +114,14 @@ class BlockNode(Node):
         {{ end }}
 
     """
-    def __init__(self, name='', pre_extend=False, delimiters=('{{', '}}')):
+    def __init__(self, name='', pre_extend=False, delimiters=None):
         """
         name - Name of this Node.
         """
         self.nodes = []
         self.name = name
         self.pre_extend = pre_extend
-        self.left, self.right = delimiters
+        self.left, self.right = delimiters or DEFAULT_DELIMITERS
 
     def __repr__(self):
         lines = ['%sblock %s%s' % (self.left, self.name, self.right)]
@@ -260,7 +256,7 @@ class TemplateParser(object):
 
     """
 
-    default_delimiters = ('{{', '}}')
+    default_delimiters = DEFAULT_DELIMITERS
     r_tag = compile(r'(\{\{.*?\}\})', DOTALL)
 
     r_multiline = compile(r'(""".*?""")|(\'\'\'.*?\'\'\')', DOTALL)
@@ -279,15 +275,18 @@ class TemplateParser(object):
                  context=dict(),
                  path='views/',
                  writer='response.write',
-                 lexers={},
-                 delimiters=('{{', '}}'),
-                 _super_nodes = [],
+                 lexers=None,
+                 delimiters=None,
+                 _super_nodes = None,
+                 reader=None,
                  ):
 
         # Keep a root level name.
         self.name = name
         # Raw text to start parsing.
         self.text = text
+        # use the default reader
+        self.reader = reader or file_reader 
         # Writer to use (refer to the default for an example).
         # This will end up as
         # "%s(%s, escape=False)" % (self.writer, value)
@@ -297,6 +296,10 @@ class TemplateParser(object):
             self.lexers = lexers
         else:
             self.lexers = {}
+        if _super_nodes is None:
+            _super_nodes = []
+        if delimiters is None:
+            delimiters = DEFAULT_DELIMITERS
 
         # Path of templates
         self.path = path
@@ -471,9 +474,7 @@ class TemplateParser(object):
 
         # try to read the text.
         try:
-            fileobj = open(filepath, 'rb')
-            text = fileobj.read()
-            fileobj.close()
+            text = self.reader(filepath)
         except IOError:
             self._raise_error('Unable to open included view file: ' + filepath)
         text = to_native(text)
@@ -490,7 +491,8 @@ class TemplateParser(object):
                            context=self.context,
                            path=self.path,
                            writer=self.writer,
-                           delimiters=self.delimiters)
+                           delimiters=self.delimiters,
+                           reader=self.reader)
 
         content.append(t.content)
 
@@ -793,9 +795,9 @@ class TemplateParser(object):
 
 def parse_template(filename,
                    path='views/',
-                   context=dict(),
-                   lexers={},
-                   delimiters=('{{', '}}')
+                   context=None,
+                   lexers=None,
+                   delimiters=None
                    ):
     """
     Args:
@@ -805,11 +807,14 @@ def parse_template(filename,
         lexers: dict of custom lexers to use
         delimiters: opening and closing tags
     """
-
+    context = context or {}
+    lexers = lexers or {}
+    delimiters = delimiters or DEFAULT_DELIMITERS
+    reader = reader or file_reader
     # First, if we have a str try to open the file
     if isinstance(filename, basestring):
         fname = os.path.join(path, filename)
-        text = cached_read(fname)
+        text = file_reader(fname)
     else:
         text = filename.read()
     text = to_native(text)
@@ -865,7 +870,8 @@ def render(content="hello world",
            context=None,
            lexers=None,
            delimiters='{{ }}',
-           writer='response.write'
+           writer='response.write',
+           reader=None
            ):
     """
     Generic render function
@@ -914,6 +920,8 @@ def render(content="hello world",
         lexers = {}
     if isinstance(delimiters, basestring):
         delimiters = delimiters.split(' ',1)
+    if not reader:
+        reader = file_reader
 
     # here to avoid circular Imports
     try:
@@ -941,28 +949,28 @@ def render(content="hello world",
     if not content and not stream and not filename:
         raise SyntaxError("Must specify a stream or filename or content")
 
-    # Here for legacy purposes, probably can be reduced to
-    # something more simple.
-    close_stream = False
-    if not stream:
-        if filename:
-            stream = open(filename, 'rb')
-            close_stream = True
-        elif content:
-            stream = StringIO(to_native(content))
+    if not content:
+        if stream:
+            content = stream.read()
+        elif filename:
+            content = reader(filename)
+        else:
+            content = '(no template found)'
 
     # Execute the template.
-    code = str(TemplateParser(stream.read(
-    ), context=context, path=path, lexers=lexers, delimiters=delimiters, writer=writer))
+    code = str(TemplateParser(content,                              
+                              context=context, 
+                              path=path, 
+                              lexers=lexers, 
+                              delimiters=delimiters, 
+                              writer=writer, 
+                              reader=reader))
 
     try:
         exec(code, context)
     except Exception:
         # for i,line in enumerate(code.split('\n')): print i,line
         raise
-
-    if close_stream:
-        stream.close()
 
     # Returned the rendered content.
     text = context['response'].body.getvalue()
@@ -988,7 +996,7 @@ class template(object):
                 if self.body:
                     body = self.body
                 else:
-                    body = cached_read(filename)                
+                    body = file_reader(filename)
                 return render(
                     content=body,
                     path=self.path, 
@@ -1000,7 +1008,7 @@ class template(object):
         return wrapper
 
 if __name__ == '__main__':
-    @template(body='{{for k in range(a):}}<div>{{=k}}</div>{{pass}}')
+    @template(body='[[for k in range(a):]]<div>[[=k]]</div>[[pass]]', delimiters="[[ ]]")
     def test():
         return dict(a=3)
     assert test() == '<div>0</div><div>1</div><div>2</div>'

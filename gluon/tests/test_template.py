@@ -24,11 +24,11 @@ class TestTemplate(unittest.TestCase):
         self.assertEqual(render(content='"abc"'), '"abc"')
         self.assertEqual(render(content='"a\'bc"'), '"a\'bc"')
         self.assertEqual(render(content='"a\"bc"'), '"a\"bc"')
-        self.assertEqual(render(content=r'''"a\"bc"'''), r'"a\"bc"')
-        self.assertEqual(render(content=r'''"""abc\""""'''), r'"""abc\""""')
+        self.assertEqual(render(content=r'"a\"bc"'), r'"a\"bc"')
+        self.assertEqual(render(content=r'"""abc\""""'), r'"""abc\""""')
 
     def testEqualWrite(self):
-        "test generation of response.write from ="
+        "test generation of response.write"
         self.assertEqual(render(content='{{=2+2}}'), '4')
         self.assertEqual(render(content='{{="abc"}}'), 'abc')
         # whitespace is stripped
@@ -81,7 +81,7 @@ class TestTemplate(unittest.TestCase):
                 else:
                     setattr(module, fn_name, unpatch)
 
-        def dummy_open(path, mode):
+        def dummy_open(path):
             if path == pjoin('views', 'layout.html'):
                 return StringIO("{{block left_sidebar}}left{{end}}"
                                 "{{include}}"
@@ -108,28 +108,28 @@ class TestTemplate(unittest.TestCase):
             elif path == pjoin('views', 'default', 'noescape.html'):
                 return StringIO("""{{=NOESCAPE('<script></script>')}}""")
             raise IOError
-
-        with monkey_patch(template, 'open', dummy_open):
-            self.assertEqual(
-                render(filename=pjoin('views', 'default', 'index.html'),
-                       path='views'),
-                'left to right')
-            self.assertEqual(
-                render(filename=pjoin('views', 'default', 'indexbrackets.html'),
-                       path='views', delimiters=('[[', ']]')),
-                'left to right')
-            self.assertRaises(
-                RestrictedError,
-                render,
-                filename=pjoin('views', 'default', 'missing.html'),
-                path='views')
-            response = template.DummyResponse()
-            response.delimiters = ('[[', ']]')
-            self.assertEqual(
-                render(filename=pjoin('views', 'default', 'indexbrackets.html'),
-                       path='views', context={'response': response}),
-                'left to right')
-            self.assertEqual(
-                render(filename=pjoin('views', 'default', 'noescape.html'),
-                       context={'NOESCAPE': template.NOESCAPE}),
-                '<script></script>')
+        
+        self.assertEqual(
+            render(filename=pjoin('views', 'default', 'index.html'),
+                   path='views', reader=dummy_open),
+            'left to right')
+        self.assertEqual(
+            render(filename=pjoin('views', 'default', 'indexbrackets.html'),
+                   path='views', delimiters=('[[', ']]'), reader=dummy_open),
+            'left to right')
+        self.assertRaises(
+            RestrictedError,
+            render,
+            filename=pjoin('views', 'default', 'missing.html'),
+            path='views',
+            reader=dummy_open)
+        response = template.DummyResponse()
+        response.delimiters = ('[[', ']]')
+        self.assertEqual(
+            render(filename=pjoin('views', 'default', 'indexbrackets.html'),
+                   path='views', context={'response': response}, reader=dummy_open),
+            'left to right')
+        self.assertEqual(
+            render(filename=pjoin('views', 'default', 'noescape.html'),
+                   context={'NOESCAPE': template.NOESCAPE}, reader=dummy_open),
+            '<script></script>')
