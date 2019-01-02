@@ -797,7 +797,8 @@ def parse_template(filename,
                    path='views/',
                    context=None,
                    lexers=None,
-                   delimiters=None
+                   delimiters=None,
+                   reader=None
                    ):
     """
     Args:
