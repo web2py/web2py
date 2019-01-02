@@ -912,8 +912,6 @@ def render(content="hello world",
         context = {}
     if lexers is None:
         lexers = {}
-    if delimiters is None:
-        delimiters = '{{ }}'
     if isinstance(delimiters, basestring):
         delimiters = delimiters.split(' ',1)
 
