@@ -11,7 +11,7 @@ class TestCron(unittest.TestCase):
     def test_Token(self):
         appname_path = os.path.join(os.getcwd(), 'applications', 'welcome')
         t = Token(path=appname_path)
-        self.assertNotEqual(t.acquire(), None)
+        self.assertNotEqual(t.acquire(startup=True), None)
         self.assertFalse(t.release())
         self.assertEqual(t.acquire(), None)
         self.assertTrue(t.release())

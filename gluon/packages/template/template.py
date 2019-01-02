@@ -121,7 +121,7 @@ class BlockNode(Node):
         self.nodes = []
         self.name = name
         self.pre_extend = pre_extend
-        self.left, self.right = delimiters or DEFAULT_DELIMITERS
+        self.left, self.right = delimiters
 
     def __repr__(self):
         lines = ['%sblock %s%s' % (self.left, self.name, self.right)]
@@ -255,10 +255,6 @@ class TemplateParser(object):
             template that need to be handled.
 
     """
-
-    default_delimiters = DEFAULT_DELIMITERS
-    r_tag = compile(r'(\{\{.*?\}\})', DOTALL)
-
     r_multiline = compile(r'(""".*?""")|(\'\'\'.*?\'\'\')', DOTALL)
 
     # These are used for re-indentation.
@@ -272,7 +268,7 @@ class TemplateParser(object):
 
     def __init__(self, text,
                  name="ParserContainer",
-                 context=dict(),
+                 context=None,
                  path='views/',
                  writer='response.write',
                  lexers=None,
@@ -281,6 +277,7 @@ class TemplateParser(object):
                  reader=None,
                  ):
 
+        context = context or {}
         # Keep a root level name.
         self.name = name
         # Raw text to start parsing.
@@ -306,20 +303,9 @@ class TemplateParser(object):
         # Context for templates.
         self.context = context
 
-        # allow optional alternative delimiters
-        if delimiters != self.default_delimiters:
-            escaped_delimiters = (escape(delimiters[0]),
-                                  escape(delimiters[1]))
-            self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters, DOTALL)
-        elif hasattr(context.get('response', None), 'delimiters'):
-            if (context['response'].delimiters != self.default_delimiters) and (context['response'].delimiters != None):
-                delimiters = context['response'].delimiters
-                escaped_delimiters = (
-                    escape(delimiters[0]),
-                    escape(delimiters[1]))
-                self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters,
-                                     DOTALL)
         self.delimiters = delimiters
+        escaped_delimiters = (escape(delimiters[0]), escape(delimiters[1]))
+        self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters, DOTALL)
 
         # Create a root level Content that everything will go into.
         self.content = Content(name=name)
@@ -517,7 +503,8 @@ class TemplateParser(object):
                            path=self.path,
                            writer=self.writer,
                            delimiters=self.delimiters,
-                           _super_nodes=super_nodes)
+                           _super_nodes=super_nodes,
+                           reader=self.reader)
 
         # Make a temporary buffer that is unique for parent
         # template.
@@ -597,8 +584,7 @@ class TemplateParser(object):
                     line = i
 
                     # Get rid of delimiters
-                    line = line[len(self.delimiters[0]): \
-                                    -len(self.delimiters[1])].strip()
+                    line = line[len(self.delimiters[0]): -len(self.delimiters[1])].strip()
 
                     # This is bad juju, but let's do it anyway
                     if not line:
@@ -820,15 +806,7 @@ def parse_template(filename,
         text = filename.read()
     text = to_native(text)
     # Use the file contents to get a parsed template and return it.
-    return str(TemplateParser(text, context=context, path=path, lexers=lexers, delimiters=delimiters))
-
-
-def get_parsed(text):
-    """
-    Returns the indented python code of text. Useful for unit testing.
-
-    """
-    return str(TemplateParser(text))
+    return str(TemplateParser(text, context=context, path=path, lexers=lexers, delimiters=delimiters, reader=reader))
 
 
 class DummyResponse():
@@ -864,7 +842,7 @@ class NOESCAPE():
 # Here for integration with gluon.
 
 
-def render(content="hello world",
+def render(content=None,
            stream=None,
            filename=None,
            path=None,
@@ -914,6 +892,11 @@ def render(content="hello world",
         '012'
 
     """
+
+    # If we don't have anything to render, why bother?
+    if content is None and stream is None and filename is None:
+        raise SyntaxError("Must specify a stream or filename or content")
+
     # handle defaults
     if context is None:
         context = {}
@@ -923,6 +906,11 @@ def render(content="hello world",
         delimiters = delimiters.split(' ',1)
     if not reader:
         reader = file_reader
+
+    # allow optional alternative delimiters
+    if hasattr(context.get('response', None), 'delimiters'):
+        if context['response'].delimiters is not None:
+            delimiters = context['response'].delimiters
 
     # here to avoid circular Imports
     try:
@@ -946,20 +934,17 @@ def render(content="hello world",
         old_response_body = None
         context['response'] = Response()
 
-    # If we don't have anything to render, why bother?
-    if not content and not stream and not filename:
-        raise SyntaxError("Must specify a stream or filename or content")
 
-    if not content:
-        if stream:
+    if content is None:
+        if stream is not None:
             content = stream.read()
-        elif filename:
+        elif filename is not None:
             content = reader(filename)
         else:
             content = '(no template found)'
 
     # Execute the template.
-    code = str(TemplateParser(content,                              
+    code = str(TemplateParser(text=content,                              
                               context=context, 
                               path=path, 
                               lexers=lexers, 
@@ -1004,7 +989,8 @@ class template(object):
                     path=self.path, 
                     lexers=self.lexers,
                     delimiters=self.delimiters,
-                    context=context)
+                    context=context,
+                    reader=self.reader)
             else:
                 return context
         return wrapper

@@ -193,7 +193,7 @@ class TestMail(unittest.TestCase):
         message = TestMail.DummySMTP.inbox.pop()
         attachment = message.parsed_payload.get_payload(1).get_payload(decode=True)
         with open(module_file, 'rb') as mf:
-            self.assertEqual(attachment.decode('utf-8'), mf.read().decode('utf-8'))
+            self.assertEqual(attachment, mf.read())
         # Test missing attachment name error
         stream = open(module_file)
         self.assertRaises(Exception, lambda *args, **kwargs: Mail.Attachment(*args, **kwargs), stream)

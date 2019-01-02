@@ -83,30 +83,30 @@ class TestTemplate(unittest.TestCase):
 
         def dummy_open(path):
             if path == pjoin('views', 'layout.html'):
-                return StringIO("{{block left_sidebar}}left{{end}}"
-                                "{{include}}"
-                                "{{block right_sidebar}}right{{end}}")
+                return ("{{block left_sidebar}}left{{end}}"
+                        "{{include}}" 
+                        "{{block right_sidebar}}right{{end}}")
             elif path == pjoin('views', 'layoutbrackets.html'):
-                return StringIO("[[block left_sidebar]]left[[end]]"
-                                "[[include]]"
-                                "[[block right_sidebar]]right[[end]]")
+                return ("[[block left_sidebar]]left[[end]]"
+                        "[[include]]"
+                        "[[block right_sidebar]]right[[end]]")
             elif path == pjoin('views', 'default', 'index.html'):
-                return StringIO("{{extend 'layout.html'}}"
-                                "{{block left_sidebar}}{{super}} {{end}}"
-                                "to"
-                                "{{block right_sidebar}} {{super}}{{end}}")
+                return ("{{extend 'layout.html'}}"
+                        "{{block left_sidebar}}{{super}} {{end}}"
+                        "to"
+                        "{{block right_sidebar}} {{super}}{{end}}")
             elif path == pjoin('views', 'default', 'indexbrackets.html'):
-                return StringIO("[[extend 'layoutbrackets.html']]"
-                                "[[block left_sidebar]][[super]] [[end]]"
-                                "to"
-                                "[[block right_sidebar]] [[super]][[end]]")
+                return ("[[extend 'layoutbrackets.html']]"
+                        "[[block left_sidebar]][[super]] [[end]]"
+                        "to"
+                        "[[block right_sidebar]] [[super]][[end]]")
             elif path == pjoin('views', 'default', 'missing.html'):
-                return StringIO("{{extend 'wut'}}"
-                                "{{block left_sidebar}}{{super}} {{end}}"
-                                "to"
-                                "{{block right_sidebar}} {{super}}{{end}}")
+                return ("{{extend 'wut'}}"
+                        "{{block left_sidebar}}{{super}} {{end}}"
+                        "to"
+                        "{{block right_sidebar}} {{super}}{{end}}")
             elif path == pjoin('views', 'default', 'noescape.html'):
-                return StringIO("""{{=NOESCAPE('<script></script>')}}""")
+                return "{{=NOESCAPE('<script></script>')}}"
             raise IOError
         
         self.assertEqual(
@@ -115,7 +115,7 @@ class TestTemplate(unittest.TestCase):
             'left to right')
         self.assertEqual(
             render(filename=pjoin('views', 'default', 'indexbrackets.html'),
-                   path='views', delimiters=('[[', ']]'), reader=dummy_open),
+                   path='views', delimiters='[[ ]]', reader=dummy_open),
             'left to right')
         self.assertRaises(
             RestrictedError,
