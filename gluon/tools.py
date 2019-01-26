@@ -902,7 +902,7 @@ class Recaptcha2(DIV):
             'secret': self.private_key,
             'remoteip': remoteip,
             'response': recaptcha_response_field,
-        })
+        }).encode('utf-8')
         request = urllib2.Request(
             url=self.VERIFY_SERVER,
             data=to_bytes(params),
