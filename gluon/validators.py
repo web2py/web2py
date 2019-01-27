@@ -575,7 +575,7 @@ class IS_IN_DB(Validator):
         else:
             fields = [table[k] for k in self.fieldnames]
         ignore = (FieldVirtual, FieldMethod)
-        fields = filter(lambda f: not isinstance(f, ignore), fields)
+        fields = list(filter(lambda f: not isinstance(f, ignore), fields))
         if self.dbset.db._dbname != 'gae':
             orderby = self.orderby or reduce(lambda a, b: a | b, fields)
             groupby = self.groupby
