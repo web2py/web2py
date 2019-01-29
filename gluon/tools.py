@@ -2638,7 +2638,7 @@ class Auth(AuthAPI):
                         session.flash = specific_error if self.settings.login_specify_error else self.messages.invalid_login
                         callback(onfail, None)
                         redirect(
-                            self.url(args=request.args, vars=request.get_vars),
+                            self.url(args=request.args, vars=request.post_vars),
                             client_side=settings.client_side)
 
             else:  # use a central authentication server
