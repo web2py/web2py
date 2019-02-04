@@ -2322,7 +2322,7 @@ class SQLFORM(FORM):
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
-        details = details and not groupby
+        details = not groupby and details
         rows = None
 
         # see issue 1980. Basically we can have keywords in get_vars
@@ -2385,6 +2385,12 @@ class SQLFORM(FORM):
             b['args'] = args + b.get('args', [])
             localvars = request.get_vars.copy()
             localvars.update(b.get('vars', {}))
+            # avoid empty keywords in vars
+            if localvars.get('keywords') == '':
+                del localvars['keywords']
+            # avoid propagating order=None in vars
+            if localvars.get('order') == 'None':
+                del localvars['order']
             b['vars'] = localvars
             b['hash_vars'] = False
             b['user_signature'] = user_signature
@@ -2414,7 +2420,7 @@ class SQLFORM(FORM):
 
         def gridbutton(buttonclass='buttonadd', buttontext=T('Add'),
                        buttonurl=url(args=[]), callback=None,
-                       delete=None, trap=True, noconfirm=None, title=None):
+                       delete=None, noconfirm=None, title=None):
             if showbuttontext:
                 return A(SPAN(_class=ui.get(buttonclass)), CAT(' '),
                          SPAN(T(buttontext), _title=title or T(buttontext),
@@ -2645,20 +2651,18 @@ class SQLFORM(FORM):
 
             orderby = fix_orderby(orderby)
 
+            # expcolumns start with the visible columns, which
+            # includes visible virtual fields
             expcolumns = [str(f) for f in columns]
             selectable_columns = [str(f) for f in columns if not isinstance(f, Field.Virtual)]
             if export_type.endswith('with_hidden_cols'):
-                # expcolumns = [] start with the visible columns, which
-                # includes visible virtual fields
-                selectable_columns = []
-                # like expcolumns but excluding virtual
                 for table in tables:
                     for field in table:
                         if field.readable and field.tablename in tablenames:
                             if not str(field) in expcolumns:
                                 expcolumns.append(str(field))
-                            if not(isinstance(field, Field.Virtual)):
-                                selectable_columns.append(str(field))
+                                if not(isinstance(field, Field.Virtual)):
+                                    selectable_columns.append(str(field))
                     # look for virtual fields not displayed (and virtual method
                     # fields to be added here?)
                     for (field_name, field) in iteritems(table):
@@ -2723,7 +2727,7 @@ class SQLFORM(FORM):
 
         if searchable:
             sfields = reduce(lambda a, b: a + b,
-                             [[f for f in t if f.readable] for t in tables])
+                             [[f for f in t if f.readable and f.searchable] for t in tables])
             if isinstance(search_widget, dict):
                 search_widget = search_widget[tablename]
             if search_widget == 'default':
@@ -2732,7 +2736,7 @@ class SQLFORM(FORM):
                 spanel_id = '%s_query_fields' % prefix
                 sfields_id = '%s_query_panel' % prefix
                 skeywords_id = '%s_keywords' % prefix
-                # hidden fields to presever keywords in url after the submit
+                # hidden fields to preserve keywords in url after the submit
                 hidden_fields = [INPUT(_type='hidden', _value=v, _name=k) for k, v in request.get_vars.items() if k not in ['keywords', 'page']]
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=keywords,
@@ -2748,14 +2752,17 @@ class SQLFORM(FORM):
             form = search_widget and search_widget(sfields, url()) or ''
             console.append(add)
             console.append(form)
-            try:
-                if callable(searchable):
-                    subquery = searchable(sfields, keywords)
-                else:
-                    subquery = SQLFORM.build_query(sfields, keywords)
-            except RuntimeError:
+            if keywords:
+                try:
+                    if callable(searchable):
+                        subquery = searchable(sfields, keywords)
+                    else:
+                        subquery = SQLFORM.build_query(sfields, keywords)
+                except RuntimeError:
+                    subquery = None
+                    error = T('Invalid query')
+            else:
                 subquery = None
-                error = T('Invalid query')
         else:
             subquery = None
 
@@ -2768,12 +2775,15 @@ class SQLFORM(FORM):
             error = T('Unsupported query')
 
         order = request.vars.order or ''
+        asc_icon, desc_icon = sorter_icons
         if sortable:
             if order and not order == 'None':
                 otablename, ofieldname = order.split('~')[-1].split('.', 1)
                 sort_field = db[otablename][ofieldname]
+                # invert order direction on date/time fields
                 exception = sort_field.type in ('date', 'datetime', 'time')
                 if exception:
+                    desc_icon, asc_icon = sorter_icons
                     orderby = (order[:1] == '~' and sort_field) or ~sort_field
                 else:
                     orderby = (order[:1] == '~' and ~sort_field) or sort_field
@@ -2782,30 +2792,30 @@ class SQLFORM(FORM):
         if selectable:
             headcols.append(TH(_class=ui.get('default')))
 
-        ordermatch, marker = orderby, ''
+        ordermatch = orderby; marker = ''
         if orderby:
             # if orderby is a single column, remember to put the marker
             if isinstance(orderby, Expression):
                 if orderby.first and not orderby.second:
-                    ordermatch, marker = orderby.first, '~'
+                    ordermatch = orderby.first; marker = '~'
         ordermatch = marker + str(ordermatch)
         for field in columns:
             if not field.readable:
                 continue
             key = str(field)
-            header = headers.get(str(field), field.label or key)
+            header = headers.get(key, field.label or key)
             if sortable and not isinstance(field, Field.Virtual):
                 marker = ''
                 if order:
                     if key == order:
-                        key, marker = '~' + order, sorter_icons[0]
+                        key = '~' + order; marker = asc_icon
                     elif key == order[1:]:
-                        marker = sorter_icons[1]
+                        key = 'None'; marker = desc_icon
                 else:
                     if key == ordermatch:
-                        key, marker = '~' + ordermatch, sorter_icons[0]
+                        key = '~' + ordermatch; marker = asc_icon
                     elif key == ordermatch[1:]:
-                        marker = sorter_icons[1]
+                        marker = desc_icon
                 header = A(header, marker, _href=url(vars=dict(
                     keywords=keywords,
                     order=key)), cid=request.cid)
@@ -3114,7 +3124,7 @@ class SQLFORM(FORM):
                 link = url2(vars=dict(
                     order=request.vars.order or '',
                     _export_type=k,
-                    keywords=keywords or ''))
+                    keywords=keywords))
                 export_links.append(A(T(label), _href=link, _title=title, _class='btn btn-default btn-secondary'))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
@@ -3697,7 +3707,7 @@ class ExporterTSV(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self):  # export TSV with rows.represent
+    def export(self):  # export TSV with field.represent
         if self.rows:
             s = StringIO()
             self.rows.export_to_csv_file(s, represent=True,delimiter='\t',newline='\n')
@@ -3714,7 +3724,7 @@ class ExporterTSV_hidden(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self):  # export TSV with rows.represent
+    def export(self):
         if self.rows:
             s = StringIO()
             self.rows.export_to_csv_file(s,delimiter='\t',newline='\n')
@@ -3732,7 +3742,7 @@ class ExporterCSV(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self):  # export CSV with rows.represent
+    def export(self):  # export CSV with field.represent
         if self.rows:
             s = StringIO()
             self.rows.export_to_csv_file(s, represent=True)
