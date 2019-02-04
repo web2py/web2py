@@ -2260,9 +2260,9 @@ class Auth(AuthAPI):
 
     def _get_login_settings(self):
         table_user = self.table_user()
-        userfield = self.settings.login_userfield or 'username' \
+        userfield = self.settings.login_userfield or ('username' \
             if self.settings.login_userfield or 'username' \
-            in table_user.fields else 'email'
+            in table_user.fields else 'email')
         passfield = self.settings.password_field
         return Storage({'table_user': table_user,
                         'userfield': userfield,
