@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "This script will:
-1) install all modules need to run web2py on Ubuntu 14.04
+1) install all modules need to run web2py on Ubuntu 18.04
 2) install web2py in /home/www-data/
 3) create a self signed ssl certificate
 4) setup web2py with mod_wsgi
@@ -12,7 +12,6 @@ You may want to read this script before running it.
 Press a key to continue...[ctrl+C to abort]"
 
 read CONFIRM
-
 
 # optional
 # dpkg-reconfigure console-setup
@@ -26,6 +25,7 @@ read CONFIRM
 echo "installing useful packages"
 echo "=========================="
 apt-get update
+apt-get -y install sudo
 apt-get -y install ssh
 apt-get -y install zip unzip
 apt-get -y install tar

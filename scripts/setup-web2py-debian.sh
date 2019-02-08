@@ -1,5 +1,6 @@
+#!/bin/bash
 echo "This script will:
-1) install all modules need to run web2py on Ubuntu/Debian
+1) install all modules need to run web2py on Debian
 2) install web2py in /home/www-data/
 3) create a self signed ssl certificate
 4) setup web2py with mod_wsgi
@@ -12,7 +13,6 @@ Press a key to continue...[ctrl+C to abort]"
 
 read CONFIRM
 
-#!/bin/bash
 # optional
 # dpkg-reconfigure console-setup
 # dpkg-reconfigure timezoneconf
@@ -25,17 +25,20 @@ read CONFIRM
 echo "installing useful packages"
 echo "=========================="
 apt-get update
+apt-get -y install sudo
 apt-get -y install ssh
 apt-get -y install zip unzip
 apt-get -y install tar
 apt-get -y install openssh-server
 apt-get -y install build-essential
+apt-get -y install python
+#apt-get -y install python2.5
 apt-get -y install ipython
 apt-get -y install python-dev
 apt-get -y install postgresql
 apt-get -y install apache2
 apt-get -y install libapache2-mod-wsgi
-apt-get -y install python-psycopg2
+apt-get -y install python2.5-psycopg2
 apt-get -y install postfix
 apt-get -y install wget
 apt-get -y install python-matplotlib
@@ -69,6 +72,7 @@ a2enmod proxy_http
 a2enmod headers
 a2enmod expires
 a2enmod wsgi
+a2enmod rewrite  # for 14.04
 mkdir /etc/apache2/ssl
 
 echo "creating a self signed certificate"
@@ -81,48 +85,13 @@ openssl x509 -noout -fingerprint -text < /etc/apache2/ssl/self_signed.cert > /et
 echo "rewriting your apache config file to use mod_wsgi"
 echo "================================================="
 echo '
+WSGIDaemonProcess web2py user=www-data group=www-data
+
 <VirtualHost *:80>
-  ServerName YourServerName
-  WSGIDaemonProcess web2py user=www-data group=www-data display-name=%{GROUP}
-  WSGIProcessGroup web2py
+
+ WSGIProcessGroup web2py
   WSGIScriptAlias / /home/www-data/web2py/wsgihandler.py
-
-  <Directory /home/www-data/web2py>
-    Require all denied
-    <Files wsgihandler.py>
-      Require all granted
-    </Files>
-  </Directory>
-
-    AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) \
-           /home/www-data/web2py/applications/$1/static/$2
-  <Directory /home/www-data/web2py/applications/*/static/>
-    Options -Indexes
-    Require all granted
-  </Directory>
-
-  <Location /admin>
-    Require all denied
-  </Location>
-
-  <LocationMatch ^/([^/]+)/appadmin>
-    Require all denied
-  </LocationMatch>
-
-  CustomLog /var/log/apache2/access.log common
-  ErrorLog /var/log/apache2/error.log
-</VirtualHost>
-
-
-<VirtualHost *:443>
-  ServerName YourServerName
-  SSLEngine on
-  SSLCertificateFile /etc/apache2/ssl/self_signed.cert
-  SSLCertificateKeyFile /etc/apache2/ssl/self_signed.key
-
-  WSGIProcessGroup web2py
-
-  WSGIScriptAlias / /home/www-data/web2py/wsgihandler.py
+  WSGIPassAuthorization On
 
   <Directory /home/www-data/web2py>
     AllowOverride None
@@ -132,18 +101,54 @@ echo '
     </Files>
   </Directory>
 
-   AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) \
+  AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) \
         /home/www-data/web2py/applications/$1/static/$2
 
   <Directory /home/www-data/web2py/applications/*/static/>
+    Options -Indexes
+    ExpiresActive On
+    ExpiresDefault "access plus 1 hour"
     Require all granted
   </Directory>
 
   CustomLog /var/log/apache2/access.log common
   ErrorLog /var/log/apache2/error.log
-
 </VirtualHost>
-' > /etc/apache2/sites-available/default
+
+<VirtualHost *:443>
+  SSLEngine on
+  SSLCertificateFile /etc/apache2/ssl/self_signed.cert
+  SSLCertificateKeyFile /etc/apache2/ssl/self_signed.key
+
+  WSGIProcessGroup web2py
+  WSGIScriptAlias / /home/www-data/web2py/wsgihandler.py
+  WSGIPassAuthorization On
+
+  <Directory /home/www-data/web2py>
+    AllowOverride None
+    Require all denied
+    <Files wsgihandler.py>
+      Require all granted
+    </Files>
+  </Directory>
+
+  AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) \
+        /home/www-data/web2py/applications/$1/static/$2
+
+  <Directory /home/www-data/web2py/applications/*/static/>
+    Options -Indexes
+    ExpiresActive On
+    ExpiresDefault "access plus 1 hour"
+    Require all granted
+  </Directory>
+
+  CustomLog /var/log/apache2/ssl-access.log common
+  ErrorLog /var/log/apache2/error.log
+</VirtualHost>
+' > /etc/apache2/sites-available/default.conf  # FOR 14.04
+
+sudo rm /etc/apache2/sites-enabled/*    # FOR 14.04
+sudo a2ensite default                   # FOR 14.04
 
 # echo "setting up PAM"
 # echo "================"
