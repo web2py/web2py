@@ -38,8 +38,8 @@ apt-get -y install libapache2-mod-wsgi
 apt-get -y install python-psycopg2
 apt-get -y install postfix
 apt-get -y install wget
-apt-get -y install python-matplotlib
-apt-get -y install python-reportlab
+apt-get -y install python3-matplotlib
+apt-get -y install python3-reportlab
 apt-get -y install mercurial
 /etc/init.d/postgresql restart
 
