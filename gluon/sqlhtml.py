@@ -717,7 +717,7 @@ class AutocompleteWidget(object):
                             compact=table_rows.compact)
             elif settings and settings.global_settings.web2py_runtime_gae:
                 rows = self.db(field.__ge__(kword) &
-                               field.__lt__(kword + u'\ufffd')
+                               field.__lt__(kword + '\ufffd')
                                ).select(orderby=self.orderby,
                                         limitby=self.limitby,
                                         *(self.fields + self.help_fields))
@@ -1966,7 +1966,7 @@ class SQLFORM(FORM):
 
     AUTOTYPES = {
         type(''): ('string', None),
-        type(u''): ('string',None),
+        type(''): ('string',None),
         type(True): ('boolean', None),
         type(1): ('integer', IS_INT_IN_RANGE(-1e12, +1e12)),
         type(1.0): ('double', IS_FLOAT_IN_RANGE()),
@@ -2462,8 +2462,8 @@ class SQLFORM(FORM):
             filter1 = lambda f: isinstance(f, Field) and (f.type!='blob' or showblobs)
             filter2 = lambda f: isinstance(f, Field) and f.readable and f.listable
             for table in tables:
-                fields += filter(filter1, table)
-                columns += filter(filter2, table)
+                fields += list(filter(filter1, table))
+                columns += list(filter(filter2, table))
                 for k, f in iteritems(table):
                     if not k.startswith('_'):
                         if isinstance(f, Field.Virtual) and f.readable:
@@ -2549,7 +2549,7 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(referrer)
             if represent_none is not None:
-                for field in record.iterkeys():
+                for field in record.keys():
                     if record[field] is None:
                         record[field] = represent_none
             sqlformargs = dict(upload=upload, ignore_rw=ignore_rw,
@@ -2676,7 +2676,7 @@ class SQLFORM(FORM):
                         # the query should be constructed using searchable
                         # fields but not virtual fields
                         is_searchable = lambda f: f.readable and not isinstance(f, Field.Virtual) and f.searchable
-                        sfields = reduce(lambda a, b: a + b, [filter(is_searchable, t) for t in tables])
+                        sfields = reduce(lambda a, b: a + b, [list(filter(is_searchable, t)) for t in tables])
                         # use custom_query using searchable
                         if callable(searchable):
                             dbset = dbset(searchable(sfields, keywords))
@@ -2937,7 +2937,7 @@ class SQLFORM(FORM):
                 paginator.append(LI(self_link('<<', 0)))
             if page > NPAGES:
                 paginator.append(LI(self_link('<', page - 1)))
-            pages = range(max(0, page - NPAGES), min(page + NPAGES, npages))
+            pages = list(range(max(0, page - NPAGES), min(page + NPAGES, npages)))
             for p in pages:
                 if p == page:
                     paginator.append(LI(A(p + 1, _onclick='return false'),
@@ -3426,7 +3426,7 @@ class SQLTABLE(TABLE):
         if not sqlrows:
             return
         REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
-        fieldmap = dict(zip(sqlrows.colnames, sqlrows.fields))
+        fieldmap = dict(list(zip(sqlrows.colnames, sqlrows.fields)))
         tablemap = dict(((f.tablename, f.table) if isinstance(f, Field) else (f._table._tablename, f._table) for f in fieldmap.values()))
         for table in tablemap.values():
             pref = table._tablename + '.'

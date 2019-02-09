@@ -6,7 +6,7 @@
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
-from __future__ import print_function
+
 from gluon._compat import xrange
 from gluon.utils import local_html_escape
 import re
@@ -325,7 +325,7 @@ color: #A0A0A0;
     fa = ' '.join([key[1:].lower() for (key, value) in items if key[:1]
                    == '_' and value is None] + ['%s="%s"'
                                                 % (key[1:].lower(), str(value).replace('"', "'"))
-                  for (key, value) in attributes.items() if key[:1]
+                  for (key, value) in items if key[:1]
                   == '_' and value])
     if fa:
         fa = ' ' + fa

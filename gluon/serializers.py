@@ -10,7 +10,7 @@ from gluon.html import TAG, XmlComponent, xmlescape
 from gluon.languages import lazyT
 import gluon.contrib.rss2 as rss2
 import json as json_parser
-from gluon._compat import long, to_native, unicodeT
+from gluon._compat import long, to_native, unicodeT, integer_types
 
 have_yaml = True
 try:
@@ -79,7 +79,7 @@ def custom_json(o):
                       datetime.datetime,
                       datetime.time)):
         return o.isoformat()[:19].replace('T', ' ')
-    elif isinstance(o, (int, long)):
+    elif isinstance(o, integer_types):
         return int(o)
     elif isinstance(o, decimal.Decimal):
         return str(o)

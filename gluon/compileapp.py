@@ -18,7 +18,7 @@ import fnmatch
 import os, sys
 import copy
 import random
-from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring, reduce, xrange, long, reload
+from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, integer_types, basestring, reduce, xrange, long, reload
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -177,7 +177,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
         else:
             raise TypeError("Unsupported times argument type %s" % type(times))
         if timeout is not None:
-            if not isinstance(timeout, (int, long)):
+            if not isinstance(timeout, integer_types):
                 raise ValueError("Timeout argument must be an integer or None")
             elif timeout <= 0:
                 raise ValueError(
@@ -261,7 +261,7 @@ class LoadFactory(object):
         if args is None:
             args = []
         vars = Storage(vars or {})
-        import globals
+        from . import globals
         target = target or 'c' + str(random.random())[2:]
         attr['_id'] = target
         request = current.request
@@ -631,7 +631,7 @@ def run_controller_in(controller, function, environment):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
-        environment['__symbols__'] = environment.keys()
+        environment['__symbols__'] = list(environment.keys())
         code = read_file(filename)
         code += TEST_CODE
         ccode = compile2(code, filename)

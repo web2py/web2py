@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Unit tests for rewrite.py routers option"""
-from __future__ import print_function
+
 import os
 import unittest
 import tempfile
