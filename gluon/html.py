@@ -9,7 +9,6 @@
 Template helpers
 --------------------------------------------
 """
-from __future__ import print_function
 
 import cgi
 import os
@@ -35,8 +34,8 @@ regex_crlf = re.compile('\r|\n')
 join = ''.join
 
 # name2codepoint is incomplete respect to xhtml (and xml): 'apos' is missing.
-entitydefs = dict(map(lambda k_v: (k_v[0], unichr(k_v[1]).encode('utf-8')), iteritems(name2codepoint)))
-entitydefs.setdefault('apos', u"'".encode('utf-8'))
+entitydefs = dict([(k_v[0], to_bytes(unichr(k_v[1]))) for k_v in iteritems(name2codepoint)])
+entitydefs.setdefault('apos', to_bytes("'"))
 
 
 __all__ = [
