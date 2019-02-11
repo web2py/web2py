@@ -619,7 +619,7 @@ class Cache(object):
                         if user_agent_ is True:
                             cache_key.append("%(is_mobile)s_%(is_tablet)s" % current.request.user_agent())
                         else:
-                            cache_key.append(str(user_agent_.items()))
+                            cache_key.append(str(list(user_agent_.items())))
                     if vars_:
                         cache_key.append(current.request.env.query_string)
                     if lang_:

@@ -9,7 +9,6 @@
 The widget is called from web2py
 ----------------------------------
 """
-from __future__ import print_function
 
 import datetime
 import sys
@@ -30,6 +29,9 @@ from gluon.fileutils import read_file, write_file, create_welcome_w2p
 from gluon.settings import global_settings
 from gluon.shell import run, test
 from gluon.utils import is_valid_ip_address, is_loopback_ip_address, getipaddrinfo
+
+if PY2:
+    input = raw_input
 
 
 ProgramName = 'web2py Web Framework'
@@ -952,7 +954,7 @@ def console():
 
     if options.gae:
         if not os.path.exists('app.yaml'):
-            name = raw_input("Your GAE app name: ")
+            name = input("Your GAE app name: ")
             content = open(os.path.join('examples', 'app.example.yaml'), 'rb').read()
             open('app.yaml', 'wb').write(content.replace("yourappname", name))
         else:

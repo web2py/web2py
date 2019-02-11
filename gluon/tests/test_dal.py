@@ -56,7 +56,7 @@ def _prepare_exec_for_file(filename):
     elif os.path.split(filename)[1] == '__init__.py':
         filename = os.path.dirname(filename)
     else:
-        raise 'The file provided (%s) does is not a valid Python file.'
+        raise IOError('The file provided (%s) is not a valid Python file.')
     filename = os.path.realpath(filename)
     dirpath = filename
     while True:

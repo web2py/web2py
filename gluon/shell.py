@@ -10,6 +10,7 @@
 Web2py environment in the shell
 --------------------------------
 """
+
 from __future__ import print_function
 
 import os
@@ -95,7 +96,7 @@ def exec_environment(
     if pyfile:
         pycfile = pyfile + 'c'
         if os.path.isfile(pycfile):
-            exec (read_pyc(pycfile), env)
+            exec(read_pyc(pycfile), env)
         else:
             execfile(pyfile, env)
     return Storage(env)

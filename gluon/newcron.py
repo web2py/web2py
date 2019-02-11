@@ -20,13 +20,9 @@ import re
 import datetime
 import platform
 from functools import reduce
-try:
-    import cPickle as pickle
-except:
-    import pickle
 from gluon.settings import global_settings
 from gluon import fileutils
-from gluon._compat import to_bytes
+from gluon._compat import to_bytes, pickle
 from pydal.contrib import portalocker
 
 logger = logging.getLogger("web2py.cron")

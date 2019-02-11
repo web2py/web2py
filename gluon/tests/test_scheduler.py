@@ -551,12 +551,12 @@ class TestsForSchedulerAPIs(BaseTestScheduler):
         def isnotqueued(result):
             self.assertEqual(result.id, None)
             self.assertEqual(result.uuid, None)
-            self.assertEqual(len(result.errors.keys()) > 0, True)
+            self.assertEqual(len(list(result.errors.keys())) > 0, True)
 
         def isqueued(result):
             self.assertNotEqual(result.id, None)
             self.assertNotEqual(result.uuid, None)
-            self.assertEqual(len(result.errors.keys()), 0)
+            self.assertEqual(len(list(result.errors.keys())), 0)
 
         s = Scheduler(self.db)
         fname = 'foo'

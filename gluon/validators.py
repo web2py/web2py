@@ -16,7 +16,6 @@ import datetime
 import time
 import cgi
 import json
-import urllib
 import struct
 import decimal
 import unicodedata
@@ -437,7 +436,7 @@ class IS_IN_SET(Validator):
         self.multiple = multiple
         if isinstance(theset, dict):
             self.theset = [str(item) for item in theset]
-            self.labels = theset.values()
+            self.labels = list(theset.values())
         elif theset and isinstance(theset, (tuple, list)) \
                 and isinstance(theset[0], (tuple, list)) and len(theset[0]) == 2:
             self.theset = [str(item) for item, label in theset]
@@ -575,7 +574,7 @@ class IS_IN_DB(Validator):
         else:
             fields = [table[k] for k in self.fieldnames]
         ignore = (FieldVirtual, FieldMethod)
-        fields = filter(lambda f: not isinstance(f, ignore), fields)
+        fields = [f for f in fields if not isinstance(f, ignore)]
         if self.dbset.db._dbname != 'gae':
             orderby = self.orderby or reduce(lambda a, b: a | b, fields)
             groupby = self.groupby
@@ -649,7 +648,7 @@ class IS_IN_DB(Validator):
                     return (values, None)
             else:
                 def count(values, s=self.dbset, f=field):
-                    return s(f.belongs(map(int, values))).count()
+                    return s(f.belongs(list(map(int, values)))).count()
 
                 if self.dbset.db._adapter.dbengine == "google:datastore":
                     range_ids = range(0, len(values), 30)
@@ -3533,7 +3532,7 @@ class IS_IPV4(Validator):
             if isinstance(value, str):
                 temp.append(value.split('.'))
             elif isinstance(value, (list, tuple)):
-                if len(value) == len(list(filter(lambda item: isinstance(item, int), value))) == 4:
+                if len(value) == len([item for item in value if isinstance(item, int)]) == 4:
                     temp.append(value)
                 else:
                     for item in value:
