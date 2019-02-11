@@ -2637,8 +2637,10 @@ class Auth(AuthAPI):
                         # invalid login
                         session.flash = specific_error if self.settings.login_specify_error else self.messages.invalid_login
                         callback(onfail, None)
+                        if 'password' in request.post_vars:
+                            del request.post_vars['password']
                         redirect(
-                            self.url(args=request.args, vars=request.get_vars),
+                            self.url(args=request.args, get_vars=request.get_vars, post_vars=request.post_vars),
                             client_side=settings.client_side)
 
             else:  # use a central authentication server
