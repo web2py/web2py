@@ -6,6 +6,7 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
+import unittest
 import logging
 import os
 import sys
@@ -43,12 +44,9 @@ DEFAULT_DELIMITERS = ('{{', '}}')
 
 
 def file_reader(filename, mode='rb'):
-    try:        
-        with open(filename, mode) as fp:
-            body = fp.read()
+    with open(filename, mode) as fp:
+        body = fp.read()
         return body
-    except IOError:
-        raise RestrictedError(filename, '', 'Unable to find the file')
 
 try:
     # have web2py

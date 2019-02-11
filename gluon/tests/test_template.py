@@ -25,7 +25,7 @@ class TestTemplate(unittest.TestCase):
         self.assertEqual(render(content='"a\'bc"'), '"a\'bc"')
         self.assertEqual(render(content='"a\"bc"'), '"a\"bc"')
         self.assertEqual(render(content=r'''"a\"bc"'''), r'"a\"bc"')
-        self.assertEqual(render(content=r'''"""abc\""""'''), r'"""abc\""""')
+        self.assertEqual(render(content='''\"\"\"abc\\\"\"\"\"'''), r'"""abc\""""')
 
     def testEqualWrite(self):
         "test generation of response.write from ="
@@ -63,8 +63,15 @@ class TestTemplate(unittest.TestCase):
     def testWithDummyFileSystem(self):
         from os.path import join as pjoin
         import contextlib
-        from gluon._compat import StringIO
+        from gluon._compat import PY2
         from gluon.restricted import RestrictedError
+        if PY2:
+            # because compat uses cStringIO as StringIO which does work with "with"
+            from StringIO import StringIO
+            StringIO.__exit__ = lambda *args: args[0]
+            StringIO.__enter__ = lambda *args: args[0]
+        else:
+            from gluon._compat import StringIO
 
         @contextlib.contextmanager
         def monkey_patch(module, fn_name, patch):
