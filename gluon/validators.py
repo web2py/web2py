@@ -3163,6 +3163,10 @@ class IS_STRONG(object):
                 if not all_special.count(True) >= self.special:
                     failures.append(translate("Must include at least %s of the following: %s")
                                     % (self.special, self.specials))
+            elif self.special is 0:
+                if len(all_special) > 0:
+                    failures.append(translate("May not contain any of the following: %s")
+                                    % self.specials)
         if self.invalid:
             all_invalid = [ch in value for ch in self.invalid]
             if all_invalid.count(True) > 0:
@@ -3174,7 +3178,7 @@ class IS_STRONG(object):
                 if not len(all_upper) >= self.upper:
                     failures.append(translate("Must include at least %s uppercase")
                                     % str(self.upper))
-            else:
+            elif self.upper is 0:
                 if len(all_upper) > 0:
                     failures.append(
                         translate("May not include any uppercase letters"))
@@ -3184,7 +3188,7 @@ class IS_STRONG(object):
                 if not len(all_lower) >= self.lower:
                     failures.append(translate("Must include at least %s lowercase")
                                     % str(self.lower))
-            else:
+            elif self.lower is 0:
                 if len(all_lower) > 0:
                     failures.append(
                         translate("May not include any lowercase letters"))
@@ -3197,7 +3201,7 @@ class IS_STRONG(object):
                 if not len(all_number) >= self.number:
                     failures.append(translate("Must include at least %s %s")
                                     % (str(self.number), numbers))
-            else:
+            elif self.number is 0:
                 if len(all_number) > 0:
                     failures.append(translate("May not include any numbers"))
         if len(failures) == 0:
