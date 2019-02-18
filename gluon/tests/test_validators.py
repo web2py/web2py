@@ -943,6 +943,14 @@ class TestValidators(unittest.TestCase):
                                     'May not include any lowercase letters',
                                     'May not include any numbers']))
                          )
+        rtn = IS_STRONG(special=0, es=True)('Abcde1!')
+        self.assertEqual(rtn,
+                         ('Abcde1!',
+                          '|'.join(['Minimum length is 8',
+                                    'May not contain any of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|']))
+                         )
+        rtn = IS_STRONG(upper=False, number=False, special=False, es=True)('Abcde1!')
+        self.assertEqual(rtn, ('Abcde1!', 'Minimum length is 8'))
 
     def test_IS_IMAGE(self):
         class DummyImageFile(object):
