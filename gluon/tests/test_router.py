@@ -1555,4 +1555,3 @@ class TestRouter(unittest.TestCase):
         load(rdict=router_collide)
         self.assertEqual(filter_url('http://welcome.com/welcome/admin/index',
                          domain='welcome', out=True), "/welcome/admin")
-

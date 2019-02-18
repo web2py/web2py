@@ -1380,4 +1380,3 @@ class TestExpose(unittest.TestCase):
     def test_not_authorized(self):
         with self.assertRaises(HTTP):
             self.make_expose(base='inside', show='link_to_file3')
-

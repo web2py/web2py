@@ -142,4 +142,3 @@ class TestCache(unittest.TestCase):
         self.assertEqual(a.as_csv(), h.as_csv())
         db.t_a.drop()
         db.close()
-

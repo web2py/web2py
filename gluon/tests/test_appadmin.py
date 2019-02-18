@@ -196,4 +196,3 @@ class TestAppAdmin(unittest.TestCase):
         data['id'] = '1'
         request._vars = data
         self.assertRaises(HTTP, self.run_function)
-

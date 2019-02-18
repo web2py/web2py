@@ -1078,7 +1078,7 @@ class Session(Storage):
         if self._same_site is None:
             # Using SameSite Lax Mode is the default
             # You actually have to call session.samesite(False) if you really
-            # dont want the extra protection provided by the SameSite header 
+            # dont want the extra protection provided by the SameSite header
             self._same_site = 'Lax'
         if self._same_site:
             if 'samesite' not in Cookie.Morsel._reserved:

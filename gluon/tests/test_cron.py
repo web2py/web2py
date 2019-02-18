@@ -16,9 +16,7 @@ class TestCron(unittest.TestCase):
         self.assertEqual(t.acquire(), None)
         self.assertTrue(t.release())
         return
-        
+
     def test_crondance(self):
-        #TODO update crondance to return something 
+        #TODO update crondance to return something
         crondance(os.getcwd())
-        
-        

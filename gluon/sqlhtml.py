@@ -3435,7 +3435,7 @@ class SQLTABLE(TABLE):
         else:
             columns = list(sqlrows.colnames)
         field_types = (Field, Field.Virtual, Field.Method)
-            
+
         header_func = {
             'fieldname:capitalize': lambda f: f.name.replace('_', ' ').title(),
             'labels': lambda f: f.label

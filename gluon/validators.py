@@ -2567,7 +2567,7 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
 
 class IS_LIST_OF(Validator):
 
-    def __init__(self, other=None, minimum=None, maximum=None, error_message=None):                 
+    def __init__(self, other=None, minimum=None, maximum=None, error_message=None):
         self.other = other
         self.minimum = minimum
         self.maximum = maximum

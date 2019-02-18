@@ -277,7 +277,7 @@ class TestSQLFORM(unittest.TestCase):
 
         self.db.commit()
 
-    
+
     def test_SQLFORM(self):
         form = SQLFORM(self.db.auth_user)
         self.assertEqual(form.xml()[:5], b'<form')
@@ -337,7 +337,7 @@ class TestSQLFORM(unittest.TestCase):
 
     #  def test_search_menu(self):
     #     pass
-   
+
     def test_grid(self):
         grid_form = SQLFORM.grid(self.db.auth_user)
         self.assertEqual(grid_form.xml()[:4], b'<div')

@@ -1367,7 +1367,7 @@ class Scheduler(MetaScheduler):
                 ws = wkgroups.get(gname)
                 if ws:
                     if task.broadcast:
-                        for worker in ws['workers']:                       
+                        for worker in ws['workers']:
                             new_task = db.scheduler_task.insert(
                                 application_name = task.application_name,
                                 task_name = task.task_name,
@@ -1389,7 +1389,7 @@ class Scheduler(MetaScheduler):
                         db(st.id == task.id).update(times_run=task.times_run+1,
                                                     next_run_time=next_run_time,
                                                     last_run_time=now)
-                        db.commit()                          
+                        db.commit()
                     else:
                         counter = 0
                         myw = 0

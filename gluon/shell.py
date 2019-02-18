@@ -211,7 +211,7 @@ def run(
     - a/c : exec the controller c into the application environment
     """
 
-    (a, c, f, args, vars) = parse_path_info(appname, av=True)    
+    (a, c, f, args, vars) = parse_path_info(appname, av=True)
     errmsg = 'invalid application name: %s' % appname
     if not a:
         die(errmsg)

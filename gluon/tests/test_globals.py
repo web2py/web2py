@@ -259,4 +259,3 @@ class testResponse(unittest.TestCase):
         response.meta['meta_dict'] = {'tag_name':'tag_value'}
         response.include_meta()
         self.assertEqual(response.body.getvalue(), '\n<meta tag_name="tag_value" />\n')
-

@@ -95,7 +95,7 @@ class TestTranslations(unittest.TestCase):
                          'Hello World')
         self.assertEqual(str(T.M('**Hello World**')),
                          '<strong>Hello World</strong>')
-		# sub_tuple testing
+                # sub_tuple testing
         self.assertEqual(str(T('%s %%{shop}', 1)),
                          '1 shop')
         self.assertEqual(str(T('%s %%{shop}', 2)),
@@ -192,7 +192,7 @@ class TestTranslations(unittest.TestCase):
                          '2')
         self.assertEqual(str(T('%i%%{?st?[0]}', 0)),
                          '0')
-		# sub_dict testing
+                # sub_dict testing
         self.assertEqual(str(T('%(key)s %%{is(key)}', dict(key=1))),
                          '1 is')
         self.assertEqual(str(T('%(key)i %%{is(key)}', dict(key=2))),
