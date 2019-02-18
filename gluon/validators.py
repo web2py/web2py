@@ -482,8 +482,8 @@ class IS_IN_SET(Validator):
         return (value, None)
 
 
-regex1 = re.compile('\w+\.\w+')
-regex2 = re.compile('%\(([^\)]+)\)\d*(?:\.\d+)?[a-zA-Z]')
+regex1 = re.compile(r'\w+\.\w+')
+regex2 = re.compile(r'%\(([^\)]+)\)\d*(?:\.\d+)?[a-zA-Z]')
 
 
 class IS_IN_DB(Validator):
@@ -1157,7 +1157,7 @@ class IS_EMAIL(Validator):
 
     """
 
-    body_regex = re.compile('''
+    body_regex = re.compile(r'''
         ^(?!\.)                            # name may not begin with a dot
         (
           [-a-z0-9!\#$%&'*+/=?^_`{|}~]     # all legal characters except dot
@@ -1166,7 +1166,7 @@ class IS_EMAIL(Validator):
         )+
         (?<!\.)$                            # name may not end with a dot
     ''', re.VERBOSE | re.IGNORECASE)
-    domain_regex = re.compile('''
+    domain_regex = re.compile(r'''
         (
           localhost
           |
@@ -1183,7 +1183,7 @@ class IS_EMAIL(Validator):
        )$
     ''', re.VERBOSE | re.IGNORECASE)
 
-    regex_proposed_but_failed = re.compile('^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$', re.VERBOSE | re.IGNORECASE)
+    regex_proposed_but_failed = re.compile(r'^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$', re.VERBOSE | re.IGNORECASE)
 
     def __init__(self,
                  banned=None,
@@ -1996,8 +1996,8 @@ class IS_HTTP_URL(Validator):
     """
 
     GENERIC_VALID_IP = re.compile(
-        "([\w.!~*'|;:&=+$,-]+@)?\d+\.\d+\.\d+\.\d+(:\d*)*$")
-    GENERIC_VALID_DOMAIN = re.compile("([\w.!~*'|;:&=+$,-]+@)?(([A-Za-z0-9]+[A-Za-z0-9\-]*[A-Za-z0-9]+\.)*([A-Za-z0-9]+\.)*)*([A-Za-z]+[A-Za-z0-9\-]*[A-Za-z0-9]+)\.?(:\d*)*$")
+        r"([\w.!~*'|;:&=+$,-]+@)?\d+\.\d+\.\d+\.\d+(:\d*)*$")
+    GENERIC_VALID_DOMAIN = re.compile(r"([\w.!~*'|;:&=+$,-]+@)?(([A-Za-z0-9]+[A-Za-z0-9\-]*[A-Za-z0-9]+\.)*([A-Za-z0-9]+\.)*)*([A-Za-z]+[A-Za-z0-9\-]*[A-Za-z0-9]+)\.?(:\d*)*$")
 
     def __init__(
         self,
@@ -3516,7 +3516,7 @@ class IS_IPV4(Validator):
     """
 
     regex = re.compile(
-        '^(([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.){3}([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])$')
+        r'^(([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.){3}([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])$')
     numbers = (16777216, 65536, 256, 1)
     localhost = 2130706433
     private = ((2886729728, 2886795263), (3232235520, 3232301055))
