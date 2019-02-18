@@ -2450,11 +2450,6 @@ class SQLFORM(FORM):
                 tablenames = merge_tablemaps(tablenames, db._adapter.tables(join))
         tables = [db[tablename] for tablename in tablenames]
         if fields:
-            # add missing tablename to virtual fields
-            for table in tables:
-                for k, f in iteritems(table):
-                    if isinstance(f, Field.Virtual):
-                        f.tablename = table._tablename
             columns = [f for f in fields if f.tablename in tablenames and f.listable]
         else:
             fields = []
@@ -2684,13 +2679,13 @@ class SQLFORM(FORM):
                             dbset = dbset(SQLFORM.build_query(
                                 sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
-                                            cacheable=True, *expcolumns)
+                                            cacheable=True, *selectable_columns)
                     except Exception as e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
                     rows = dbset.select(left=left, orderby=orderby,
-                                        cacheable=True, *expcolumns)
+                                        cacheable=True, *selectable_columns)
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
@@ -3425,16 +3420,22 @@ class SQLTABLE(TABLE):
         (components, row) = (self.components, [])
         if not sqlrows:
             return
-        REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
-        fieldmap = dict(list(zip(sqlrows.colnames, sqlrows.fields)))
-        tablemap = dict(((f.tablename, f.table) if isinstance(f, Field) else (f._table._tablename, f._table) for f in fieldmap.values()))
-        for table in tablemap.values():
-            pref = table._tablename + '.'
-            fieldmap.update(((pref+f.name, f) for f in table._virtual_fields))
-            fieldmap.update(((pref+f.name, f) for f in table._virtual_methods))
-        field_types = (Field, Field.Virtual, Field.Method)
-        if not columns:
+        fieldlist = sqlrows.colnames_fields
+        fieldmap = dict(zip(sqlrows.colnames, fieldlist))
+        if columns:
+            tablenames = []
+            for colname, field in fieldmap.iteritems():
+                if isinstance(field, (Field, Field.Virtual)):
+                    tablenames.append(field.tablename)
+                elif isinstance(field, Expression):
+                    tablenames.append(field._table._tablename)
+            for tablename in set(tablenames):
+                table = sqlrows.db[tablename]
+                fieldmap.update((("%s.%s" % (tablename, f.name), f) for f in table._virtual_fields + table._virtual_methods))
+        else:
             columns = list(sqlrows.colnames)
+        field_types = (Field, Field.Virtual, Field.Method)
+            
         header_func = {
             'fieldname:capitalize': lambda f: f.name.replace('_', ' ').title(),
             'labels': lambda f: f.label
