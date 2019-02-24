@@ -120,7 +120,7 @@ class TestCache(unittest.TestCase):
         s = Storage({'application': 'admin',
                      'folder': 'applications/admin'})
         cache = Cache(s)
-        db = DAL(check_reserved=['all'])
+        db = DAL('sqlite:memory', check_reserved=['all'])
         db.define_table('t_a', Field('f_a'))
         db.t_a.insert(f_a='test')
         db.commit()

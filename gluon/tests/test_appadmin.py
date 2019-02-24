@@ -11,7 +11,7 @@ import unittest
 
 
 from gluon.compileapp import run_controller_in, run_view_in, compile_application, remove_compiled_application
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.storage import Storage, List
 from gluon import fileutils
 from gluon.dal import DAL, Field, Table
@@ -50,7 +50,7 @@ class TestAppAdmin(unittest.TestCase):
         request.env.remote_addr = '127.0.0.1'
         response = Response()
         session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         session.connect(request, response)
         current.request = request
         current.response = response

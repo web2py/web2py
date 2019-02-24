@@ -18,7 +18,7 @@ from pydal.objects import Table
 from gluon.tools import Auth, Mail
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.http import HTTP
 from gluon.validators import *
 
@@ -254,7 +254,7 @@ class TestSQLFORM(unittest.TestCase):
         request.folder = 'applications/admin'
         response = Response()
         session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         session.connect(request, response)
         from gluon.globals import current
         current.request = request
@@ -355,7 +355,7 @@ class TestSQLTABLE(unittest.TestCase):
         request.folder = 'applications/admin'
         response = Response()
         session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         session.connect(request, response)
         from gluon.globals import current
         current.request = request

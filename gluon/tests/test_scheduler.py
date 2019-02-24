@@ -11,7 +11,7 @@ import datetime
 import sys
 
 from gluon.storage import Storage
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.scheduler import JobGraph, Scheduler, CronParser
 from gluon.dal import DAL
 
@@ -25,7 +25,7 @@ class BaseTestScheduler(unittest.TestCase):
                      'folder': 'applications/welcome',
                      'controller': 'default'})
         current.request = s
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         current.T = T
         self.db = DAL('sqlite://dummy2.db', check_reserved=['all'])
 

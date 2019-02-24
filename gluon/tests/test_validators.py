@@ -20,8 +20,7 @@ class TestValidators(unittest.TestCase):
 
     def test_MISC(self):
         """ Test miscelaneous utility functions and some general behavior guarantees """
-        from gluon.validators import translate, options_sorter, Validator, UTC
-        self.assertEqual(translate(None), None)
+        from gluon.validators import options_sorter, Validator, UTC
         self.assertEqual(options_sorter(('a', 'a'), ('a', 'a')), -1)
         self.assertEqual(options_sorter(('A', 'A'), ('a', 'a')), -1)
         self.assertEqual(options_sorter(('b', 'b'), ('a', 'a')), 1)

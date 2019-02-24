@@ -457,7 +457,7 @@ def pickle_lazyT(c):
 copyreg.pickle(lazyT, pickle_lazyT)
 
 
-class translator(object):
+class TranslatorFactory(object):
     """
     This class is instantiated by gluon.compileapp.build_environment
     as the T object
@@ -742,8 +742,8 @@ class translator(object):
         try:
             otherT = self.otherTs[index]
         except KeyError:
-            otherT = self.otherTs[index] = translator(self.langpath,
-                                                      self.http_accept_language)
+            otherT = self.otherTs[index] = TranslatorFactory(self.langpath,
+                                                             self.http_accept_language)
             if language:
                 otherT.force(language)
         return otherT

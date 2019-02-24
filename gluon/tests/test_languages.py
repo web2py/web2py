@@ -88,7 +88,7 @@ class TestTranslations(unittest.TestCase):
         pass
 
     def test_plain(self):
-        T = languages.translator(self.langpath, self.http_accept_language)
+        T = languages.TranslatorFactory(self.langpath, self.http_accept_language)
         self.assertEqual(str(T('Hello World')),
                          'Hello World')
         self.assertEqual(str(T('Hello World## comment')),
@@ -340,7 +340,7 @@ class TestMessages(unittest.TestCase):
         pass
 
     def test_decode(self):
-        T = languages.translator(self.langpath, self.http_accept_language)
+        T = languages.TranslatorFactory(self.langpath, self.http_accept_language)
         messages = Messages(T)
         messages.update({'email_sent':'Email sent', 'test': "ä"})
         self.assertEqual(to_unicode(messages.email_sent, 'utf-8'), 'Email sent')
@@ -359,7 +359,7 @@ class TestHTMLTag(unittest.TestCase):
         pass
 
     def test_decode(self):
-        T = languages.translator(self.langpath, self.http_accept_language)
+        T = languages.TranslatorFactory(self.langpath, self.http_accept_language)
         elem = SPAN(T("Complete"))
         self.assertEqual(elem.flatten(), "Complete")
         elem = SPAN(T("Cannot be empty", language="ru"))

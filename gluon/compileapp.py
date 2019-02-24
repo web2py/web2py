@@ -24,8 +24,9 @@ from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
 from gluon.fileutils import mktree, listdir, read_file, write_file
 from gluon.myregex import regex_expose, regex_longcomments
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.dal import DAL, Field
+from gluon.validators import Validator
 from pydal.base import BaseAdapter
 from gluon.sqlhtml import SQLFORM, SQLTABLE
 from gluon.cache import Cache
@@ -423,16 +424,19 @@ def build_environment(request, response, session, store_current=True):
         r'^%s/%s/\w+\.py$' % (request.controller, request.function)
         ]
 
-    t = environment['T'] = translator(os.path.join(request.folder, 'languages'),
-                                      request.env.http_accept_language)
+    T = environment['T'] = TranslatorFactory(os.path.join(request.folder, 'languages'),
+                                             request.env.http_accept_language)
     c = environment['cache'] = Cache(request)
+
+    # configure the validator to use the t translator
+    Validator.translator = T
 
     if store_current:
         current.globalenv = environment
         current.request = request
         current.response = response
         current.session = session
-        current.T = t
+        current.T = T
         current.cache = c
 
     if is_jython:  # jython hack

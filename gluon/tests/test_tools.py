@@ -21,7 +21,7 @@ from gluon.tools import Auth, Mail, Recaptcha2, prettydate, Expose
 from gluon._compat import PY2, to_bytes
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.http import HTTP
 from gluon import SPAN, H3, TABLE, TR, TD, A, URL, current
 
@@ -271,7 +271,7 @@ class TestAuthJWT(unittest.TestCase):
 #         request.folder = 'applications/admin'
 #         response = Response()
 #         session = Session()
-#         T = translator('', 'en')
+#         T = TranslatorFactory('', 'en')
 #         session.connect(request, response)
 #         from gluon.globals import current
 #         current.request = request
@@ -434,7 +434,7 @@ class TestAuthJWT(unittest.TestCase):
 #     #     request.folder = 'applications/admin'
 #     #     response = Response()
 #     #     session = Session()
-#     #     T = translator('', 'en')
+#     #     T = TranslatorFactory('', 'en')
 #     #     session.connect(request, response)
 #     #     from gluon.globals import current
 #     #     current.request = request
@@ -495,7 +495,7 @@ class TestAuth(unittest.TestCase):
         self.request.folder = 'applications/admin'
         self.response = Response()
         self.session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         self.session.connect(self.request, self.response)
         from gluon.globals import current
         self.current = current

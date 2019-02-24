@@ -32,7 +32,7 @@ class TestDALSubclass(unittest.TestCase):
 
     def testSerialization(self):
         from gluon._compat import pickle
-        db = DAL(check_reserved=['all'])
+        db = DAL('sqlite:memory', check_reserved=['all'])
         db.define_table('t_a', Field('f_a'))
         db.t_a.insert(f_a='test')
         a = db(db.t_a.id > 0).select(cacheable=True)
