@@ -6,7 +6,6 @@ from .test_recfile import *
 from .test_storage import *
 from .test_dal import *
 from .test_cache import *
-from .test_template import *
 from .test_html import *
 from .test_contribs import *
 from .test_routes import *
