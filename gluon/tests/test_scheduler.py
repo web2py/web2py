@@ -629,7 +629,6 @@ sched_dal = DAL('sqlite://%s' % db_dal, folder=os.path.dirname(db_dal))
 sched = Scheduler(sched_dal, max_empty_runs=15, migrate=False, heartbeat=1)
 def termination():
     sched.terminate()
-    sched_dal.commit()
             """
         with open(fdest, 'w') as q:
             q.write(initlines)
