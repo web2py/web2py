@@ -16,8 +16,7 @@ __all__ = ['A', 'B', 'BEAUTIFY', 'BODY', 'BR', 'CAT', 'CENTER', 'CLEANUP', 'CODE
 import os
 import sys
 try:
-    pydalpath = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "packages", "dal")
+    pydalpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "packages", "dal")
     if pydalpath not in sys.path:
         sys.path.append(pydalpath)
     import pydal
@@ -25,6 +24,20 @@ try:
 except ImportError:
     raise RuntimeError(
         "web2py depends on pydal, which apparently you have not installed.\n" +
+        "Probably you cloned the repository using git without '--recursive'" +
+        "\nTo fix this, please run (from inside your web2py folder):\n\n" +
+        "     git submodule update --init --recursive\n\n" +
+        "You can also download a complete copy from http://www.web2py.com."
+    )
+try:
+    yatlpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "packages", "yatl")
+    if yatlpath not in sys.path:
+        sys.path.append(yatlpath)
+    import yatl
+    sys.modules['yatl'] = yatl
+except ImportError:
+    raise RuntimeError(
+        "web2py depends on yatl, which apparently you have not installed.\n" +
         "Probably you cloned the repository using git without '--recursive'" +
         "\nTo fix this, please run (from inside your web2py folder):\n\n" +
         "     git submodule update --init --recursive\n\n" +
