@@ -19,11 +19,10 @@ import logging
 from cgi import escape
 from threading import RLock
 
-from gluon.utils import local_html_escape
-
-from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
-
+from pydal._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
 from pydal.contrib.portalocker import read_locked, LockedFile
+
+from yatl.sanitizer import xmlescape
 
 from gluon.fileutils import listdir
 from gluon.cfs import getcfs
@@ -428,7 +427,7 @@ class lazyT(object):
         return len(str(self))
 
     def xml(self):
-        return str(self) if self.M else local_html_escape(str(self), quote=False)
+        return str(self) if self.M else xmlescape(str(self), quote=False)
 
     def encode(self, *a, **b):
         if PY2 and a[0] != 'utf8':

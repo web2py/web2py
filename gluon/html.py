@@ -17,17 +17,19 @@ import copy
 import types
 import urllib
 import base64
-from gluon import sanitizer, decoder
 import itertools
-from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, \
+from pydal._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, \
     urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool, text_type, long
-from gluon.utils import local_html_escape
+from yatl import sanitizer
 import marshal
 
+from gluon import decoder
 from gluon.storage import Storage
 from gluon.utils import web2py_uuid, simple_hash, compare
 from gluon.highlight import highlight
 
+
+local_html_escape = lambda text, quote=False: sanitizer.xmlescape(text, quote, colon=False)
 
 regex_crlf = re.compile('\r|\n')
 

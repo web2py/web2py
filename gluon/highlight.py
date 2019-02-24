@@ -7,8 +7,8 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
-from gluon._compat import xrange
-from gluon.utils import local_html_escape
+from pydal._compat import xrange
+from yatl.sanitizer import xmlescape
 import re
 
 __all__ = ['highlight']
@@ -63,7 +63,7 @@ class Highlighter(object):
         Callback for C specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
 
@@ -77,7 +77,7 @@ class Highlighter(object):
         Callback for python specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         if token == 'MULTILINESTRING':
             self.change_style(token, style)
             self.output.append(value)
@@ -114,7 +114,7 @@ class Highlighter(object):
         Callback for HTML specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlespace(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
         if token == 'GOTOPYTHON':
@@ -286,13 +286,13 @@ color: #A0A0A0;
                                          'WEB2PY']:
         code = Highlighter(language, link, styles).highlight(code)
     else:
-        code = local_html_escape(code, quote=False)
+        code = xmlespace(code, quote=False)
     lines = code.split('\n')
 
     if counter is None:
         linenumbers = [''] * len(lines)
     elif isinstance(counter, str):
-        linenumbers = [local_html_escape(counter, quote=False)] * len(lines)
+        linenumbers = [xmlespace(counter, quote=False)] * len(lines)
     else:
         linenumbers = [str(i + counter) + '.' for i in
                        xrange(len(lines))]
