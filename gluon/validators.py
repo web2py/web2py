@@ -3349,7 +3349,7 @@ class IS_UPLOAD_FILENAME(Validator):
 
     Args:
         filename: filename (before dot) regex
-        extension: extension (after dot) regex
+        extension: extension (after dot) regex or list of valid extensions
         lastdot: which dot should be used as a filename / extension separator:
             True means last dot, eg. file.png -> file / png
             False means first dot, eg. file.tar.gz -> file / tar.gz
@@ -3364,6 +3364,11 @@ class IS_UPLOAD_FILENAME(Validator):
 
         INPUT(_type='file', _name='name',
                 requires=IS_UPLOAD_FILENAME(extension='pdf'))
+
+        Check if file has a tar.gz or zip extension:
+
+            INPUT(_type='file', _name='name',
+                requires=IS_UPLOAD_FILENAME(extension=['tar.gz', 'zip']))
 
         Check if file has a tar.gz extension and name starting with backup:
 
@@ -3386,6 +3391,8 @@ class IS_UPLOAD_FILENAME(Validator):
             filename = re.compile(filename)
         if isinstance(extension, str):
             extension = re.compile(extension)
+        elif isinstance(extension, list):
+            extension = re.compile('^(%s)$' %'|'.join(extension))
         self.filename = filename
         self.extension = extension
         self.lastdot = lastdot
