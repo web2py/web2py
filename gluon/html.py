@@ -18,7 +18,7 @@ import types
 import urllib
 import base64
 import itertools
-from pydal._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, \
+from pydal._compat import PY2, reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, \
     urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool, text_type, long
 from yatl import sanitizer
 import marshal
@@ -29,7 +29,29 @@ from gluon.utils import web2py_uuid, simple_hash, compare
 from gluon.highlight import highlight
 
 
-local_html_escape = lambda text, quote=False: sanitizer.xmlescape(text, quote, colon=False)
+def local_html_escape(data, quote=False):
+    """
+    Works with bytes.
+    Replace special characters "&", "<" and ">" to HTML-safe sequences.
+    If the optional flag quote is true (the default), the quotation mark
+    characters, both double quote (") and single quote (') characters are also
+    translated.
+    """
+    if PY2:
+        import cgi
+        data = cgi.escape(data, quote)
+        return data.replace("'", "&#x27;") if quote else data
+    else:
+        import html
+        if isinstance(data, str):
+            return html.escape(data, quote=quote)
+        data = data.replace(b"&", b"&amp;")  # Must be done first!
+        data = data.replace(b"<", b"&lt;")
+        data = data.replace(b">", b"&gt;")
+        if quote:
+            data = data.replace(b'"', b"&quot;")
+            data = data.replace(b'\'', b"&#x27;")
+        return data
 
 regex_crlf = re.compile('\r|\n')
 
