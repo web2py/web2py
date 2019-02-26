@@ -114,7 +114,7 @@ class Highlighter(object):
         Callback for HTML specific highlighting.
         """
 
-        value = xmlespace(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
         if token == 'GOTOPYTHON':
@@ -286,13 +286,13 @@ color: #A0A0A0;
                                          'WEB2PY']:
         code = Highlighter(language, link, styles).highlight(code)
     else:
-        code = xmlespace(code, quote=False)
+        code = xmlescape(code, quote=False)
     lines = code.split('\n')
 
     if counter is None:
         linenumbers = [''] * len(lines)
     elif isinstance(counter, str):
-        linenumbers = [xmlespace(counter, quote=False)] * len(lines)
+        linenumbers = [xmlescape(counter, quote=False)] * len(lines)
     else:
         linenumbers = [str(i + counter) + '.' for i in
                        xrange(len(lines))]
