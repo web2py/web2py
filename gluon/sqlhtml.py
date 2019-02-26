@@ -3424,7 +3424,7 @@ class SQLTABLE(TABLE):
         fieldmap = dict(zip(sqlrows.colnames, fieldlist))
         if columns:
             tablenames = []
-            for colname, field in fieldmap.iteritems():
+            for colname, field in fieldmap.items():
                 if isinstance(field, (Field, Field.Virtual)):
                     tablenames.append(field.tablename)
                 elif isinstance(field, Expression):
