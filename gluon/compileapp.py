@@ -429,7 +429,7 @@ def build_environment(request, response, session, store_current=True):
     c = environment['cache'] = Cache(request)
 
     # configure the validator to use the t translator
-    Validator.translator = T
+    Validator.translator = staticmethod(lambda text: None if text is None else str(T(text)))
 
     if store_current:
         current.globalenv = environment
