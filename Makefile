@@ -6,17 +6,18 @@ clean:
 	rm -f httpserver.log 
 	rm -f parameters*.py 
 	rm -f -r applications/*/compiled
-	find ./ -name '*~' -exec rm -f {} \; 
-	find ./ -name '*.orig' -exec rm -f {} \; 
-	find ./ -name '*.rej' -exec rm -f {} \; 
-	find ./ -name '#*' -exec rm -f {} \;
-	find ./ -name 'Thumbs.db' -exec rm -f {} \; 
-	# find ./gluon/ -name '.*' -exec rm -f {} \;
-	find ./gluon/ -name '*class' -exec rm -f {} \; 
-	find ./applications/admin/ -name '.*' -exec rm -f {} \; 
-	find ./applications/examples/ -name '.*' -exec rm -f {} \; 
-	find ./applications/welcome/ -name '.*' -exec rm -f {} \; 
-	find ./ -name '*.pyc' -exec rm -f {} \;
+	find . -name '*~' -exec rm -f {} \; 
+	find . -name '*.orig' -exec rm -f {} \; 
+	find . -name '*.rej' -exec rm -f {} \; 
+	find . -name '#*' -exec rm -f {} \;
+	find . -name 'Thumbs.db' -exec rm -f {} \; 
+	find . -name '.tox' -exec rm -rf {} \; 
+	find . -name '__pycache__' -exec rm -rf {} \; 
+	find gluon/ -name '*class' -exec rm -f {} \; 
+	find applications/admin/ -name '.*' -exec rm -f {} \; 
+	find applications/examples/ -name '.*' -exec rm -f {} \; 
+	find applications/welcome/ -name '.*' -exec rm -f {} \; 
+	find . -name '*.pyc' -exec rm -f {} \;
 tests:
 	python web2py.py --run_system_tests
 coverage:
@@ -44,9 +45,9 @@ rmfiles:
 	rm -rf applications/examples/uploads/* 
 src:
 	### Use semantic versioning
-	echo 'Version 2.18.2-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 2.18.3-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
-	#make clean
+	make clean
 	# make rmfiles
 	### make welcome layout and appadmin the default
 	cp applications/welcome/views/appadmin.html applications/admin/views
