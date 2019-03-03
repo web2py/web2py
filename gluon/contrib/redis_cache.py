@@ -85,7 +85,7 @@ def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=Fa
 
     locker.acquire()
     try:
-        if not application:
+        if application is None:
             application = current.request.application
         instance_name = 'redis_instance_' + application
         if not hasattr(RedisCache, instance_name):
@@ -110,10 +110,10 @@ class RedisClient(object):
         self.debug = debug
         self.with_lock = with_lock
         self.fail_gracefully = fail_gracefully
-        self.application = application
-        self.prefix = "w2p:cache:%s:" % application
+        self.application = application or current.request.application
+        self.prefix = "w2p:cache:%s:" % self.application
         if self.request:
-            app = application
+            app = self.application
         else:
             app = ''
 
@@ -126,7 +126,7 @@ class RedisClient(object):
         else:
             self.storage = self.meta_storage[app]
 
-        self.cache_set_key = 'w2p:%s:___cache_set' % application
+        self.cache_set_key = 'w2p:%s:___cache_set' % self.application
 
         self.r_server = redis_conn
         self._release_script = register_release_lock(self.r_server)
