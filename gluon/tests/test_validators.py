@@ -1021,6 +1021,65 @@ class TestValidators(unittest.TestCase):
         rtn = IS_IMAGE(error_message='oops')(img)
         self.assertEqual(rtn, (img, 'oops'))
 
+    def test_IS_FILE(self):
+        import cgi
+        from io import BytesIO
+
+        def gen_fake(filename):
+            formdata_file_data = """
+---123
+Content-Disposition: form-data; name="key2"
+
+value2y
+---123
+Content-Disposition: form-data; name="file_attach"; filename="%s"
+Content-Type: text/plain
+
+this is the content of the fake file
+
+---123--
+""" % filename
+            formdata_file_environ = {
+                'CONTENT_LENGTH':   str(len(formdata_file_data)),
+                'CONTENT_TYPE':     'multipart/form-data; boundary=-123',
+                'QUERY_STRING':     'key1=value1&key2=value2x',
+                'REQUEST_METHOD':   'POST',
+            }
+            return cgi.FieldStorage(fp=BytesIO(to_bytes(formdata_file_data)), environ=formdata_file_environ)['file_attach']
+
+        fake = gen_fake('example.pdf')
+        rtn = IS_FILE(extension='pdf')(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('example.gif')
+        rtn = IS_FILE(extension='pdf')(fake)
+        self.assertEqual(rtn, (fake, 'Enter valid filename'))
+        fake = gen_fake('multiple.pdf')
+        rtn = IS_FILE(extension=['pdf', 'png'])(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('multiple.png')
+        rtn = IS_FILE(extension=['pdf', 'png'])(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('multiple.gif')
+        rtn = IS_FILE(extension=['pdf', 'png'])(fake)
+        self.assertEqual(rtn, (fake, 'Enter valid filename'))
+        fake = gen_fake('backup2014.tar.gz')
+        rtn = IS_FILE(filename=re.compile('backup.*'), extension='tar.gz', lastdot=False)(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('README')
+        rtn = IS_FILE(filename='README', extension='', case=0)(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('readme')
+        rtn = IS_FILE(filename='README', extension='', case=0)(fake)
+        self.assertEqual(rtn, (fake, 'Enter valid filename'))
+        fake = gen_fake('readme')
+        rtn = IS_FILE(filename='README', case=2)(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('README')
+        rtn = IS_FILE(filename='README', case=2)(fake)
+        self.assertEqual(rtn, (fake, None))
+        rtn = IS_FILE(extension='pdf')('example.pdf')
+        self.assertEqual(rtn, ('example.pdf', 'Enter valid filename'))
+
     def test_IS_UPLOAD_FILENAME(self):
         import cgi
         from io import BytesIO

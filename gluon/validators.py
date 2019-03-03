@@ -48,6 +48,7 @@ __all__ = [
     'IS_LIST_OF_EMAILS',
     'IS_EMPTY_OR',
     'IS_EXPR',
+    'IS_FILE',
     'IS_FLOAT_IN_RANGE',
     'IS_IMAGE',
     'IS_IN_DB',
@@ -3336,8 +3337,100 @@ class IS_IMAGE(Validator):
         return (-1, -1)
 
 
+class IS_FILE(Validator):
+    """
+    Checks if name and extension of file uploaded through file input matches
+    given criteria.
+
+    Does *not* ensure the file type in any way. Returns validation failure
+    if no data was uploaded.
+
+    Args:
+        filename: string/compiled regex or a list of strings/regex of valid filenames
+        extension: string/compiled regex or a list of strings/regex of valid extensions
+        lastdot: which dot should be used as a filename / extension separator:
+            True means last dot, eg. file.jpg.png -> file.jpg / png
+            False means first dot, eg. file.tar.gz -> file / tar.gz
+        case: 0 - keep the case, 1 - transform the string into lowercase (default),
+            2 - transform the string into uppercase
+
+    If there is no dot present, extension checks will be done against empty
+    string and filename checks against whole value.
+
+    Examples:
+        Check if file has a pdf extension (case insensitive):
+
+        INPUT(_type='file', _name='name',
+                requires=IS_FILE(extension='pdf'))
+
+        Check if file is called 'thumbnail' and has a jpg or png extension
+        (case insensitive):
+
+        INPUT(_type='file', _name='name',
+                requires=IS_FILE(filename='thumbnail',
+                extension=['jpg', 'png']))
+
+        Check if file has a tar.gz extension and name starting with backup:
+
+        INPUT(_type='file', _name='name',
+                requires=IS_FILE(filename=re.compile('backup.*'),
+                extension='tar.gz', lastdot=False))
+
+        Check if file has no extension and name matching README
+        (case sensitive):
+
+            INPUT(_type='file', _name='name',
+                requires=IS_FILE(filename='README',
+                extension='', case=0)
+
+    """
+
+    def __init__(self, filename=None, extension=None, lastdot=True, case=1,
+                 error_message='Enter valid filename'):
+        self.filename = filename
+        self.extension = extension
+        self.lastdot = lastdot
+        self.case = case
+        self.error_message = error_message
+
+    def match(self, value1, value2):
+        if isinstance(value1, (list, tuple)):
+            for v in value1:
+                if self.match(v, value2):
+                    return True
+            return False
+        elif isinstance(value1, type(regex_isint)):
+            return value1.match(value2)
+        elif isinstance(value1, str):
+            return value1 == value2
+
+    def __call__(self, value):
+        try:
+            string = value.filename
+        except:
+            return (value, translator(self.error_message))
+        if self.case == 1:
+            string = string.lower()
+        elif self.case == 2:
+            string = string.upper()
+        if self.lastdot:
+            dot = string.rfind('.')
+        else:
+            dot = string.find('.')
+        if dot == -1:
+            dot = len(string)
+        if self.filename and not self.match(self.filename, string[:dot]):
+            return (value, translator(self.error_message))
+        elif self.extension and not self.match(self.extension, string[dot + 1:]):
+            return (value, translator(self.error_message))
+        else:
+            return (value, None)
+
+
 class IS_UPLOAD_FILENAME(Validator):
     """
+    For new applications, use IS_FILE().
+
     Checks if name and extension of file uploaded through file input matches
     given criteria.
 
