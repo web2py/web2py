@@ -25,7 +25,7 @@ import socket
 import random
 import string
 
-from gluon._compat import Cookie, urllib2
+from gluon._compat import Cookie, urllib_quote
 # from thread import allocate_lock
 
 from gluon.fileutils import abspath, write_file
