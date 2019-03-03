@@ -15,34 +15,24 @@ __all__ = ['A', 'B', 'BEAUTIFY', 'BODY', 'BR', 'CAT', 'CENTER', 'CLEANUP', 'CODE
 #: add pydal to sys.modules
 import os
 import sys
-try:
-    pydalpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "packages", "dal")
-    if pydalpath not in sys.path:
-        sys.path.append(pydalpath)
-    import pydal
-    sys.modules['pydal'] = pydal
-except ImportError:
-    raise RuntimeError(
-        "web2py depends on pydal, which apparently you have not installed.\n" +
-        "Probably you cloned the repository using git without '--recursive'" +
-        "\nTo fix this, please run (from inside your web2py folder):\n\n" +
-        "     git submodule update --init --recursive\n\n" +
-        "You can also download a complete copy from http://www.web2py.com."
-    )
-try:
-    yatlpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "packages", "yatl")
-    if yatlpath not in sys.path:
-        sys.path.append(yatlpath)
-    import yatl
-    sys.modules['yatl'] = yatl
-except ImportError:
-    raise RuntimeError(
-        "web2py depends on yatl, which apparently you have not installed.\n" +
-        "Probably you cloned the repository using git without '--recursive'" +
-        "\nTo fix this, please run (from inside your web2py folder):\n\n" +
-        "     git submodule update --init --recursive\n\n" +
-        "You can also download a complete copy from http://www.web2py.com."
-    )
+
+MESSAGE = ("web2py depends on %s, which apparently you have not installed.\n" +
+           "Probably you cloned the repository using git without '--recursive'" +
+           "\nTo fix this, please run (from inside your web2py folder):\n\n" +
+           "     git submodule update --init --recursive\n\n" +
+           "You can also download a complete copy from http://www.web2py.com.")
+
+def import_packages():
+    for package, location in [('pydal', 'dal'), ('yatl', 'yatl')]:
+        try:
+            path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "packages", location)
+            if path not in sys.path:
+                sys.path.insert(0, path)
+            sys.modules[package] = __import__(package)
+        except ImportError:
+            raise RuntimeError(MESSAGE % package)
+
+import_packages()
 
 from .globals import current
 from .html import *
