@@ -3408,7 +3408,7 @@ class IS_FILE(Validator):
         try:
             string = value.filename
         except:
-            return (value, translator(self.error_message))
+            return (value, self.translator(self.error_message))
         if self.case == 1:
             string = string.lower()
         elif self.case == 2:
@@ -3420,9 +3420,9 @@ class IS_FILE(Validator):
         if dot == -1:
             dot = len(string)
         if self.filename and not self.match(self.filename, string[:dot]):
-            return (value, translator(self.error_message))
+            return (value, self.translator(self.error_message))
         elif self.extension and not self.match(self.extension, string[dot + 1:]):
-            return (value, translator(self.error_message))
+            return (value, self.translator(self.error_message))
         else:
             return (value, None)
 

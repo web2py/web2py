@@ -3284,6 +3284,8 @@ class SQLFORM(FORM):
             if isinstance(kwargs.get(key, None), dict):
                 if table._tablename in kwargs[key]:
                     kwargs[key] = kwargs[key][table._tablename]
+                elif '*' in kwargs[key]:
+                    kwargs[key] = kwargs[key]['*']
                 else:
                     del kwargs[key]
         check = {}
