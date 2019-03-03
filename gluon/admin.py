@@ -436,7 +436,8 @@ def add_path_first(path):
     sys.path = [path] + [p for p in sys.path if (
         not p == path and not p == (path + '/'))]
     if not global_settings.web2py_runtime_gae:
-        site.addsitedir(path)
+        if not path in sys.path:
+            site.addsitedir(path)
 
 
 def try_mkdir(path):
