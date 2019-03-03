@@ -121,7 +121,7 @@ class WebClient(object):
                 self.method = 'POST' if method=='auto' else method
                 # if there is only one form, set _formname automatically
                 if not '_formname' in data and len(self.forms) == 1:
-                    data['_formname'] = self.forms.keys()[0]
+                    data['_formname'] = next(iter(self.forms.keys())) # Use the first key
 
                 # if there is no formkey but it is known, set it
                 if '_formname' in data and not '_formkey' in data and \
