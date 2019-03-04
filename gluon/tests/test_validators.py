@@ -187,7 +187,7 @@ class TestValidators(unittest.TestCase):
         rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=True)('id1')
         self.assertEqual(rtn, (['id1'], None))
         rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=(1, 2))(None)
-        self.assertEqual(rtn, ([], 'oops'))
+        self.assertEqual(rtn, (None, 'oops'))
         import itertools
         rtn = IS_IN_SET(itertools.chain(['1', '3', '5'], ['2', '4', '6']))('1')
         self.assertEqual(rtn, ('1', None))
@@ -223,13 +223,13 @@ class TestValidators(unittest.TestCase):
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True)([george_id, costanza_id])
         self.assertEqual(rtn, ([george_id, costanza_id], None))
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True, error_message='oops')("I'm not even an id")
-        self.assertEqual(rtn, (["I'm not even an id"], 'oops'))
+        self.assertEqual(rtn, ("I'm not even an id", 'oops'))
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True, delimiter=',')('%d,%d' % (george_id, costanza_id))
         self.assertEqual(rtn, (('%d,%d' % (george_id, costanza_id)).split(','), None))
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=(1, 3), delimiter=',')('%d,%d' % (george_id, costanza_id))
         self.assertEqual(rtn, (('%d,%d' % (george_id, costanza_id)).split(','), None))
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=(1, 2), delimiter=',', error_message='oops')('%d,%d' % (george_id, costanza_id))
-        self.assertEqual(rtn, (('%d,%d' % (george_id, costanza_id)).split(','), 'oops'))
+        self.assertEqual(rtn, (('%d,%d' % (george_id, costanza_id)), 'oops'))
         rtn = IS_IN_DB(db, db.person.id, '%(name)s', error_message='oops').options(zero=False)
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
         rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
@@ -359,7 +359,7 @@ class TestValidators(unittest.TestCase):
         rtn = IS_NOT_IN_DB(db(db.person.id > 0), 'person.name')(u'jerry')
         self.assertEqual(rtn, ('jerry', None))
         rtn = IS_NOT_IN_DB(db, db.person, error_message='oops')(1)
-        self.assertEqual(rtn, ('1', 'oops'))
+        self.assertEqual(rtn, (1, 'oops'))
         vldtr = IS_NOT_IN_DB(db, 'person.name', error_message='oops')
         vldtr.set_self_id({'name': 'costanza', 'nickname': 'T Bone'})
         rtn = vldtr('george')
@@ -769,7 +769,7 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ([1, 2, 3], 'Maximum length is 2'))
         # regression test for issue 742
         rtn = IS_LIST_OF(minimum=1)('')
-        self.assertEqual(rtn, ([], 'Minimum length is 1'))
+        self.assertEqual(rtn, ('', 'Minimum length is 1'))
 
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
@@ -861,9 +861,9 @@ class TestValidators(unittest.TestCase):
         rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options()
         self.assertEqual(rtn, [('', 'zero'), ('id1', 'first label'), ('id2', 'second label')])
         rtn = IS_EMPTY_OR((IS_LOWER(), IS_EMAIL()))('AAA')
-        self.assertEqual(rtn, ('aaa', 'Enter a valid email address'))
+        self.assertEqual(rtn, ('AAA', 'Enter a valid email address'))
         rtn = IS_EMPTY_OR([IS_LOWER(), IS_EMAIL()])('AAA')
-        self.assertEqual(rtn, ('aaa', 'Enter a valid email address'))
+        self.assertEqual(rtn, ('AAA', 'Enter a valid email address'))
 
     def test_CLEANUP(self):
         rtn = CLEANUP()('helloò')

@@ -25,7 +25,8 @@ import marshal
 
 from gluon import decoder
 from gluon.storage import Storage
-from gluon.utils import web2py_uuid, simple_hash, compare
+from gluon.validators import simple_hash
+from gluon.utils import web2py_uuid, compare
 from gluon.highlight import highlight
 
 

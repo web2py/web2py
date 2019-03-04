@@ -558,8 +558,7 @@ class TestIsHttpUrl(unittest.TestCase):
             'https://google.ca', None))  # prepends https if asked
 
         z = IS_HTTP_URL(prepend_scheme=None)
-        self.assertEqual(z('google.ca:8080'), ('google.ca:8080',
-                         None))  # prepending disabled
+        self.assertEqual(z('google.ca:8080'), ('google.ca:8080', None))  # prepending disabled
 
         try:
             IS_HTTP_URL(prepend_scheme='mailto')

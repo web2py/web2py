@@ -9,7 +9,8 @@ from hashlib import md5
 
 from gluon.utils import md5_hash, compare, is_valid_ip_address, web2py_uuid
 import gluon.utils
-from gluon.utils import simple_hash, get_digest, secure_dumps, secure_loads
+from gluon.validators import simple_hash, get_digest
+from gluon.utils import secure_dumps, secure_loads
 
 
 class TestUtils(unittest.TestCase):

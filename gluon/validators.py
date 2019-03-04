@@ -1,5 +1,6 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
+#pylint: disable=line-too-long,invalid-name
 
 """
 | This file is part of the web2py Web Framework
@@ -16,21 +17,23 @@ import math
 import datetime
 import time
 import cgi
+import uuid
+import hashlib
+import hmac
 import json
 import struct
 import decimal
+import binascii
+import ipaddress
 import unicodedata
 import encodings.idna
 
 from pydal._compat import StringIO, integer_types, basestring, unicodeT, urllib_unquote, \
     unichr, to_bytes, PY2, to_unicode, to_native, string_types, urlparse
 from pydal.objects import Field, FieldVirtual, FieldMethod, Table
-from functools import reduce
 
-from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
-from gluon._compat import ipaddress
 
-regex_isint = re.compile('^[+-]?\d+$')
+regex_isint = re.compile(r'^[+-]?\d+$')
 
 JSONErrors = (NameError, TypeError, ValueError, AttributeError, KeyError)
 
@@ -80,10 +83,10 @@ def options_sorter(x, y):
 def translate(text):
     return Validator.translator(text)
 
-class ValidationError(Exception):    
 
-    def __init__(self, error):
-        self.error = error
+class ValidationError(Exception):
+    pass
+
 
 class Validator(object):
     """
@@ -195,13 +198,13 @@ class IS_MATCH(Validator):
             self.regex = re.compile(expression)
         self.error_message = error_message
         self.extract = extract
-        self.is_unicode = is_unicode or (not(PY2))
+        self.is_unicode = is_unicode or not PY2
 
-    def __call__(self, value):
-        if not(PY2):  # PY3 convert bytes to unicode
+    def validate(self, value):
+        if not PY2:  # PY3 convert bytes to unicode
             value = to_unicode(value)
 
-        if self.is_unicode or not(PY2):
+        if self.is_unicode or not PY2:
             if not isinstance(value, unicodeT):
                 match = self.regex.search(str(value).decode('utf8'))
             else:
@@ -212,8 +215,8 @@ class IS_MATCH(Validator):
             else:
                 match = self.regex.search(value.encode('utf8'))
         if match is not None:
-            return (self.extract and match.group() or value, None)
-        return (value, self.translator(self.error_message))
+            return self.extract and match.group() or value
+        raise ValidationError(self.translator(self.error_message))
 
 
 class IS_EQUAL_TO(Validator):
@@ -239,11 +242,11 @@ class IS_EQUAL_TO(Validator):
         self.expression = expression
         self.error_message = error_message
 
-    def __call__(self, value):
-        if value == self.expression:
-            return (value, None)
-        return (value, self.translator(self.error_message))
-
+    def validate(self, value):
+        if value != self.expression:
+            raise ValidationError(self.translator(self.error_message))
+        return value
+        
 
 class IS_EXPR(Validator):
     """
@@ -268,15 +271,18 @@ class IS_EXPR(Validator):
         self.error_message = error_message
         self.environment = environment or {}
 
-    def __call__(self, value):
+    def validate(self, value):
         if callable(self.expression):
-            return (value, self.expression(value))
+            message = self.expression(value)
+            if message:
+                raise ValidationError(message)
+            return value
         # for backward compatibility
         self.environment.update(value=value)
         exec('__ret__=' + self.expression, self.environment)
         if self.environment['__ret__']:
-            return (value, None)
-        return (value, self.translator(self.error_message))
+            return value
+        raise ValidationError(self.translator(self.error_message))
 
 
 class IS_LENGTH(Validator):
@@ -319,11 +325,11 @@ class IS_LENGTH(Validator):
         self.minsize = minsize
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         if value is None:
             length = 0
             if self.minsize <= length <= self.maxsize:
-                return (value, None)
+                return value
         elif isinstance(value, cgi.FieldStorage):
             if value.file:
                 value.file.seek(0, os.SEEK_END)
@@ -336,27 +342,27 @@ class IS_LENGTH(Validator):
                 else:
                     length = 0
             if self.minsize <= length <= self.maxsize:
-                return (value, None)
+                return value
         elif isinstance(value, str):
             try:
                 lvalue = len(to_unicode(value))
             except:
                 lvalue = len(value)
             if self.minsize <= lvalue <= self.maxsize:
-                return (value, None)
+                return value
         elif isinstance(value, unicodeT):
             if self.minsize <= len(value) <= self.maxsize:
-                return (value.encode('utf8'), None)
+                return value.encode('utf8')
         elif isinstance(value, (bytes, bytearray)):
             if self.minsize <= len(value) <= self.maxsize:
-                return (value, None)
+                return value
         elif isinstance(value, (tuple, list)):
             if self.minsize <= len(value) <= self.maxsize:
-                return (value, None)
+                return value
         elif self.minsize <= len(str(value)) <= self.maxsize:
-            return (str(value), None)
-        return (value, self.translator(self.error_message) %
-                dict(min=self.minsize, max=self.maxsize))
+            return str(value)
+        raise ValidationError(self.translator(self.error_message) %
+                              dict(min=self.minsize, max=self.maxsize))
 
 
 class IS_JSON(Validator):
@@ -378,15 +384,15 @@ class IS_JSON(Validator):
         self.native_json = native_json
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         try:
             if self.native_json:
                 json.loads(value)  # raises error in case of malformed json
-                return (value, None)  # the serialized value is not passed
+                return value       # the serialized value is not passed
             else:
-                return (json.loads(value), None)
+                return json.loads(value)
         except JSONErrors:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
 
     def formatter(self, value):
         if value is None:
@@ -427,15 +433,14 @@ class IS_IN_SET(Validator):
 
     """
 
-    def __init__(
-        self,
-        theset,
-        labels=None,
-        error_message='Value not allowed',
-        multiple=False,
-        zero='',
-        sort=False,
-    ):
+    def __init__(self,
+                 theset,
+                 labels=None,
+                 error_message='Value not allowed',
+                 multiple=False,
+                 zero='',
+                 sort=False):
+
         self.multiple = multiple
         if isinstance(theset, dict):
             self.theset = [str(item) for item in theset]
@@ -462,7 +467,7 @@ class IS_IN_SET(Validator):
             items.insert(0, ('', self.zero))
         return items
 
-    def __call__(self, value):
+    def validate(self, value):
         if self.multiple:
             # if below was values = re.compile("[\w\-:]+").findall(str(value))
             if not value:
@@ -476,13 +481,13 @@ class IS_IN_SET(Validator):
         thestrset = [str(x) for x in self.theset]
         failures = [x for x in values if not str(x) in thestrset]
         if failures and self.theset:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         if self.multiple:
             if isinstance(self.multiple, (tuple, list)) and \
                     not self.multiple[0] <= len(values) < self.multiple[1]:
-                return (values, self.translator(self.error_message))
-            return (values, None)
-        return (value, None)
+                raise ValidationError(self.translator(self.error_message))
+            return values
+        return value
 
 
 regex1 = re.compile(r'\w+\.\w+')
@@ -500,24 +505,23 @@ class IS_IN_DB(Validator):
     used for reference fields, rendered as a dropbox
     """
 
-    def __init__(
-        self,
-        dbset,
-        field,
-        label=None,
-        error_message='Value not in database',
-        orderby=None,
-        groupby=None,
-        distinct=None,
-        cache=None,
-        multiple=False,
-        zero='',
-        sort=False,
-        _and=None,
-        left=None,
-        delimiter=None,
-        auto_add=False,
-    ):
+    def __init__(self,
+                 dbset,
+                 field,
+                 label=None,
+                 error_message='Value not in database',
+                 orderby=None,
+                 groupby=None,
+                 distinct=None,
+                 cache=None,
+                 multiple=False,
+                 zero='',
+                 sort=False,
+                 _and=None,
+                 left=None,
+                 delimiter=None,
+                 auto_add=False):
+
         if hasattr(dbset, 'define_table'):
             self.dbset = dbset()
         else:
@@ -615,7 +619,7 @@ class IS_IN_DB(Validator):
         else:
             return table.insert(**d)
 
-    def __call__(self, value):
+    def validate(self, value):
         table = self.dbset.db[self.ktable]
         field = table[self.kfield]
 
@@ -638,16 +642,16 @@ class IS_IN_DB(Validator):
                         if self.auto_add:
                             value = str(self.maybe_add(table, self.fieldnames[0], value))
                         else:
-                            return (values, self.translator(self.error_message))
+                            raise ValidationError(self.translator(self.error_message))
                     new_values.append(value)
                 values = new_values
 
             if isinstance(self.multiple, (tuple, list)) and \
                     not self.multiple[0] <= len(values) < self.multiple[1]:
-                return (values, self.translator(self.error_message))
+                raise ValidationError(self.translator(self.error_message))
             if self.theset:
                 if not [v for v in values if v not in self.theset]:
-                    return (values, None)
+                    return values
             else:
                 def count(values, s=self.dbset, f=field):
                     return s(f.belongs(list(map(int, values)))).count()
@@ -656,9 +660,9 @@ class IS_IN_DB(Validator):
                     range_ids = range(0, len(values), 30)
                     total = sum(count(values[i:i + 30]) for i in range_ids)
                     if total == len(values):
-                        return (values, None)
+                        return values
                 elif count(values) == len(values):
-                    return (values, None)
+                    return values
         else:
             if field.type in ('id', 'integer'):
                 if isinstance(value, integer_types) or (isinstance(value, string_types) and value.isdigit()):
@@ -666,26 +670,24 @@ class IS_IN_DB(Validator):
                 elif self.auto_add:
                     value = self.maybe_add(table, self.fieldnames[0], value)
                 else:
-                    return (value, self.translator(self.error_message))
+                    raise ValidationError(self.translator(self.error_message))
 
                 try:
                     value = int(value)
                 except TypeError:
-                    return (value, self.translator(self.error_message))
+                    raise ValidationError(self.translator(self.error_message))
 
             if self.theset:
                 if str(value) in self.theset:
                     if self._and:
-                        return self._and(value)
-                    else:
-                        return (value, None)
+                        return self._and.validate(value)
+                    return value
             else:
                 if self.dbset(field == value).count():
                     if self._and:
-                        return self._and(value)
-                    else:
-                        return (value, None)
-        return (value, self.translator(self.error_message))
+                        return self._and.validate(value)
+                    return value
+        raise ValidationError(self.translator(self.error_message))
 
 
 class IS_NOT_IN_DB(Validator):
@@ -698,14 +700,13 @@ class IS_NOT_IN_DB(Validator):
     makes the field unique
     """
 
-    def __init__(
-        self,
-        dbset,
-        field,
-        error_message='Value already in database or empty',
-        allowed_override=[],
-        ignore_common_filters=False,
-    ):
+    def __init__(self,
+                 dbset,
+                 field,
+                 error_message='Value already in database or empty',
+                 allowed_override=[],
+                 ignore_common_filters=False):
+
         if isinstance(field, Table):
             field = field._id
 
@@ -722,12 +723,12 @@ class IS_NOT_IN_DB(Validator):
     def set_self_id(self, id):
         self.record_id = id
 
-    def __call__(self, value):
+    def validate(self, value):
         value = to_native(str(value))
         if not value.strip():
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         if value in self.allowed_override:
-            return (value, None)
+            return value
         (tablename, fieldname) = str(self.field).split('.')
         table = self.dbset.db[tablename]
         field = table[fieldname]
@@ -738,12 +739,12 @@ class IS_NOT_IN_DB(Validator):
             fields = [table[f] for f in id]
             row = subset.select(*fields, **dict(limitby=(0, 1), orderby_on_limitby=False)).first()
             if row and any(str(row[f]) != str(id[f]) for f in id):
-                return (value, self.translator(self.error_message))
+                raise ValidationError(self.translator(self.error_message))
         else:
             row = subset.select(table._id, field, limitby=(0, 1), orderby_on_limitby=False).first()
             if row and str(row[table._id]) != str(id):
-                return (value, self.translator(self.error_message))
-        return (value, None)
+                raise ValidationError(self.translator(self.error_message))
+        return value
 
 
 def range_error_message(error_message, what_to_enter, minimum, maximum):
@@ -801,24 +802,23 @@ class IS_INT_IN_RANGE(Validator):
             ('abc', 'enter an integer')
     """
 
-    def __init__(
-        self,
-        minimum=None,
-        maximum=None,
-        error_message=None,
-    ):
+    def __init__(self,
+                 minimum=None,
+                 maximum=None,
+                 error_message=None):
+
         self.minimum = int(minimum) if minimum is not None else None
         self.maximum = int(maximum) if maximum is not None else None
         self.error_message = range_error_message(
             error_message, 'an integer', self.minimum, self.maximum)
 
-    def __call__(self, value):
+    def validate(self, value):
         if regex_isint.match(str(value)):
             v = int(value)
             if ((self.minimum is None or v >= self.minimum) and
                     (self.maximum is None or v < self.maximum)):
-                return (v, None)
-        return (value, self.error_message)
+                return v
+        raise ValidationError(self.error_message)
 
 
 def str2dec(number):
@@ -870,20 +870,19 @@ class IS_FLOAT_IN_RANGE(Validator):
             ('abc', 'enter a number')
     """
 
-    def __init__(
-        self,
-        minimum=None,
-        maximum=None,
-        error_message=None,
-        dot='.'
-    ):
+    def __init__(self,
+                 minimum=None,
+                 maximum=None,
+                 error_message=None,
+                 dot='.'):
+
         self.minimum = float(minimum) if minimum is not None else None
         self.maximum = float(maximum) if maximum is not None else None
         self.dot = str(dot)
         self.error_message = range_error_message(
             error_message, 'a number', self.minimum, self.maximum)
 
-    def __call__(self, value):
+    def validate(self, value):
         try:
             if self.dot == '.':
                 v = float(value)
@@ -891,10 +890,10 @@ class IS_FLOAT_IN_RANGE(Validator):
                 v = float(str(value).replace(self.dot, '.'))
             if ((self.minimum is None or v >= self.minimum) and
                     (self.maximum is None or v <= self.maximum)):
-                return (v, None)
+                return v
         except (ValueError, TypeError):
             pass
-        return (value, self.error_message)
+        raise ValidationError(self.error_message)
 
     def formatter(self, value):
         if value is None:
@@ -956,31 +955,28 @@ class IS_DECIMAL_IN_RANGE(Validator):
             ('abc', 'enter a number')
     """
 
-    def __init__(
-        self,
-        minimum=None,
-        maximum=None,
-        error_message=None,
-        dot='.'
-    ):
+    def __init__(self,
+                 minimum=None,
+                 maximum=None,
+                 error_message=None,
+                 dot='.'):
+
         self.minimum = decimal.Decimal(str(minimum)) if minimum is not None else None
         self.maximum = decimal.Decimal(str(maximum)) if maximum is not None else None
         self.dot = str(dot)
         self.error_message = range_error_message(
             error_message, 'a number', self.minimum, self.maximum)
 
-    def __call__(self, value):
+    def validate(self, value):
         try:
-            if isinstance(value, decimal.Decimal):
-                v = value
-            else:
-                v = decimal.Decimal(str(value).replace(self.dot, '.'))
-            if ((self.minimum is None or v >= self.minimum) and
-                    (self.maximum is None or v <= self.maximum)):
-                return (v, None)
+            if not isinstance(value, decimal.Decimal):
+                value = decimal.Decimal(str(value).replace(self.dot, '.'))
+            if ((self.minimum is None or value >= self.minimum) and
+                    (self.maximum is None or value <= self.maximum)):
+                return value
         except (ValueError, TypeError, decimal.InvalidOperation):
             pass
-        return (value, self.error_message)
+        raise ValidationError(self.error_message)
 
     def formatter(self, value):
         if value is None:
@@ -1040,11 +1036,11 @@ class IS_NOT_EMPTY(Validator):
         else:
             self.empty_regex = None
 
-    def __call__(self, value):
+    def validate(self, value):
         value, empty = is_empty(value, empty_regex=self.empty_regex)
         if empty:
-            return (value, self.translator(self.error_message))
-        return (value, None)
+            raise ValidationError(self.translator(self.error_message))
+        return value
 
 
 class IS_ALPHANUMERIC(IS_MATCH):
@@ -1065,10 +1061,11 @@ class IS_ALPHANUMERIC(IS_MATCH):
     """
 
     def __init__(self, error_message='Enter only letters, numbers, and underscore'):
-        IS_MATCH.__init__(self, '^[\w]*$', error_message)
+        IS_MATCH.__init__(self, r'^[\w]*$', error_message)
 
 
 class IS_EMAIL(Validator):
+
     """
     Checks if field's value is a valid email address. Can be set to disallow
     or force addresses from certain domain(s).
@@ -1093,12 +1090,12 @@ class IS_EMAIL(Validator):
         Check for valid email address that can't be from a .com domain::
 
             INPUT(_type='text', _name='name',
-                requires=IS_EMAIL(banned='^.*\.com(|\..*)$'))
+                requires=IS_EMAIL(banned='^.*\\.com(|\\..*)$'))
 
         Check for valid email address that must be from a .edu domain::
 
             INPUT(_type='text', _name='name',
-                requires=IS_EMAIL(forced='^.*\.edu(|\..*)$'))
+                requires=IS_EMAIL(forced='^.*\\.edu(|\\..*)$'))
 
             >>> IS_EMAIL()('a@b.com')
             ('a@b.com', None)
@@ -1197,9 +1194,9 @@ class IS_EMAIL(Validator):
         self.forced = forced
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         if not(isinstance(value, (basestring, unicodeT))) or not value or '@' not in value:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
 
         body, domain = value.rsplit('@', 1)
 
@@ -1221,8 +1218,8 @@ class IS_EMAIL(Validator):
         if match:
             if (not self.banned or not self.banned.match(domain)) \
                     and (not self.forced or self.forced.match(domain)):
-                return (value, None)
-        return (value, self.translator(self.error_message))
+                return value
+        raise ValidationError(self.translator(self.error_message))
 
 
 class IS_LIST_OF_EMAILS(Validator):
@@ -1237,23 +1234,21 @@ class IS_LIST_OF_EMAILS(Validator):
                 XML(', '.join([A(x, _href='mailto:'+x).xml() for x in (v or [])]))
              )
     """
-    split_emails = re.compile('[^,;\s]+')
+    split_emails = re.compile(r'[^,;\s]+')
 
     def __init__(self, error_message='Invalid emails: %s'):
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         bad_emails = []
         f = IS_EMAIL()
         for email in self.split_emails.findall(value):
             error = f(email)[1]
             if error and email not in bad_emails:
                 bad_emails.append(email)
-        if not bad_emails:
-            return (value, None)
-        else:
-            return (value,
-                    self.translator(self.error_message) % ', '.join(bad_emails))
+        if bad_emails:
+            raise ValidationError(self.translator(self.error_message) % ', '.join(bad_emails))
+        return value
 
     def formatter(self, value, row=None):
         return ', '.join(value or [])
@@ -1394,11 +1389,12 @@ label_split_regex = re.compile(u'[\u002e\u3002\uff0e\uff61]')
 
 
 def escape_unicode(string):
+
     """
     Converts a unicode string into US-ASCII, using a simple conversion scheme.
     Each unicode character that does not have a US-ASCII equivalent is
     converted into a URL escaped form based on its hexadecimal value.
-    For example, the unicode character '\u4e86' will become the string '%4e%86'
+    For example, the unicode character '\\u4e86' will become the string '%4e%86'
 
     Args:
         string: unicode string, the unicode string to convert into an
@@ -1426,12 +1422,12 @@ def unicode_to_ascii_authority(authority):
     """
     Follows the steps in RFC 3490, Section 4 to convert a unicode authority
     string into its ASCII equivalent.
-    For example, u'www.Alliancefran\xe7aise.nu' will be converted into
+    For example, u'www.Alliancefran\\xe7aise.nu' will be converted into
     'www.xn--alliancefranaise-npb.nu'
 
     Args:
         authority: unicode string, the URL authority component to convert,
-            e.g. u'www.Alliancefran\xe7aise.nu'
+            e.g. u'www.Alliancefran\\xe7aise.nu'
 
     Returns:
         string: the US-ASCII character equivalent to the inputed authority,
@@ -1577,12 +1573,10 @@ class IS_GENERIC_URL(Validator):
 
     """
 
-    def __init__(
-        self,
-        error_message='Enter a valid URL',
-        allowed_schemes=None,
-        prepend_scheme=None,
-    ):
+    def __init__(self,
+                 error_message='Enter a valid URL',
+                 allowed_schemes=None,
+                 prepend_scheme=None):
 
         self.error_message = error_message
         if allowed_schemes is None:
@@ -1598,7 +1592,7 @@ class IS_GENERIC_URL(Validator):
     GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
     URL_FRAGMENT_VALID = re.compile(r"[|A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%]+$")
 
-    def __call__(self, value):
+    def validate(self, value):
         """
         Args:
             value: a string, the URL to validate
@@ -1612,47 +1606,39 @@ class IS_GENERIC_URL(Validator):
         # if we dont have anything or the URL misuses the '%' character
 
         if not value or self.GENERIC_URL.search(value):
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
 
         if '#' in value:
             url, fragment_part = value.split('#')
         else:
             url, fragment_part = value, ''
         # if the URL is only composed of valid characters
-        if self.GENERIC_URL_VALID.match(url) and (not fragment_part or self.URL_FRAGMENT_VALID.match(fragment_part)):
-            # Then parse the URL into its components and check on
-            try:
-                components = urlparse.urlparse(urllib_unquote(value))._asdict()
-            except ValueError:
-                return (value, self.translator(self.error_message))
+        if not self.GENERIC_URL_VALID.match(url) or (fragment_part and not self.URL_FRAGMENT_VALID.match(fragment_part)):
+            raise ValidationError(self.translator(self.error_message))
+        # Then parse the URL into its components and check on
+        try:
+            components = urlparse.urlparse(urllib_unquote(value))._asdict()
+        except ValueError:
+            raise ValidationError(self.translator(self.error_message))
 
-            # Clean up the scheme before we check it
-            scheme = components['scheme']
-            if len(scheme) == 0:
-                scheme = None
-            else:
-                scheme = components['scheme'].lower()
-            # If the scheme doesn't really exists
-            if scheme not in self.allowed_schemes or not scheme and ':' in components['path']:
-                # for the possible case of abbreviated URLs with
-                # ports, check to see if adding a valid scheme fixes
-                # the problem (but only do this if it doesn't have
-                # one already!)
-                if '://' not in value and None in self.allowed_schemes:
-                    schemeToUse = self.prepend_scheme or 'http'
-                    prependTest = self.__call__(
-                        schemeToUse + '://' + value)
-                    # if the prepend test succeeded
-                    if prependTest[1] is None:
-                        # if prepending in the output is enabled
-                        if self.prepend_scheme:
-                            return prependTest
-                        else:
-                            return (value, None)
-            else:
-                return (value, None)
-        # else the URL is not valid
-        return (value, self.translator(self.error_message))
+        # Clean up the scheme before we check it
+        scheme = components['scheme']
+        if len(scheme) == 0:
+            scheme = None
+        else:
+            scheme = components['scheme'].lower()
+        # If the scheme doesn't really exists
+        if scheme not in self.allowed_schemes or not scheme and ':' in components['path']:
+            # for the possible case of abbreviated URLs with
+            # ports, check to see if adding a valid scheme fixes
+            # the problem (but only do this if it doesn't have
+            # one already!)
+            if '://' not in value and None in self.allowed_schemes:
+                schemeToUse = self.prepend_scheme or 'http'
+                new_value = self.validate(schemeToUse + '://' + value)
+                return new_value if self.prepend_scheme else value
+            raise ValidationError(self.translator(self.error_message))
+        return value
 
 # Sources (obtained 2017-Nov-11):
 #    http://data.iana.org/TLD/tlds-alpha-by-domain.txt
@@ -1998,13 +1984,11 @@ class IS_HTTP_URL(Validator):
         r"([\w.!~*'|;:&=+$,-]+@)?\d+\.\d+\.\d+\.\d+(:\d*)*$")
     GENERIC_VALID_DOMAIN = re.compile(r"([\w.!~*'|;:&=+$,-]+@)?(([A-Za-z0-9]+[A-Za-z0-9\-]*[A-Za-z0-9]+\.)*([A-Za-z0-9]+\.)*)*([A-Za-z]+[A-Za-z0-9\-]*[A-Za-z0-9]+)\.?(:\d*)*$")
 
-    def __init__(
-        self,
-        error_message='Enter a valid URL',
-        allowed_schemes=None,
-        prepend_scheme='http',
-        allowed_tlds=None
-    ):
+    def __init__(self,
+                 error_message='Enter a valid URL',
+                 allowed_schemes=None,
+                 prepend_scheme='http',
+                 allowed_tlds=None):
 
         self.error_message = error_message
         if allowed_schemes is None:
@@ -2026,7 +2010,7 @@ class IS_HTTP_URL(Validator):
             raise SyntaxError("prepend_scheme='%s' is not in allowed_schemes=%s" %
                               (self.prepend_scheme, self.allowed_schemes))
 
-    def __call__(self, value):
+    def validate(self, value):
         """
         Args:
             value: a string, the URL to validate
@@ -2049,46 +2033,33 @@ class IS_HTTP_URL(Validator):
                     # if authority is a valid IP address
                     if self.GENERIC_VALID_IP.match(authority):
                         # Then this HTTP URL is valid
-                        return (value, None)
+                        return value
                     else:
                         # else if authority is a valid domain name
                         domainMatch = self.GENERIC_VALID_DOMAIN.match(
                             authority)
                         if domainMatch:
                             # if the top-level domain really exists
-                            if domainMatch.group(5).lower()\
-                                    in self.allowed_tlds:
+                            if domainMatch.group(5).lower() in self.allowed_tlds:
                                 # Then this HTTP URL is valid
-                                return (value, None)
+                                return value
                 else:
                     # else this is a relative/abbreviated URL, which will parse
                     # into the URL's path component
                     path = components.path
                     # relative case: if this is a valid path (if it starts with
                     # a slash)
-                    if path.startswith('/'):
-                        # Then this HTTP URL is valid
-                        return (value, None)
-                    else:
+                    if not path.startswith('/'):
                         # abbreviated case: if we haven't already, prepend a
                         # scheme and see if it fixes the problem
                         if '://' not in value and None in self.allowed_schemes:
                             schemeToUse = self.prepend_scheme or 'http'
-                            prependTest = self.__call__(schemeToUse
-                                                        + '://' + value)
-                            # if the prepend test succeeded
-                            if prependTest[1] is None:
-                                # if prepending in the output is enabled
-                                if self.prepend_scheme:
-                                    return prependTest
-                                else:
-                                    # else return the original, non-prepended
-                                    # value
-                                    return (value, None)
+                            new_value = self.validate(schemeToUse + '://' + value)
+                            return new_value if self.prepend_scheme else value
+                    return value
         except:
             pass
-        # else the HTTP URL is not valid
-        return (value, self.translator(self.error_message))
+        raise ValidationError(self.translator(self.error_message))
 
 
 class IS_URL(Validator):
@@ -2176,14 +2147,12 @@ class IS_URL(Validator):
     @author: Jonathan Benn
     """
 
-    def __init__(
-        self,
-        error_message='Enter a valid URL',
-        mode='http',
-        allowed_schemes=None,
-        prepend_scheme='http',
-        allowed_tlds=None
-    ):
+    def __init__(self,
+                 error_message='Enter a valid URL',
+                 mode='http',
+                 allowed_schemes=None,
+                 prepend_scheme='http',
+                 allowed_tlds=None):
 
         self.error_message = error_message
         self.mode = mode.lower()
@@ -2205,7 +2174,7 @@ class IS_URL(Validator):
 
         self.prepend_scheme = prepend_scheme
 
-    def __call__(self, value):
+    def validate(self, value):
         """
         Args:
             value: a unicode or regular string, the URL to validate
@@ -2230,22 +2199,14 @@ class IS_URL(Validator):
         else:
             raise SyntaxError("invalid mode '%s' in IS_URL" % self.mode)
 
-        if not isinstance(value, unicodeT):
-            return subMethod(value)
-        else:
+        if isinstance(value, unicodeT):
             try:
-                asciiValue = unicode_to_ascii_url(value, self.prepend_scheme)
+                value = unicode_to_ascii_url(value, self.prepend_scheme)
             except Exception as e:
                 # If we are not able to convert the unicode url into a
                 # US-ASCII URL, then the URL is not valid
-                return (value, self.translator(self.error_message))
-            methodResult = subMethod(asciiValue)
-            # if the validation of the US-ASCII version of the value failed
-            if not methodResult[1] is None:
-                # then return the original input value, not the US-ASCII version
-                return (value, methodResult[1])
-            else:
-                return methodResult
+                raise ValidationError(self.translator(self.error_message))
+        return subMethod.validate(value)
 
 
 regex_time = re.compile(
@@ -2298,7 +2259,7 @@ class IS_TIME(Validator):
     def __init__(self, error_message='Enter time as hh:mm:ss (seconds, am, pm optional)'):
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         try:
             ivalue = value
             value = regex_time.match(value.lower())
@@ -2315,12 +2276,9 @@ class IS_TIME(Validator):
                     in range(60)):
                 raise ValueError('Hours or minutes or seconds are outside of allowed range')
             value = datetime.time(h, m, s)
-            return (value, None)
-        except AttributeError:
-            pass
-        except ValueError:
-            pass
-        return (ivalue, self.translator(self.error_message))
+            return value
+        except Exception:
+            raise ValidationError(self.translator(self.error_message))
 
 
 # A UTC class.
@@ -2355,18 +2313,17 @@ class IS_DATE(Validator):
         self.error_message = str(error_message)
         self.extremes = {}
 
-    def __call__(self, value):
-        ovalue = value
+    def validate(self, value):
         if isinstance(value, datetime.date):
-            return (value, None)
+            return value
         try:
             (y, m, d, hh, mm, ss, t0, t1, t2) = \
                 time.strptime(value, str(self.format))
             value = datetime.date(y, m, d)
-            return (value, None)
+            return value
         except:
             self.extremes.update(IS_DATETIME.nice(self.format))
-            return (ovalue, self.translator(self.error_message) % self.extremes)
+            raise ValidationError(self.translator(self.error_message) % self.extremes)
 
     def formatter(self, value):
         if value is None:
@@ -2420,10 +2377,9 @@ class IS_DATETIME(Validator):
         self.extremes = {}
         self.timezone = timezone
 
-    def __call__(self, value):
-        ovalue = value
+    def validate(self, value):
         if isinstance(value, datetime.datetime):
-            return (value, None)
+            return value
         try:
             (y, m, d, hh, mm, ss, t0, t1, t2) = \
                 time.strptime(value, str(self.format))
@@ -2431,10 +2387,10 @@ class IS_DATETIME(Validator):
             if self.timezone is not None:
                 # TODO: https://github.com/web2py/web2py/issues/1094 (temporary solution)
                 value = self.timezone.localize(value).astimezone(utc).replace(tzinfo=None)
-            return (value, None)
+            return value
         except:
             self.extremes.update(IS_DATETIME.nice(self.format))
-            return (ovalue, self.translator(self.error_message) % self.extremes)
+            raise ValidationError(self.translator(self.error_message) % self.extremes)
 
     def formatter(self, value):
         if value is None:
@@ -2496,16 +2452,13 @@ class IS_DATE_IN_RANGE(IS_DATE):
         self.extremes = dict(min=self.formatter(minimum),
                              max=self.formatter(maximum))
 
-    def __call__(self, value):
-        ovalue = value
-        (value, msg) = IS_DATE.__call__(self, value)
-        if msg is not None:
-            return (value, msg)
+    def validate(self, value):
+        value = IS_DATE.validate(self, value)
         if self.minimum and self.minimum > value:
-            return (ovalue, self.translator(self.error_message) % self.extremes)
+            raise ValidationError(self.translator(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (ovalue, self.translator(self.error_message) % self.extremes)
-        return (value, None)
+            raise ValidationError(self.translator(self.error_message) % self.extremes)
+        return value
 
 
 class IS_DATETIME_IN_RANGE(IS_DATETIME):
@@ -2552,16 +2505,13 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
         self.extremes = dict(min=self.formatter(minimum),
                              max=self.formatter(maximum))
 
-    def __call__(self, value):
-        ovalue = value
-        (value, msg) = IS_DATETIME.__call__(self, value)
-        if msg is not None:
-            return (value, msg)
+    def validate(self, value):
+        value = IS_DATETIME.validate(self, value)
         if self.minimum and self.minimum > value:
-            return (ovalue, self.translator(self.error_message) % self.extremes)
+            raise ValidationError(self.translator(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (ovalue, self.translator(self.error_message) % self.extremes)
-        return (value, None)
+            raise ValidationError(self.translator(self.error_message) % self.extremes)
+        return value
 
 
 class IS_LIST_OF(Validator):
@@ -2572,17 +2522,17 @@ class IS_LIST_OF(Validator):
         self.maximum = maximum
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         ivalue = value
         if not isinstance(value, list):
             ivalue = [ivalue]
         ivalue = [i for i in ivalue if str(i).strip()]
         if self.minimum is not None and len(ivalue) < self.minimum:
-            return (ivalue, self.translator(self.error_message or 'Minimum length is %(min)s') %
-                    dict(min=self.minimum, max=self.maximum))
+            raise ValidationError(self.translator(self.error_message or 'Minimum length is %(min)s') %
+                                  dict(min=self.minimum, max=self.maximum))
         if self.maximum is not None and len(ivalue) > self.maximum:
-            return (ivalue, self.translator(self.error_message or 'Maximum length is %(max)s') %
-                    dict(min=self.minimum, max=self.maximum))
+            raise ValidationError(self.translator(self.error_message or 'Maximum length is %(max)s') %
+                                  dict(min=self.minimum, max=self.maximum))
         new_value = []
         other = self.other
         if self.other:
@@ -2591,12 +2541,10 @@ class IS_LIST_OF(Validator):
             for item in ivalue:
                 v = item
                 for validator in other:
-                    (v, e) = validator(v)
-                    if e:
-                        return (ivalue, e)
+                    v = validator.validate(v)
                 new_value.append(v)
             ivalue = new_value
-        return (ivalue, None)
+        return ivalue
 
 
 class IS_LOWER(Validator):
@@ -2610,14 +2558,14 @@ class IS_LOWER(Validator):
 
     """
 
-    def __call__(self, value):
+    def validate(self, value):
         cast_back = lambda x: x
         if isinstance(value, str):
             cast_back = to_native
         elif isinstance(value, bytes):
             cast_back = to_bytes
         value = to_unicode(value).lower()
-        return (cast_back(value), None)
+        return cast_back(value)
 
 
 class IS_UPPER(Validator):
@@ -2631,14 +2579,14 @@ class IS_UPPER(Validator):
 
     """
 
-    def __call__(self, value):
+    def validate(self, value):
         cast_back = lambda x: x
         if isinstance(value, str):
             cast_back = to_native
         elif isinstance(value, bytes):
             cast_back = to_bytes
         value = to_unicode(value).upper()
-        return (cast_back(value), None)
+        return cast_back(value)
 
 
 def urlify(s, maxlen=80, keep_underscores=False):
@@ -2651,15 +2599,15 @@ def urlify(s, maxlen=80, keep_underscores=False):
     s = s.lower()                         # to lowercase
     s = unicodedata.normalize('NFKD', s)  # replace special characters
     s = to_native(s, charset='ascii', errors='ignore')       # encode as ASCII
-    s = re.sub('&\w+?;', '', s)           # strip html entities
+    s = re.sub(r'&\w+?;', '', s)           # strip html entities
     if keep_underscores:
-        s = re.sub('\s+', '-', s)         # whitespace to hyphens
-        s = re.sub('[^\w\-]', '', s)
+        s = re.sub(r'\s+', '-', s)         # whitespace to hyphens
+        s = re.sub(r'[^\w\-]', '', s)
         # strip all but alphanumeric/underscore/hyphen
     else:
-        s = re.sub('[\s_]+', '-', s)      # whitespace & underscores to hyphens
-        s = re.sub('[^a-z0-9\-]', '', s)  # strip all but alphanumeric/hyphen
-    s = re.sub('[-_][-_]+', '-', s)       # collapse strings of hyphens
+        s = re.sub(r'[\s_]+', '-', s)      # whitespace & underscores to hyphens
+        s = re.sub(r'[^a-z0-9\-]', '', s)  # strip all but alphanumeric/hyphen
+    s = re.sub(r'[-_][-_]+', '-', s)       # collapse strings of hyphens
     s = s.strip('-')                      # remove leading and trailing hyphens
     return s[:maxlen]                     # enforce maximum length
 
@@ -2718,10 +2666,10 @@ class IS_SLUG(Validator):
         self.error_message = error_message
         self.keep_underscores = keep_underscores
 
-    def __call__(self, value):
+    def validate(self, value):
         if self.check and value != urlify(value, self.maxlen, self.keep_underscores):
-            return (value, self.translator(self.error_message))
-        return (urlify(value, self.maxlen, self.keep_underscores), None)
+            raise ValidationError(self.translator(self.error_message))
+        return urlify(value, self.maxlen, self.keep_underscores)
 
 
 class ANY_OF(Validator):
@@ -2743,15 +2691,13 @@ class ANY_OF(Validator):
         self.subs = subs
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         for validator in self.subs:
-            value, error = validator(value)
-            if error is None:
-                break
-        if error is not None and self.error_message is not None:
-            error = self.translator(self.error_message)
-        return value, error
-
+            v, e = validator(value)
+            if not e:
+                return v
+        raise ValidationError(e)
+            
     def formatter(self, value):
         # Use the formatter of the first subvalidator
         # that validates the value and has a formatter
@@ -2804,19 +2750,15 @@ class IS_EMPTY_OR(Validator):
             if hasattr(self.other, 'set_self_id'):
                 self.other.set_self_id(id)
 
-    def __call__(self, value):
+    def validate(self, value):
         value, empty = is_empty(value, empty_regex=self.empty_regex)
         if empty:
-            return (self.null, None)
+            return self.null
         if isinstance(self.other, (list, tuple)):
-            error = None
             for item in self.other:
-                value, error = item(value)
-                if error:
-                    break
-            return value, error
-        else:
-            return self.other(value)
+                value = item.validate(value)
+            return value
+        return self.other.validate(value)
 
     def formatter(self, value):
         if hasattr(self.other, 'formatter'):
@@ -2841,9 +2783,57 @@ class CLEANUP(Validator):
         self.regex = self.REGEX_CLEANUP if regex is None \
             else re.compile(regex)
 
-    def __call__(self, value):
+    def validate(self, value):
         v = self.regex.sub('', str(value).strip())
-        return (v, None)
+        return v
+
+
+def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
+    hashfunc = hashfunc or sha1
+    hmac = hashlib.pbkdf2_hmac(hashfunc().name, to_bytes(data),
+                               to_bytes(salt), iterations, keylen)
+    return binascii.hexlify(hmac)
+
+
+def simple_hash(text, key='', salt='', digest_alg='md5'):
+    """Generate hash with the given text using the specified digest algorithm."""
+    text = to_bytes(text)
+    key = to_bytes(key)
+    salt = to_bytes(salt)
+    if not digest_alg:
+        raise RuntimeError("simple_hash with digest_alg=None")
+    elif not isinstance(digest_alg, str):  # manual approach
+        h = digest_alg(text + key + salt)
+    elif digest_alg.startswith('pbkdf2'):  # latest and coolest!
+        iterations, keylen, alg = digest_alg[7:-1].split(',')
+        return to_native(pbkdf2_hex(text, salt, int(iterations),
+                                    int(keylen), get_digest(alg)))
+    elif key:  # use hmac
+        digest_alg = get_digest(digest_alg)
+        h = hmac.new(key + salt, text, digest_alg)
+    else:  # compatible with third party systems
+        h = get_digest(digest_alg)()
+        h.update(text + salt)
+    return h.hexdigest()
+
+
+def get_digest(value):
+    """Return a hashlib digest algorithm from a string."""
+    if isinstance(value, str):
+        value = value.lower()
+        if value not in ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'):
+            raise ValueError("Invalid digest algorithm: %s" % value)
+        value = getattr(hashlib, value)
+    return value
+
+DIGEST_ALG_BY_SIZE = {
+    128 // 4: 'md5',
+    160 // 4: 'sha1',
+    224 // 4: 'sha224',
+    256 // 4: 'sha256',
+    384 // 4: 'sha384',
+    512 // 4: 'sha512',
+}
 
 
 class LazyCrypt(object):
@@ -2889,7 +2879,7 @@ class LazyCrypt(object):
             digest_alg, key = self.crypt.digest_alg, ''
         if self.crypt.salt:
             if self.crypt.salt is True:
-                salt = str(web2py_uuid()).replace('-', '')[-16:]
+                salt = str(uuid.uuid4()).replace('-', '')[-16:]
             else:
                 salt = self.crypt.salt
         else:
@@ -3034,13 +3024,13 @@ class CRYPT(Validator):
         self.error_message = error_message
         self.salt = salt
 
-    def __call__(self, value):
+    def validate(self, value):
         v = value and str(value)[:self.max_length]
         if not v or len(v) < self.min_length:
             return ('', self.translator(self.error_message))
         if isinstance(value, LazyCrypt):
-            return (value, None)
-        return (LazyCrypt(self, value), None)
+            return value
+        return LazyCrypt(self, value)
 
 #  entropy calculator for IS_STRONG
 #
@@ -3140,10 +3130,10 @@ class IS_STRONG(Validator):
         self.error_message = error_message
         self.estring = es   # return error message as string (for doctest)
 
-    def __call__(self, value):
+    def validate(self, value):
         failures = []
         if value and len(value) == value.count('*') > 4:
-            return (value, None)
+            return value
         if self.entropy is not None:
             entropy = calc_entropy(value)
             if entropy < self.entropy:
@@ -3159,7 +3149,7 @@ class IS_STRONG(Validator):
             all_special = [ch in value for ch in self.specials]
             if self.special > 0:
                 if not all_special.count(True) >= self.special:
-                    failures.append(self.translator("Must include at least %s of the following: %s") 
+                    failures.append(self.translator("Must include at least %s of the following: %s")
                                     % (self.special, self.specials))
             elif self.special is 0:
                 if len(all_special) > 0:
@@ -3203,13 +3193,13 @@ class IS_STRONG(Validator):
                 if len(all_number) > 0:
                     failures.append(self.translator("May not include any numbers"))
         if len(failures) == 0:
-            return (value, None)
+            return value
         if not self.error_message:
             if self.estring:
-                return (value, '|'.join(map(str, failures)))
-            return (value, ', '.join(failures))
+                raise ValidationError('|'.join(map(str, failures)))
+            raise ValidationError(', '.join(failures))
         else:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
 
 
 class IS_IMAGE(Validator):
@@ -3269,7 +3259,7 @@ class IS_IMAGE(Validator):
         self.aspectratio = aspectratio
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         try:
             extension = value.filename.rfind('.')
             assert extension >= 0
@@ -3299,9 +3289,9 @@ class IS_IMAGE(Validator):
                 assert actual_ratio == target_ratio
 
             value.file.seek(0)
-            return (value, None)
+            return value
         except Exception as e:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
 
     def __bmp(self, stream):
         if stream.read(2) == b'BM':
@@ -3404,11 +3394,11 @@ class IS_FILE(Validator):
         elif isinstance(value1, str):
             return value1 == value2
 
-    def __call__(self, value):
+    def validate(self, value):
         try:
             string = value.filename
         except:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         if self.case == 1:
             string = string.lower()
         elif self.case == 2:
@@ -3420,11 +3410,11 @@ class IS_FILE(Validator):
         if dot == -1:
             dot = len(string)
         if self.filename and not self.match(self.filename, string[:dot]):
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         elif self.extension and not self.match(self.extension, string[dot + 1:]):
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         else:
-            return (value, None)
+            return value
 
 
 class IS_UPLOAD_FILENAME(Validator):
@@ -3482,11 +3472,11 @@ class IS_UPLOAD_FILENAME(Validator):
         self.case = case
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         try:
             string = value.filename
         except:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         if self.case == 1:
             string = string.lower()
         elif self.case == 2:
@@ -3498,11 +3488,11 @@ class IS_UPLOAD_FILENAME(Validator):
         if dot == -1:
             dot = len(string)
         if self.filename and not self.filename.match(string[:dot]):
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         elif self.extension and not self.extension.match(string[dot + 1:]):
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         else:
-            return (value, None)
+            return value
 
 
 class IS_IPV4(Validator):
@@ -3611,15 +3601,15 @@ class IS_IPV4(Validator):
     private = ((2886729728, 2886795263), (3232235520, 3232301055))
     automatic = (2851995648, 2852061183)
 
-    def __init__(
-        self,
-        minip='0.0.0.0',
-        maxip='255.255.255.255',
-        invert=False,
-        is_localhost=None,
-        is_private=None,
-        is_automatic=None,
-            error_message='Enter valid IPv4 address'):
+    def __init__(self,
+                 minip='0.0.0.0',
+                 maxip='255.255.255.255',
+                 invert=False,
+                 is_localhost=None,
+                 is_private=None,
+                 is_automatic=None,
+                 error_message='Enter valid IPv4 address'):
+
         for n, value in enumerate((minip, maxip)):
             temp = []
             if isinstance(value, str):
@@ -3649,28 +3639,34 @@ class IS_IPV4(Validator):
         self.is_automatic = is_automatic
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         if self.regex.match(value):
             number = 0
             for i, j in zip(self.numbers, value.split('.')):
                 number += i * int(j)
             ok = False
+
             for bottom, top in zip(self.minip, self.maxip):
                 if self.invert != (bottom <= number <= top):
                     ok = True
+
             if ok and self.is_localhost is not None and \
                     self.is_localhost != (number == self.localhost):
                 ok = False
-            if ok and self.is_private is not None and (self.is_private !=
-                    any([private_number[0] <= number <= private_number[1]
-                         for private_number in self.private])):
+
+            private = any([private_number[0] <= number <= private_number[1] 
+                           for private_number in self.private])
+            if ok and self.is_private is not None and self.is_private != private:
                 ok = False
-            if ok and self.is_automatic is not None and (self.is_automatic !=
-                    (self.automatic[0] <= number <= self.automatic[1])):
+
+            automatic = self.automatic[0] <= number <= self.automatic[1]
+            if ok and self.is_automatic is not None and self.is_automatic != automatic:
                 ok = False
+
             if ok:
-                return (value, None)
-        return (value, self.translator(self.error_message))
+                return value
+
+        raise ValidationError(self.translator(self.error_message))
 
 
 class IS_IPV6(Validator):
@@ -3741,17 +3737,17 @@ class IS_IPV6(Validator):
 
     """
 
-    def __init__(
-            self,
-            is_private=None,
-            is_link_local=None,
-            is_reserved=None,
-            is_multicast=None,
-            is_routeable=None,
-            is_6to4=None,
-            is_teredo=None,
-            subnets=None,
-            error_message='Enter valid IPv6 address'):
+    def __init__(self,
+                 is_private=None,
+                 is_link_local=None,
+                 is_reserved=None,
+                 is_multicast=None,
+                 is_routeable=None,
+                 is_6to4=None,
+                 is_teredo=None,
+                 subnets=None,
+                 error_message='Enter valid IPv6 address'):
+
         self.is_private = is_private
         self.is_link_local = is_link_local
         self.is_reserved = is_reserved
@@ -3762,12 +3758,12 @@ class IS_IPV6(Validator):
         self.subnets = subnets
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         try:
             ip = ipaddress.IPv6Address(to_unicode(value))
             ok = True
         except ipaddress.AddressValueError:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
 
         if self.subnets:
             # iterate through self.subnets to see if value is a member
@@ -3778,7 +3774,7 @@ class IS_IPV6(Validator):
                 try:
                     ipnet = ipaddress.IPv6Network(to_unicode(network))
                 except (ipaddress.NetmaskValueError, ipaddress.AddressValueError):
-                    return (value, self.translator('invalid subnet provided'))
+                    raise ValidationError(self.translator('invalid subnet provided'))
                 if ip in ipnet:
                     ok = True
 
@@ -3807,9 +3803,9 @@ class IS_IPV6(Validator):
             ok = False
 
         if ok:
-            return (value, None)
+            return value
 
-        return (value, self.translator(self.error_message))
+        raise ValidationError(self.translator(self.error_message))
 
 
 class IS_IPADDRESS(Validator):
@@ -3947,24 +3943,24 @@ class IS_IPADDRESS(Validator):
         ('2001::8ffa:fe22:b3af', 'invalid subnet provided')
     """
 
-    def __init__(
-            self,
-            minip='0.0.0.0',
-            maxip='255.255.255.255',
-            invert=False,
-            is_localhost=None,
-            is_private=None,
-            is_automatic=None,
-            is_ipv4=None,
-            is_link_local=None,
-            is_reserved=None,
-            is_multicast=None,
-            is_routeable=None,
-            is_6to4=None,
-            is_teredo=None,
-            subnets=None,
-            is_ipv6=None,
-            error_message='Enter valid IP address'):
+    def __init__(self,
+                 minip='0.0.0.0',
+                 maxip='255.255.255.255',
+                 invert=False,
+                 is_localhost=None,
+                 is_private=None,
+                 is_automatic=None,
+                 is_ipv4=None,
+                 is_link_local=None,
+                 is_reserved=None,
+                 is_multicast=None,
+                 is_routeable=None,
+                 is_6to4=None,
+                 is_teredo=None,
+                 subnets=None,
+                 is_ipv6=None,
+                 error_message='Enter valid IP address'):
+
         self.minip = minip,
         self.maxip = maxip,
         self.invert = invert
@@ -3983,7 +3979,7 @@ class IS_IPADDRESS(Validator):
         self.is_ipv6 = is_ipv6 or is_ipv4 is False
         self.error_message = error_message
 
-    def __call__(self, value):
+    def validate(self, value):
         IPAddress = ipaddress.ip_address
         IPv6Address = ipaddress.IPv6Address
         IPv4Address = ipaddress.IPv4Address
@@ -3991,14 +3987,14 @@ class IS_IPADDRESS(Validator):
         try:
             ip = IPAddress(to_unicode(value))
         except ValueError:
-            return (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
 
         if self.is_ipv4 and isinstance(ip, IPv6Address):
-            retval = (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         elif self.is_ipv6 and isinstance(ip, IPv4Address):
-            retval = (value, self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         elif self.is_ipv4 or isinstance(ip, IPv4Address):
-            retval = IS_IPV4(
+            return IS_IPV4(
                 minip=self.minip,
                 maxip=self.maxip,
                 invert=self.invert,
@@ -4006,9 +4002,9 @@ class IS_IPADDRESS(Validator):
                 is_private=self.is_private,
                 is_automatic=self.is_automatic,
                 error_message=self.error_message
-            )(value)
+            ).validate(value)
         elif self.is_ipv6 or isinstance(ip, IPv6Address):
-            retval = IS_IPV6(
+            return IS_IPV6(
                 is_private=self.is_private,
                 is_link_local=self.is_link_local,
                 is_reserved=self.is_reserved,
@@ -4018,8 +4014,6 @@ class IS_IPADDRESS(Validator):
                 is_teredo=self.is_teredo,
                 subnets=self.subnets,
                 error_message=self.error_message
-            )(value)
+            ).validate(value)
         else:
-            retval = (value, self.translator(self.error_message))
-
-        return retval
+            raise ValidationError(self.translator(self.error_message))
