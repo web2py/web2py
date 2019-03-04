@@ -328,8 +328,16 @@ class IS_LENGTH(Validator):
     def validate(self, value):
         if value is None:
             length = 0
-            if self.minsize <= length <= self.maxsize:
-                return value
+        elif isinstance(value, str):
+            try:
+                length = len(to_unicode(value))
+            except:
+                length = len(value)
+        elif isinstance(value, unicodeT):
+            length = len(value)
+            value = value.encode('utf8')
+        elif isinstance(value, (bytes, bytearray, tuple, list)):
+            length = len(value)
         elif isinstance(value, cgi.FieldStorage):
             if value.file:
                 value.file.seek(0, os.SEEK_END)
@@ -341,28 +349,12 @@ class IS_LENGTH(Validator):
                     length = len(val)
                 else:
                     length = 0
-            if self.minsize <= length <= self.maxsize:
-                return value
-        elif isinstance(value, str):
-            try:
-                lvalue = len(to_unicode(value))
-            except:
-                lvalue = len(value)
-            if self.minsize <= lvalue <= self.maxsize:
-                return value
-        elif isinstance(value, unicodeT):
-            if self.minsize <= len(value) <= self.maxsize:
-                return value.encode('utf8')
-        elif isinstance(value, (bytes, bytearray)):
-            if self.minsize <= len(value) <= self.maxsize:
-                return value
-        elif isinstance(value, (tuple, list)):
-            if self.minsize <= len(value) <= self.maxsize:
-                return value
-        elif self.minsize <= len(str(value)) <= self.maxsize:
-            return str(value)
-        raise ValidationError(self.translator(self.error_message) %
-                              dict(min=self.minsize, max=self.maxsize))
+        else:
+            value = str(value)
+            length = len(str(value))
+        if self.minsize <= length <= self.maxsize:
+            return value
+        raise ValidationError(self.translator(self.error_message) % dict(min=self.minsize, max=self.maxsize))
 
 
 class IS_JSON(Validator):
@@ -3027,7 +3019,7 @@ class CRYPT(Validator):
     def validate(self, value):
         v = value and str(value)[:self.max_length]
         if not v or len(v) < self.min_length:
-            return ('', self.translator(self.error_message))
+            raise ValidationError(self.translator(self.error_message))
         if isinstance(value, LazyCrypt):
             return value
         return LazyCrypt(self, value)
