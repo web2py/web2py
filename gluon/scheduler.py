@@ -8,7 +8,6 @@
 Background processes made simple
 ---------------------------------
 """
-from __future__ import print_function
 
 import os
 import re
@@ -29,7 +28,7 @@ from json import loads, dumps
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_EMPTY_OR
 from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
 from gluon.utils import web2py_uuid
-from gluon._compat import Queue, long, iteritems, PY2
+from gluon._compat import Queue, long, iteritems, PY2, to_bytes, string_types, integer_types
 from gluon.storage import Storage
 
 USAGE = """
@@ -417,8 +416,8 @@ def _decode_list(lst):
         return lst
     newlist = []
     for i in lst:
-        if isinstance(i, unicode):
-            i = i.encode('utf-8')
+        if isinstance(i, string_types):
+            i = to_bytes(i)
         elif isinstance(i, list):
             i = _decode_list(i)
         newlist.append(i)
@@ -430,10 +429,9 @@ def _decode_dict(dct):
         return dct
     newdict = {}
     for k, v in iteritems(dct):
-        if isinstance(k, unicode):
-            k = k.encode('utf-8')
-        if isinstance(v, unicode):
-            v = v.encode('utf-8')
+        k = to_bytes(k)
+        if isinstance(v, string_types):
+            v = to_bytes(v)
         elif isinstance(v, list):
             v = _decode_list(v)
         newdict[k] = v
@@ -1369,7 +1367,7 @@ class Scheduler(MetaScheduler):
                 ws = wkgroups.get(gname)
                 if ws:
                     if task.broadcast:
-                        for worker in ws['workers']:                       
+                        for worker in ws['workers']:
                             new_task = db.scheduler_task.insert(
                                 application_name = task.application_name,
                                 task_name = task.task_name,
@@ -1391,7 +1389,7 @@ class Scheduler(MetaScheduler):
                         db(st.id == task.id).update(times_run=task.times_run+1,
                                                     next_run_time=next_run_time,
                                                     last_run_time=now)
-                        db.commit()                          
+                        db.commit()
                     else:
                         counter = 0
                         myw = 0
@@ -1572,7 +1570,7 @@ class Scheduler(MetaScheduler):
         """
         from pydal.objects import Query
         sr, st = self.db.scheduler_run, self.db.scheduler_task
-        if isinstance(ref, (int, long)):
+        if isinstance(ref, integer_types):
             q = st.id == ref
         elif isinstance(ref, str):
             q = st.uuid == ref
@@ -1623,7 +1621,7 @@ class Scheduler(MetaScheduler):
             Experimental
         """
         st, sw = self.db.scheduler_task, self.db.scheduler_worker
-        if isinstance(ref, (int, long)):
+        if isinstance(ref, integer_types):
             q = st.id == ref
         elif isinstance(ref, str):
             q = st.uuid == ref
@@ -1723,7 +1721,7 @@ def main():
         sys.path.append(path)
         print('importing tasks...')
         tasks = __import__(filename, globals(), locals(), [], -1).tasks
-        print('tasks found: ' + ', '.join(tasks.keys()))
+        print('tasks found: ' + ', '.join(list(tasks.keys())))
     else:
         tasks = {}
     group_names = [x.strip() for x in options.group_names.split(',')]

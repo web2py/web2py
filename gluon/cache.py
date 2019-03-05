@@ -600,15 +600,14 @@ class Cache(object):
                     (session_, vars_, lang_, user_agent_, public_) = \
                         (session, vars, lang, user_agent, public)
 
+                expires = 'Fri, 01 Jan 1990 00:00:00 GMT'
                 if time_expire:
                     cache_control = 'max-age=%(time_expire)s, s-maxage=%(time_expire)s' % dict(time_expire=time_expire)
-                    if not session_ and public_:
-                        cache_control += ', public'
-                        expires = (current.request.utcnow + datetime.timedelta(seconds=time_expire)
-                                   ).strftime('%a, %d %b %Y %H:%M:%S GMT')
-                    else:
-                        cache_control += ', private'
-                        expires = 'Fri, 01 Jan 1990 00:00:00 GMT'
+                    expires = (current.request.utcnow + datetime.timedelta(seconds=time_expire)).strftime(
+                        '%a, %d %b %Y %H:%M:%S GMT')
+                else:
+                    cache_control = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0'
+                cache_control += ', public' if not session_ and public_ else ', private'
 
                 if cache_model:
                     # figure out the correct cache key
@@ -619,7 +618,7 @@ class Cache(object):
                         if user_agent_ is True:
                             cache_key.append("%(is_mobile)s_%(is_tablet)s" % current.request.user_agent())
                         else:
-                            cache_key.append(str(user_agent_.items()))
+                            cache_key.append(str(list(user_agent_.items())))
                     if vars_:
                         cache_key.append(current.request.env.query_string)
                     if lang_:

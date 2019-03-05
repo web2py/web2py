@@ -63,12 +63,12 @@
               <h3 class="not_paused">{{=T("No Interaction yet")}}</h3>
                 <div class="help span7 alert alert-block alert-info">
                   <ul class="unstyled">
-                    <li>{{=T("You need to set up and reach a")}} {{=A(T("breakpoint"), _href=URL('breakpoints'))}} {{=T('to use the debugger!')}}</li>
+                    <li>{{=T.M("You need to set up and reach a [[breakpoint %s]] to use the debugger!') %URL('breakpoints')}}</li>
                     <li>{{=T('To emulate a breakpoint programatically, write:')}}
                     {{=CODE("from gluon.debug import dbg\n"
                             "dbg.set_trace() # stop here!\n",
                             counter=None)}}</li>
-                    <li>{{=T('Please')}} {{=A(T("refresh"), _href=URL('interact'))}} {{=T('this page to see if a breakpoint was hit and debug interaction is required.')}}</li>
+                    <li>{{=T.M('Please [[refresh %s]] this page to see if a breakpoint was hit and debug interaction is required.') %URL('interact')}}</li>
                   </ul>
                 </div>
         {{pass}}

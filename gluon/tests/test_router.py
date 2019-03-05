@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Unit tests for rewrite.py routers option"""
-from __future__ import print_function
+
 import os
 import unittest
 import tempfile
@@ -1555,4 +1555,3 @@ class TestRouter(unittest.TestCase):
         load(rdict=router_collide)
         self.assertEqual(filter_url('http://welcome.com/welcome/admin/index',
                          domain='welcome', out=True), "/welcome/admin")
-

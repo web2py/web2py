@@ -6,9 +6,9 @@
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
-from __future__ import print_function
-from gluon._compat import xrange
-from gluon.utils import local_html_escape
+
+from pydal._compat import xrange
+from yatl.sanitizer import xmlescape
 import re
 
 __all__ = ['highlight']
@@ -63,7 +63,7 @@ class Highlighter(object):
         Callback for C specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
 
@@ -77,7 +77,7 @@ class Highlighter(object):
         Callback for python specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         if token == 'MULTILINESTRING':
             self.change_style(token, style)
             self.output.append(value)
@@ -114,7 +114,7 @@ class Highlighter(object):
         Callback for HTML specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
         if token == 'GOTOPYTHON':
@@ -166,7 +166,7 @@ class Highlighter(object):
                         + r'from|True|False)(?![a-zA-Z0-9_])'),
              'color:#185369; font-weight: bold'),
             ('WEB2PY',
-             re.compile(r'(request|response|session|cache|redirect|local_import|HTTP|TR|XML|URL|BEAUTIFY|A|BODY|BR|B|CAT|CENTER|CODE|COL|COLGROUP|DIV|EM|EMBED|FIELDSET|LEGEND|FORM|H1|H2|H3|H4|H5|H6|IFRAME|HEAD|HR|HTML|I|IMG|INPUT|LABEL|LI|LINK|MARKMIN|MENU|META|OBJECT|OL|ON|OPTION|P|PRE|SCRIPT|SELECT|SPAN|STYLE|TABLE|THEAD|TBODY|TFOOT|TAG|TD|TEXTAREA|TH|TITLE|TT|T|UL|XHTML|IS_SLUG|IS_STRONG|IS_LOWER|IS_UPPER|IS_ALPHANUMERIC|IS_DATETIME|IS_DATETIME_IN_RANGE|IS_DATE|IS_DATE_IN_RANGE|IS_DECIMAL_IN_RANGE|IS_EMAIL|IS_EXPR|IS_FLOAT_IN_RANGE|IS_IMAGE|IS_INT_IN_RANGE|IS_IN_SET|IS_IPV4|IS_LIST_OF|IS_LENGTH|IS_MATCH|IS_EQUAL_TO|IS_EMPTY_OR|IS_NULL_OR|IS_NOT_EMPTY|IS_TIME|IS_UPLOAD_FILENAME|IS_URL|CLEANUP|CRYPT|IS_IN_DB|IS_NOT_IN_DB|DAL|Field|SQLFORM|SQLTABLE|xmlescape|embed64)(?![a-zA-Z0-9_])'
+             re.compile(r'(request|response|session|cache|redirect|local_import|HTTP|TR|XML|URL|BEAUTIFY|A|BODY|BR|B|CAT|CENTER|CODE|COL|COLGROUP|DIV|EM|EMBED|FIELDSET|LEGEND|FORM|H1|H2|H3|H4|H5|H6|IFRAME|HEAD|HR|HTML|I|IMG|INPUT|LABEL|LI|LINK|MARKMIN|MENU|META|OBJECT|OL|ON|OPTION|P|PRE|SCRIPT|SELECT|SPAN|STYLE|TABLE|THEAD|TBODY|TFOOT|TAG|TD|TEXTAREA|TH|TITLE|TT|T|UL|XHTML|IS_SLUG|IS_STRONG|IS_LOWER|IS_UPPER|IS_ALPHANUMERIC|IS_DATETIME|IS_DATETIME_IN_RANGE|IS_DATE|IS_DATE_IN_RANGE|IS_DECIMAL_IN_RANGE|IS_EMAIL|IS_EXPR|IS_FILE|IS_FLOAT_IN_RANGE|IS_IMAGE|IS_INT_IN_RANGE|IS_IN_SET|IS_IPV4|IS_LIST_OF|IS_LENGTH|IS_MATCH|IS_EQUAL_TO|IS_EMPTY_OR|IS_NULL_OR|IS_NOT_EMPTY|IS_TIME|IS_UPLOAD_FILENAME|IS_URL|CLEANUP|CRYPT|IS_IN_DB|IS_NOT_IN_DB|DAL|Field|SQLFORM|SQLTABLE|xmlescape|embed64)(?![a-zA-Z0-9_])'
                         ), 'link:%(link)s;text-decoration:None;color:#FF5C1F;'),
             ('MAGIC', re.compile(r'self|None'),
              'color:#185369; font-weight: bold'),
@@ -286,13 +286,13 @@ color: #A0A0A0;
                                          'WEB2PY']:
         code = Highlighter(language, link, styles).highlight(code)
     else:
-        code = local_html_escape(code, quote=False)
+        code = xmlescape(code, quote=False)
     lines = code.split('\n')
 
     if counter is None:
         linenumbers = [''] * len(lines)
     elif isinstance(counter, str):
-        linenumbers = [local_html_escape(counter, quote=False)] * len(lines)
+        linenumbers = [xmlescape(counter, quote=False)] * len(lines)
     else:
         linenumbers = [str(i + counter) + '.' for i in
                        xrange(len(lines))]
@@ -325,7 +325,7 @@ color: #A0A0A0;
     fa = ' '.join([key[1:].lower() for (key, value) in items if key[:1]
                    == '_' and value is None] + ['%s="%s"'
                                                 % (key[1:].lower(), str(value).replace('"', "'"))
-                  for (key, value) in attributes.items() if key[:1]
+                  for (key, value) in items if key[:1]
                   == '_' and value])
     if fa:
         fa = ' ' + fa

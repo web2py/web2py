@@ -216,6 +216,7 @@
 'Enable': 'Enable',
 'Enable Close-Tag': 'Enable Close-Tag',
 'Enable Code Folding': 'Enable Code Folding',
+'Enter an integer between %(min)g and %(max)g': 'Enter an integer between %(min)g and %(max)g',
 'Enterprise Web Framework': 'Enterprise Web Framework',
 'Error': 'Error',
 'Error logs for "%(app)s"': 'Log degli errori per "%(app)s"',

@@ -4,6 +4,7 @@
 """
     Unit tests for gluon.sqlhtml
 """
+import datetime
 import os
 import sys
 import unittest
@@ -17,7 +18,7 @@ from pydal.objects import Table
 from gluon.tools import Auth, Mail
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.http import HTTP
 from gluon.validators import *
 
@@ -253,7 +254,7 @@ class TestSQLFORM(unittest.TestCase):
         request.folder = 'applications/admin'
         response = Response()
         session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         session.connect(request, response)
         from gluon.globals import current
         current.request = request
@@ -276,7 +277,7 @@ class TestSQLFORM(unittest.TestCase):
 
         self.db.commit()
 
-    
+
     def test_SQLFORM(self):
         form = SQLFORM(self.db.auth_user)
         self.assertEqual(form.xml()[:5], b'<form')
@@ -312,6 +313,25 @@ class TestSQLFORM(unittest.TestCase):
                                        Field('field_two', 'string'))
         self.assertEqual(factory_form.xml()[:5], b'<form')
 
+    def test_factory_applies_default_validators(self):
+        from gluon import current
+
+        factory_form = SQLFORM.factory(
+            Field('a_date', type='date'),
+        )
+        # Fake user input
+        current.request.post_vars.update({
+            '_formname': 'no_table/create',
+            'a_date': '2018-09-14',
+            '_formkey': '123',
+
+        })
+        # Fake the formkey
+        current.session['_formkey[no_table/create]'] = ['123']
+
+        self.assertTrue(factory_form.process().accepted)
+        self.assertIsInstance(factory_form.vars.a_date, datetime.date)
+
     #  def test_build_query(self):
     #     pass
 
@@ -335,7 +355,7 @@ class TestSQLTABLE(unittest.TestCase):
         request.folder = 'applications/admin'
         response = Response()
         session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         session.connect(request, response)
         from gluon.globals import current
         current.request = request

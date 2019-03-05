@@ -88,14 +88,14 @@ class TestTranslations(unittest.TestCase):
         pass
 
     def test_plain(self):
-        T = languages.translator(self.langpath, self.http_accept_language)
+        T = languages.TranslatorFactory(self.langpath, self.http_accept_language)
         self.assertEqual(str(T('Hello World')),
                          'Hello World')
         self.assertEqual(str(T('Hello World## comment')),
                          'Hello World')
         self.assertEqual(str(T.M('**Hello World**')),
                          '<strong>Hello World</strong>')
-		# sub_tuple testing
+                # sub_tuple testing
         self.assertEqual(str(T('%s %%{shop}', 1)),
                          '1 shop')
         self.assertEqual(str(T('%s %%{shop}', 2)),
@@ -192,7 +192,7 @@ class TestTranslations(unittest.TestCase):
                          '2')
         self.assertEqual(str(T('%i%%{?st?[0]}', 0)),
                          '0')
-		# sub_dict testing
+                # sub_dict testing
         self.assertEqual(str(T('%(key)s %%{is(key)}', dict(key=1))),
                          '1 is')
         self.assertEqual(str(T('%(key)i %%{is(key)}', dict(key=2))),
@@ -340,7 +340,7 @@ class TestMessages(unittest.TestCase):
         pass
 
     def test_decode(self):
-        T = languages.translator(self.langpath, self.http_accept_language)
+        T = languages.TranslatorFactory(self.langpath, self.http_accept_language)
         messages = Messages(T)
         messages.update({'email_sent':'Email sent', 'test': "ä"})
         self.assertEqual(to_unicode(messages.email_sent, 'utf-8'), 'Email sent')
@@ -359,7 +359,7 @@ class TestHTMLTag(unittest.TestCase):
         pass
 
     def test_decode(self):
-        T = languages.translator(self.langpath, self.http_accept_language)
+        T = languages.TranslatorFactory(self.langpath, self.http_accept_language)
         elem = SPAN(T("Complete"))
         self.assertEqual(elem.flatten(), "Complete")
         elem = SPAN(T("Cannot be empty", language="ru"))

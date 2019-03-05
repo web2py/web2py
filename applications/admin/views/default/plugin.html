@@ -85,7 +85,7 @@ def deletefile(arglist):
 				{{=peekfile('models',m)}}
 			</span>
 			<span class="extras">
-				{{if len(defines[m]):}}{{=T("defines tables")}} {{pass}}{{=XML(', '.join([B(table).xml() for table in defines[m]]))}}
+				{{if len(defines[m]):}}{{=T("defines tables")}} {{pass}}{{=XML(b', '.join([B(table).xml() for table in defines[m]]))}}
 			</span>
 		</li>
 		{{pass}}
@@ -118,7 +118,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 				{{=peekfile('controllers',c)}}
 			</span>
 			<span class="extras celled">
-				{{if functions[c]:}}{{=T("exposes")}} {{pass}}{{=XML(', '.join([A(f,_href=URL(a=app,c=c[:-3],f=f)).xml() for f in functions[c]]))}}
+				{{if functions[c]:}}{{=T("exposes")}} {{pass}}{{=XML(b', '.join([A(f,_href=URL(a=app,c=c[:-3],f=f)).xml() for f in functions[c]]))}}
 			</span>
 		</li>
 		{{pass}}
@@ -145,7 +145,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 			</span>
 			<span class="extras celled">
 				{{if c in extend:}}{{=T("extends")}} <b>{{=extend[c]}}</b> {{pass}}
-				{{if include[c]:}}{{=T("includes")}} {{pass}}{{=XML(', '.join([B(f).xml() for f in include[c]]))}}
+				{{if include[c]:}}{{=T("includes")}} {{pass}}{{=XML(b', '.join([B(f).xml() for f in include[c]]))}}
 			</span>
 		</li>
 		{{pass}}

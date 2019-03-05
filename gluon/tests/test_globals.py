@@ -231,13 +231,31 @@ class testResponse(unittest.TestCase):
         cookie = str(current.response.cookies)
         self.assertTrue('httponly' not in cookie.lower())
 
+    def test_cookies_samesite(self):
+        # Test Lax is the default mode
+        current = setup_clean_session()
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('samesite=lax' in cookie.lower())
+        # Test you can disable samesite
+        current = setup_clean_session()
+        current.session.samesite(False)
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('samesite' not in cookie.lower())
+        # Test you can change mode
+        current = setup_clean_session()
+        current.session.samesite('Strict')
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('samesite=strict' in cookie.lower())
+
     def test_include_meta(self):
         response = Response()
-        response.meta[u'web2py'] = 'web2py'
+        response.meta['web2py'] = 'web2py'
         response.include_meta()
         self.assertEqual(response.body.getvalue(), '\n<meta name="web2py" content="web2py" />\n')
         response = Response()
-        response.meta[u'meta_dict'] = {u'tag_name':'tag_value'}
+        response.meta['meta_dict'] = {'tag_name':'tag_value'}
         response.include_meta()
         self.assertEqual(response.body.getvalue(), '\n<meta tag_name="tag_value" />\n')
-

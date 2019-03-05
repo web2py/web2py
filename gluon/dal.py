@@ -99,7 +99,7 @@ def _default_validators(db, field):
             requires._and = validators.IS_NOT_IN_DB(db, field)
         if not field.notnull:
             requires = validators.IS_EMPTY_OR(requires)
-        return requires    
+        return requires
     # does not get here for reference and list:reference
     if isinstance(requires, list):
         if field.unique:

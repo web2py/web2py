@@ -71,4 +71,3 @@ class TestRecfile(unittest.TestCase):
         self.assertFalse(recfile.exists(filename))
         self.assertRaises(IOError, recfile.remove, filename)
         self.assertRaises(IOError, recfile.open, filename, "r")
-

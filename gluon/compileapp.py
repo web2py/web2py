@@ -15,17 +15,18 @@ Note:
 
 import re
 import fnmatch
-import os
+import os, sys
 import copy
 import random
-from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring, reduce, xrange, long, reload
+from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, integer_types, basestring, reduce, xrange, long, reload
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
 from gluon.fileutils import mktree, listdir, read_file, write_file
 from gluon.myregex import regex_expose, regex_longcomments
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.dal import DAL, Field
+from gluon.validators import Validator
 from pydal.base import BaseAdapter
 from gluon.sqlhtml import SQLFORM, SQLTABLE
 from gluon.cache import Cache
@@ -52,7 +53,10 @@ is_gae = settings.global_settings.web2py_runtime_gae
 is_jython = settings.global_settings.is_jython
 pjoin = os.path.join
 
-marshal_header_size = 8 if PY2 else 12
+if PY2:
+    marshal_header_size = 8
+else:
+    marshal_header_size = 16 if sys.version_info[1] >= 7 else 12
 
 TEST_CODE = \
     r"""
@@ -174,7 +178,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
         else:
             raise TypeError("Unsupported times argument type %s" % type(times))
         if timeout is not None:
-            if not isinstance(timeout, (int, long)):
+            if not isinstance(timeout, integer_types):
                 raise ValueError("Timeout argument must be an integer or None")
             elif timeout <= 0:
                 raise ValueError(
@@ -258,7 +262,7 @@ class LoadFactory(object):
         if args is None:
             args = []
         vars = Storage(vars or {})
-        import globals
+        from . import globals
         target = target or 'c' + str(random.random())[2:]
         attr['_id'] = target
         request = current.request
@@ -420,16 +424,19 @@ def build_environment(request, response, session, store_current=True):
         r'^%s/%s/\w+\.py$' % (request.controller, request.function)
         ]
 
-    t = environment['T'] = translator(os.path.join(request.folder, 'languages'),
-                                      request.env.http_accept_language)
+    T = environment['T'] = TranslatorFactory(os.path.join(request.folder, 'languages'),
+                                             request.env.http_accept_language)
     c = environment['cache'] = Cache(request)
+
+    # configure the validator to use the t translator
+    Validator.translator = staticmethod(lambda text: None if text is None else str(T(text)))
 
     if store_current:
         current.globalenv = environment
         current.request = request
         current.response = response
         current.session = session
-        current.T = t
+        current.T = T
         current.cache = c
 
     if is_jython:  # jython hack
@@ -628,7 +635,7 @@ def run_controller_in(controller, function, environment):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
-        environment['__symbols__'] = environment.keys()
+        environment['__symbols__'] = list(environment.keys())
         code = read_file(filename)
         code += TEST_CODE
         ccode = compile2(code, filename)
@@ -724,7 +731,7 @@ def run_view_in(environment):
                                    context=environment)
             # Compile template
             ccode = compile2(scode, filename)
-            layer = filename        
+            layer = filename
     restricted(ccode, environment, layer=layer, scode=scode)
     # parse_template saves everything in response body
     return environment['response'].body.getvalue()
