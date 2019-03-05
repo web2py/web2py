@@ -451,7 +451,7 @@ class lazyT(object):
 
 
 def pickle_lazyT(c):
-    return str, (c.xml(),)
+    return str, (to_native(c.xml()),)
 
 copyreg.pickle(lazyT, pickle_lazyT)
 
