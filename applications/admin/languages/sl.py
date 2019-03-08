@@ -31,6 +31,7 @@
 '@markmin\x01Please [[refresh %s]] this page to see if a breakpoint was hit and debug interaction is required.': 'Please [[refresh %s]] this page to see if a breakpoint was hit and debug interaction is required.',
 '@markmin\x01RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.': 'RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.',
 '@markmin\x01Searching: **%s** %%{file}': 'Iskanje: **%s** datoteke',
+'@markmin\x01You need to set up and reach a [[breakpoint %s]] to use the debugger!': 'You need to set up and reach a [[breakpoint %s]] to use the debugger!',
 'A new password was emailed to you': 'A new password was emailed to you',
 'A new version of web2py is available': 'Nova različica web2py je na voljo',
 'A new version of web2py is available: %s': 'Nova različica web2py je na voljo: %s',

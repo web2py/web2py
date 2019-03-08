@@ -32,6 +32,7 @@
 '@markmin\x01Please [[refresh %s]] this page to see if a breakpoint was hit and debug interaction is required.': 'Please [[refresh %s]] this page to see if a breakpoint was hit and debug interaction is required.',
 '@markmin\x01RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.': 'RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.',
 '@markmin\x01Searching: **%s** %%{file}': '@markmin\x01Aranıyor: **%s** %%{file}',
+'@markmin\x01You need to set up and reach a [[breakpoint %s]] to use the debugger!': 'You need to set up and reach a [[breakpoint %s]] to use the debugger!',
 'A new password was emailed to you': 'A new password was emailed to you',
 'A new version of web2py is available: %s': "web2py'nin yeni sürümü mevcut: %s ",
 'A new version of web2py is available: Version 1.68.2 (2009-10-21 09:59:29)\n': "web2py'nin yeni sürümü mevcut: Sürüm 1.68.2 (2009-10-21 09:59:29)\r\n",
