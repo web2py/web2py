@@ -8,7 +8,7 @@ try:
     else:
         import tkinter
 except ImportError:
-    Tkinter = None
+    tkinter = None
 
 
 class MessageBoxHandler(logging.Handler):

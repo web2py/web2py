@@ -31,6 +31,7 @@
 '@markmin\x01Please [[refresh %s]] this page to see if a breakpoint was hit and debug interaction is required.': 'Please [[refresh %s]] this page to see if a breakpoint was hit and debug interaction is required.',
 '@markmin\x01RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.': 'RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.',
 '@markmin\x01Searching: **%s** %%{file}': 'Searching: **%s** files',
+'@markmin\x01You need to set up and reach a [[breakpoint %s]] to use the debugger!': 'You need to set up and reach a [[breakpoint %s]] to use the debugger!',
 'A new password was emailed to you': 'A new password was emailed to you',
 'A new version of web2py is available': 'A new version of web2py is available',
 'A new version of web2py is available: %s': 'A new version of web2py is available: %s',
