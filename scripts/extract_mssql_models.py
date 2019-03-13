@@ -47,7 +47,7 @@ import sys
 import re
 # This is from pydal/helpers/regex.py as of 2016-06-16
 # Use this to recognize if a field name need to have an rname representation
-REGEX_VALID_TB_FLD = re.compile(r'^[^\d_][_0-9a-zA-Z]*\Z')
+REGEX_VALID_TB_FLD = re.compile(r'^[a-zA-Z]\w*\Z')
 # For replacing invalid characters in field names
 INVALID_CHARS = re.compile(r'[^a-zA-Z0-9_]')
 
