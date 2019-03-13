@@ -11,8 +11,8 @@ clean:
 	find . -name '*.rej' -exec rm -f {} \; 
 	find . -name '#*' -exec rm -f {} \;
 	find . -name 'Thumbs.db' -exec rm -f {} \; 
-	find . -name '.tox' -exec rm -rf {} \; 
-	find . -name '__pycache__' -exec rm -rf {} \; 
+	# find . -name '.tox' -exec rm -rf {} \; 
+	# find . -name '__pycache__' -exec rm -rf {} \; 
 	find gluon/ -name '*class' -exec rm -f {} \; 
 	find applications/admin/ -name '.*' -exec rm -f {} \; 
 	find applications/examples/ -name '.*' -exec rm -f {} \; 
@@ -45,7 +45,7 @@ rmfiles:
 	rm -rf applications/examples/uploads/* 
 src:
 	### Use semantic versioning
-	echo 'Version 2.18.3-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 2.18.4-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
 	make clean
 	# make rmfiles
