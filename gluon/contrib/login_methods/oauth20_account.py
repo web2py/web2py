@@ -13,9 +13,10 @@ OAuth 2.0 spec: http://tools.ietf.org/html/rfc6749
 
 import time
 import cgi
-import urllib2
 
-from urllib import urlencode
+from gluon._compat import urllib2
+from gluon._compat import urlencode
+
 from gluon import current, redirect, HTTP
 
 import json

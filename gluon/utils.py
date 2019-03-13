@@ -411,7 +411,7 @@ def unlocalised_http_header_date(data):
         "12": "Dec",
     }.get(time.strftime("%m", data))
 
-    year_and_time = time.strftime("%Y %H:%M:%S GMT")
+    year_and_time = time.strftime("%Y %H:%M:%S GMT", data)
 
     return "{}, {} {} {}".format(
         short_weekday,
