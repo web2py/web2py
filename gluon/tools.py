@@ -3661,14 +3661,15 @@ class Auth(AuthAPI):
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
             extra_fields = self.settings.extra_fields.get(self.settings.table_user_name, [])
-            if any(f.compute for f in extra_fields):
-                user = table_user[self.user.id]
-                self._update_session_user(user)
-                self.update_groups()
-            else:
-                self.user.update(table_user._filter_fields(form.vars))
-            session.flash = self.messages.profile_updated
-            self.log_event(log, self.user)
+            if not form.deleted:
+                if any(f.compute for f in extra_fields):
+                    user = table_user[self.user.id]
+                    self._update_session_user(user)
+                    self.update_groups()
+                else:
+                    self.user.update(table_user._filter_fields(form.vars))
+                session.flash = self.messages.profile_updated
+                self.log_event(log, self.user)
             callback(onaccept, form)
             if form.deleted:
                 return self.logout()
