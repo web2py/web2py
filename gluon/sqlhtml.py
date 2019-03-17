@@ -31,6 +31,7 @@ from pydal.objects import Table, Row, Expression, Field, Set, Rows
 from pydal.adapters.base import CALLABLETYPES
 from pydal.helpers.methods import smart_query, bar_encode, _repr_ref, merge_tablemaps
 from pydal.helpers.classes import Reference, SQLCustomType
+from pydal.default_validators import default_validators
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE
@@ -1411,8 +1412,7 @@ class SQLFORM(FORM):
             extra_field.table = table
             extra_field.tablename = table._tablename
             if extra_field.requires == DEFAULT:
-                from gluon.dal import _default_validators
-                extra_field.requires = _default_validators(table._db, extra_field)
+                extra_field.requires = default_validators(table._db, extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
@@ -2010,7 +2010,7 @@ class SQLFORM(FORM):
         to hold the fields.
         """
         # this is here to avoid circular references
-        from gluon.dal import DAL, _default_validators
+        from gluon.dal import DAL
         # Define a table name, this way it can be logical to our CSS.
         # And if you switch from using SQLFORM to SQLFORM.factory
         # your same css definitions will still apply.
@@ -2024,7 +2024,7 @@ class SQLFORM(FORM):
         # Clone fields, while passing tables straight through
         fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
         dummy_dal = DAL(None)
-        dummy_dal.validators_method = lambda f: _default_validators(dummy_dal, f) # See https://github.com/web2py/web2py/issues/2007
+        dummy_dal.validators_method = lambda f: default_validators(dummy_dal, f) # See https://github.com/web2py/web2py/issues/2007
         return SQLFORM(dummy_dal.define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
