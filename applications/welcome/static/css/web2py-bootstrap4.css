@@ -1,4 +1,3 @@
-
 label, th {
     font-weigth: bold;
     white-space: nowrap;
@@ -19,6 +18,9 @@ div.w2p_flash {
     border-width: 1px;
     margin: 0 0 20px;
     padding: 15px 35px 15px 15px;
+}
+.nav-item a {
+    white-space: nowrap;
 }
 div.w2p_flash.alert:hover {
     opacity: 1;

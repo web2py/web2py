@@ -15,8 +15,9 @@ from functools import reduce
 from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, urlencode
 from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText, Header
 from gluon._compat import Encoders, Charset, long, urllib_quote, iteritems
-from gluon._compat import to_bytes, to_native, add_charset
+from gluon._compat import to_bytes, to_native, add_charset, string_types
 from gluon._compat import charset_QP, basestring, unicodeT, to_unicode
+from gluon._compat import urllib2, urlopen
 import datetime
 import logging
 import sys
@@ -902,17 +903,17 @@ class Recaptcha2(DIV):
             'secret': self.private_key,
             'remoteip': remoteip,
             'response': recaptcha_response_field,
-        })
+        }).encode('utf-8')
         request = urllib2.Request(
             url=self.VERIFY_SERVER,
-            data=params,
+            data=to_bytes(params),
             headers={'Content-type': 'application/x-www-form-urlencoded',
                      'User-agent': 'reCAPTCHA Python'})
-        httpresp = urllib2.urlopen(request)
+        httpresp = urlopen(request)
         content = httpresp.read()
         httpresp.close()
         try:
-            response_dict = json.loads(content)
+            response_dict = json.loads(to_native(content))
         except:
             self.errors['captcha'] = self.error_message
             return False
@@ -1037,7 +1038,7 @@ class AuthJWT(object):
                              Example:
                              def mybefore_authorization(tokend):
                                  if not tokend['my_name_is'] == 'bond,james bond':
-                                     raise HTTP(400, u'Invalid JWT my_name_is claim')
+                                     raise HTTP(400, 'Invalid JWT my_name_is claim')
      - max_header_length: check max length to avoid load()ing unusually large tokens (could mean crafted, e.g. in a DDoS.)
 
     Basic Usage:
@@ -1161,7 +1162,7 @@ class AuthJWT(object):
         b64h, b64b = body.split(b'.', 1)
         if b64h != self.cached_b64h:
             # header not the same
-            raise HTTP(400, u'Invalid JWT Header')
+            raise HTTP(400, 'Invalid JWT Header')
         secret = self.secret_key
         tokend = serializers.loads_json(to_native(self.jwt_b64d(b64b)))
         if self.salt:
@@ -1172,11 +1173,11 @@ class AuthJWT(object):
         secret = to_bytes(secret, 'ascii', 'ignore')
         if not self.verify_signature(body, sig, secret):
             # signature verification failed
-            raise HTTP(400, u'Token signature is invalid')
+            raise HTTP(400, 'Token signature is invalid')
         if self.verify_expiration:
             now = time.mktime(datetime.datetime.utcnow().timetuple())
             if tokend['exp'] + self.leeway < now:
-                raise HTTP(400, u'Token is expired')
+                raise HTTP(400, 'Token is expired')
         if callable(self.before_authorization):
             self.before_authorization(tokend)
         return tokend
@@ -1209,11 +1210,11 @@ class AuthJWT(object):
             orig_exp = orig_payload['exp']
             if orig_exp + self.leeway < now:
                 # token already expired, can't be used for refresh
-                raise HTTP(400, u'Token already expired')
+                raise HTTP(400, 'Token already expired')
         orig_iat = orig_payload.get('orig_iat') or orig_payload['iat']
         if orig_iat + self.refresh_expiration_delta < now:
             # refreshed too long ago
-            raise HTTP(400, u'Token issued too long ago')
+            raise HTTP(400, 'Token issued too long ago')
         expires = now + self.expiration
         orig_payload.update(
             orig_iat=orig_iat,
@@ -1259,7 +1260,7 @@ class AuthJWT(object):
             pass
         if token:
             if not self.allow_refresh:
-                raise HTTP(403, u'Refreshing token is not allowed')
+                raise HTTP(403, 'Refreshing token is not allowed')
             tokend = self.load_token(token)
             # verification can fail here
             refreshed = self.refresh_token(tokend)
@@ -1277,9 +1278,9 @@ class AuthJWT(object):
             ret = {'token': self.generate_token(payload)}
         elif ret is None:
             raise HTTP(401,
-                       u'Not Authorized - need to be logged in, to pass a token '
-                       u'for refresh or username and password for login',
-                       **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
+                       'Not Authorized - need to be logged in, to pass a token '
+                       'for refresh or username and password for login',
+                       **{'WWW-Authenticate': 'JWT realm="%s"' % self.realm})
         response.headers['Content-Type'] = 'application/json'
         return serializers.json(ret)
 
@@ -1303,9 +1304,9 @@ class AuthJWT(object):
         if token_in_header:
             parts = token_in_header.split()
             if parts[0].lower() != self.header_prefix.lower():
-                raise HTTP(400, u'Invalid JWT header')
+                raise HTTP(400, 'Invalid JWT header')
             elif len(parts) == 1:
-                raise HTTP(400, u'Invalid JWT header, missing token')
+                raise HTTP(400, 'Invalid JWT header, missing token')
             elif len(parts) > 2:
                 raise HTTP(400, 'Invalid JWT header, token contains spaces')
             token = parts[1]
@@ -1378,6 +1379,7 @@ class Auth(AuthAPI):
                             login_after_password_change=True,
                             login_after_registration=False,
                             login_captcha=None,
+                            login_specify_error=False,
                             long_expiration=3600 * 30 * 24,  # one month
                             mailer=None,
                             manager_actions={},
@@ -2242,16 +2244,16 @@ class Auth(AuthAPI):
         if basic_auth_realm:
             if callable(basic_auth_realm):
                 basic_auth_realm = basic_auth_realm()
-            elif isinstance(basic_auth_realm, (unicode, str)):
-                basic_realm = unicode(basic_auth_realm)  # Warning python 3.5 does not have method unicod
+            elif isinstance(basic_auth_realm, string_types):
+                basic_realm = to_unicode(basic_auth_realm)
             elif basic_auth_realm is True:
-                basic_realm = u'' + current.request.application
-            http_401 = HTTP(401, u'Not Authorized', **{'WWW-Authenticate': u'Basic realm="' + basic_realm + '"'})
+                basic_realm = '' + current.request.application
+            http_401 = HTTP(401, 'Not Authorized', **{'WWW-Authenticate': 'Basic realm="' + basic_realm + '"'})
         if not basic or not basic[:6].lower() == 'basic ':
             if basic_auth_realm:
                 raise http_401
             return (True, False, False)
-        (username, sep, password) = base64.b64decode(basic[6:]).partition(':')
+        (username, sep, password) = base64.b64decode(basic[6:]).partition(b':')
         is_valid_user = sep and self.login_bare(username, password)
         if not is_valid_user and basic_auth_realm:
             raise http_401
@@ -2259,9 +2261,9 @@ class Auth(AuthAPI):
 
     def _get_login_settings(self):
         table_user = self.table_user()
-        userfield = self.settings.login_userfield or 'username' \
+        userfield = self.settings.login_userfield or ('username' \
             if self.settings.login_userfield or 'username' \
-            in table_user.fields else 'email'
+            in table_user.fields else 'email')
         passfield = self.settings.password_field
         return Storage({'table_user': table_user,
                         'userfield': userfield,
@@ -2567,6 +2569,8 @@ class Auth(AuthAPI):
                            settings.formstyle, 'captcha__row')
                 accepted_form = False
 
+                specific_error = self.messages.invalid_user
+
                 if form.accepts(request, session if self.csrf_prevention else None,
                                 formname='login', dbio=False,
                                 onvalidation=onvalidation,
@@ -2582,6 +2586,7 @@ class Auth(AuthAPI):
                         user = table_user(**{username: entered_username})
                     if user:
                         # user in db, check if registration pending or disabled
+                        specific_error = self.messages.invalid_password
                         temp_user = user
                         if (temp_user.registration_key or '').startswith('pending'):
                             response.flash = self.messages.registration_pending
@@ -2631,11 +2636,11 @@ class Auth(AuthAPI):
                         self.log_event(self.messages['login_failed_log'],
                                        request.post_vars)
                         # invalid login
-                        session.flash = self.messages.invalid_login
+                        session.flash = specific_error if self.settings.login_specify_error else self.messages.invalid_login
                         callback(onfail, None)
-                        redirect(
-                            self.url(args=request.args, vars=request.get_vars),
-                            client_side=settings.client_side)
+                        if 'password' in request.post_vars:
+                            del request.post_vars['password']
+                        redirect(self.url(args=request.args, vars=request.vars),client_side=settings.client_side)
 
             else:  # use a central authentication server
                 cas = settings.login_form
@@ -3570,7 +3575,7 @@ class Auth(AuthAPI):
         requires = table_user[passfield].requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
-        requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
+        requires = [t for t in requires if isinstance(t, CRYPT)]
         if requires:
             requires[0] = CRYPT(**requires[0].__dict__) # Copy the existing CRYPT attributes
             requires[0].min_length = 0 # But do not enforce minimum length for the old password
@@ -3656,14 +3661,15 @@ class Auth(AuthAPI):
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
             extra_fields = self.settings.extra_fields.get(self.settings.table_user_name, [])
-            if any(f.compute for f in extra_fields):
-                user = table_user[self.user.id]
-                self._update_session_user(user)
-                self.update_groups()
-            else:
-                self.user.update(table_user._filter_fields(form.vars))
-            session.flash = self.messages.profile_updated
-            self.log_event(log, self.user)
+            if not form.deleted:
+                if any(f.compute for f in extra_fields):
+                    user = table_user[self.user.id]
+                    self._update_session_user(user)
+                    self.update_groups()
+                else:
+                    self.user.update(table_user._filter_fields(form.vars))
+                session.flash = self.messages.profile_updated
+                self.log_event(log, self.user)
             callback(onaccept, form)
             if form.deleted:
                 return self.logout()
@@ -4610,7 +4616,6 @@ class Crud(object):  # pragma: no cover
                 results = None
         return form, results
 
-
 urllib2.install_opener(urllib2.build_opener(urllib2.HTTPCookieProcessor()))
 
 
@@ -4628,7 +4633,7 @@ def fetch(url, data=None, headers=None,
         from google.appengine.api import urlfetch
     except ImportError:
         req = urllib2.Request(url, data, headers)
-        html = urllib2.urlopen(req).read()
+        html = urlopen(req).read()
     else:
         method = ((data is None) and urlfetch.GET) or urlfetch.POST
         while url is not None:
@@ -4996,7 +5001,7 @@ class Service(object):
             elif r and not isinstance(r, types.GeneratorType) and isinstance(r[0], (dict, Storage)):
                 import csv
                 writer = csv.writer(s)
-                writer.writerow(r[0].keys())
+                writer.writerow(list(r[0].keys()))
                 for line in r:
                     writer.writerow([none_exception(v)
                                      for v in line.values()])
@@ -5213,7 +5218,7 @@ class Service(object):
     def serve_xmlrpc(self):
         request = current.request
         response = current.response
-        services = self.xmlrpc_procedures.values()
+        services = list(self.xmlrpc_procedures.values())
         return response.xmlrpc(request, services)
 
     def serve_amfrpc(self, version=0):
@@ -5568,7 +5573,7 @@ class PluginManager(object):
         return self.__dict__[key]
 
     def keys(self):
-        return self.__dict__.keys()
+        return list(self.__dict__.keys())
 
     def __contains__(self, key):
         return key in self.__dict__
@@ -5814,7 +5819,7 @@ class Wiki(object):
         settings.templates = templates
         settings.controller = controller
         settings.function = function
-        settings.groups = auth.user_groups.values() \
+        settings.groups = list(auth.user_groups.values()) \
             if groups is None else groups
 
         db = auth.db
@@ -5910,7 +5915,7 @@ class Wiki(object):
         if (auth.user and
             check_credentials(current.request, gae_login=False) and
             'wiki_editor' not in auth.user_groups.values() and
-                self.settings.groups == auth.user_groups.values()):
+                self.settings.groups == list(auth.user_groups.values())):
             group = db.auth_group(role='wiki_editor')
             gid = group.id if group else db.auth_group.insert(
                 role='wiki_editor')

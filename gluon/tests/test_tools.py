@@ -18,10 +18,10 @@ from gluon.dal import DAL, Field
 from pydal.objects import Table
 from gluon import tools
 from gluon.tools import Auth, Mail, Recaptcha2, prettydate, Expose
-from gluon._compat import PY2
+from gluon._compat import PY2, to_bytes
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.http import HTTP
 from gluon import SPAN, H3, TABLE, TR, TD, A, URL, current
 
@@ -193,7 +193,7 @@ class TestMail(unittest.TestCase):
         message = TestMail.DummySMTP.inbox.pop()
         attachment = message.parsed_payload.get_payload(1).get_payload(decode=True)
         with open(module_file, 'rb') as mf:
-            self.assertEqual(attachment.decode('utf-8'), mf.read().decode('utf-8'))
+            self.assertEqual(to_bytes(attachment), to_bytes(mf.read()))
         # Test missing attachment name error
         stream = open(module_file)
         self.assertRaises(Exception, lambda *args, **kwargs: Mail.Attachment(*args, **kwargs), stream)
@@ -207,13 +207,6 @@ class TestMail(unittest.TestCase):
         self.assertTrue('Content-Type: tra/lala' in message.payload)
         self.assertTrue('Content-Id: <trololo>' in message.payload)
 
-
-# class TestRecaptcha2(unittest.TestCase):
-#     def test_Recaptcha2(self):
-#         from html import FORM
-#         form = FORM(Recaptcha2(public_key='public_key', private_key='private_key'))
-#         rtn = '<form action="#" enctype="multipart/form-data" method="post"><div><script async="" defer="" src="https://www.google.com/recaptcha/api.js"></script><div class="g-recaptcha" data-sitekey="public_key"></div><noscript>\n<div style="width: 302px; height: 352px;">\n<div style="width: 302px; height: 352px; position: relative;">\n  <div style="width: 302px; height: 352px; position: absolute;">\n    <iframe src="https://www.google.com/recaptcha/api/fallback?k=public_key"\n            frameborder="0" scrolling="no"\n            style="width: 302px; height:352px; border-style: none;">\n    </iframe>\n  </div>\n  <div style="width: 250px; height: 80px; position: absolute; border-style: none;\n              bottom: 21px; left: 25px; margin: 0px; padding: 0px; right: 25px;">\n    <textarea id="g-recaptcha-response" name="g-recaptcha-response"\n              class="g-recaptcha-response"\n              style="width: 250px; height: 80px; border: 1px solid #c1c1c1;\n                     margin: 0px; padding: 0px; resize: none;" value="">\n    </textarea>\n  </div>\n</div>\n</div></noscript></div></form>'
-#         self.assertEqual(form.xml(), rtn)
 
 # TODO: class TestAuthJWT(unittest.TestCase):
 class TestAuthJWT(unittest.TestCase):
@@ -278,7 +271,7 @@ class TestAuthJWT(unittest.TestCase):
 #         request.folder = 'applications/admin'
 #         response = Response()
 #         session = Session()
-#         T = translator('', 'en')
+#         T = TranslatorFactory('', 'en')
 #         session.connect(request, response)
 #         from gluon.globals import current
 #         current.request = request
@@ -441,7 +434,7 @@ class TestAuthJWT(unittest.TestCase):
 #     #     request.folder = 'applications/admin'
 #     #     response = Response()
 #     #     session = Session()
-#     #     T = translator('', 'en')
+#     #     T = TranslatorFactory('', 'en')
 #     #     session.connect(request, response)
 #     #     from gluon.globals import current
 #     #     current.request = request
@@ -502,7 +495,7 @@ class TestAuth(unittest.TestCase):
         self.request.folder = 'applications/admin'
         self.response = Response()
         self.session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         self.session.connect(self.request, self.response)
         from gluon.globals import current
         self.current = current
@@ -1387,4 +1380,3 @@ class TestExpose(unittest.TestCase):
     def test_not_authorized(self):
         with self.assertRaises(HTTP):
             self.make_expose(base='inside', show='link_to_file3')
-

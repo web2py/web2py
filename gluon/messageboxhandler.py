@@ -1,10 +1,14 @@
 import logging
 import os
+import sys
 
 try:
-    import Tkinter
-except:
-    Tkinter = None
+    if sys.version_info[0] == 2:
+        import Tkinter as tkinter
+    else:
+        import tkinter
+except ImportError:
+    tkinter = None
 
 
 class MessageBoxHandler(logging.Handler):
@@ -12,15 +16,15 @@ class MessageBoxHandler(logging.Handler):
         logging.Handler.__init__(self)
 
     def emit(self, record):
-        if Tkinter:
+        if tkinter:
             msg = self.format(record)
-            root = Tkinter.Tk()
+            root = tkinter.Tk()
             root.wm_title("web2py logger message")
-            text = Tkinter.Text()
+            text = tkinter.Text()
             text["height"] = 12
             text.insert(0.1, msg)
             text.pack()
-            button = Tkinter.Button(root, text="OK", command=root.destroy)
+            button = tkinter.Button(root, text="OK", command=root.destroy)
             button.pack()
             root.mainloop()
 
@@ -30,6 +34,6 @@ class NotifySendHandler(logging.Handler):
         logging.Handler.__init__(self)
 
     def emit(self, record):
-        if Tkinter:
+        if tkinter:
             msg = self.format(record)
             os.system("notify-send '%s'" % msg)

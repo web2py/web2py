@@ -31,6 +31,7 @@ from pydal.objects import Table, Row, Expression, Field, Set, Rows
 from pydal.adapters.base import CALLABLETYPES
 from pydal.helpers.methods import smart_query, bar_encode, _repr_ref, merge_tablemaps
 from pydal.helpers.classes import Reference, SQLCustomType
+from pydal.default_validators import default_validators
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE
@@ -717,7 +718,7 @@ class AutocompleteWidget(object):
                             compact=table_rows.compact)
             elif settings and settings.global_settings.web2py_runtime_gae:
                 rows = self.db(field.__ge__(kword) &
-                               field.__lt__(kword + u'\ufffd')
+                               field.__lt__(kword + '\ufffd')
                                ).select(orderby=self.orderby,
                                         limitby=self.limitby,
                                         *(self.fields + self.help_fields))
@@ -802,8 +803,8 @@ class AutocompleteWidget(object):
                     $('#%(key3)s').val('');
                     var e=e_.which?e_.which:e_.keyCode;
                     function %(u)s(){
-                        $('#%(id)s').val($('#%(key)s :selected').text());
-                        $('#%(key3)s').val($('#%(key)s').val())
+                        $('#%(id)s').val($('#%(key)s option:selected').text());
+                        $('#%(key3)s').val($('#%(key)s option:selected').val())
                     };
                     if(e==39) %(u)s();
                     else if(e==40) {
@@ -824,7 +825,7 @@ class AutocompleteWidget(object):
                                     $('#%(id)s').next('.error').hide();
                                     $('#%(div_id)s').html(data).show().focus();
                                     $('#%(div_id)s select').css('width',$('#%(id)s').css('width'));
-                                    $('#%(key3)s').val($('#%(key)s').val());
+                                    $('#%(key3)s').val($('#%(key)s option:selected').val());
                                     $('#%(key)s').change(%(u)s).click(%(u)s);
                                 };
                             });
@@ -855,7 +856,7 @@ class AutocompleteWidget(object):
             function doit(e_) {
                 var e=e_.which?e_.which:e_.keyCode;
                 function %(u)s(){
-                    $('#%(id)s').val($('#%(key)s').val())
+                    $('#%(id)s').val($('#%(key)s option:selected').val())
                 };
                 if(e==39) %(u)s();
                 else if(e==40) {
@@ -1351,7 +1352,7 @@ class SQLFORM(FORM):
             if not readonly:
                 if not record:
                     # create form should only show writable fields
-                    fields = [f.name for f in table if (ignore_rw or f.writable) and not f.compute]
+                    fields = [f.name for f in table if (ignore_rw or f.writable or (f.readable and f.default)) and not f.compute]
                 else:
                     # update form should also show readable fields and computed fields (but in reaodnly mode)
                     fields = [f.name for f in table if (ignore_rw or f.writable or f.readable)]
@@ -1411,8 +1412,7 @@ class SQLFORM(FORM):
             extra_field.table = table
             extra_field.tablename = table._tablename
             if extra_field.requires == DEFAULT:
-                from gluon.dal import _default_validators
-                extra_field.requires = _default_validators(table._db, extra_field)
+                extra_field.requires = default_validators(table._db, extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
@@ -1912,23 +1912,10 @@ class SQLFORM(FORM):
                     fields[fieldname] = [safe_int(
                         x) for x in (value and [value] or [])]
             elif field.type == 'integer':
-                if value is not None:
-                    fields[fieldname] = safe_int(value)
+                fields[fieldname] = safe_int(value, None)
             elif field.type.startswith('reference'):
-                ## Avoid "constraint violation" exception when you have a
-                ## optional reference field without the dropdown in form. I.e.,
-                ## a field with code to be typed, in a data-entry form.
-                ##
-                ## When your reference field doesn't have IS_EMPTY_OR()
-                ## validator, "value" will come here as a string. So,
-                ## safe_int() will return 0. In this case, insert will raise
-                ## the constraint violation because there's no id=0 in
-                ## referenced table.
                 if isinstance(self.table, Table) and not keyed:
-                    if not value:
-                        fields[fieldname] = None
-                    else:
-                        fields[fieldname] = safe_int(value)
+                    fields[fieldname] = safe_int(value, None)
             elif field.type == 'double':
                 if value is not None:
                     fields[fieldname] = safe_float(value)
@@ -1979,7 +1966,7 @@ class SQLFORM(FORM):
 
     AUTOTYPES = {
         type(''): ('string', None),
-        type(u''): ('string',None),
+        type(''): ('string',None),
         type(True): ('boolean', None),
         type(1): ('integer', IS_INT_IN_RANGE(-1e12, +1e12)),
         type(1.0): ('double', IS_FLOAT_IN_RANGE()),
@@ -2036,8 +2023,9 @@ class SQLFORM(FORM):
 
         # Clone fields, while passing tables straight through
         fields_with_clones = [f.clone() if isinstance(f, Field) else f for f in fields]
-
-        return SQLFORM(DAL(None).define_table(table_name, *fields_with_clones), **attributes)
+        dummy_dal = DAL(None)
+        dummy_dal.validators_method = lambda f: default_validators(dummy_dal, f) # See https://github.com/web2py/web2py/issues/2007
+        return SQLFORM(dummy_dal.define_table(table_name, *fields_with_clones), **attributes)
 
     @staticmethod
     def build_query(fields, keywords):
@@ -2314,7 +2302,7 @@ class SQLFORM(FORM):
                       button='button btn btn-default btn-secondary',
                       buttontext='buttontext button',
                       buttonadd='icon plus icon-plus glyphicon glyphicon-plus',
-                      buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
+                      buttonback='icon arrowleft icon-arrow-left glyphicon glyphicon-arrow-left',
                       buttonexport='icon downarrow icon-download glyphicon glyphicon-download',
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
                       buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
@@ -2334,7 +2322,7 @@ class SQLFORM(FORM):
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
-        details = details and not groupby
+        details = not groupby and details
         rows = None
 
         # see issue 1980. Basically we can have keywords in get_vars
@@ -2397,6 +2385,12 @@ class SQLFORM(FORM):
             b['args'] = args + b.get('args', [])
             localvars = request.get_vars.copy()
             localvars.update(b.get('vars', {}))
+            # avoid empty keywords in vars
+            if localvars.get('keywords') == '':
+                del localvars['keywords']
+            # avoid propagating order=None in vars
+            if localvars.get('order') == 'None':
+                del localvars['order']
             b['vars'] = localvars
             b['hash_vars'] = False
             b['user_signature'] = user_signature
@@ -2426,7 +2420,7 @@ class SQLFORM(FORM):
 
         def gridbutton(buttonclass='buttonadd', buttontext=T('Add'),
                        buttonurl=url(args=[]), callback=None,
-                       delete=None, trap=True, noconfirm=None, title=None):
+                       delete=None, noconfirm=None, title=None):
             if showbuttontext:
                 return A(SPAN(_class=ui.get(buttonclass)), CAT(' '),
                          SPAN(T(buttontext), _title=title or T(buttontext),
@@ -2456,11 +2450,6 @@ class SQLFORM(FORM):
                 tablenames = merge_tablemaps(tablenames, db._adapter.tables(join))
         tables = [db[tablename] for tablename in tablenames]
         if fields:
-            # add missing tablename to virtual fields
-            for table in tables:
-                for k, f in iteritems(table):
-                    if isinstance(f, Field.Virtual):
-                        f.tablename = table._tablename
             columns = [f for f in fields if f.tablename in tablenames and f.listable]
         else:
             fields = []
@@ -2468,8 +2457,8 @@ class SQLFORM(FORM):
             filter1 = lambda f: isinstance(f, Field) and (f.type!='blob' or showblobs)
             filter2 = lambda f: isinstance(f, Field) and f.readable and f.listable
             for table in tables:
-                fields += filter(filter1, table)
-                columns += filter(filter2, table)
+                fields += list(filter(filter1, table))
+                columns += list(filter(filter2, table))
                 for k, f in iteritems(table):
                     if not k.startswith('_'):
                         if isinstance(f, Field.Virtual) and f.readable:
@@ -2555,7 +2544,7 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(referrer)
             if represent_none is not None:
-                for field in record.iterkeys():
+                for field in record.keys():
                     if record[field] is None:
                         record[field] = represent_none
             sqlformargs = dict(upload=upload, ignore_rw=ignore_rw,
@@ -2657,20 +2646,18 @@ class SQLFORM(FORM):
 
             orderby = fix_orderby(orderby)
 
+            # expcolumns start with the visible columns, which
+            # includes visible virtual fields
             expcolumns = [str(f) for f in columns]
             selectable_columns = [str(f) for f in columns if not isinstance(f, Field.Virtual)]
             if export_type.endswith('with_hidden_cols'):
-                # expcolumns = [] start with the visible columns, which
-                # includes visible virtual fields
-                selectable_columns = []
-                # like expcolumns but excluding virtual
                 for table in tables:
                     for field in table:
                         if field.readable and field.tablename in tablenames:
                             if not str(field) in expcolumns:
                                 expcolumns.append(str(field))
-                            if not(isinstance(field, Field.Virtual)):
-                                selectable_columns.append(str(field))
+                                if not(isinstance(field, Field.Virtual)):
+                                    selectable_columns.append(str(field))
                     # look for virtual fields not displayed (and virtual method
                     # fields to be added here?)
                     for (field_name, field) in iteritems(table):
@@ -2684,7 +2671,7 @@ class SQLFORM(FORM):
                         # the query should be constructed using searchable
                         # fields but not virtual fields
                         is_searchable = lambda f: f.readable and not isinstance(f, Field.Virtual) and f.searchable
-                        sfields = reduce(lambda a, b: a + b, [filter(is_searchable, t) for t in tables])
+                        sfields = reduce(lambda a, b: a + b, [list(filter(is_searchable, t)) for t in tables])
                         # use custom_query using searchable
                         if callable(searchable):
                             dbset = dbset(searchable(sfields, keywords))
@@ -2735,7 +2722,7 @@ class SQLFORM(FORM):
 
         if searchable:
             sfields = reduce(lambda a, b: a + b,
-                             [[f for f in t if f.readable] for t in tables])
+                             [[f for f in t if f.readable and f.searchable] for t in tables])
             if isinstance(search_widget, dict):
                 search_widget = search_widget[tablename]
             if search_widget == 'default':
@@ -2744,7 +2731,7 @@ class SQLFORM(FORM):
                 spanel_id = '%s_query_fields' % prefix
                 sfields_id = '%s_query_panel' % prefix
                 skeywords_id = '%s_keywords' % prefix
-                # hidden fields to presever keywords in url after the submit
+                # hidden fields to preserve keywords in url after the submit
                 hidden_fields = [INPUT(_type='hidden', _value=v, _name=k) for k, v in request.get_vars.items() if k not in ['keywords', 'page']]
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=keywords,
@@ -2760,14 +2747,17 @@ class SQLFORM(FORM):
             form = search_widget and search_widget(sfields, url()) or ''
             console.append(add)
             console.append(form)
-            try:
-                if callable(searchable):
-                    subquery = searchable(sfields, keywords)
-                else:
-                    subquery = SQLFORM.build_query(sfields, keywords)
-            except RuntimeError:
+            if keywords:
+                try:
+                    if callable(searchable):
+                        subquery = searchable(sfields, keywords)
+                    else:
+                        subquery = SQLFORM.build_query(sfields, keywords)
+                except RuntimeError:
+                    subquery = None
+                    error = T('Invalid query')
+            else:
                 subquery = None
-                error = T('Invalid query')
         else:
             subquery = None
 
@@ -2780,12 +2770,15 @@ class SQLFORM(FORM):
             error = T('Unsupported query')
 
         order = request.vars.order or ''
+        asc_icon, desc_icon = sorter_icons
         if sortable:
             if order and not order == 'None':
                 otablename, ofieldname = order.split('~')[-1].split('.', 1)
                 sort_field = db[otablename][ofieldname]
+                # invert order direction on date/time fields
                 exception = sort_field.type in ('date', 'datetime', 'time')
                 if exception:
+                    desc_icon, asc_icon = sorter_icons
                     orderby = (order[:1] == '~' and sort_field) or ~sort_field
                 else:
                     orderby = (order[:1] == '~' and ~sort_field) or sort_field
@@ -2794,30 +2787,30 @@ class SQLFORM(FORM):
         if selectable:
             headcols.append(TH(_class=ui.get('default')))
 
-        ordermatch, marker = orderby, ''
+        ordermatch = orderby; marker = ''
         if orderby:
             # if orderby is a single column, remember to put the marker
             if isinstance(orderby, Expression):
                 if orderby.first and not orderby.second:
-                    ordermatch, marker = orderby.first, '~'
+                    ordermatch = orderby.first; marker = '~'
         ordermatch = marker + str(ordermatch)
         for field in columns:
             if not field.readable:
                 continue
             key = str(field)
-            header = headers.get(str(field), field.label or key)
+            header = headers.get(key, field.label or key)
             if sortable and not isinstance(field, Field.Virtual):
                 marker = ''
                 if order:
                     if key == order:
-                        key, marker = '~' + order, sorter_icons[0]
+                        key = '~' + order; marker = asc_icon
                     elif key == order[1:]:
-                        marker = sorter_icons[1]
+                        key = 'None'; marker = desc_icon
                 else:
                     if key == ordermatch:
-                        key, marker = '~' + ordermatch, sorter_icons[0]
+                        key = '~' + ordermatch; marker = asc_icon
                     elif key == ordermatch[1:]:
-                        marker = sorter_icons[1]
+                        marker = desc_icon
                 header = A(header, marker, _href=url(vars=dict(
                     keywords=keywords,
                     order=key)), cid=request.cid)
@@ -2939,7 +2932,7 @@ class SQLFORM(FORM):
                 paginator.append(LI(self_link('<<', 0)))
             if page > NPAGES:
                 paginator.append(LI(self_link('<', page - 1)))
-            pages = range(max(0, page - NPAGES), min(page + NPAGES, npages))
+            pages = list(range(max(0, page - NPAGES), min(page + NPAGES, npages)))
             for p in pages:
                 if p == page:
                     paginator.append(LI(A(p + 1, _onclick='return false'),
@@ -3092,7 +3085,7 @@ class SQLFORM(FORM):
                 if formstyle == 'bootstrap':
                     # add space between buttons
                     htmltable = FORM(htmltable, DIV(_class='form-actions', *inputs))
-                elif 'bootstrap' in formstyle : # Same for bootstrap 3 & 4
+                elif not callable(formstyle) and 'bootstrap' in formstyle: # Same for bootstrap 3 & 4
                      htmltable = FORM(htmltable, DIV(_class='form-group web2py_table_selectable_actions', *inputs))
                 else:
                     htmltable = FORM(htmltable, *inputs)
@@ -3126,7 +3119,7 @@ class SQLFORM(FORM):
                 link = url2(vars=dict(
                     order=request.vars.order or '',
                     _export_type=k,
-                    keywords=keywords or ''))
+                    keywords=keywords))
                 export_links.append(A(T(label), _href=link, _title=title, _class='btn btn-default btn-secondary'))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
@@ -3291,6 +3284,8 @@ class SQLFORM(FORM):
             if isinstance(kwargs.get(key, None), dict):
                 if table._tablename in kwargs[key]:
                     kwargs[key] = kwargs[key][table._tablename]
+                elif '*' in kwargs[key]:
+                    kwargs[key] = kwargs[key]['*']
                 else:
                     del kwargs[key]
         check = {}
@@ -3427,16 +3422,22 @@ class SQLTABLE(TABLE):
         (components, row) = (self.components, [])
         if not sqlrows:
             return
-        REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
-        fieldmap = dict(zip(sqlrows.colnames, sqlrows.fields))
-        tablemap = dict(((f.tablename, f.table) if isinstance(f, Field) else (f._table._tablename, f._table) for f in fieldmap.values()))
-        for table in tablemap.values():
-            pref = table._tablename + '.'
-            fieldmap.update(((pref+f.name, f) for f in table._virtual_fields))
-            fieldmap.update(((pref+f.name, f) for f in table._virtual_methods))
-        field_types = (Field, Field.Virtual, Field.Method)
-        if not columns:
+        fieldlist = sqlrows.colnames_fields
+        fieldmap = dict(zip(sqlrows.colnames, fieldlist))
+        if columns:
+            tablenames = []
+            for colname, field in fieldmap.items():
+                if isinstance(field, (Field, Field.Virtual)):
+                    tablenames.append(field.tablename)
+                elif isinstance(field, Expression):
+                    tablenames.append(field._table._tablename)
+            for tablename in set(tablenames):
+                table = sqlrows.db[tablename]
+                fieldmap.update((("%s.%s" % (tablename, f.name), f) for f in table._virtual_fields + table._virtual_methods))
+        else:
             columns = list(sqlrows.colnames)
+        field_types = (Field, Field.Virtual, Field.Method)
+
         header_func = {
             'fieldname:capitalize': lambda f: f.name.replace('_', ' ').title(),
             'labels': lambda f: f.label
@@ -3709,7 +3710,7 @@ class ExporterTSV(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self):  # export TSV with rows.represent
+    def export(self):  # export TSV with field.represent
         if self.rows:
             s = StringIO()
             self.rows.export_to_csv_file(s, represent=True,delimiter='\t',newline='\n')
@@ -3726,7 +3727,7 @@ class ExporterTSV_hidden(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self):  # export TSV with rows.represent
+    def export(self):
         if self.rows:
             s = StringIO()
             self.rows.export_to_csv_file(s,delimiter='\t',newline='\n')
@@ -3744,7 +3745,7 @@ class ExporterCSV(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self):  # export CSV with rows.represent
+    def export(self):  # export CSV with field.represent
         if self.rows:
             s = StringIO()
             self.rows.export_to_csv_file(s, represent=True)

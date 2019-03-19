@@ -22,7 +22,7 @@ logger = logging.getLogger("web2py.cache.redis")
 locker = Lock()
 
 
-def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=False, db=None):
+def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=False, db=None, application=None):
     """
     Usage example: put in models::
 
@@ -47,6 +47,8 @@ def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=Fa
             When True, only one thread/process can set a value concurrently
         fail_gracefully: if redis is unavailable, returns the value computing it
             instead of raising an exception
+        application: if provided, it is used to construct the instance_name,
+            allowing to share cache between different applications if needed
 
     It can be used pretty much the same as cache.ram()
     When you use cache.redis directly you can use :
@@ -83,11 +85,14 @@ def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=Fa
 
     locker.acquire()
     try:
-        instance_name = 'redis_instance_' + current.request.application
+        if application is None:
+            application = current.request.application
+        instance_name = 'redis_instance_' + application
         if not hasattr(RedisCache, instance_name):
             setattr(RedisCache, instance_name,
                     RedisClient(redis_conn=redis_conn, debug=debug,
-                                with_lock=with_lock, fail_gracefully=fail_gracefully))
+                                with_lock=with_lock, fail_gracefully=fail_gracefully,
+                                application=application))
         return getattr(RedisCache, instance_name)
     finally:
         locker.release()
@@ -100,14 +105,15 @@ class RedisClient(object):
     RETRIES = 0
 
     def __init__(self, redis_conn=None, debug=False,
-                 with_lock=False, fail_gracefully=False):
+                 with_lock=False, fail_gracefully=False, application=None):
         self.request = current.request
         self.debug = debug
         self.with_lock = with_lock
         self.fail_gracefully = fail_gracefully
-        self.prefix = "w2p:cache:%s:" % self.request.application
+        self.application = application or current.request.application
+        self.prefix = "w2p:cache:%s:" % self.application
         if self.request:
-            app = self.request.application
+            app = self.application
         else:
             app = ''
 
@@ -120,7 +126,7 @@ class RedisClient(object):
         else:
             self.storage = self.meta_storage[app]
 
-        self.cache_set_key = 'w2p:%s:___cache_set' % self.request.application
+        self.cache_set_key = 'w2p:%s:___cache_set' % self.application
 
         self.r_server = redis_conn
         self._release_script = register_release_lock(self.r_server)
@@ -276,8 +282,7 @@ class RedisClient(object):
             )
         stats_collector['w2p_keys'] = dict()
 
-        for a in self.r_server.keys("w2p:%s:*" % (
-                self.request.application)):
+        for a in self.r_server.keys("w2p:%s:*" % self.application):
             stats_collector['w2p_keys']["%s_expire_in_sec" % a] = self.r_server.ttl(a)
         return stats_collector
 

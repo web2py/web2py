@@ -15,7 +15,6 @@ routes.py supports two styles of URL rewriting, depending on whether 'routers' i
 Refer to router.example.py and routes.example.py for additional documentation.
 
 """
-from __future__ import print_function
 
 import os
 import re
