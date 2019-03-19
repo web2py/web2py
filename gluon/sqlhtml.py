@@ -2970,12 +2970,12 @@ class SQLFORM(FORM):
                         continue
                     elif field.type == 'blob' and not showblobs:
                         continue
-                    if isinstance(field, Field.Virtual) and field.tablename in row:
+                    if isinstance(field, Field.Virtual):
                         try:
                             # fast path, works for joins
                             value = row[field.tablename][field.name]
                         except KeyError:
-                            value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
+                            value = dbset.db[field.tablename][row[field_id]][field.name]
                     else:
                         value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
