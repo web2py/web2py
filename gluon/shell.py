@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -20,7 +19,6 @@ import copy
 import logging
 import types
 import re
-import optparse
 import glob
 import traceback
 import gluon.fileutils as fileutils
@@ -278,7 +276,7 @@ def run(
 
             if import_models:
                 BaseAdapter.close_all_instances('commit')
-        except Exception as e:
+        except:
             print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
@@ -287,7 +285,7 @@ def run(
             exec(python_code, _env)
             if import_models:
                 BaseAdapter.close_all_instances('commit')
-        except Exception as e:
+        except:
             print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
@@ -432,75 +430,3 @@ def test(testpath, import_models=True, verbose=False):
         for (name, obj) in globs.items():
             if name not in ignores and (f is None or f == name):
                 doctest_object(name, obj)
-
-
-def get_usage():
-    usage = """
-  %prog [options] pythonfile
-"""
-    return usage
-
-
-def execute_from_command_line(argv=None):
-    if argv is None:
-        argv = sys.argv
-
-    parser = optparse.OptionParser(usage=get_usage())
-
-    parser.add_option('-S', '--shell', dest='shell', metavar='APPNAME',
-                      help='run web2py in interactive shell ' +
-                      'or IPython(if installed) with specified appname')
-    msg = 'run web2py in interactive shell or bpython (if installed) with'
-    msg += ' specified appname (if app does not exist it will be created).'
-    msg += '\n Use combined with --shell'
-    parser.add_option(
-        '-B',
-        '--bpython',
-        action='store_true',
-        default=False,
-        dest='bpython',
-        help=msg,
-    )
-    parser.add_option(
-        '-P',
-        '--plain',
-        action='store_true',
-        default=False,
-        dest='plain',
-        help='only use plain python shell, should be used with --shell option',
-    )
-    parser.add_option(
-        '-M',
-        '--import_models',
-        action='store_true',
-        default=False,
-        dest='import_models',
-        help='auto import model files, default is False, ' +
-        ' should be used with --shell option',
-    )
-    parser.add_option(
-        '-R',
-        '--run',
-        dest='run',
-        metavar='PYTHON_FILE',
-        default='',
-        help='run PYTHON_FILE in web2py environment, ' +
-        'should be used with --shell option',
-    )
-
-    (options, args) = parser.parse_args(argv[1:])
-
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(0)
-
-    if len(args) > 0:
-        startfile = args[0]
-    else:
-        startfile = ''
-    run(options.shell, options.plain, startfile=startfile,
-        bpython=options.bpython)
-
-
-if __name__ == '__main__':
-    execute_from_command_line()
