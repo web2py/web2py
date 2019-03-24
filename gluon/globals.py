@@ -836,7 +836,6 @@ class Session(Storage):
             compression_level(int): 0-9, sets zlib compression on the data
                 before the encryption
         """
-        from gluon.dal import Field
         request = request or current.request
         response = response or current.response
         masterapp = masterapp or request.application
@@ -927,7 +926,7 @@ class Session(Storage):
         elif response.session_storage_type == 'db':
             if global_settings.db_sessions is not True:
                 global_settings.db_sessions.add(masterapp)
-            # if had a session on file alreday, close it (yes, can happen)
+            # if had a session on file already, close it (yes, can happen)
             if response.session_file:
                 self._close(response)
             # if on GAE tickets go also in DB
@@ -939,7 +938,7 @@ class Session(Storage):
                 table_migrate = False
             tname = tablename + '_' + masterapp
             table = db.get(tname, None)
-            # Field = db.Field
+            Field = db.Field
             if table is None:
                 db.define_table(
                     tname,
