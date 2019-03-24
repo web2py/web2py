@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -808,7 +807,7 @@ def console():
                       '--run',
                       dest='run',
                       metavar='PYTHON_FILE',
-                      default='',
+                      default='', # NOTE: used for sys.argv[0] if --shell
                       help=msg)
 
     msg = ('run scheduled tasks for the specified apps: expects a list of '
@@ -945,7 +944,7 @@ def console():
         k = len(sys.argv)
     sys.argv, other_args = sys.argv[:k], sys.argv[k + 1:]
     (options, args) = parser.parse_args()
-    options.args = [options.run] + other_args
+    options.args = other_args
 
     copy_options = copy.deepcopy(options)
     copy_options.password = '******'
@@ -1147,8 +1146,7 @@ def start(cron=True):
     if options.shell:
         if options.folder:
             os.chdir(options.folder)
-        if not options.args is None:
-            sys.argv[:] = options.args
+        sys.argv = [options.run] + options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
             import_models=options.import_models, startfile=options.run,
             cronjob=options.cronjob)
