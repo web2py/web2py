@@ -190,8 +190,7 @@ def rangetolist(s, period='min'):
             s = s.replace('*', '1-12', 1)
         elif period == 'dow':
             s = s.replace('*', '0-6', 1)
-    m = re.compile(r'(\d+)-(\d+)/(\d+)')
-    match = m.match(s)
+    match = re.match(r'(\d+)-(\d+)/(\d+)', s)
     if match:
         for i in range(int(match.group(1)), int(match.group(2)) + 1):
             if i % int(match.group(3)) == 0:
