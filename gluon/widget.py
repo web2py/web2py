@@ -70,7 +70,7 @@ def run_system_tests(options):
             import coverage
         except:
             sys.stderr.write('Coverage was not installed\n')
-            sys.exit(256)
+            sys.exit(1)
     if not PY2:
         sys.stderr.write('Experimental ')
     sys.stderr.write("Python %s\n" % sys.version)
