@@ -54,33 +54,38 @@ def run_system_tests(options):
     """
     Runs unittests for gluon.tests
     """
-    import subprocess
-    major_version = sys.version_info[0]
-    call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
-    if major_version == 2:
-        sys.stderr.write("Python 2.7\n")
-    else:
-        sys.stderr.write("Experimental Python 3.x.\n")
+    # see "python -m unittest -h" for unittest options help
+    # NOTE: someone might be interested either in using the
+    #       -f (--failfast) option to stop testing on first failure, or
+    #       in customizing the test selection, for example to run only
+    #       'gluon.tests.<module>', 'gluon.tests.<module>.<class>' (this
+    #       could be shortened as 'gluon.tests.<class>'), or even
+    #       'gluon.tests.<module>.<class>.<method>' (or
+    #       the shorter 'gluon.tests.<class>.<method>')
+    call_args = ['-m', 'unittest', '-c', 'gluon.tests']
+    if options.verbose:
+        call_args.insert(-1, '-v')
     if options.with_coverage:
-        has_coverage = False
-        coverage_exec = 'coverage2' if major_version == 2 else 'coverage3'
         try:
             import coverage
-            has_coverage = True
         except:
-            sys.stderr.write('Coverage was not installed, skipping\n')
+            sys.stderr.write('Coverage was not installed\n')
+            sys.exit(256)
+    if not PY2:
+        sys.stderr.write('Experimental ')
+    sys.stderr.write("Python %s\n" % sys.version)
+    if options.with_coverage:
+        coverage_exec = 'coverage2' if PY2 else 'coverage3'
         coverage_config_file = os.path.join('gluon', 'tests', 'coverage.ini')
         coverage_config = os.environ.setdefault("COVERAGE_PROCESS_START",
                                                 coverage_config_file)
-        call_args = [coverage_exec, 'run', '--rcfile=%s' %
-                     coverage_config, '-m', 'unittest', '-v', 'gluon.tests']
-        if has_coverage:
-            ret = subprocess.call(call_args)
-        else:
-            ret = 256
+        run_args = [coverage_exec, 'run', '--rcfile=%s' % coverage_config]
+        # replace the current process
+        os.execvpe(run_args[0], run_args + call_args, os.environ)
     else:
-        ret = subprocess.call(call_args)
-    sys.exit(ret and 1)
+        run_args = [sys.executable]
+        # replace the current process
+        os.execv(run_args[0], run_args + call_args)
 
 
 class IO(object):
@@ -1012,7 +1017,7 @@ def console():
                 options.interfaces.append(tuple(interface))
 
     #  accepts --scheduler in the form
-    #  "app:group1,group2,app2:group1"
+    #  "app:group1:group2,app2:group1"
     scheduler = []
     options.scheduler_groups = None
     if isinstance(options.scheduler, str):
