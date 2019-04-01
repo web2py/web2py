@@ -357,7 +357,7 @@ def wsgibase(environ, responder):
 
                 request.update(
                     client=client,
-                    folder=abspath('applications', app) + os.sep,
+                    folder=abspath('applications', app),
                     ajax=x_req_with == 'xmlhttprequest',
                     cid=env.http_web2py_component_element,
                     is_local=(env.remote_addr in local_hosts and client == env.remote_addr),
