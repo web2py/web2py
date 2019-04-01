@@ -9,7 +9,6 @@ The widget is called from web2py
 ----------------------------------
 """
 
-import datetime
 import sys
 from gluon._compat import StringIO, thread, xrange, PY2
 import time
@@ -23,7 +22,6 @@ import logging
 import getpass
 from gluon import main, newcron
 
-
 from gluon.fileutils import read_file, write_file, create_welcome_w2p
 from gluon.settings import global_settings
 from gluon.shell import run, test
@@ -35,17 +33,13 @@ if PY2:
 
 ProgramName = 'web2py Web Framework'
 ProgramAuthor = 'Created by Massimo Di Pierro, Copyright 2007-' + str(
-    datetime.datetime.now().year)
-ProgramVersion = read_file('VERSION').strip()
+    time.localtime().tm_year)
+ProgramVersion = read_file('VERSION').rstrip()
 
-ProgramInfo = '''%s
-                 %s
-                 %s''' % (ProgramName, ProgramAuthor, ProgramVersion)
-
-if sys.version_info < (2, 7) and (3, 0) < sys.version_info < (3, 5):
-    msg = 'Warning: web2py requires at least Python 2.7/3.5 but you are running:\n%s'
-    msg = msg % sys.version
-    sys.stderr.write(msg)
+if sys.version_info < (2, 7) or (3, 0) < sys.version_info < (3, 5):
+    from platform import python_version
+    sys.stderr.write("Warning: web2py requires at least Python 2.7/3.5"
+        " but you are running %s\n" % python_version())
 
 logger = logging.getLogger("web2py")
 
@@ -86,24 +80,6 @@ def run_system_tests(options):
         run_args = [sys.executable]
         # replace the current process
         os.execv(run_args[0], run_args + call_args)
-
-
-class IO(object):
-    """   """
-
-    def __init__(self):
-        """   """
-
-        self.buffer = StringIO()
-
-    def write(self, data):
-        """   """
-
-        sys.__stdout__.write(data)
-        if hasattr(self, 'callback'):
-            self.callback(data)
-        else:
-            self.buffer.write(data)
 
 
 def get_url(host, path='/', proto='http', port=80):
@@ -191,6 +167,9 @@ class web2pyDialog(object):
                              command=item)
 
         # About
+        ProgramInfo = """%s
+                 %s
+                 %s""" % (ProgramName, ProgramAuthor, ProgramVersion)
         item = lambda: messagebox.showinfo('About web2py', ProgramInfo)
         helpmenu.add_command(label='About',
                              command=item)
