@@ -23,6 +23,7 @@ from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
 from gluon.fileutils import mktree, listdir, read_file, write_file
+from gluon.myregex import regex_expose, regex_longcomments
 from gluon.languages import TranslatorFactory
 from gluon.dal import DAL, Field
 from gluon.validators import Validator
@@ -44,7 +45,6 @@ from functools import reduce
 from gluon import rewrite
 from gluon.custom_import import custom_import_install
 import py_compile
-import ast
 
 logger = logging.getLogger("web2py")
 
@@ -517,8 +517,8 @@ def compile_models(folder):
 
 
 def find_exposed_functions(data):
-    parsed = ast.parse(data)
-    return [n.name for n in ast.walk(parsed) if type(n) == ast.FunctionDef and len(n.args.args) == 0 and n.args.kwarg is None]
+    data = regex_longcomments.sub('', data)
+    return regex_expose.findall(data)
 
 
 def compile_controllers(folder):
