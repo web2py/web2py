@@ -145,7 +145,8 @@ class MockTable(object):
             pipe.sadd(self.id_idx, key)
             # set a hash key with the Storage
             kwargs.pop('locked', None)  # remove the 'locked' key from kwargs - not needed for redis
-            kwargs['modified_datetime'] = str(kwargs['modified_datetime'])
+            if 'modified_datetime' in kwargs:
+                kwargs['modified_datetime'] = str(kwargs['modified_datetime'])
             pipe.hmset(key, kwargs)
             if self.session_expiry:
                 pipe.expire(key, self.session_expiry)
@@ -223,7 +224,8 @@ class MockQuery(object):
                 return None
             with self.db.r_server.pipeline() as pipe:
                 kwargs.pop('locked', None)  # remove the 'locked' key from kwargs - not needed for redis
-                kwargs['modified_datetime'] = str(kwargs['modified_datetime'])
+                if 'modified_datetime' in kwargs:
+                    kwargs['modified_datetime'] = str(kwargs['modified_datetime'])
                 pipe.hmset(key, kwargs)
                 if self.session_expiry:
                     pipe.expire(key, self.session_expiry)
