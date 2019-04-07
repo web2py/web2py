@@ -63,9 +63,8 @@ def custom_importer(name, globals={}, locals=None, fromlist=(), level=_DEFAULT_L
             base_importer = TRACK_IMPORTER
         else:
             base_importer = NATIVE_IMPORTER
-        items = current.request.folder.split(os.path.sep)
-        # FIXME: why does request.folder endswith(os.path.sep) ?
-        if not items[-1]: items.pop()
+        # rstrip for backward compatibility
+        items = current.request.folder.rstrip(os.sep).split(os.sep)
         modules_prefix = '.'.join(items[-2:]) + '.modules'
         if not fromlist:
             # "import x" or "import x.y"
@@ -77,8 +76,8 @@ def custom_importer(name, globals={}, locals=None, fromlist=(), level=_DEFAULT_L
                 if result is None:
                     try:
                         result = sys.modules[modules_prefix]
-                    except KeyError as e:
-                        raise ImportError("No module named %s" % e)
+                    except KeyError:
+                        raise ImportError("No module named %s" % modules_prefix)
             return result
         else:
             # "from x import a, b, ..."
