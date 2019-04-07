@@ -2665,11 +2665,7 @@ class SQLFORM(FORM):
                 if order and not order == 'None':
                     otablename, ofieldname = order.split('~')[-1].split('.', 1)
                     sort_field = db[otablename][ofieldname]
-                    exception = sort_field.type in ('date', 'datetime', 'time')
-                    if exception:
-                        orderby = (order[:1] == '~' and sort_field) or ~sort_field
-                    else:
-                        orderby = (order[:1] == '~' and ~sort_field) or sort_field
+                    orderby = sort_field if order[:1] != '~' else ~sort_field
 
             orderby = fix_orderby(orderby)
 
@@ -2803,12 +2799,7 @@ class SQLFORM(FORM):
                 otablename, ofieldname = order.split('~')[-1].split('.', 1)
                 sort_field = db[otablename][ofieldname]
                 # invert order direction on date/time fields
-                exception = sort_field.type in ('date', 'datetime', 'time')
-                if exception:
-                    desc_icon, asc_icon = sorter_icons
-                    orderby = (order[:1] == '~' and sort_field) or ~sort_field
-                else:
-                    orderby = (order[:1] == '~' and ~sort_field) or sort_field
+                orderby = sort_field if order[:1] != '~' else ~sort_field
 
         headcols = []
         if selectable:
