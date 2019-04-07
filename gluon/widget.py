@@ -603,8 +603,8 @@ web2py will attempt to run a GUI to ask for it
 
     parser.add_option('-G', '--GAE', dest='gae',
                       default=None,
-                      help=\
-      "'-G {app-name}' will create app.yaml and gaehandler.py")
+                      metavar='APP_NAME', help=\
+      "will create app.yaml and gaehandler.py")
 
     parser.add_option('-a', '--password',
                       default='<ask>',
@@ -672,7 +672,7 @@ web2py will attempt to run a GUI to ask for it
     parser.add_option('--socket-timeout', dest='socket_timeout', # not needed
                       default=5,
                       type='int',
-                      help='timeout for socket (%default second)')
+                      help='timeout for socket (%default seconds)')
 
     parser.add_option('-f', '--folder',
                       default=os.getcwd(),
@@ -756,8 +756,8 @@ web2py will attempt to run a GUI to ask for it
         'TEST_PATH like a/c/f (c,f optional)')
 
     parser.add_option('-C', '--cron', dest='extcron',
-                      action='store_true',
                       default=False,
+                      action='store_true',
                       help=\
         'trigger a cron run manually; usually invoked from a system crontab')
 
