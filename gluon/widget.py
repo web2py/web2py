@@ -618,7 +618,7 @@ def console():
                       '--GAE',
                       default=None,
                       dest='gae',
-                      help="'-G configure' will create app.yaml and gaehandler.py")
+                      help="'-G {gae app name}' will create app.yaml and gaehandler.py")
 
     msg = ('password to be used for administration '
            '(use -a "<recycle>" to reuse the last password))')
@@ -937,7 +937,9 @@ def console():
 
     if options.gae:
         if not os.path.exists('app.yaml'):
-            name = input("Your GAE app name: ")
+            name = options.gae
+            if name == 'configure':
+                name = input("Your GAE app name: ")
             content = open(os.path.join('examples', 'app.example.yaml'), 'rb').read()
             open('app.yaml', 'wb').write(content.replace("yourappname", name))
         else:
