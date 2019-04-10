@@ -1,5 +1,5 @@
 ## 2.18.1-2.18.5
-- pydal 19.02
+- pydal 19.04
 - made template its own module (Yet Another Template Language)
 - improved python 3.4-3.7 support
 - better regular expressions

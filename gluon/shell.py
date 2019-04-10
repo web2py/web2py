@@ -193,6 +193,13 @@ def exec_pythonrc():
     return dict()
 
 
+def die(msg, exit_status=1, error_preamble=True):
+    if error_preamble:
+        msg = "%s: error: %s" % (sys.argv[0], msg)
+    print(msg, file=sys.stderr)
+    sys.exit(exit_status)
+
+
 def run(
     appname,
     plain=False,
@@ -212,7 +219,7 @@ def run(
     (a, c, f, args, vars) = parse_path_info(appname, av=True)
     errmsg = 'invalid application name: %s' % appname
     if not a:
-        die(errmsg)
+        die(errmsg, error_preamble=False)
     adir = os.path.join('applications', a)
 
     if not os.path.exists(adir):
@@ -258,7 +265,7 @@ def run(
         elif os.path.isfile(pyfile):
             execfile(pyfile, _env)
         else:
-            die(errmsg)
+            die(errmsg, error_preamble=False)
 
     if f:
         exec('print( %s())' % f, _env)
@@ -356,11 +363,6 @@ def parse_path_info(path_info, av=False):
         return (mo.group('a'), mo.group('c'), mo.group('f'))
     else:
         return (None, None, None)
-
-
-def die(msg):
-    print(msg, file=sys.stderr)
-    sys.exit(1)
 
 
 def test(testpath, import_models=True, verbose=False):

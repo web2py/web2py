@@ -24,11 +24,8 @@ from gluon import main, newcron
 
 from gluon.fileutils import read_file, write_file, create_welcome_w2p
 from gluon.settings import global_settings
-from gluon.shell import run, test
+from gluon.shell import die, run, test
 from gluon.utils import is_valid_ip_address, is_loopback_ip_address, getipaddrinfo
-
-if PY2:
-    input = raw_input
 
 
 ProgramName = 'web2py Web Framework'
@@ -63,8 +60,7 @@ def run_system_tests(options):
         try:
             import coverage
         except:
-            sys.stderr.write('Coverage was not installed\n')
-            sys.exit(1)
+            die('Coverage not installed')
     if not PY2:
         sys.stderr.write('Experimental ')
     sys.stderr.write("Python %s\n" % sys.version)
@@ -342,7 +338,7 @@ class web2pyDialog(object):
         try:
             from multiprocessing import Process
         except:
-            sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
+            sys.stderr.write('Sorry, -K only supported for Python 2.6+\n')
             return
         code = "from gluon.globals import current;current._scheduler.loop()"
         print('starting scheduler from widget for "%s"...' % app)
@@ -597,14 +593,15 @@ web2py will attempt to run a GUI to ask for it
         'Note: This value is ignored when using the --interfaces option')
 
     parser.add_option('-p', '--port',
-                      default='8000',
-                      type='int',
-                      help='port of server (%default)')
+                      default=8000,
+                      type='int', help=\
+        'port of server (%default); ' \
+        'Note: This value is ignored when using the --interfaces option')
 
     parser.add_option('-G', '--GAE', dest='gae',
                       default=None,
                       metavar='APP_NAME', help=\
-      "will create app.yaml and gaehandler.py")
+        'will create app.yaml and gaehandler.py and exit')
 
     parser.add_option('-a', '--password',
                       default='<ask>',
@@ -836,34 +833,21 @@ web2py will attempt to run a GUI to ask for it
         k = len(sys.argv)
     sys.argv, other_args = sys.argv[:k], sys.argv[k + 1:]
     (options, args) = parser.parse_args()
+    # TODO: warn or error if args (should be no unparsed arguments)
     options.args = other_args
 
     if options.config.endswith('.py'):
         options.config = options.config[:-3]
-
-    # TODO: process --config here; now is done in start function, too late
-
-    copy_options = copy.deepcopy(options)
-    copy_options.password = '******'
-    global_settings.cmd_options = copy_options
-    global_settings.cmd_args = args
-
-    if options.gae:
-        if not os.path.exists('app.yaml'):
-            name = options.gae
-            # for backward compatibility
-            if name == 'configure':
-                name = input("Your GAE app name: ")
-            content = open(os.path.join('examples', 'app.example.yaml'), 'rb').read()
-            open('app.yaml', 'wb').write(content.replace("yourappname", name))
-        else:
-            print("app.yaml alreday exists in the web2py folder")
-        if not os.path.exists('gaehandler.py'):
-            content = open(os.path.join('handlers', 'gaehandler.py'), 'rb').read()
-            open('gaehandler.py', 'wb').write(content)
-        else:
-            print("gaehandler.py alreday exists in the web2py folder")
-        sys.exit(0)
+    if options.config:
+        # import options from options.config file
+        try:
+            # FIXME: avoid __import__
+            options2 = __import__(options.config)
+        except:
+            die("cannot import config file %s" % options.config)
+        for key in dir(options2):
+            if hasattr(options, key):
+                setattr(options, key, getattr(options2, key))
 
     try:
         options.ips = list(set(  # no duplicates
@@ -872,29 +856,15 @@ web2py will attempt to run a GUI to ask for it
     except socket.gaierror:
         options.ips = []
 
-    # FIXME: this should be done after create_welcome_w2p
-    if options.run_system_tests:
-        # run system test and exit
-        run_system_tests(options)
-
-    if options.quiet:
-        capture = StringIO()
-        sys.stdout = capture
-        logger.setLevel(logging.CRITICAL + 1)
-    else:
-        logger.setLevel(options.debuglevel)
-
     if options.cronjob:
         global_settings.cronjob = True  # tell the world
         options.plain = True    # cronjobs use a plain shell
         options.nobanner = True
         options.nogui = True
 
-    options.folder = os.path.abspath(options.folder)
-
     #  accept --interfaces in the form
     #  "ip1:port1:key1:cert1:ca_cert1;[ip2]:port2;ip3:port3:key3:cert3"
-    #  (no spaces; optional key:cert indicate SSL)
+    #  (no spaces; optional key:cert:ca_cert indicate SSL)
     if isinstance(options.interfaces, str):
         interfaces = options.interfaces.split(';')
         options.interfaces = []
@@ -925,13 +895,11 @@ web2py will attempt to run a GUI to ask for it
     if options.numthreads is not None and options.minthreads is None:
         options.minthreads = options.numthreads  # legacy
 
-    create_welcome_w2p()
-
+    copy_options = copy.deepcopy(options)
+    copy_options.password = '******'
+    global_settings.cmd_options = copy_options
     # FIXME: do we still really need this?
-    if not options.cronjob:
-        # If we have the applications package or if we should upgrade
-        if not os.path.exists('applications/__init__.py'):
-            write_file('applications/__init__.py', '')
+    global_settings.cmd_args = args
 
     return options, args
 
@@ -959,7 +927,7 @@ def start_schedulers(options):
     try:
         from multiprocessing import Process
     except:
-        sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
+        sys.stderr.write('Sorry, -K only supported for Python 2.6+\n')
         return
     processes = []
     apps = [(app.strip(), None) for app in options.scheduler.split(',')]
@@ -1013,19 +981,37 @@ def start(cron=True):
     # get command line arguments
     (options, args) = console()
 
-    # FIXME: this should be anticipated in console()
-    if options.config:
-        # import options from options.config file
-        try:
-            options2 = __import__(options.config)
-        except:
-            sys.stderr.write("Cannot import config file %s\n" % options.config)
-            sys.exit(1)
-        for key in dir(options2):
-            # FIXME: better import condition, not all options attributes
-            #        should be sourced from config file
-            if hasattr(options, key):
-                setattr(options, key, getattr(options2, key))
+    if options.gae:
+        # write app.yaml, gaehandler.py, and exit
+        if not os.path.exists('app.yaml'):
+            name = options.gae
+            # for backward compatibility
+            if name == 'configure':
+                if PY2: input = raw_input
+                name = input("Your GAE app name: ")
+            content = open(os.path.join('examples', 'app.example.yaml'), 'rb').read()
+            open('app.yaml', 'wb').write(content.replace("yourappname", name))
+        else:
+            print("app.yaml alreday exists in the web2py folder")
+        if not os.path.exists('gaehandler.py'):
+            content = open(os.path.join('handlers', 'gaehandler.py'), 'rb').read()
+            open('gaehandler.py', 'wb').write(content)
+        else:
+            print("gaehandler.py alreday exists in the web2py folder")
+        return
+
+    create_welcome_w2p()
+
+    if options.run_system_tests:
+        # run system test and exit
+        run_system_tests(options)
+
+    if options.quiet:
+        capture = StringIO()
+        sys.stdout = capture
+        logger.setLevel(logging.CRITICAL + 1)
+    else:
+        logger.setLevel(options.debuglevel)
 
     if not options.nobanner:
         # banner
@@ -1089,8 +1075,7 @@ def start(cron=True):
 
     # FIXME: this check should be done first
     if options.taskbar and os.name != 'nt':
-        sys.stderr.write('Error: taskbar not supported on this platform\n')
-        sys.exit(1)
+        die('taskbar not supported on this platform')
 
     root = None
 
@@ -1153,7 +1138,7 @@ end tell
     # interfaces option overrides the IP (and related) options.
     if not options.interfaces:
         ip = options.ip
-        port = int(options.port)
+        port = options.port
     else:
         first_if = options.interfaces[0]
         ip = first_if[0]
