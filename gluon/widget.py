@@ -941,8 +941,6 @@ def start_schedulers(options):
         [(app.strip(), None) for app in options.scheduler.split(',')]
     code = "from gluon.globals import current;current._scheduler.loop()"
     logging.getLogger().setLevel(options.debuglevel)
-    if options.folder:
-        os.chdir(options.folder)
     if len(apps) == 1 and not options.with_scheduler:
         app_, code = get_code_for_scheduler(apps[0], options)
         if not app_:
@@ -1049,8 +1047,6 @@ def start(cron=True):
 
     if options.shell:
         # run interactive shell and exit
-        if options.folder:
-            os.chdir(options.folder)
         sys.argv = [options.run] + options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
             import_models=options.import_models, startfile=options.run,
