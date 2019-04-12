@@ -1022,12 +1022,12 @@ def start(cron=True):
         # streaming on sys.stdout or sys.stderr
         loggers = [logging.getLogger()]
         loggers.extend(logging.Logger.manager.loggerDict.values())
-        for logger in loggers:
-            if isinstance(logger, logging.PlaceHolder): continue
-            for h in logger.handlers[:]:
+        for l in loggers:
+            if isinstance(l, logging.PlaceHolder): continue
+            for h in l.handlers[:]:
                 if isinstance(h, logging.StreamHandler) and \
                     h.stream in (sys.stdout, sys.stderr):
-                    logger.removeHandler(h)
+                    l.removeHandler(h)
         # NOTE: stderr.write() is still working
 
     logger.setLevel(options.debuglevel)
