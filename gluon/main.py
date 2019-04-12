@@ -55,7 +55,6 @@ web2py_path = global_settings.applications_parent  # backward compatibility
 create_missing_folders()
 
 # set up logging for subsequent imports
-import logging
 import logging.config
 
 # This needed to prevent exception on Python 2.5:
@@ -765,8 +764,8 @@ class HttpServer(object):
                                     app_info=app_info,
                                     min_threads=min_threads,
                                     max_threads=max_threads,
-                                    queue_size=int(request_queue_size),
-                                    timeout=int(timeout),
+                                    queue_size=request_queue_size,
+                                    timeout=timeout,
                                     handle_signals=False,
                                     )
 
