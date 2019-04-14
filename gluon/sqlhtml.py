@@ -2666,7 +2666,7 @@ class SQLFORM(FORM):
                     otablename, ofieldname = order.split('~')[-1].split('.', 1)
                     sort_field = db[otablename][ofieldname]
                     orderby = sort_field if order[:1] != '~' else ~sort_field
-
+                    
             orderby = fix_orderby(orderby)
 
             # expcolumns start with the visible columns, which
@@ -2798,20 +2798,12 @@ class SQLFORM(FORM):
             if order and not order == 'None':
                 otablename, ofieldname = order.split('~')[-1].split('.', 1)
                 sort_field = db[otablename][ofieldname]
-                # invert order direction on date/time fields
                 orderby = sort_field if order[:1] != '~' else ~sort_field
 
         headcols = []
         if selectable:
             headcols.append(TH(_class=ui.get('default')))
 
-        ordermatch = orderby; marker = ''
-        if orderby:
-            # if orderby is a single column, remember to put the marker
-            if isinstance(orderby, Expression):
-                if orderby.first and not orderby.second:
-                    ordermatch = orderby.first; marker = '~'
-        ordermatch = marker + str(ordermatch)
         for field in columns:
             if not field.readable:
                 continue
@@ -2819,19 +2811,23 @@ class SQLFORM(FORM):
             header = headers.get(key, field.label or key)
             if sortable and not isinstance(field, Field.Virtual):
                 marker = ''
-                if order:
-                    if key == order:
-                        key = '~' + order; marker = asc_icon
-                    elif key == order[1:]:
-                        key = 'None'; marker = desc_icon
-                else:
-                    if key == ordermatch:
-                        key = '~' + ordermatch; marker = asc_icon
-                    elif key == ordermatch[1:]:
-                        marker = desc_icon
+                inverted = field.type in ('date', 'datetime', 'time')
+                if key == order.lstrip('~'):
+                    if inverted:
+                        if key == order:
+                            key, marker = 'None', asc_icon 
+                        else:
+                            key, marker = order[1:], desc_icon
+                    else:
+                        if key == order:                            
+                            key, marker = '~' + order, asc_icon
+                        else:
+                            key, marker = 'None', desc_icon
+                elif inverted and key ==  str(field):
+                    key = '~' + key
                 header = A(header, marker, _href=url(vars=dict(
-                    keywords=keywords,
-                    order=key)), cid=request.cid)
+                            keywords=keywords,
+                            order=key)), cid=request.cid)
             headcols.append(TH(header, _class=ui.get('default')))
 
         toadd = []
