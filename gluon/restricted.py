@@ -167,7 +167,7 @@ class RestrictedError(Exception):
             ticket_storage = TicketStorage(db=request.tickets_db)
             ticket_storage.store(request, request.uuid.split('/', 1)[1], d)
             cmd_opts = global_settings.cmd_options
-            if cmd_opts and cmd_opts.print_errors:
+            if cmd_opts and cmd_opts.errors_to_console:
                 logger.error(self.traceback)
             return request.uuid
         except:
