@@ -31,7 +31,6 @@ _cron_subprocs = []
 def absolute_path_link(path):
     """
     Returns an absolute path for the destination of a symlink
-
     """
     if os.path.islink(path):
         link = os.readlink(path)
@@ -73,16 +72,17 @@ class extcron(threading.Thread):
 
 class hardcron(threading.Thread):
 
-    def __init__(self, applications_parent):
+    def __init__(self, applications_parent, apps=None):
         threading.Thread.__init__(self)
         self.setDaemon(True)
         self.path = applications_parent
-        crondance(self.path, 'hard', startup=True)
+        self.apps = apps
+        crondance(self.path, 'hard', startup=True, apps=self.apps)
 
     def launch(self):
         if not _cron_stopping:
             logger.debug('hard cron invocation')
-            crondance(self.path, 'hard', startup=False)
+            crondance(self.path, 'hard', startup=False, apps=self.apps)
 
     def run(self):
         s = sched.scheduler(time.time, time.sleep)
@@ -95,15 +95,16 @@ class hardcron(threading.Thread):
 
 class softcron(threading.Thread):
 
-    def __init__(self, applications_parent):
+    def __init__(self, applications_parent, apps=None):
         threading.Thread.__init__(self)
         self.path = applications_parent
-        # crondance(self.path, 'soft', startup=True)
+        self.apps = apps
+        # crondance(self.path, 'soft', startup=True, apps=self.apps)
 
     def run(self):
         if not _cron_stopping:
             logger.debug('soft cron invocation')
-            crondance(self.path, 'soft', startup=False)
+            crondance(self.path, 'soft', startup=False, apps=self.apps)
 
 
 class Token(object):
@@ -270,7 +271,10 @@ class cronlauncher(threading.Thread):
 
 
 def crondance(applications_parent, ctype='soft', startup=False, apps=None):
-    # TODO: docstring
+    """
+    Does the periodic job of cron service: read the crontab(s) and launch
+    the various commands.
+    """
     apppath = os.path.join(applications_parent, 'applications')
     token = Token(applications_parent)
     cronmaster = token.acquire(startup=startup)
@@ -299,7 +303,7 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
         base_commands.append(w2p_path)
     if applications_parent != global_settings.gluon_parent:
         base_commands.extend(('-f', applications_parent))
-    base_commands.extend(('-J',
+    base_commands.extend(('--cronjob', '--no-banner', '--nogui', '--plain',
                           # FIXME: this should not be needed since we are
                           #        not launching the web server
                           '-a', '"<recycle>"'))

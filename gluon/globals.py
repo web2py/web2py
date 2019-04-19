@@ -56,8 +56,6 @@ except ImportError:
     have_minify = False
 
 
-regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
-
 __all__ = ['Request', 'Response', 'Session']
 
 current = threading.local()  # thread-local storage for request-scope globals
@@ -357,9 +355,11 @@ class Request(Storage):
         """
         cmd_opts = global_settings.cmd_options
         # checking if this is called within the scheduler or within the shell
-        # in addition to checking if it's not a cronjob
-        if ((cmd_opts and (cmd_opts.shell or cmd_opts.scheduler))
-                or global_settings.cronjob or self.is_https):
+        # in addition to checking if it's a cronjob
+        # FIXME: cmd_opts.scheduler does not imply that
+        #        we are running in the scheduler
+        if (self.is_https or cmd_opts and (
+                cmd_opts.shell or cmd_opts.scheduler or cmd_opts.cronjob)):
             current.session.secure()
         else:
             current.session.forget()
@@ -602,6 +602,7 @@ class Response(Storage):
         # for attachment settings and backward compatibility
         keys = [item.lower() for item in headers]
         if attachment:
+            # FIXME: should be done like in next download method
             if filename is None:
                 attname = ""
             else:
@@ -654,6 +655,7 @@ class Response(Storage):
 
         Downloads from http://..../download/filename
         """
+        from pydal.helpers.regex import REGEX_UPLOAD_PATTERN
         from pydal.exceptions import NotAuthorizedException, NotFoundException
 
         current.session.forget(current.response)
@@ -661,10 +663,10 @@ class Response(Storage):
         if not request.args:
             raise HTTP(404)
         name = request.args[-1]
-        items = re.compile('(?P<table>.*?)\.(?P<field>.*?)\..*').match(name)
+        items = re.match(REGEX_UPLOAD_PATTERN, name)
         if not items:
             raise HTTP(404)
-        (t, f) = (items.group('table'), items.group('field'))
+        t = items.group('table'); f = items.group('field')
         try:
             field = db[t][f]
         except (AttributeError, KeyError):
@@ -801,6 +803,8 @@ class Session(Storage):
     - session_filename
     """
 
+    REGEX_SESSION_FILE = r'^(?:[\w-]+/)?[\w.-]+$'
+
     def connect(self,
                 request=None,
                 response=None,
@@ -891,7 +895,7 @@ class Session(Storage):
             response.session_file = None
             # check if the session_id points to a valid sesion filename
             if response.session_id:
-                if not regex_session_id.match(response.session_id):
+                if not re.match(self.REGEX_SESSION_FILE, response.session_id):
                     response.session_id = None
                 else:
                     response.session_filename = \

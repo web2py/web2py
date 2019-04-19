@@ -216,6 +216,14 @@ class web2pyDialog(object):
         self.bannerarea.after(1000, self.update_canvas)
 
         # IP
+        # retrieves the list of server IP addresses
+        try:
+            if_ips = list(set(  # no duplicates
+                [addrinfo[4][0] for addrinfo in getipaddrinfo(socket.getfqdn())
+                 if not is_loopback_ip_address(addrinfo=addrinfo)]))
+        except socket.gaierror:
+            if_ips = []
+
         tkinter.Label(self.root,
                       text='Server IP:', bg=bg_color,
                       justify=tkinter.RIGHT).grid(row=4,
@@ -226,7 +234,7 @@ class web2pyDialog(object):
         row = 4
         ips = [('127.0.0.1', 'Local (IPv4)')] + \
             ([('::1', 'Local (IPv6)')] if socket.has_ipv6 else []) + \
-            [(ip, 'Public') for ip in options.ips] + \
+            [(ip, 'Public') for ip in if_ips] + \
             [('0.0.0.0', 'Public')]
         for ip, legend in ips:
             self.ips[ip] = tkinter.Radiobutton(
@@ -704,7 +712,7 @@ web2py will attempt to run a GUI to ask for it when starting the web server
                       metavar='APPNAME', help=\
         'run web2py in interactive shell or IPython (if installed) with ' \
         'specified appname (if app does not exist it will be created). ' \
-        'APPNAME like a/c/f?x=y (c,f and vars x,y optional)')
+        'APPNAME like a/c/f?x=y (c, f and vars optional)')
 
     parser.add_option('-B', '--bpython',
                       default=False,
@@ -752,7 +760,7 @@ web2py will attempt to run a GUI to ask for it when starting the web server
                       default=None,
                       metavar='TEST_PATH', help=\
         'run doctests in web2py environment; ' \
-        'TEST_PATH like a/c/f (c,f optional)')
+        'TEST_PATH like a/c/f (c, f optional)')
 
     parser.add_option('-C', '--cron', dest='extcron',
                       default=False,
@@ -777,7 +785,9 @@ web2py will attempt to run a GUI to ask for it when starting the web server
     parser.add_option('-J', '--cronjob',
                       default=False,
                       action='store_true',
-                      help='identify cron-initiated command')
+                      # NOTE: help suppressed because this option is
+                      #       intended for internal use only
+                      help=optparse.SUPPRESS_HELP)
 
     parser.add_option('-L', '--config',
                       default='',
@@ -840,6 +850,10 @@ web2py will attempt to run a GUI to ask for it when starting the web server
     # TODO: warn or error if args (should be no unparsed arguments)
     options.args = other_args
 
+    if options.taskbar and os.name != 'nt':
+        # TODO: warn and disable taskbar instead of exit
+        die('taskbar not supported on this platform')
+
     if options.config.endswith('.py'):
         options.config = options.config[:-3]
     if options.config:
@@ -852,20 +866,6 @@ web2py will attempt to run a GUI to ask for it when starting the web server
         for key in dir(options2):
             if hasattr(options, key):
                 setattr(options, key, getattr(options2, key))
-
-    # store in options.ips the list of server IP addresses
-    try:
-        options.ips = list(set(  # no duplicates
-            [addrinfo[4][0] for addrinfo in getipaddrinfo(socket.getfqdn())
-             if not is_loopback_ip_address(addrinfo=addrinfo)]))
-    except socket.gaierror:
-        options.ips = []
-
-    if options.cronjob:
-        global_settings.cronjob = True  # tell the world
-        options.plain = True    # cronjobs use a plain shell
-        options.nobanner = True
-        options.nogui = True
 
     # transform options.interfaces, in the form
     # "ip1:port1:key1:cert1:ca_cert1;[ip2]:port2;ip3:port3:key3:cert3"
@@ -1074,11 +1074,6 @@ def start(cron=True):
     # if no password provided and have Tk library start GUI (when not
     # explicitly disabled), we also need a GUI to put in taskbar (system tray)
     # when requested
-
-    # FIXME: this check should be done first
-    if options.taskbar and os.name != 'nt':
-        die('taskbar not supported on this platform')
-
     root = None
 
     if (not options.nogui and options.password == '<ask>') or options.taskbar:
