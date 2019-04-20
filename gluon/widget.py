@@ -323,9 +323,9 @@ class web2pyDialog(object):
         if start:
             # the widget takes care of starting the scheduler
             if self.options.scheduler and self.options.with_scheduler:
-                apps = [app.strip() for app
-                        in self.options.scheduler.split(',').split(':', 1)[0]
-                        if app.strip() in available_apps]
+                apps = [app for app
+                        in map(lambda ag : ag.split(':', 1)[0].strip(), self.options.scheduler.split(','))
+                        if app in available_apps]
         for app in apps:
             self.try_start_scheduler(app)
 
@@ -1044,8 +1044,9 @@ def start(cron=True):
         global_settings.web2py_crontype = 'external'
         if options.scheduler:
             # run cron for applications listed with --scheduler (-K)
-            apps = [app.strip() for app in options.scheduler.split(
-                ',').split(':', 1)[0] if check_existent_app(options, app.strip())]
+            apps = [app for app
+                    in map(lambda ag : ag.split(':', 1)[0].strip(), options.scheduler.split(','))
+                    if check_existent_app(options, app)]
         else:
             apps = None
         extcron = newcron.extcron(options.folder, apps=apps)
