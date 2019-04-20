@@ -18,12 +18,13 @@ import glob
 import time
 import datetime
 import logging
+import shutil
 from gluon.http import HTTP
 from gzip import open as gzopen
 from gluon.recfile import generate
 from gluon._compat import PY2
 
-__all__ = [
+__all__ = (
     'parse_version',
     'read_file',
     'write_file',
@@ -41,11 +42,11 @@ __all__ = [
     'check_credentials',
     'w2p_pack',
     'w2p_unpack',
+    'create_app',
     'w2p_pack_plugin',
     'w2p_unpack_plugin',
     'fix_newlines',
-    'make_fake_file_like_object',
-]
+)
 
 
 def parse_semantic(version="Version 1.99.0-rc.1+timestamp.2011.09.19.08.23.26"):
@@ -58,7 +59,7 @@ def parse_semantic(version="Version 1.99.0-rc.1+timestamp.2011.09.19.08.23.26"):
         tuple: Major, Minor, Patch, Release, Build Date
 
     """
-    re_version = re.compile('(\d+)\.(\d+)\.(\d+)(\-(?P<pre>[^\s+]*))?(\+(?P<build>\S*))')
+    re_version = re.compile(r'(\d+)\.(\d+)\.(\d+)(-(?P<pre>[^\s+]*))?(\+(?P<build>\S*))')
     m = re_version.match(version.strip().split()[-1])
     if not m:
         return None
@@ -80,7 +81,7 @@ def parse_legacy(version="Version 1.99.0 (2011-09-19 08:23:26)"):
         tuple: Major, Minor, Patch, Release, Build Date
 
     """
-    re_version = re.compile('[^\d]+ (\d+)\.(\d+)\.(\d+)\s*\((?P<datetime>.+?)\)\s*(?P<type>[a-z]+)?')
+    re_version = re.compile(r'[^\d]+ (\d+)\.(\d+)\.(\d+)\s*\((?P<datetime>.+?)\)\s*(?P<type>[a-z]+)?')
     m = re_version.match(version)
     a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3)),
     pre_release = m.group('type') or 'dev'
@@ -109,22 +110,16 @@ def read_file(filename, mode='r'):
     """Returns content from filename, making sure to close the file explicitly
     on exit.
     """
-    f = open_file(filename, mode)
-    try:
+    with open_file(filename, mode) as f:
         return f.read()
-    finally:
-        f.close()
 
 
 def write_file(filename, value, mode='w'):
     """Writes <value> to filename, making sure to close the file
     explicitly on exit.
     """
-    f = open_file(filename, mode)
-    try:
+    with open_file(filename, mode) as f:
         return f.write(value)
-    finally:
-        f.close()
 
 
 def readlines_file(filename, mode='r'):
@@ -200,10 +195,10 @@ def cleanpath(path):
 
     items = path.split('.')
     if len(items) > 1:
-        path = re.sub('[^\w\.]+', '_', '_'.join(items[:-1]) + '.'
+        path = re.sub(r'[^\w.]+', '_', '_'.join(items[:-1]) + '.'
                       + ''.join(items[-1:]))
     else:
-        path = re.sub('[^\w\.]+', '_', ''.join(items[-1:]))
+        path = re.sub(r'[^\w.]+', '_', ''.join(items[-1:]))
     return path
 
 
@@ -250,57 +245,62 @@ def w2p_pack(filename, path, compiled=False, filenames=None):
     path = abspath(path)
     tarname = filename + '.tar'
     if compiled:
-        tar_compiled(tarname, path, '^[\w\.\-]+$',
+        tar_compiled(tarname, path, r'^[\w.-]+$',
                      exclude_content_from=['cache', 'sessions', 'errors'])
     else:
-        tar(tarname, path, '^[\w\.\-]+$', filenames=filenames,
+        tar(tarname, path, r'^[\w.-]+$', filenames=filenames,
             exclude_content_from=['cache', 'sessions', 'errors'])
-    w2pfp = gzopen(filename, 'wb')
-    tarfp = open(tarname, 'rb')
-    w2pfp.write(tarfp.read())
-    w2pfp.close()
-    tarfp.close()
+    with open(tarname, 'rb') as tarfp, gzopen(filename, 'wb') as gzfp:
+        shutil.copyfileobj(tarfp, gzfp, 4194304) # 4 MB buffer
     os.unlink(tarname)
 
 
 def create_welcome_w2p():
-    is_newinstall_file = os.path.exists('NEWINSTALL')
-    if not os.path.exists('welcome.w2p') or is_newinstall_file:
+    is_newinstall = os.path.exists('NEWINSTALL')
+    if not os.path.exists('welcome.w2p') or is_newinstall:
+        logger = logging.getLogger("web2py")
         try:
             w2p_pack('welcome.w2p', 'applications/welcome')
-            logging.info("New installation: created welcome.w2p file")
+            logger.info("New installation: created welcome.w2p file")
         except:
-            logging.error("New installation error: unable to create welcome.w2p file")
+            logger.exception("New installation error: unable to create welcome.w2p file")
             return
-        if is_newinstall_file:
+        if is_newinstall:
             try:
                 os.unlink('NEWINSTALL')
-                logging.info("New installation: removed NEWINSTALL file")
+                logger.info("New installation: removed NEWINSTALL file")
             except:
-                logging.error("New installation error: unable to remove NEWINSTALL file")
+                logger.exception("New installation error: unable to remove NEWINSTALL file")
 
 
 def w2p_unpack(filename, path, delete_tar=True):
-
     if filename == 'welcome.w2p':
         create_welcome_w2p()
     filename = abspath(filename)
-    path = abspath(path)
-    if filename[-4:] == '.w2p' or filename[-3:] == '.gz':
-        if filename[-4:] == '.w2p':
-            tarname = filename[:-4] + '.tar'
-        else:
-            tarname = filename[:-3] + '.tar'
-        fgzipped = gzopen(filename, 'rb')
-        tarfile = open(tarname, 'wb')
-        tarfile.write(fgzipped.read())
-        tarfile.close()
-        fgzipped.close()
+    tarname = None
+    if filename.endswith('.w2p'):
+        tarname = filename[:-4] + '.tar'
+    elif filename.endswith('.gz'):
+        tarname = filename[:-3] + '.tar'
+    if tarname is not None:
+        with gzopen(filename, 'rb') as gzfp, open(tarname, 'wb') as tarfp:
+            shutil.copyfileobj(gzfp, tarfp, 4194304) # 4 MB buffer
     else:
         tarname = filename
+    path = abspath(path)
     untar(tarname, path)
     if delete_tar:
         os.unlink(tarname)
+
+
+def create_app(path):
+    w2p_unpack('welcome.w2p', path)
+    for subfolder in ('models', 'views', 'controllers', 'databases',
+                      'modules', 'cron', 'errors', 'sessions',
+                      'languages', 'static', 'private', 'uploads'):
+        subpath = os.path.join(path, subfolder)
+        if not os.path.exists(subpath):
+            os.mkdir(subpath)
 
 
 def w2p_pack_plugin(filename, path, plugin_name):
@@ -314,11 +314,10 @@ def w2p_pack_plugin(filename, path, plugin_name):
     filename = abspath(filename)
     path = abspath(path)
     if not filename.endswith('web2py.plugin.%s.w2p' % plugin_name):
-        raise Exception("Not a web2py plugin name")
-    plugin_tarball = tarfile.open(filename, 'w:gz')
-    try:
+        raise ValueError('Not a web2py plugin')
+    with tarfile.open(filename, 'w:gz') as plugin_tarball:
         app_dir = path
-        while app_dir[-1] == '/':
+        while app_dir.endswith('/'):
             app_dir = app_dir[:-1]
         files1 = glob.glob(
             os.path.join(app_dir, '*/plugin_%s.*' % plugin_name))
@@ -326,15 +325,13 @@ def w2p_pack_plugin(filename, path, plugin_name):
             os.path.join(app_dir, '*/plugin_%s/*' % plugin_name))
         for file in files1 + files2:
             plugin_tarball.add(file, arcname=file[len(app_dir) + 1:])
-    finally:
-        plugin_tarball.close()
 
 
 def w2p_unpack_plugin(filename, path, delete_tar=True):
     filename = abspath(filename)
     path = abspath(path)
     if not os.path.basename(filename).startswith('web2py.plugin.'):
-        raise Exception("Not a web2py plugin")
+        raise ValueError('Not a web2py plugin')
     w2p_unpack(filename, path, delete_tar)
 
 
@@ -344,23 +341,22 @@ def tar_compiled(file, dir, expression='^.+$',
     The content of models, views, controllers is not stored in the tar file.
     """
 
-    tar = tarfile.TarFile(file, 'w')
-    for file in listdir(dir, expression, add_dirs=True,
-                        exclude_content_from=exclude_content_from):
-        filename = os.path.join(dir, file)
-        if os.path.islink(filename):
-            continue
-        if os.path.isfile(filename) and file[-4:] != '.pyc':
-            if file[:6] == 'models':
+    with tarfile.TarFile(file, 'w') as tar:
+        for file in listdir(dir, expression, add_dirs=True,
+                            exclude_content_from=exclude_content_from):
+            filename = os.path.join(dir, file)
+            if os.path.islink(filename):
                 continue
-            if file[:5] == 'views':
-                continue
-            if file[:11] == 'controllers':
-                continue
-            if file[:7] == 'modules':
-                continue
-        tar.add(filename, file, False)
-    tar.close()
+            if os.path.isfile(filename) and not file.endswith('.pyc'):
+                if file.startswith('models'):
+                    continue
+                if file.startswith('views'):
+                    continue
+                if file.startswith('controllers'):
+                    continue
+                if file.startswith('modules'):
+                    continue
+            tar.add(filename, file, False)
 
 
 def up(path):
@@ -378,7 +374,7 @@ def get_session(request, other_application='admin'):
         if not os.path.exists(session_filename):
             session_filename = generate(session_filename)
         osession = storage.load_storage(session_filename)
-    except Exception as e:
+    except:
         osession = storage.Storage()
     return osession
 
@@ -421,7 +417,7 @@ def fix_newlines(path):
     regex = re.compile(r'''(\r
 |\r|
 )''')
-    for filename in listdir(path, '.*\.(py|html)$', drop=False):
+    for filename in listdir(path, r'.*\.(py|html)$', drop=False):
         rdata = read_file(filename, 'r')
         wdata = regex.sub('\n', rdata)
         if wdata != rdata:
@@ -453,16 +449,6 @@ def copystream(
             break
     dest.seek(0)
     return
-
-
-def make_fake_file_like_object():
-    class LogFile(object):
-        def write(self, value):
-            pass
-
-        def close(self):
-            pass
-    return LogFile()
 
 
 from gluon.settings import global_settings  # we need to import settings here because
