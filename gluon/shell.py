@@ -135,11 +135,14 @@ def env(
     request.function = f or 'index'
     response.view = '%s/%s.html' % (request.controller,
                                     request.function)
-    if global_settings.cmd_options:
-        ip = global_settings.cmd_options.ip
-        port = global_settings.cmd_options.port
-        request.is_shell = global_settings.cmd_options.shell is not None
-        request.is_scheduler = global_settings.cmd_options.scheduler is not None
+    cmd_opts = global_settings.cmd_options
+    if cmd_opts:
+        ip = cmd_opts.ip
+        port = cmd_opts.port
+        request.is_shell = cmd_opts.shell is not None
+        # FIXME: cmd_opts.scheduler does not imply that
+        #        we are running in the scheduler
+        request.is_scheduler = cmd_opts.scheduler is not None
     else:
         ip, port = '127.0.0.1', '8000'
     request.env.http_host = '%s:%s' % (ip, port)
@@ -206,14 +209,18 @@ def run(
     import_models=False,
     startfile=None,
     bpython=False,
-    python_code=False,
-    cronjob=False):
+    python_code=None,
+    cronjob=False,
+    scheduler_job=False):
     """
     Start interactive shell or run Python script (startfile) in web2py
     controller environment. appname is formatted like:
 
     - a : web2py application name
     - a/c : exec the controller c into the application environment
+    - a/c/f : exec the controller c, then the action f
+              into the application environment
+    - a/c/f?x=y : as above
     """
 
     (a, c, f, args, vars) = parse_path_info(appname, av=True)
@@ -223,7 +230,8 @@ def run(
     adir = os.path.join('applications', a)
 
     if not os.path.exists(adir):
-        if sys.stdin and not sys.stdin.name == '/dev/null':
+        if not scheduler_job and \
+            sys.stdin and not sys.stdin.name == '/dev/null':
             confirm = raw_input(
                 'application %s does not exist, create (y/n)?' % a)
         else:
@@ -242,6 +250,8 @@ def run(
             db = os.path.join(adir, 'models/db.py')
             if os.path.exists(db):
                 data = fileutils.read_file(db)
+                # NOTE: is this for backward compatibility ?
+                #       there is no need for import gluon.utils otherwise
                 data = data.replace(
                     '<your secret key>', 'sha512:' + web2py_uuid())
                 fileutils.write_file(db, data)
