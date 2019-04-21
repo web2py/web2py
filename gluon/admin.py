@@ -14,11 +14,11 @@ import os
 import sys
 import traceback
 import zipfile
-from shutil import rmtree
-from gluon.utils import web2py_uuid
-from gluon.fileutils import w2p_pack, w2p_unpack, w2p_pack_plugin, w2p_unpack_plugin
-from gluon.fileutils import up, fix_newlines, abspath, recursive_unlink
-from gluon.fileutils import read_file, write_file, parse_version
+from shutil import rmtree, copyfileobj
+from gluon.fileutils import (w2p_pack, create_app, w2p_unpack,
+    w2p_pack_plugin, w2p_unpack_plugin,
+    up, fix_newlines, abspath, recursive_unlink,
+    read_file, write_file, parse_version)
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 from gluon.cache import CacheOnDisk
@@ -178,19 +178,7 @@ def app_create(app, request, force=False, key=None, info=False):
         else:
             return False
     try:
-        w2p_unpack('welcome.w2p', path)
-        for subfolder in ['models', 'views', 'controllers', 'databases',
-                          'modules', 'cron', 'errors', 'sessions', 'cache',
-                          'languages', 'static', 'private', 'uploads']:
-            subpath = os.path.join(path, subfolder)
-            if not os.path.exists(subpath):
-                os.mkdir(subpath)
-        db = os.path.join(path, 'models', 'db.py')
-        if os.path.exists(db):
-            data = read_file(db)
-            data = data.replace('<your secret key>',
-                                'sha512:' + (key or web2py_uuid()))
-            write_file(db, data)
+        create_app(path)
         if info:
             return True, None
         else:
@@ -232,7 +220,8 @@ def app_install(app, fobj, request, filename, overwrite=None):
     upname = apath('../deposit/%s.%s' % (app, extension), request)
 
     try:
-        write_file(upname, fobj.read(), 'wb')
+        with open(upname, 'wb') as appfp:
+            copyfileobj(fobj, appfp, 4194304) # 4 MB buffer
         path = apath(app, request)
         if not overwrite:
             os.mkdir(path)
