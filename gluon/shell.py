@@ -23,7 +23,6 @@ import glob
 import traceback
 import gluon.fileutils as fileutils
 from gluon.settings import global_settings
-from gluon.utils import web2py_uuid
 from gluon.compileapp import build_environment, read_pyc, run_models_in
 from gluon.restricted import RestrictedError
 from gluon.globals import Request, Response, Session
@@ -137,14 +136,18 @@ def env(
                                     request.function)
     cmd_opts = global_settings.cmd_options
     if cmd_opts:
-        ip = cmd_opts.ip
-        port = cmd_opts.port
+        if not cmd_opts.interfaces:
+            ip = cmd_opts.ip
+            port = cmd_opts.port
+        else:
+            first_if = cmd_opts.interfaces[0]
+            ip = first_if[0]
+            port = first_if[1]
         request.is_shell = cmd_opts.shell is not None
-        # FIXME: cmd_opts.scheduler does not imply that
-        #        we are running in the scheduler
-        request.is_scheduler = cmd_opts.scheduler is not None
     else:
-        ip, port = '127.0.0.1', '8000'
+        ip = '127.0.0.1'; port = 8000
+        # FIXME: what about request.is_shell ?
+    request.is_scheduler = False
     request.env.http_host = '%s:%s' % (ip, port)
     request.env.remote_addr = '127.0.0.1'
     request.env.web2py_runtime_gae = global_settings.web2py_runtime_gae
@@ -230,37 +233,24 @@ def run(
     adir = os.path.join('applications', a)
 
     if not os.path.exists(adir):
-        if not scheduler_job and \
+        if not cronjob and not scheduler_job and \
             sys.stdin and not sys.stdin.name == '/dev/null':
             confirm = raw_input(
                 'application %s does not exist, create (y/n)?' % a)
         else:
             logging.warn('application does not exist and will not be created')
             return
-        if confirm.lower() in ['y', 'yes']:
-
+        if confirm.lower() in ('y', 'yes'):
             os.mkdir(adir)
-            w2p_unpack('welcome.w2p', adir)
-            for subfolder in ['models', 'views', 'controllers', 'databases',
-                              'modules', 'cron', 'errors', 'sessions',
-                              'languages', 'static', 'private', 'uploads']:
-                subpath = os.path.join(adir, subfolder)
-                if not os.path.exists(subpath):
-                    os.mkdir(subpath)
-            db = os.path.join(adir, 'models/db.py')
-            if os.path.exists(db):
-                data = fileutils.read_file(db)
-                # NOTE: is this for backward compatibility ?
-                #       there is no need for import gluon.utils otherwise
-                data = data.replace(
-                    '<your secret key>', 'sha512:' + web2py_uuid())
-                fileutils.write_file(db, data)
+            fileutils.create_app(adir)
 
     if c:
         import_models = True
     extra_request = {}
     if args:
         extra_request['args'] = args
+    if scheduler_job:
+        extra_request['is_scheduler'] = True
     if vars:
         # underscore necessary because request.vars is a property
         extra_request['_vars'] = vars
