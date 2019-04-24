@@ -21,14 +21,13 @@ import platform
 
 USAGE = """
 build_web2py - make web2py Windows and MacOS binaries with pyinstaller 
-
 Usage:
-    Install the pyinstaller program, copy this file (plus web2py.ngm.spec and web2py.ngm_no_console.spec) 
+    Install the pyinstaller program, copy this file (plus web2py.*.spec files) 
     to web2py root folder and run:
     
     python build_py3.py
     
-    (tested with python 3.7 only)
+    (tested with python 3.7.3 and 2.7.16 with PyInstaller 3.4)
 """
 BUILD_DEBUG = False
 """
