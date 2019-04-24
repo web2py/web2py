@@ -23,11 +23,21 @@ USAGE = """
 build_web2py - make web2py Windows and MacOS binaries with pyinstaller 
 
 Usage:
-    Install pyinstaller program, copy this file to web2py root folder and run:
+    Install the pyinstaller program, copy this file (plus web2py.ngm.spec and web2py.ngm_no_console.spec) 
+    to web2py root folder and run:
     
     python build_py3.py
-        
+    
+    (tested with python 3.7 only)
 """
+BUILD_DEBUG = False
+"""
+If BUILD_DEBUG is set to False, no gluon modules will be embedded inside the binary web2py.exe. 
+    Thus, you can easily update the build version by changing the gluon folder inside the resulting ZIP file.
+In case of problem , set BUILD_DEBUG to True. Then all the gluon modules will be analyzed and embedded, too.
+    You can later analyze the .exe with 'pyi-archive_viewer web2py.exe' and then 'o PYZ-00.pyz'
+    in order to check for missing system modules to be manually inserted in the SPEC file
+ """
 
 if len(sys.argv) != 1 or not os.path.isfile('web2py.py'):
     print(USAGE)
@@ -66,64 +76,73 @@ python_version = sys.version_info[:3]
 
 if os_version == 'Windows':
     print("\nBuilding binary web2py for Windows\n")
-    # to make executable without GUI we need this trick
-    shutil.copy("web2py.py", "web2py_no_console.py")
+    if BUILD_DEBUG: # debug only
+        subprocess.call('pyinstaller --clean  --icon=extras/icons/web2py.ico \
+                        --hidden-import=site-packages --hidden-import=gluon.packages.dal.pydal \
+                        --hidden-import=gluon.packages.yatl.yatl web2py.py')
+        zip_filename = 'web2py_win_debug'
+    else: # normal run    
+        subprocess.call('pyinstaller --clean  web2py.win.spec')
+        subprocess.call('pyinstaller --clean  web2py.win_no_console.spec')
+        source_no_console = 'dist/web2py_no_console/'
+        files = 'web2py_no_console.exe'
+        shutil.move(os.path.join(source_no_console, files), 'dist')
+        shutil.rmtree(source_no_console)
+        shutil.rmtree('build')
+        zip_filename = 'web2py_win'
 
-    subprocess.run('pyinstaller --clean  --icon=extras/icons/web2py.ico --hidden-import=gluon.packages.dal.pydal  \
-                        --hidden-import=gluon.packages.yatl.yatl --hidden-import=site-packages web2py.py')
-    subprocess.run('pyinstaller -w --clean  --icon=extras/icons/web2py.ico --hidden-import=gluon.packages.dal.pydal  \
-                        --hidden-import=gluon.packages.yatl.yatl --hidden-import=site-packages web2py_no_console.py')
-
-    # cleanup + move binary files to dist folder
-    os.unlink('web2py_no_console.py')
-    os.unlink('web2py_no_console.spec')
     source = 'dist/web2py/'
     for files in os.listdir(source):
         shutil.move(os.path.join(source, files), 'dist')
-    source2 = 'dist/web2py_no_console/'
-    files = 'web2py_no_console.exe'
-    shutil.move(os.path.join(source2, files), 'dist')
     shutil.rmtree(source)
-    shutil.rmtree(source2)
     os.unlink('dist/web2py.exe.manifest')
 
-    zip_filename = 'web2py_win'
-    bin_folder = 'dist'
+
+
+    bin_folders = ['dist',]
 
 
 elif os_version == 'Darwin':
     print("\nBuilding binary web2py for MacOS\n")
 
-    import subprocess
-    subprocess.call("pyinstaller --clean  --windowed --icon=extras/icons/web2py.icns --hidden-import=gluon.packages.dal.pydal  --hidden-import=gluon.packages.yatl.yatl \
-                    --hidden-import=site-packages --add-binary='/System/Library/Frameworks/Tk.framework/Tk':'tk' \
-                    --add-binary='/System/Library/Frameworks/Tcl.framework/Tcl':'tcl'  web2py.py", shell=True)
+    if BUILD_DEBUG: #debug only    
+        subprocess.call("pyinstaller --clean --icon=extras/icons/web2py.icns --hidden-import=gluon.packages.dal.pydal  --hidden-import=gluon.packages.yatl.yatl \
+                        --hidden-import=site-packages --windowed web2py.py", shell=True)
+        zip_filename = 'web2py_osx_debug'
+    else: # normal run
+        subprocess.call("pyinstaller --clean web2py.mac.spec", shell=True)
+        # cleanup + move binary files to dist folder
+        #shutil.rmtree(os.path.join('dist', 'web2py'))
+        shutil.rmtree('build')
+        zip_filename = 'web2py_osx'
 
-    # cleanup + move binary files to dist folder
-    shutil.rmtree(os.path.join('dist', 'web2py'))
-    shutil.rmtree('build')
-
-    zip_filename = 'web2py_osx'
-    bin_folder = (os.path.join('dist', 'web2py.app/Contents/MacOS'))
-
-print("\nWeb2py binary successfully built!\n")
+    shutil.move((os.path.join('dist', 'web2py')),(os.path.join('dist', 'web2py_cmd')))
+    bin_folders = [(os.path.join('dist', 'web2py.app/Contents/MacOS')), (os.path.join('dist', 'web2py_cmd'))]
+    print("\nWeb2py binary successfully built!\n")
 
 
 # add data_files
 for req in ['CHANGELOG', 'LICENSE', 'VERSION']:
-    shutil.copy(req, os.path.join(bin_folder, req))
+    for bin_folder in bin_folders:
+        shutil.copy(req, os.path.join(bin_folder, req))
 # cleanup unuseful binary cache
 for dirpath, dirnames, files in os.walk('.'):
     if dirpath.endswith('__pycache__'):
         print('Deleting cached binary directory : %s' % dirpath)
         shutil.rmtree(dirpath)
-
+for dirpath, dirnames, files in os.walk('.'):
+    for file in files:
+        if file.endswith('.pyc'):
+            print('Deleting cached binary file : %s' % file)
+            os.unlink(os.path.join(dirpath, file))
+        
 print("\nPreparing package ...")
 # misc
 for folders in ['gluon', 'extras', 'site-packages', 'scripts', 'applications', 'examples', 'handlers']:
-    shutil.copytree(folders, os.path.join(bin_folder, folders))
-os.mkdir(os.path.join(bin_folder, 'logs'))
-os.unlink('web2py.spec')
+    for bin_folder in bin_folders:
+        shutil.copytree(folders, os.path.join(bin_folder, folders))
+        if not os.path.exists(os.path.join(bin_folder, 'logs')):
+             os.mkdir(os.path.join(bin_folder, 'logs'))
 
 
 # create a web2py folder & copy dist's files into it
@@ -138,6 +157,7 @@ recursive_zip(zipf, path)
 zipf.close()
 shutil.rmtree('zip_temp')
 shutil.rmtree('dist')
+
 
 print("Your binary version of web2py can be found in " + \
     zip_filename + ".zip")
