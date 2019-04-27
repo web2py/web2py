@@ -9,6 +9,8 @@ The widget is called from web2py
 ----------------------------------
 """
 
+from __future__ import print_function
+
 import sys
 from gluon._compat import thread, xrange, PY2
 import time
@@ -37,8 +39,6 @@ if sys.version_info < (2, 7) or (3, 0) < sys.version_info < (3, 5):
     from platform import python_version
     sys.stderr.write("Warning: web2py requires at least Python 2.7/3.5"
         " but you are running %s\n" % python_version())
-
-logger = logging.getLogger("web2py")
 
 
 def run_system_tests(options):
@@ -318,7 +318,7 @@ class web2pyDialog(object):
         apps = []
         available_apps = [
             arq for arq in os.listdir(applications_folder)
-            if os.path.exists(os.path.join(applications_folder, arq, 'models', 'scheduler.py'))
+            if os.path.isdir(os.path.join(applications_folder, arq))
         ]
         if start:
             # the widget takes care of starting the scheduler
@@ -350,7 +350,7 @@ class web2pyDialog(object):
             return
         code = "from gluon.globals import current;current._scheduler.loop()"
         print('starting scheduler from widget for "%s"...' % app)
-        args = (app, True, True, None, False, code)
+        args = (app, True, True, None, False, code, False, True)
         logging.getLogger().setLevel(self.options.debuglevel)
         p = Process(target=run, args=args)
         self.scheduler_processes[app] = p
@@ -494,7 +494,7 @@ class web2pyDialog(object):
                 profiler_dir=options.profiler_dir,
                 ssl_certificate=options.ssl_certificate,
                 ssl_private_key=options.ssl_private_key,
-                ssl_ca_certificate=options.ssl_ca_certificate,
+                ssl_ca_certificate=options.ca_cert,
                 min_threads=options.minthreads,
                 max_threads=options.maxthreads,
                 server_name=options.server_name,
@@ -627,7 +627,7 @@ web2py will attempt to run a GUI to ask for it when starting the web server
                       default=None,
                       metavar='FILE', help='server private key file')
 
-    parser.add_option('--ca-cert', dest='ssl_ca_certificate',
+    parser.add_option('--ca-cert', dest='ca_cert', # not needed
                       default=None,
                       metavar='FILE', help='CA certificate file')
 
@@ -814,7 +814,7 @@ web2py will attempt to run a GUI to ask for it when starting the web server
         'to be used with -S; NOTE: must be the last option because eat all ' \
         'remaining arguments')
 
-    parser.add_option('--no-banner', dest='nobanner',
+    parser.add_option('--no-banner', dest='no_banner', # not needed
                       default=False,
                       action='store_true',
                       help='do not print header banner')
@@ -930,7 +930,7 @@ def start_schedulers(options):
         if not app:
             return
         print('starting single-scheduler for "%s"...' % app)
-        run(app, True, True, None, False, code)
+        run(app, True, True, None, False, code, False, True)
         return
 
     # Work around OS X problem: http://bugs.python.org/issue9405
@@ -946,7 +946,7 @@ def start_schedulers(options):
         if not app:
             continue
         print('starting scheduler for "%s"...' % app)
-        args = (app, True, True, None, False, code)
+        args = (app, True, True, None, False, code, False, True)
         p = Process(target=run, args=args)
         processes.append(p)
         print("Currently running %s scheduler processes" % (len(processes)))
@@ -964,7 +964,7 @@ def start_schedulers(options):
             p.join()
 
 
-def start(cron=True):
+def start():
     """ Starts server and other services """
 
     # get command line arguments
@@ -989,6 +989,10 @@ def start(cron=True):
             print("gaehandler.py alreday exists in the web2py folder")
         return
 
+    logger = logging.getLogger("web2py")
+    logger.setLevel(options.debuglevel)
+
+    # on new installation build the scaffolding app
     create_welcome_w2p()
 
     if options.run_system_tests:
@@ -1015,9 +1019,7 @@ def start(cron=True):
                     l.removeHandler(h)
         # NOTE: stderr.write() is still working
 
-    logger.setLevel(options.debuglevel)
-
-    if not options.nobanner:
+    if not options.no_banner:
         # banner
         print(ProgramName)
         print(ProgramAuthor)
@@ -1062,7 +1064,7 @@ def start(cron=True):
             pass
         return
 
-    if cron and options.runcron:
+    if options.runcron:
         if options.softcron:
             print('Using softcron (but this is not very efficient)')
             global_settings.web2py_crontype = 'soft'
@@ -1117,12 +1119,6 @@ end tell
 
         sys.exit()
 
-    if options.password == '<ask>':
-        options.password = getpass.getpass('choose a password:')
-
-    if not options.password and not options.nobanner:
-        print('no password, disable admin interface')
-
     spt = None
 
     if options.scheduler and options.with_scheduler:
@@ -1131,6 +1127,12 @@ end tell
         spt.start()
 
     # start server
+
+    if options.password == '<ask>':
+        options.password = getpass.getpass('choose a password:')
+
+    if not options.password and not options.no_banner:
+        print('no password, disable admin interface')
 
     # Use first interface IP and port if interfaces specified, since the
     # interfaces option overrides the IP (and related) options.
@@ -1149,7 +1151,7 @@ end tell
 
     url = get_url(ip, proto=proto, port=port)
 
-    if not options.nobanner:
+    if not options.no_banner:
         message = '\nplease visit:\n\t%s\n'
         if sys.platform.startswith('win'):
             message += 'use "taskkill /f /pid %i" to shutdown the web2py server\n\n'
@@ -1186,7 +1188,7 @@ end tell
                              profiler_dir=options.profiler_dir,
                              ssl_certificate=options.ssl_certificate,
                              ssl_private_key=options.ssl_private_key,
-                             ssl_ca_certificate=options.ssl_ca_certificate,
+                             ssl_ca_certificate=options.ca_cert,
                              min_threads=options.minthreads,
                              max_threads=options.maxthreads,
                              server_name=options.server_name,
