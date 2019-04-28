@@ -97,7 +97,7 @@ def get_url(host, path='/', proto='http', port=80):
 def start_browser(url, startup=False):
     if startup:
         print('please visit:')
-        print('\t', url)
+        print('\t' + url)
         print('starting browser...')
     try:
         import webbrowser
