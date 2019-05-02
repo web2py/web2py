@@ -121,7 +121,11 @@ def console(version):
         def __call__(self, parser, namespace, values, option_string=None):
             if isinstance(values, list):
                 # must copy to avoid altering the option default value
-                items = argparse._ensure_value(namespace, self.dest, [])[:]
+                value = getattr(namespace, self.dest, None)
+                if value is None:
+                    value = []
+                    setattr(namespace, self.dest, value)
+                items = value[:]
                 # for options that allows multiple args (i.e. those declared
                 # with add_argument(..., nargs='+', ...)) the values are
                 # always placed into a list
