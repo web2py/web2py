@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -374,7 +373,7 @@ def get_session(request, other_application='admin'):
         if not os.path.exists(session_filename):
             session_filename = generate(session_filename)
         osession = storage.load_storage(session_filename)
-    except:
+    except Exception:
         osession = storage.Storage()
     return osession
 

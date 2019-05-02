@@ -1,4 +1,3 @@
-#!/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -557,7 +556,8 @@ def wsgibase(environ, responder):
         return wsgibase(new_environ, responder)
     if global_settings.web2py_crontype == 'soft':
         cmd_opts = global_settings.cmd_options
-        newcron.softcron(global_settings.applications_parent).start()
+        newcron.softcron(global_settings.applications_parent,
+                         apps=cmd_opts and cmd_opts.crontabs).start()
     return http_response.to(responder, env=env)
 
 

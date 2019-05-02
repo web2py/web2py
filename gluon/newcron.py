@@ -287,7 +287,7 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
               ('dom', now_s.tm_mday),
               ('dow', (now_s.tm_wday + 1) % 7))
 
-    if apps is None:
+    if not apps:
         apps = [x for x in os.listdir(apppath)
                 if os.path.isdir(os.path.join(apppath, x))]
 
@@ -303,10 +303,7 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
         base_commands.append(w2p_path)
     if applications_parent != global_settings.gluon_parent:
         base_commands.extend(('-f', applications_parent))
-    base_commands.extend(('--cronjob', '--no-banner', '--nogui', '--plain',
-                          # FIXME: this should not be needed since we are
-                          #        not launching the web server
-                          '-a', '"<recycle>"'))
+    base_commands.extend(('--cron_job', '--no_banner', '--no_gui', '--plain'))
 
     for app in apps:
         if _cron_stopping:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -636,7 +635,7 @@ def termination():
 
     def exec_sched(self):
         import subprocess
-        call_args = [sys.executable, 'web2py.py', '--no-banner', '-D', '20','-K', 'welcome']
+        call_args = [sys.executable, 'web2py.py', '--no_banner', '-D', 'INFO','-K', 'welcome']
         ret = subprocess.call(call_args, env=dict(os.environ))
         return ret
 

@@ -19,4 +19,4 @@ WORKDIR /web2py
 
 EXPOSE 443
 
-CMD python /web2py/web2py.py --nogui --no-banner -a 'a' -c web2py.crt -k web2py.key -i 0.0.0.0 -p 443
+CMD python /web2py/web2py.py --no_gui --no_banner -a 'a' -k web2py.key -c web2py.crt -i 0.0.0.0 -p 443

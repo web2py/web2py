@@ -5,8 +5,8 @@
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
-The widget is called from web2py
-----------------------------------
+GUI widget and services start function
+--------------------------------------
 """
 
 from __future__ import print_function
@@ -16,15 +16,15 @@ from gluon._compat import thread, xrange, PY2
 import time
 import threading
 import os
-import copy
 import socket
 import signal
 import math
 import logging
 import getpass
-from gluon import main, newcron
 
-from gluon.fileutils import read_file, write_file, create_welcome_w2p
+from gluon import main, newcron
+from gluon.fileutils import read_file, create_welcome_w2p
+from gluon.console import console
 from gluon.settings import global_settings
 from gluon.shell import die, run, test
 from gluon.utils import is_valid_ip_address, is_loopback_ip_address, getipaddrinfo
@@ -314,22 +314,20 @@ class web2pyDialog(object):
             self.tb = None
 
     def update_schedulers(self, start=False):
-        applications_folder = os.path.join(self.options.folder, 'applications')
-        apps = []
-        available_apps = [
-            arq for arq in os.listdir(applications_folder)
-            if os.path.isdir(os.path.join(applications_folder, arq))
-        ]
-        if start:
-            # the widget takes care of starting the scheduler
-            if self.options.scheduler and self.options.with_scheduler:
-                apps = [app for app
-                        in map(lambda ag : ag.split(':', 1)[0].strip(), self.options.scheduler.split(','))
-                        if app in available_apps]
+        if start and self.options.with_scheduler and self.options.with_schedulers:
+            # the widget takes care of starting the schedulers
+            apps = [ag.split(':', 1)[0] for ag in self.options.with_schedulers]
+        else:
+            apps = []
         for app in apps:
             self.try_start_scheduler(app)
 
         # reset the menu
+        applications_folder = os.path.join(self.options.folder, 'applications')
+        available_apps = [
+            arq for arq in os.listdir(applications_folder)
+            if os.path.isdir(os.path.join(applications_folder, arq))
+        ]
         self.schedmenu.delete(0, len(available_apps))
 
         for arq in available_apps:
@@ -351,7 +349,7 @@ class web2pyDialog(object):
         code = "from gluon.globals import current;current._scheduler.loop()"
         print('starting scheduler from widget for "%s"...' % app)
         args = (app, True, True, None, False, code, False, True)
-        logging.getLogger().setLevel(self.options.debuglevel)
+        logging.getLogger().setLevel(self.options.log_level)
         p = Process(target=run, args=args)
         self.scheduler_processes[app] = p
         self.update_schedulers()
@@ -473,7 +471,7 @@ class web2pyDialog(object):
         except:
             return self.error('invalid port number')
 
-        if self.options.ssl_certificate and self.options.ssl_private_key:
+        if self.options.server_key and self.options.server_cert:
             proto = 'https'
         else:
             proto = 'http'
@@ -492,11 +490,11 @@ class web2pyDialog(object):
                 pid_filename=options.pid_filename,
                 log_filename=options.log_filename,
                 profiler_dir=options.profiler_dir,
-                ssl_certificate=options.ssl_certificate,
-                ssl_private_key=options.ssl_private_key,
+                ssl_certificate=options.server_cert,
+                ssl_private_key=options.server_key,
                 ssl_ca_certificate=options.ca_cert,
-                min_threads=options.minthreads,
-                max_threads=options.maxthreads,
+                min_threads=options.min_threads,
+                max_threads=options.max_threads,
                 server_name=options.server_name,
                 request_queue_size=req_queue_size,
                 timeout=options.timeout,
@@ -582,321 +580,6 @@ class web2pyDialog(object):
         self.canvas.after(1000, self.update_canvas)
 
 
-def console():
-    """ Defines the behavior of the console web2py execution """
-    import optparse
-
-    parser = optparse.OptionParser(
-        usage='python %prog [options]',
-        version=ProgramVersion,
-        description='web2py Web Framework startup script.',
-        epilog='''NOTE: unless a password is specified (-a 'passwd')
-web2py will attempt to run a GUI to ask for it when starting the web server
-(if not disabled with --nogui).''')
-
-    parser.add_option('-i', '--ip',
-                      default='127.0.0.1',
-                      metavar='IP_ADDR', help=\
-        'IP address of the server (e.g., 127.0.0.1 or ::1); ' \
-        'Note: This value is ignored when using the --interfaces option')
-
-    parser.add_option('-p', '--port',
-                      default=8000,
-                      type='int', metavar='NUM', help=\
-        'port of server (%default); ' \
-        'Note: This value is ignored when using the --interfaces option')
-
-    parser.add_option('-G', '--GAE', dest='gae',
-                      default=None,
-                      metavar='APP_NAME', help=\
-        'will create app.yaml and gaehandler.py and exit')
-
-    parser.add_option('-a', '--password',
-                      default='<ask>',
-                      help=\
-        'password to be used for administration ' \
-        '(use "<recycle>" to reuse the last password), ' \
-        'when no password is available the administrative ' \
-        'interface will be disabled')
-
-    parser.add_option('-c', '--ssl_certificate',
-                      default=None,
-                      metavar='FILE', help='server certificate file')
-
-    parser.add_option('-k', '--ssl_private_key',
-                      default=None,
-                      metavar='FILE', help='server private key file')
-
-    parser.add_option('--ca-cert', dest='ca_cert', # not needed
-                      default=None,
-                      metavar='FILE', help='CA certificate file')
-
-    parser.add_option('-d', '--pid_filename',
-                      default='httpserver.pid',
-                      metavar='FILE', help='server pid file (%default)')
-
-    parser.add_option('-l', '--log_filename',
-                      default='httpserver.log',
-                      metavar='FILE', help='server log file (%default)')
-
-    parser.add_option('-n', '--numthreads',
-                      default=None,
-                      type='int', metavar='NUM',
-                      help='number of threads (deprecated)')
-
-    parser.add_option('--minthreads',
-                      default=None,
-                      type='int', metavar='NUM',
-                      help='minimum number of server threads')
-
-    parser.add_option('--maxthreads',
-                      default=None,
-                      type='int', metavar='NUM',
-                      help='maximum number of server threads')
-
-    parser.add_option('-s', '--server_name',
-                      default=socket.gethostname(),
-                      help='web server name (%default)')
-
-    parser.add_option('-q', '--request_queue_size',
-                      default=5,
-                      type='int', metavar='NUM',
-                      help=\
-        'max number of queued requests when server unavailable (%default)')
-
-    parser.add_option('-o', '--timeout',
-                      default=10,
-                      type='int', metavar='SECONDS',
-                      help='timeout for individual request (%default seconds)')
-
-    parser.add_option('-z', '--shutdown_timeout',
-                      default=None,
-                      type='int', metavar='SECONDS',
-                      help=\
-        'timeout on server shutdown; this value is not used by ' \
-        'Rocket web server')
-
-    parser.add_option('--socket-timeout', dest='socket_timeout', # not needed
-                      default=5,
-                      type='int', metavar='SECONDS',
-                      help='timeout for socket (%default seconds)')
-
-    parser.add_option('-f', '--folder',
-                      default=os.getcwd(), metavar='WEB2PY_DIR',
-                      help='folder from which to run web2py')
-
-    parser.add_option('-v', '--verbose',
-                      default=False,
-                      action='store_true',
-                      help='increase --test and --run_system_tests verbosity')
-
-    parser.add_option('-Q', '--quiet',
-                      default=False,
-                      action='store_true',
-                      help='disable all output')
-
-    parser.add_option('-e', '--errors_to_console',
-                      default=False,
-                      action='store_true',
-                      help='log all errors to console')
-
-    parser.add_option('-D', '--debug', dest='debuglevel',
-                      default=30,
-                      type='int',
-                      metavar='LOG_LEVEL', help=\
-        'set log level (0-100, 0 means all, 100 means none; ' \
-        'default is %default)')
-
-    parser.add_option('-S', '--shell',
-                      default=None,
-                      metavar='APPNAME', help=\
-        'run web2py in interactive shell or IPython (if installed) with ' \
-        'specified appname (if app does not exist it will be created). ' \
-        'APPNAME like a/c/f?x=y (c, f and vars optional)')
-
-    parser.add_option('-B', '--bpython',
-                      default=False,
-                      action='store_true',
-                      help=\
-        'run web2py in interactive shell or bpython (if installed) with ' \
-        'specified appname (if app does not exist it will be created). ' \
-        'Use combined with --shell')
-
-    parser.add_option('-P', '--plain',
-                      default=False,
-                      action='store_true',
-                      help=\
-        'only use plain python shell; should be used with --shell option')
-
-    parser.add_option('-M', '--import_models',
-                      default=False,
-                      action='store_true',
-                      help=\
-        'auto import model files (default is %default); should be used ' \
-        'with --shell option')
-
-    parser.add_option('-R', '--run',
-                      default='', # NOTE: used for sys.argv[0] if --shell
-                      metavar='PYTHON_FILE', help=\
-        'run PYTHON_FILE in web2py environment; ' \
-        'should be used with --shell option')
-
-    parser.add_option('-K', '--scheduler',
-                      default=None,
-                      metavar='APP_LIST', help=\
-        'run scheduled tasks for the specified apps: expects a list of ' \
-        'app names as app1,app2,app3 ' \
-        'or a list of app:groups as app1:group1:group2,app2:group1 ' \
-        '(only strings, no spaces allowed). NOTE: ' \
-        'Requires a scheduler defined in the models')
-
-    parser.add_option('-X', '--with-scheduler', dest='with_scheduler', # not needed
-                      default=False,
-                      action='store_true',
-                      help=\
-        'run schedulers alongside webserver, needs -K')
-
-    parser.add_option('-T', '--test',
-                      default=None,
-                      metavar='TEST_PATH', help=\
-        'run doctests in web2py environment; ' \
-        'TEST_PATH like a/c/f (c, f optional)')
-
-    parser.add_option('-C', '--cron', dest='extcron',
-                      default=False,
-                      action='store_true',
-                      help=\
-        'trigger a cron run and exit; usually used when invoked ' \
-        'from a system crontab')
-
-    parser.add_option('--softcron',
-                      default=False,
-                      action='store_true',
-                      help=\
-        'use software cron emulation instead of separate cron process, '\
-        'needs -Y; NOTE: use of software cron emulation is strongly '
-        'discouraged')
-
-    parser.add_option('-Y', '--run-cron', dest='runcron',
-                      default=False,
-                      action='store_true',
-                      help='start the background cron process')
-
-    parser.add_option('-J', '--cronjob',
-                      default=False,
-                      action='store_true',
-                      # NOTE: help suppressed because this option is
-                      #       intended for internal use only
-                      help=optparse.SUPPRESS_HELP)
-
-    parser.add_option('-L', '--config',
-                      default='',
-                      help='config file')
-
-    parser.add_option('-F', '--profiler', dest='profiler_dir',
-                      default=None,
-                      help='profiler dir')
-
-    parser.add_option('-t', '--taskbar',
-                      default=False,
-                      action='store_true',
-                      help='use web2py GUI and run in taskbar (system tray)')
-
-    parser.add_option('--nogui',
-                      default=False,
-                      action='store_true',
-                      help='do not run GUI')
-
-    parser.add_option('-A', '--args',
-                      default=None,
-                      help=\
-        'should be followed by a list of arguments to be passed to script, ' \
-        'to be used with -S; NOTE: must be the last option because eat all ' \
-        'remaining arguments')
-
-    parser.add_option('--no-banner', dest='no_banner', # not needed
-                      default=False,
-                      action='store_true',
-                      help='do not print header banner')
-
-    parser.add_option('--interfaces',
-                      default=None,
-                      help=\
-        'listen on multiple addresses: ' \
-        '"ip1:port1:key1:cert1:ca_cert1;ip2:port2:key2:cert2:ca_cert2;..." ' \
-        '(:key:cert:ca_cert optional; no spaces; IPv6 addresses must be in ' \
-        'square [] brackets)')
-
-    parser.add_option('--run_system_tests',
-                      default=False,
-                      action='store_true',
-                      help='run web2py tests')
-
-    parser.add_option('--with_coverage',
-                      default=False,
-                      action='store_true',
-                      help=\
-        'collect coverage data when used with --run_system_tests; ' \
-        'require Python 2.7+ and the coverage module installed')
-
-    if '-A' in sys.argv:
-        k = sys.argv.index('-A')
-    elif '--args' in sys.argv:
-        k = sys.argv.index('--args')
-    else:
-        k = len(sys.argv)
-    sys.argv, other_args = sys.argv[:k], sys.argv[k + 1:]
-    (options, args) = parser.parse_args()
-    # TODO: warn or error if args (should be no unparsed arguments)
-    options.args = other_args
-
-    if options.taskbar and os.name != 'nt':
-        # TODO: warn and disable taskbar instead of exit
-        die('taskbar not supported on this platform')
-
-    if options.config.endswith('.py'):
-        options.config = options.config[:-3]
-    if options.config:
-        # import options from options.config file
-        try:
-            # FIXME: avoid __import__
-            options2 = __import__(options.config)
-        except:
-            die("cannot import config file %s" % options.config)
-        for key in dir(options2):
-            if hasattr(options, key):
-                setattr(options, key, getattr(options2, key))
-
-    # transform options.interfaces, in the form
-    # "ip1:port1:key1:cert1:ca_cert1;[ip2]:port2;ip3:port3:key3:cert3"
-    # (no spaces; optional key:cert:ca_cert indicate SSL), into
-    # a list of tuples
-    if options.interfaces:
-        interfaces = options.interfaces.split(';')
-        options.interfaces = []
-        for interface in interfaces:
-            if interface.startswith('['):
-                # IPv6
-                ip, if_remainder = interface.split(']', 1)
-                ip = ip[1:]
-                interface = if_remainder[1:].split(':')
-                interface.insert(0, ip)
-            else:
-                # IPv4
-                interface = interface.split(':')
-            interface[1] = int(interface[1])  # numeric port
-            options.interfaces.append(tuple(interface))
-
-    if options.numthreads is not None and options.minthreads is None:
-        options.minthreads = options.numthreads  # legacy
-
-    copy_options = copy.deepcopy(options)
-    copy_options.password = '******'
-    global_settings.cmd_options = copy_options
-
-    return options, args
-
-
 def check_existent_app(options, appname):
     if os.path.isdir(os.path.join(options.folder, 'applications', appname)):
         return True
@@ -921,11 +604,10 @@ def start_schedulers(options):
     except:
         sys.stderr.write('Sorry, -K only supported for Python 2.6+\n')
         return
-    logging.getLogger().setLevel(options.debuglevel)
+    logging.getLogger().setLevel(options.log_level)
 
-    apps = [[n.strip() for n in sched_app.split(':')]
-            for sched_app in options.scheduler.split(',')]
-    if len(apps) == 1 and not options.with_scheduler:
+    apps = [ag.split(':') for ag in options.schedulers]
+    if not options.with_scheduler and len(apps) == 1:
         app, code = get_code_for_scheduler(apps[0], options)
         if not app:
             return
@@ -968,7 +650,7 @@ def start():
     """ Starts server and other services """
 
     # get command line arguments
-    (options, args) = console()
+    options = console(version=ProgramVersion)
 
     if options.gae:
         # write app.yaml, gaehandler.py, and exit
@@ -990,7 +672,7 @@ def start():
         return
 
     logger = logging.getLogger("web2py")
-    logger.setLevel(options.debuglevel)
+    logger.setLevel(options.log_level)
 
     # on new installation build the scaffolding app
     create_welcome_w2p()
@@ -1027,36 +709,29 @@ def start():
         from pydal.drivers import DRIVERS
         print('Database drivers available: %s' % ', '.join(DRIVERS))
 
-    if options.test:
+    if options.run_doctests:
         # run doctests and exit
-        test(options.test, verbose=options.verbose)
+        test(options.run_doctests, verbose=options.verbose)
         return
 
     if options.shell:
         # run interactive shell and exit
-        sys.argv = [options.run] + options.args
+        sys.argv = [options.run or ''] + options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
             import_models=options.import_models, startfile=options.run,
-            cronjob=options.cronjob)
+            cron_job=options.cron_job)
         return
 
-    if options.extcron:
+    if options.cron_run:
         # run cron (extcron) and exit
         logger.debug('Starting extcron...')
         global_settings.web2py_crontype = 'external'
-        if options.scheduler:
-            # run cron for applications listed with --scheduler (-K)
-            apps = [app for app
-                    in map(lambda ag : ag.split(':', 1)[0].strip(), options.scheduler.split(','))
-                    if check_existent_app(options, app)]
-        else:
-            apps = None
-        extcron = newcron.extcron(options.folder, apps=apps)
+        extcron = newcron.extcron(options.folder, apps=options.crontabs)
         extcron.start()
         extcron.join()
         return
 
-    if options.scheduler and not options.with_scheduler:
+    if not options.with_scheduler and options.schedulers:
         # run schedulers and exit
         try:
             start_schedulers(options)
@@ -1064,22 +739,22 @@ def start():
             pass
         return
 
-    if options.runcron:
-        if options.softcron:
-            print('Using softcron (but this is not very efficient)')
+    if options.with_cron:
+        if options.soft_cron:
+            print('Using cron software emulation (but this is not very efficient)')
             global_settings.web2py_crontype = 'soft'
         else:
             # start hardcron thread
             logger.debug('Starting hardcron...')
             global_settings.web2py_crontype = 'hard'
-            newcron.hardcron(options.folder).start()
+            newcron.hardcron(options.folder, apps=options.crontabs).start()
 
     # if no password provided and have Tk library start GUI (when not
     # explicitly disabled), we also need a GUI to put in taskbar (system tray)
     # when requested
     root = None
 
-    if (not options.nogui and options.password == '<ask>') or options.taskbar:
+    if (not options.no_gui and options.password == '<ask>') or options.taskbar:
         try:
             if PY2:
                 import Tkinter as tkinter
@@ -1089,10 +764,10 @@ def start():
         except (ImportError, OSError):
             logger.warn(
                 'GUI not available because Tk library is not installed')
-            options.nogui = True
+            options.no_gui = True
         except:
             logger.exception('cannot get Tk root window, GUI disabled')
-            options.nogui = True
+            options.no_gui = True
 
     if root:
         # run GUI and exit
@@ -1121,7 +796,7 @@ end tell
 
     spt = None
 
-    if options.scheduler and options.with_scheduler:
+    if options.with_scheduler and options.schedulers:
         # start schedulers in a separate thread
         spt = threading.Thread(target=start_schedulers, args=(options,))
         spt.start()
@@ -1144,7 +819,7 @@ end tell
         ip = first_if[0]
         port = first_if[1]
 
-    if options.ssl_certificate and options.ssl_private_key:
+    if options.server_key and options.server_cert:
         proto = 'https'
     else:
         proto = 'http'
@@ -1186,11 +861,11 @@ end tell
                              pid_filename=options.pid_filename,
                              log_filename=options.log_filename,
                              profiler_dir=options.profiler_dir,
-                             ssl_certificate=options.ssl_certificate,
-                             ssl_private_key=options.ssl_private_key,
+                             ssl_certificate=options.server_cert,
+                             ssl_private_key=options.server_key,
                              ssl_ca_certificate=options.ca_cert,
-                             min_threads=options.minthreads,
-                             max_threads=options.maxthreads,
+                             min_threads=options.min_threads,
+                             max_threads=options.max_threads,
                              server_name=options.server_name,
                              request_queue_size=options.request_queue_size,
                              timeout=options.timeout,

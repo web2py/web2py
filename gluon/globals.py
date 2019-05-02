@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -355,11 +354,9 @@ class Request(Storage):
         """
         cmd_opts = global_settings.cmd_options
         # checking if this is called within the scheduler or within the shell
-        # in addition to checking if it's a cronjob
-        # FIXME: cmd_opts.scheduler does not imply that
-        #        we are running in the scheduler
-        if (self.is_https or cmd_opts and (
-                cmd_opts.shell or cmd_opts.scheduler or cmd_opts.cronjob)):
+        # in addition to checking if it's a cron job
+        if (self.is_https or self.is_scheduler or cmd_opts and (
+                cmd_opts.shell or cmd_opts.cron_job)):
             current.session.secure()
         else:
             current.session.forget()
