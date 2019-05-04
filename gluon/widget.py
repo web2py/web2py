@@ -314,9 +314,9 @@ class web2pyDialog(object):
             self.tb = None
 
     def update_schedulers(self, start=False):
-        if start and self.options.with_scheduler and self.options.with_schedulers:
+        if start and self.options.with_scheduler and self.options.schedulers:
             # the widget takes care of starting the schedulers
-            apps = [ag.split(':', 1)[0] for ag in self.options.with_schedulers]
+            apps = [ag.split(':', 1)[0] for ag in self.options.schedulers]
         else:
             apps = []
         for app in apps:
