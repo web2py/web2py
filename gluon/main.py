@@ -116,8 +116,8 @@ load_routes()
 HTTPS_SCHEMES = set(('https', 'HTTPS'))
 
 
-# pattern used to validate client address
-REGEX_CLIENT = re.compile(r'[\w:-]+(\.[\w-]+)*\.?')  # ## to account for IPV6
+# pattern used to match client IP address
+REGEX_CLIENT = re.compile(r'[\w:]+(\.\w+)*')
 
 def get_client(env):
     """

@@ -59,6 +59,8 @@ def enable_autocomplete_and_history(adir, env):
         readline.set_completer(rlcompleter.Completer(env).complete)
 
 
+REGEX_APP_PATH = '(?:.*/)?applications/(?P<a>[^/]+)'
+
 def exec_environment(
     pyfile='',
     request=None,
@@ -83,10 +85,10 @@ def exec_environment(
         session = Session()
 
     if request.folder is None:
-        mo = re.match(r'(|.*/)applications/(?P<appname>[^/]+)', pyfile)
+        mo = re.match(REGEX_APP_PATH, pyfile)
         if mo:
-            appname = mo.group('appname')
-            request.folder = os.path.abspath(os.path.join('applications', appname))
+            a = mo.group('a')
+            request.folder = os.path.abspath(os.path.join('applications', a))
         else:
             request.folder = ''
     env = build_environment(request, response, session, store_current=False)
@@ -380,7 +382,7 @@ def test(testpath, import_models=True, verbose=False):
 
     import doctest
     if os.path.isfile(testpath):
-        mo = re.search('/?applications/(?P<a>[^/]+)', testpath)
+        mo = re.match(REGEX_APP_PATH, testpath)
         if not mo:
             die('test file is not in application directory: %s'
                 % testpath)
