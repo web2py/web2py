@@ -34,7 +34,7 @@ apt-get -y install build-essential
 apt-get -y install python3
 #apt-get -y install python2.5
 apt-get -y install ipython
-apt-get -y install python-dev
+apt-get -y install python3-dev
 apt-get -y install postgresql
 apt-get -y install apache2
 apt-get -y install libapache2-mod-wsgi
