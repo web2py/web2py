@@ -525,7 +525,7 @@ def load_config(config_file, opt_map):
 
     Notice that the configuring Python script is never executed/imported,
     instead the ast library is used to evaluate each option assignment,
-    provided that it is writen on a single line.
+    provided that it is written on a single line.
 
     Returns an OrderedDict with sourced options.
     """
