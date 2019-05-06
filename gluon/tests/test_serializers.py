@@ -50,7 +50,8 @@ class TestSerializers(unittest.TestCase):
         lazy_translation = T('abc')
         self.assertEqual(json(lazy_translation), u'"abc"')
         # html helpers are xml()ed before too
-        self.assertEqual(json(SPAN('abc')), u'"<span>abc</span>"')
+        self.assertEqual(json(SPAN('abc'), cls=None), u'"<span>abc</span>"')
+        self.assertEqual(json(SPAN('abc')), u'"\\u003cspan\\u003eabc\\u003c/span\\u003e"')
         # unicode keys make a difference with loads_json
         base = {u'è': 1, 'b': 2}
         base_enc = json(base)
