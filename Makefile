@@ -19,11 +19,11 @@ clean:
 	find applications/welcome/ -name '.*' -exec rm -f {} \; 
 	find . -name '*.pyc' -exec rm -f {} \;
 tests:
-	python web2py.py --run_system_tests
+	python web2py.py --verbose --run_system_tests
 coverage:
 	coverage erase --rcfile=gluon/tests/coverage.ini
 	export COVERAGE_PROCESS_START=gluon/tests/coverage.ini
-	python web2py.py --run_system_tests --with_coverage
+	python web2py.py --verbose --run_system_tests --with_coverage
 	coverage combine --rcfile=gluon/tests/coverage.ini
 	sleep 1
 	coverage html --rcfile=gluon/tests/coverage.ini
