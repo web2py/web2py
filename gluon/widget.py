@@ -23,7 +23,7 @@ import logging
 import getpass
 
 from gluon import main, newcron
-from gluon.fileutils import read_file, create_welcome_w2p
+from gluon.fileutils import read_file, create_welcome_w2p, create_missing_folders
 from gluon.console import console
 from gluon.settings import global_settings
 from gluon.shell import die, run, test
@@ -368,6 +368,7 @@ class web2pyDialog(object):
 
     def try_start_scheduler(self, app):
         if app not in self.scheduler_processes:
+            create_missing_folders(os.path.join(self.options.folder, 'applications', app))
             t = threading.Thread(target=self.start_schedulers, args=(app,))
             t.start()
 

@@ -291,9 +291,7 @@ def w2p_unpack(filename, path, delete_tar=True):
     if delete_tar:
         os.unlink(tarname)
 
-
-def create_app(path):
-    w2p_unpack('welcome.w2p', path)
+def create_missing_folders(path):
     for subfolder in ('models', 'views', 'controllers', 'databases',
                       'modules', 'cron', 'errors', 'sessions',
                       'languages', 'static', 'private', 'uploads'):
@@ -301,6 +299,9 @@ def create_app(path):
         if not os.path.exists(subpath):
             os.mkdir(subpath)
 
+def create_app(path):
+    w2p_unpack('welcome.w2p', path)
+    create_missing_folders(path)
 
 def w2p_pack_plugin(filename, path, plugin_name):
     """Packs the given plugin into a w2p file.
