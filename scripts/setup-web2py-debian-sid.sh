@@ -30,6 +30,7 @@ apt-get -y install zip unzip
 apt-get -y install tar
 apt-get -y install openssh-server
 apt-get -y install build-essential
+apt-get -y install python3
 apt-get -y install ipython
 apt-get -y install python-dev
 apt-get -y install postgresql
