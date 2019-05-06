@@ -254,12 +254,23 @@ def w2p_pack(filename, path, compiled=False, filenames=None):
     os.unlink(tarname)
 
 
+def create_missing_folders(path):
+    for subfolder in ('models', 'views', 'controllers', 'databases',
+                      'modules', 'cron', 'errors', 'sessions',
+                      'languages', 'static', 'private', 'uploads'):
+        subpath = os.path.join(path, subfolder)
+        if not os.path.exists(subpath):
+            os.mkdir(subpath)
+
+
 def create_welcome_w2p():
     is_newinstall = os.path.exists('NEWINSTALL')
     if not os.path.exists('welcome.w2p') or is_newinstall:
         logger = logging.getLogger("web2py")
         try:
-            w2p_pack('welcome.w2p', 'applications/welcome')
+            app_path = 'applications/welcome'
+            create_missing_folders(app_path)
+            w2p_pack('welcome.w2p', app_path)
             logger.info("New installation: created welcome.w2p file")
         except:
             logger.exception("New installation error: unable to create welcome.w2p file")
@@ -291,17 +302,10 @@ def w2p_unpack(filename, path, delete_tar=True):
     if delete_tar:
         os.unlink(tarname)
 
-def create_missing_folders(path):
-    for subfolder in ('models', 'views', 'controllers', 'databases',
-                      'modules', 'cron', 'errors', 'sessions',
-                      'languages', 'static', 'private', 'uploads'):
-        subpath = os.path.join(path, subfolder)
-        if not os.path.exists(subpath):
-            os.mkdir(subpath)
 
 def create_app(path):
     w2p_unpack('welcome.w2p', path)
-    create_missing_folders(path)
+
 
 def w2p_pack_plugin(filename, path, plugin_name):
     """Packs the given plugin into a w2p file.
@@ -424,6 +428,7 @@ def fix_newlines(path):
             write_file(filename, wdata, 'w')
 
 
+# FIXME: do we really need this ?
 def copystream(
     src,
     dest,
@@ -460,9 +465,8 @@ def abspath(*relpath, **base):
     applications_parent
     """
     path = os.path.join(*relpath)
-    gluon = base.get('gluon', False)
     if os.path.isabs(path):
         return path
-    if gluon:
+    if base.get('gluon', False):
         return os.path.join(global_settings.gluon_parent, path)
     return os.path.join(global_settings.applications_parent, path)
