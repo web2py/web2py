@@ -14,8 +14,9 @@ import shutil
 
 from gluon.contrib.webclient import WebClient
 from gluon._compat import urllib2, PY2
+from gluon.fileutils import create_app
 
-test_app_name = 'welcome'
+test_app_name = '_test_web'
 
 webserverprocess = None
 
@@ -72,28 +73,18 @@ class LiveTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # FIXME: should use a temporary application to run tests,
-        #        instead of tampering an existing one, whatever it is;
-        #        rename databases dir to databases~ and use a blank
-        #        databases during tests
-        dbdir = os.path.join('applications', test_app_name, 'databases')
-        if os.path.exists(dbdir):
-            bakdbdir = dbdir + '~'
-            if os.path.exists(bakdbdir):
-                shutil.rmtree(dbdir)
-            else:
-                os.rename(dbdir, bakdbdir)
-        os.mkdir(dbdir)
+        appdir = os.path.join('applications', test_app_name)
+        if not os.path.exists(appdir):
+            os.mkdir(appdir)
+            create_app(appdir)
         startwebserver()
 
     @classmethod
     def tearDownClass(cls):
         stopwebserver()
-        dbdir = os.path.join('applications', test_app_name, 'databases')
-        shutil.rmtree(dbdir)
-        bakdbdir = dbdir + '~'
-        if os.path.exists(bakdbdir):
-            os.rename(bakdbdir, dbdir)
+        appdir = os.path.join('applications', test_app_name)
+        if os.path.exists(appdir):
+            shutil.rmtree(appdir)
 
 
 @unittest.skipIf("datastore" in os.getenv("DB", ""), "TODO: setup web test for app engine")
