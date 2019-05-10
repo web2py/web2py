@@ -531,7 +531,7 @@ def load_config(config_file, opt_map):
     """
     REGEX_ASSIGN_EXP = re.compile(r'\s*=\s*(.+)')
     map_items = opt_map.items()
-    # preserve the order of loaded options even if this is not needed
+    # preserve the order of loaded options even though this is not needed
     pl = OrderedDict()
     config_encoding = get_pep263_encoding(config_file)
     # NOTE: assume 'ascii' encoding when not explicitly stated (Python 2),
