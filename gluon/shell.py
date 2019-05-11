@@ -260,7 +260,7 @@ def run(
     if c:
         pyfile = os.path.join('applications', a, 'controllers', c + '.py')
         pycfile = os.path.join('applications', a, 'compiled',
-                                 "controllers_%s_%s.pyc" % (c, f))
+                                 "controllers.%s.%s.pyc" % (c, f))
         if ((cron_job and os.path.isfile(pycfile))
             or not os.path.isfile(pyfile)):
             exec(read_pyc(pycfile), _env)
