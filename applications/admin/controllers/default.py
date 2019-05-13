@@ -1082,6 +1082,9 @@ def about():
     return dict(app=app, about=MARKMIN(about), license=MARKMIN(license), progress=report_progress(app))
 
 
+regex_include = r"""(?P<all>\{\{\s*include\s+['"](?P<name>[^'"]*)['"]\s*\}\})"""
+regex_extend = r"""^\s*(?P<all>\{\{\s*extend\s+['"](?P<name>[^'"]+)['"]\s*\}\})"""
+
 def design():
     """ Application design handler """
     app = get_app()
@@ -1118,9 +1121,10 @@ def design():
     models = listdir(apath('%s/models/' % app, r=request), '.*\.py$')
     models = [x.replace('\\', '/') for x in models]
     defines = {}
+    regex_tables = r"""^[\w]+\.define_table\(\s*['"](?P<name>\w+)['"]"""
     for m in models:
         data = safe_read(apath('%s/models/%s' % (app, m), r=request))
-        defines[m] = regex_tables.findall(data)
+        defines[m] = re.findall(regex_tables, data, re.MULTILINE)
         defines[m].sort()
 
     # Get all controllers
@@ -1144,12 +1148,12 @@ def design():
     include = {}
     for c in views:
         data = safe_read(apath('%s/views/%s' % (app, c), r=request))
-        items = regex_extend.findall(data)
+        items = re.findall(regex_extend, data, re.MULTILINE)
 
         if items:
             extend[c] = items[0][1]
 
-        items = regex_include.findall(data)
+        items = re.findall(regex_include, data)
         include[c] = [i[1] for i in items]
 
     # Get all modules
@@ -1285,11 +1289,11 @@ def plugin():
     include = {}
     for c in views:
         data = safe_read(apath('%s/views/%s' % (app, c), r=request))
-        items = regex_extend.findall(data)
+        items = re.findall(regex_extend, data, re.MULTILINE)
         if items:
             extend[c] = items[0][1]
 
-        items = regex_include.findall(data)
+        items = re.findall(regex_include, data)
         include[c] = [i[1] for i in items]
 
     # Get all modules
