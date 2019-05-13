@@ -166,9 +166,9 @@ def check_version():
     new_version, version = check_new_version(request.env.web2py_version,
                                              WEB2PY_VERSION_URL)
 
-    if new_version == -1:
+    if new_version in (-1, -2):
         return A(T('Unable to check for upgrades'), _href=WEB2PY_URL)
-    elif new_version != True:
+    elif not new_version:
         return A(T('web2py is up to date'), _href=WEB2PY_URL)
     elif platform.system().lower() in ('windows', 'win32', 'win64') and os.path.exists("web2py.exe"):
         return SPAN('You should upgrade to %s' % version.split('(')[0])
@@ -1082,9 +1082,6 @@ def about():
     return dict(app=app, about=MARKMIN(about), license=MARKMIN(license), progress=report_progress(app))
 
 
-regex_include = r"""(?P<all>\{\{\s*include\s+['"](?P<name>[^'"]*)['"]\s*\}\})"""
-regex_extend = r"""^\s*(?P<all>\{\{\s*extend\s+['"](?P<name>[^'"]+)['"]\s*\}\})"""
-
 def design():
     """ Application design handler """
     app = get_app()
@@ -1121,10 +1118,9 @@ def design():
     models = listdir(apath('%s/models/' % app, r=request), '.*\.py$')
     models = [x.replace('\\', '/') for x in models]
     defines = {}
-    regex_tables = r"""^[\w]+\.define_table\(\s*['"](?P<name>\w+)['"]"""
     for m in models:
         data = safe_read(apath('%s/models/%s' % (app, m), r=request))
-        defines[m] = re.findall(regex_tables, data, re.MULTILINE)
+        defines[m] = re.findall(REGEX_DEFINE_TABLE, data, re.MULTILINE)
         defines[m].sort()
 
     # Get all controllers
@@ -1148,12 +1144,12 @@ def design():
     include = {}
     for c in views:
         data = safe_read(apath('%s/views/%s' % (app, c), r=request))
-        items = re.findall(regex_extend, data, re.MULTILINE)
+        items = re.findall(REGEX_EXTEND, data, re.MULTILINE)
 
         if items:
             extend[c] = items[0][1]
 
-        items = re.findall(regex_include, data)
+        items = re.findall(REGEX_INCLUDE, data)
         include[c] = [i[1] for i in items]
 
     # Get all modules
@@ -1289,11 +1285,11 @@ def plugin():
     include = {}
     for c in views:
         data = safe_read(apath('%s/views/%s' % (app, c), r=request))
-        items = re.findall(regex_extend, data, re.MULTILINE)
+        items = re.findall(REGEX_EXTEND, data, re.MULTILINE)
         if items:
             extend[c] = items[0][1]
 
-        items = re.findall(regex_include, data)
+        items = re.findall(REGEX_INCLUDE, data)
         include[c] = [i[1] for i in items]
 
     # Get all modules

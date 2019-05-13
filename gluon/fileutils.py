@@ -18,6 +18,7 @@ import time
 import datetime
 import logging
 import shutil
+
 from gluon.http import HTTP
 from gzip import open as gzopen
 from gluon.recfile import generate
@@ -254,13 +255,11 @@ def w2p_pack(filename, path, compiled=False, filenames=None):
     os.unlink(tarname)
 
 
-def create_missing_folders(path):
+def missing_app_folders(path):
     for subfolder in ('models', 'views', 'controllers', 'databases',
                       'modules', 'cron', 'errors', 'sessions',
                       'languages', 'static', 'private', 'uploads'):
-        subpath = os.path.join(path, subfolder)
-        if not os.path.exists(subpath):
-            os.mkdir(subpath)
+        yield os.path.join(path, subfolder)
 
 
 def create_welcome_w2p():
@@ -269,7 +268,9 @@ def create_welcome_w2p():
         logger = logging.getLogger("web2py")
         try:
             app_path = 'applications/welcome'
-            create_missing_folders(app_path)
+            for amf in missing_app_folders(app_path):
+                if not os.path.exists(amf):
+                    os.mkdir(amf)
             w2p_pack('welcome.w2p', app_path)
             logger.info("New installation: created welcome.w2p file")
         except:
