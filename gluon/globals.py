@@ -26,7 +26,6 @@ from gluon.utils import web2py_uuid, secure_dumps, secure_loads
 from gluon.settings import global_settings
 from gluon import recfile
 from gluon.cache import CacheInRam
-from gluon.fileutils import copystream
 import hashlib
 from pydal.contrib import portalocker
 from pickle import Pickler, MARK, DICT, EMPTY_DICT
@@ -102,6 +101,26 @@ def sorting_dumps(obj, protocol=None):
 # END #####################################################################
 
 
+def copystream(src, dest, size, chunk_size, cache_inc=None):
+    while size > 0:
+        if size < chunk_size:
+            data = src.read(size)
+            callable(cache_inc) and cache_inc(size)
+        else:
+            data = src.read(chunk_size)
+            callable(cache_inc) and cache_inc(chunk_size)
+        length = len(data)
+        if length > size:
+            (data, length) = (data[:size], size)
+        size -= length
+        if length == 0:
+            break
+        dest.write(data)
+        if length < chunk_size:
+            break
+    dest.seek(0)
+    return
+
 def copystream_progress(request, chunk_size=10 ** 5):
     """
     Copies request.env.wsgi_input into request.body
@@ -127,23 +146,8 @@ def copystream_progress(request, chunk_size=10 ** 5):
     cache_ram = CacheInRam(request)  # same as cache.ram because meta_storage
     cache_ram(cache_key + ':length', lambda: size, 0)
     cache_ram(cache_key + ':uploaded', lambda: 0, 0)
-    while size > 0:
-        if size < chunk_size:
-            data = source.read(size)
-            cache_ram.increment(cache_key + ':uploaded', size)
-        else:
-            data = source.read(chunk_size)
-            cache_ram.increment(cache_key + ':uploaded', chunk_size)
-        length = len(data)
-        if length > size:
-            (data, length) = (data[:size], size)
-        size -= length
-        if length == 0:
-            break
-        dest.write(data)
-        if length < chunk_size:
-            break
-    dest.seek(0)
+    copystream(source, dest, size, chunk_size,
+               lambda v : cache_ram.increment(cache_key + ':uploaded', v))
     cache_ram(cache_key + ':length', None)
     cache_ram(cache_key + ':uploaded', None)
     return dest

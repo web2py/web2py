@@ -23,6 +23,7 @@ from gluon.http import HTTP
 from gzip import open as gzopen
 from gluon.recfile import generate
 from gluon._compat import PY2
+from gluon.settings import global_settings
 
 __all__ = (
     'parse_version',
@@ -429,45 +430,14 @@ def fix_newlines(path):
             write_file(filename, wdata, 'w')
 
 
-# FIXME: do we really need this ?
-def copystream(
-    src,
-    dest,
-    size,
-    chunk_size=10 ** 5,
-):
-    """
-    this is here because I think there is a bug in shutil.copyfileobj
-    """
-    while size > 0:
-        if size < chunk_size:
-            data = src.read(size)
-        else:
-            data = src.read(chunk_size)
-        length = len(data)
-        if length > size:
-            (data, length) = (data[:size], size)
-        size -= length
-        if length == 0:
-            break
-        dest.write(data)
-        if length < chunk_size:
-            break
-    dest.seek(0)
-    return
-
-
-from gluon.settings import global_settings  # we need to import settings here because
-                                      # settings imports fileutils too
-
-
-def abspath(*relpath, **base):
+# NOTE: same name as os.path.abspath (but signature is different)
+def abspath(*relpath, **kwargs):
     """Converts relative path to absolute path based (by default) on
     applications_parent
     """
     path = os.path.join(*relpath)
     if os.path.isabs(path):
         return path
-    if base.get('gluon', False):
+    if kwargs.get('gluon', False):
         return os.path.join(global_settings.gluon_parent, path)
     return os.path.join(global_settings.applications_parent, path)
