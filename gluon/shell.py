@@ -214,7 +214,8 @@ def run(
     bpython=False,
     python_code=None,
     cronjob=False,
-    scheduler_job=False):
+    scheduler_job=False,
+    force_migrate=False):
     """
     Start interactive shell or run Python script (startfile) in web2py
     controller environment. appname is formatted like:
@@ -243,6 +244,19 @@ def run(
         if confirm.lower() in ('y', 'yes'):
             os.mkdir(adir)
             fileutils.create_app(adir)
+
+    if force_migrate:
+        import_models = True
+        from gluon.dal import DAL
+        orig_init = DAL.__init__
+
+        def custom_init(*args, **kwargs):
+            kwargs['migrate'] = True
+            logger.info('Forcing migrate=True')
+            orig_init(*args, **kwargs)
+
+        DAL.__init__ = custom_init
+        logger.debug('Custom init should not have been called already')
 
     if c:
         import_models = True

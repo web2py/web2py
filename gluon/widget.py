@@ -839,6 +839,13 @@ web2py will attempt to run a GUI to ask for it when starting the web server
         'collect coverage data when used with --run_system_tests; ' \
         'require Python 2.7+ and the coverage module installed')
 
+    parser.add_option('--force_migrate',
+                      default=False,
+                      action='store_true',
+                      help= \
+                          'force DAL to migrate all tables that should be migrated when enabled; ' \
+                          'monkeypatch in the DAL class to force _migrate_enabled=True')
+
     if '-A' in sys.argv:
         k = sys.argv.index('-A')
     elif '--args' in sys.argv:
@@ -1037,7 +1044,7 @@ def start():
         sys.argv = [options.run] + options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
             import_models=options.import_models, startfile=options.run,
-            cronjob=options.cronjob)
+            cronjob=options.cronjob, force_migrate=options.force_migrate)
         return
 
     if options.extcron:
