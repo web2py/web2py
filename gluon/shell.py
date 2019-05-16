@@ -59,6 +59,8 @@ def enable_autocomplete_and_history(adir, env):
         readline.set_completer(rlcompleter.Completer(env).complete)
 
 
+REGEX_APP_PATH = '(?:.*/)?applications/(?P<a>[^/]+)'
+
 def exec_environment(
     pyfile='',
     request=None,
@@ -83,10 +85,10 @@ def exec_environment(
         session = Session()
 
     if request.folder is None:
-        mo = re.match(r'(|.*/)applications/(?P<appname>[^/]+)', pyfile)
+        mo = re.match(REGEX_APP_PATH, pyfile)
         if mo:
-            appname = mo.group('appname')
-            request.folder = os.path.abspath(os.path.join('applications', appname))
+            a = mo.group('a')
+            request.folder = os.path.abspath(os.path.join('applications', a))
         else:
             request.folder = ''
     env = build_environment(request, response, session, store_current=False)
@@ -146,7 +148,7 @@ def env(
         request.is_shell = cmd_opts.shell is not None
     else:
         ip = '127.0.0.1'; port = 8000
-        # FIXME: what about request.is_shell ?
+        request.is_shell = False
     request.is_scheduler = False
     request.env.http_host = '%s:%s' % (ip, port)
     request.env.remote_addr = '127.0.0.1'
@@ -213,7 +215,7 @@ def run(
     startfile=None,
     bpython=False,
     python_code=None,
-    cronjob=False,
+    cron_job=False,
     scheduler_job=False,
     force_migrate=False):
     """
@@ -234,7 +236,7 @@ def run(
     adir = os.path.join('applications', a)
 
     if not os.path.exists(adir):
-        if not cronjob and not scheduler_job and \
+        if not cron_job and not scheduler_job and \
             sys.stdin and not sys.stdin.name == '/dev/null':
             confirm = raw_input(
                 'application %s does not exist, create (y/n)?' % a)
@@ -273,7 +275,7 @@ def run(
         pyfile = os.path.join('applications', a, 'controllers', c + '.py')
         pycfile = os.path.join('applications', a, 'compiled',
                                  "controllers_%s_%s.pyc" % (c, f))
-        if ((cronjob and os.path.isfile(pycfile))
+        if ((cron_job and os.path.isfile(pycfile))
             or not os.path.isfile(pyfile)):
             exec(read_pyc(pycfile), _env)
         elif os.path.isfile(pyfile):
@@ -403,7 +405,7 @@ def test(testpath, import_models=True, verbose=False):
 
     import doctest
     if os.path.isfile(testpath):
-        mo = re.match(r'(|.*/)applications/(?P<a>[^/]+)', testpath)
+        mo = re.match(REGEX_APP_PATH, testpath)
         if not mo:
             die('test file is not in application directory: %s'
                 % testpath)

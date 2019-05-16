@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# vim: set ts=4 sw=4 et ai:
 
 """
 | This file is part of the web2py Web Framework
@@ -9,13 +10,15 @@
 Cron-style interface
 """
 
-import sys
-import os
 import threading
-import logging
+import os
+from logging import getLogger, DEBUG
 import time
 import sched
+import sys
 import re
+import shlex
+
 import datetime
 from functools import reduce
 from gluon.settings import global_settings
@@ -23,9 +26,17 @@ from gluon import fileutils
 from gluon._compat import to_bytes, pickle
 from pydal.contrib import portalocker
 
-logger = logging.getLogger("web2py.cron")
+logger_name = 'web2py.cron'
+
+
 _cron_stopping = False
+
+_cron_subprocs_lock = threading.RLock()
 _cron_subprocs = []
+
+def subprocess_count():
+    with _cron_subprocs_lock:
+        return len(_cron_subprocs)
 
 
 def absolute_path_link(path):
@@ -45,14 +56,14 @@ def stopcron():
     """Graceful shutdown of cron"""
     global _cron_stopping
     _cron_stopping = True
-    while _cron_subprocs:
-        proc = _cron_subprocs.pop()
+    while subprocess_count():
+        with _cron_subprocs_lock:
+            proc = _cron_subprocs.pop()
         if proc.poll() is None:
             try:
                 proc.terminate()
-            except:
-                import traceback
-                traceback.print_exc()
+            except Exception:
+                getLogger(logger_name).exception('error in stopcron')
 
 
 class extcron(threading.Thread):
@@ -62,11 +73,10 @@ class extcron(threading.Thread):
         self.setDaemon(False)
         self.path = applications_parent
         self.apps = apps
-        # crondance(self.path, 'external', startup=True, apps=self.apps)
 
     def run(self):
         if not _cron_stopping:
-            logger.debug('external cron invocation')
+            getLogger(logger_name).debug('external cron invocation')
             crondance(self.path, 'external', startup=False, apps=self.apps)
 
 
@@ -77,16 +87,19 @@ class hardcron(threading.Thread):
         self.setDaemon(True)
         self.path = applications_parent
         self.apps = apps
+        # processing of '@reboot' entries in crontab (startup=True)
+        getLogger(logger_name).info('hard cron bootstrap')
         crondance(self.path, 'hard', startup=True, apps=self.apps)
 
     def launch(self):
         if not _cron_stopping:
-            logger.debug('hard cron invocation')
+            self.logger.debug('hard cron invocation')
             crondance(self.path, 'hard', startup=False, apps=self.apps)
 
     def run(self):
+        self.logger = getLogger(logger_name)
+        self.logger.info('hard cron daemon started')
         s = sched.scheduler(time.time, time.sleep)
-        logger.info('hard cron daemon started')
         while not _cron_stopping:
             now = time.time()
             s.enter(60 - now % 60, 1, self.launch, ())
@@ -99,14 +112,14 @@ class softcron(threading.Thread):
         threading.Thread.__init__(self)
         self.path = applications_parent
         self.apps = apps
-        # crondance(self.path, 'soft', startup=True, apps=self.apps)
 
     def run(self):
         if not _cron_stopping:
-            logger.debug('soft cron invocation')
+            getLogger(logger_name).debug('soft cron invocation')
             crondance(self.path, 'soft', startup=False, apps=self.apps)
 
 
+# TODO: context manager
 class Token(object):
 
     def __init__(self, path):
@@ -115,6 +128,7 @@ class Token(object):
             fileutils.write_file(self.path, to_bytes(''), 'wb')
         self.master = None
         self.now = time.time()
+        self.logger = getLogger(logger_name)
 
     def acquire(self, startup=False):
         """
@@ -133,7 +147,7 @@ class Token(object):
         else:
             locktime = 59.99
         if portalocker.LOCK_EX is None:
-            logger.warning('cron disabled because no file locking')
+            self.logger.warning('cron disabled because no file locking')
             return None
         self.master = fileutils.open_file(self.path, 'rb+')
         try:
@@ -148,8 +162,8 @@ class Token(object):
                 ret = self.now
                 if not stop:
                     # this happens if previous cron job longer than 1 minute
-                    logger.warning('stale cron.master detected')
-                logger.debug('acquiring lock')
+                    self.logger.warning('stale cron.master detected')
+                self.logger.debug('acquiring lock')
                 self.master.seek(0)
                 pickle.dump((self.now, 0), self.master)
                 self.master.flush()
@@ -167,7 +181,7 @@ class Token(object):
         ret = self.master.closed
         if not self.master.closed:
             portalocker.lock(self.master, portalocker.LOCK_EX)
-            logger.debug('releasing cron lock')
+            self.logger.debug('releasing cron lock')
             self.master.seek(0)
             (start, stop) = pickle.load(self.master)
             if start == self.now:  # if this is my lock
@@ -248,26 +262,25 @@ class cronlauncher(threading.Thread):
 
     def run(self):
         import subprocess
-        global _cron_subprocs
-        if isinstance(self.cmd, (list, tuple)):
-            cmd = self.cmd
-        else:
-            cmd = self.cmd.split()
-        proc = subprocess.Popen(cmd,
+        logger = getLogger(logger_name)
+        proc = subprocess.Popen(self.cmd,
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-        _cron_subprocs.append(proc)
+        with _cron_subprocs_lock:
+            _cron_subprocs.append(proc)
         (stdoutdata, stderrdata) = proc.communicate()
         try:
-            _cron_subprocs.remove(proc)
+            with _cron_subprocs_lock:
+                _cron_subprocs.remove(proc)
         except ValueError:
             pass
         if proc.returncode != 0:
-            logger.warning('call returned code %s:\n%s\n%s',
-                proc.returncode, stdoutdata, stderrdata)
-        else:
-            logger.debug('call returned success:\n%s', stdoutdata)
+            logger.warning('%r call returned code %s:\n%s\n%s',
+                ' '.join(self.cmd), proc.returncode, stdoutdata, stderrdata)
+        elif logger.isEnabledFor(DEBUG):
+            logger.debug('%r call returned success:\n%s',
+                ' '.join(self.cmd), stdoutdata)
 
 
 def crondance(applications_parent, ctype='soft', startup=False, apps=None):
@@ -287,7 +300,9 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
               ('dom', now_s.tm_mday),
               ('dow', (now_s.tm_wday + 1) % 7))
 
-    if apps is None:
+    logger = getLogger(logger_name)
+
+    if not apps:
         apps = [x for x in os.listdir(apppath)
                 if os.path.isdir(os.path.join(apppath, x))]
 
@@ -303,10 +318,7 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
         base_commands.append(w2p_path)
     if applications_parent != global_settings.gluon_parent:
         base_commands.extend(('-f', applications_parent))
-    base_commands.extend(('--cronjob', '--no-banner', '--nogui', '--plain',
-                          # FIXME: this should not be needed since we are
-                          #        not launching the web server
-                          '-a', '"<recycle>"'))
+    base_commands.extend(('--cron_job', '--no_banner', '--no_gui', '--plain'))
 
     for app in apps:
         if _cron_stopping:
@@ -335,15 +347,16 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
         for task in tasks:
             if _cron_stopping:
                 break
-            citems = [(k in task and not v in task[k]) for k, v in checks]
-            task_min = task.get('min', [])
             if not task:
                 continue
-            elif not startup and task_min == [-1]:
+            task_min = task.get('min', [])
+            if not startup and task_min == [-1]:
                 continue
-            elif task_min != [-1] and reduce(lambda a, b: a or b, citems):
+            citems = [(k in task and not v in task[k]) for k, v in checks]
+            if task_min != [-1] and reduce(lambda a, b: a or b, citems):
                 continue
-            logger.info('%s cron: %s executing %s in %s at %s',
+
+            logger.info('%s cron: %s executing %r in %s at %s',
                 ctype, app, task.get('cmd'),
                 os.getcwd(), datetime.datetime.now())
             action = models = False
@@ -364,11 +377,12 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
                 if models:
                     commands.append('-M')
             else:
-                commands = command
+                commands = shlex.split(command)
 
             try:
+                # FIXME: using a new thread every time there is a task to
+                #        launch is not a good idea in a long running process
                 cronlauncher(commands).start()
-            except Exception as e:
-                logger.warning('execution error for %s: %s',
-                    task.get('cmd'), e)
+            except Exception:
+                logger.exception('error starting %r', task['cmd'])
     token.release()

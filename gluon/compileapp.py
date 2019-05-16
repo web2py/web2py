@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -14,92 +13,42 @@ Note:
 """
 
 import re
-import fnmatch
-import os, sys
-import copy
 import random
-from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, integer_types, basestring, reduce, xrange, long, reload
-from gluon.storage import Storage, List
-from gluon.template import parse_template
-from gluon.restricted import restricted, compile2
-from gluon.fileutils import mktree, listdir, read_file, write_file
-from gluon.myregex import regex_expose, regex_longcomments
-from gluon.languages import TranslatorFactory
-from gluon.dal import DAL, Field
-from gluon.validators import Validator
-from pydal.base import BaseAdapter
-from gluon.sqlhtml import SQLFORM, SQLTABLE
-from gluon.cache import Cache
-from gluon.globals import current, Response
-from gluon import settings
-from gluon.cfs import getcfs
-from gluon import html
-from gluon import validators
-from gluon.http import HTTP, redirect
-import marshal
-import shutil
-import imp
-import logging
 import types
+import copy
 from functools import reduce
-from gluon import rewrite
-from gluon.custom_import import custom_import_install
 import py_compile
+import os
+from os.path import join as pjoin, exists
+import sys
+import imp
+import marshal
+import fnmatch
+import shutil
 
-logger = logging.getLogger("web2py")
+from gluon._compat import (builtin, PY2, unicodeT, to_native, to_bytes,
+    iteritems, integer_types, basestring, xrange, reload)
+from gluon.storage import Storage, List
+from gluon.globals import current, Response
+from gluon import html, validators, rewrite
+from gluon.http import HTTP, redirect
+from gluon.dal import DAL, Field
+from gluon.sqlhtml import SQLFORM, SQLTABLE
+from gluon.languages import TranslatorFactory
+from gluon.cache import Cache
+from gluon.validators import Validator
+from gluon.settings import global_settings
+from pydal.base import BaseAdapter
+from gluon.custom_import import custom_import_install
+from gluon.fileutils import mktree, listdir, read_file, write_file, abspath
+from gluon.template import parse_template
+from gluon.cfs import getcfs
+from gluon.restricted import restricted, compile2
+from gluon.admin import add_path_first
 
-is_pypy = settings.global_settings.is_pypy
-is_gae = settings.global_settings.web2py_runtime_gae
-is_jython = settings.global_settings.is_jython
-pjoin = os.path.join
-
-if PY2:
-    marshal_header_size = 8
-else:
-    marshal_header_size = 16 if sys.version_info[1] >= 7 else 12
-
-TEST_CODE = \
-    r"""
-def _TEST():
-    import doctest, sys, cStringIO, types, cgi, gluon.fileutils
-    if not gluon.fileutils.check_credentials(request):
-        raise HTTP(401, web2py_error='invalid credentials')
-    stdout = sys.stdout
-    html = '<h2>Testing controller "%s.py" ... done.</h2><br/>\n' \
-        % request.controller
-    for key in sorted([key for key in globals() if not key in __symbols__+['_TEST']]):
-        eval_key = eval(key)
-        if type(eval_key) == types.FunctionType:
-            number_doctests = sum([len(ds.examples) for ds in doctest.DocTestFinder().find(eval_key)])
-            if number_doctests>0:
-                sys.stdout = cStringIO.StringIO()
-                name = '%s/controllers/%s.py in %s.__doc__' \
-                    % (request.folder, request.controller, key)
-                doctest.run_docstring_examples(eval_key,
-                    globals(), False, name=name)
-                report = sys.stdout.getvalue().strip()
-                if report:
-                    pf = 'failed'
-                else:
-                    pf = 'passed'
-                html += '<h3 class="%s">Function %s [%s]</h3>\n' \
-                    % (pf, key, pf)
-                if report:
-                    html += CODE(report, language='web2py', \
-                        link='/examples/global/vars/').xml()
-                html += '<br/>\n'
-            else:
-                html += \
-                    '<h3 class="nodoctests">Function %s [no doctests]</h3><br/>\n' \
-                    % (key)
-    response._vars = html
-    sys.stdout = stdout
-_TEST()
-"""
 
 CACHED_REGEXES = {}
 CACHED_REGEXES_MAX_SIZE = 1000
-
 
 def re_compile(regex):
     try:
@@ -109,22 +58,6 @@ def re_compile(regex):
             CACHED_REGEXES.clear()
         compiled_regex = CACHED_REGEXES[regex] = re.compile(regex)
         return compiled_regex
-
-
-class mybuiltin(object):
-    """
-    NOTE could simple use a dict and populate it,
-    NOTE not sure if this changes things though if monkey patching import.....
-    """
-    # __builtins__
-    def __getitem__(self, key):
-        try:
-            return getattr(builtin, key)
-        except AttributeError:
-            raise KeyError(key)
-
-    def __setitem__(self, key, value):
-        setattr(self, key, value)
 
 
 def LOAD(c=None, f='index', args=None, vars=None,
@@ -140,10 +73,10 @@ def LOAD(c=None, f='index', args=None, vars=None,
         vars(dict): vars
         extension(str): extension
         target(str): id of the target
-        ajax(bool): True to enable AJAX bahaviour
+        ajax(bool): True to enable AJAX behaviour
         ajax_trap(bool): True if `ajax` is set to `True`, traps
             both links and forms "inside" the target
-        url(str): overrides `c`,`f`,`args` and `vars`
+        url(str): overrides `c`, `f`, `args` and `vars`
         user_signature(bool): adds hmac signature to all links
             with a key that is different for every user
         timeout(int): in milliseconds, specifies the time to wait before
@@ -153,7 +86,6 @@ def LOAD(c=None, f='index', args=None, vars=None,
             "infinity" or "continuous" are accepted to reload indefinitely the
             component
     """
-    from gluon.html import TAG, DIV, URL, SCRIPT, XML
     if args is None:
         args = []
     vars = Storage(vars or {})
@@ -163,19 +95,21 @@ def LOAD(c=None, f='index', args=None, vars=None,
     if '.' in f:
         f, extension = f.rsplit('.', 1)
     if url or ajax:
-        url = url or URL(request.application, c, f, r=request,
-                         args=args, vars=vars, extension=extension,
-                         user_signature=user_signature)
+        url = url or html.URL(request.application, c, f, r=request,
+                              args=args, vars=vars, extension=extension,
+                              user_signature=user_signature)
         # timing options
         if isinstance(times, basestring):
             if times.upper() in ("INFINITY", "CONTINUOUS"):
                 times = "Infinity"
             else:
+                # FIXME: should be a ValueError
                 raise TypeError("Unsupported times argument %s" % times)
         elif isinstance(times, int):
             if times <= 0:
                 raise ValueError("Times argument must be greater than zero, 'Infinity' or None")
         else:
+            # NOTE: why do not use ValueError only?
             raise TypeError("Unsupported times argument type %s" % type(times))
         if timeout is not None:
             if not isinstance(timeout, integer_types):
@@ -191,7 +125,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             statement = "$.web2py.component('%s','%s');" % (url, target)
         attr['_data-w2p_remote'] = url
         if target is not None:
-            return DIV(content, **attr)
+            return html.DIV(content, **attr)
 
     else:
         if not isinstance(args, (list, tuple)):
@@ -211,7 +145,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             '/'.join([request.application, c, f] +
                      [str(a) for a in other_request.args])
         other_request.env.query_string = \
-            vars and URL(vars=vars).split('?')[1] or ''
+            vars and html.URL(vars=vars).split('?')[1] or ''
         other_request.env.http_web2py_component_location = \
             request.env.path_info
         other_request.cid = target
@@ -220,7 +154,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
         # A bit nasty but needed to use LOAD on action decorates with @request.restful()
         other_response.view = '%s/%s.%s' % (c, f, other_request.extension)
 
-        other_environment = copy.copy(current.globalenv)  # NASTY
+        other_environment = copy.copy(current.globalenv)  # FIXME: NASTY
 
         other_response._view_environment = other_environment
         other_response.generic_patterns = \
@@ -241,12 +175,12 @@ def LOAD(c=None, f='index', args=None, vars=None,
         current.request, current.response = original_request, original_response
         js = None
         if ajax_trap:
-            link = URL(request.application, c, f, r=request,
-                       args=args, vars=vars, extension=extension,
-                       user_signature=user_signature)
+            link = html.URL(request.application, c, f, r=request,
+                            args=args, vars=vars, extension=extension,
+                            user_signature=user_signature)
             js = "$.web2py.trap_form('%s','%s');" % (link, target)
-        script = js and SCRIPT(js, _type="text/javascript") or ''
-        return TAG[''](DIV(XML(page), **attr), script)
+        script = js and html.SCRIPT(js, _type="text/javascript") or ''
+        return html.TAG[''](html.DIV(html.XML(page), **attr), script)
 
 
 class LoadFactory(object):
@@ -262,7 +196,6 @@ class LoadFactory(object):
         if args is None:
             args = []
         vars = Storage(vars or {})
-        from . import globals
         target = target or 'c' + str(random.random())[2:]
         attr['_id'] = target
         request = current.request
@@ -289,7 +222,7 @@ class LoadFactory(object):
             other_request.vars = vars
             other_request.get_vars = vars
             other_request.post_vars = Storage()
-            other_response = globals.Response()
+            other_response = Response()
             other_request.env.path_info = '/' + \
                 '/'.join([request.application, c, f] +
                          [str(a) for a in other_request.args])
@@ -354,36 +287,35 @@ def local_import_aux(name, reload_force=False, app='welcome'):
     if reload_force:
         reload(module)
     return module
+#
+# OLD IMPLEMENTATION:
+#
+#   items = name.replace('/','.').split('.')
+#   filename, modulepath = items[-1], pjoin(apath,'modules',*items[:-1])
+#   imp.acquire_lock()
+#   try:
+#       file=None
+#       (file,path,desc) = imp.find_module(filename,[modulepath]+sys.path)
+#       if not path in sys.modules or reload:
+#           if is_gae:
+#               module={}
+#               execfile(path,{},module)
+#               module=Storage(module)
+#           else:
+#               module = imp.load_module(path,file,path,desc)
+#           sys.modules[path] = module
+#       else:
+#           module = sys.modules[path]
+#   except Exception, e:
+#       module = None
+#   if file:
+#       file.close()
+#   imp.release_lock()
+#   if not module:
+#       raise ImportError, "cannot find module %s in %s" % (
+#           filename, modulepath)
+#   return module
 
-
-"""
-OLD IMPLEMENTATION:
-    items = name.replace('/','.').split('.')
-    filename, modulepath = items[-1], pjoin(apath,'modules',*items[:-1])
-    imp.acquire_lock()
-    try:
-        file=None
-        (file,path,desc) = imp.find_module(filename,[modulepath]+sys.path)
-        if not path in sys.modules or reload:
-            if is_gae:
-                module={}
-                execfile(path,{},module)
-                module=Storage(module)
-            else:
-                module = imp.load_module(path,file,path,desc)
-            sys.modules[path] = module
-        else:
-            module = sys.modules[path]
-    except Exception, e:
-        module = None
-    if file:
-        file.close()
-    imp.release_lock()
-    if not module:
-        raise ImportError, "cannot find module %s in %s" % (
-            filename, modulepath)
-    return module
-"""
 
 _base_environment_ = dict((k, getattr(html, k)) for k in html.__all__)
 _base_environment_.update(
@@ -424,7 +356,7 @@ def build_environment(request, response, session, store_current=True):
         r'^%s/%s/\w+\.py$' % (request.controller, request.function)
         ]
 
-    T = environment['T'] = TranslatorFactory(os.path.join(request.folder, 'languages'),
+    T = environment['T'] = TranslatorFactory(pjoin(request.folder, 'languages'),
                                              request.env.http_accept_language)
     c = environment['cache'] = Cache(request)
 
@@ -439,7 +371,23 @@ def build_environment(request, response, session, store_current=True):
         current.T = T
         current.cache = c
 
-    if is_jython:  # jython hack
+    if global_settings.is_jython:
+        # jython hack
+        class mybuiltin(object):
+            """
+            NOTE could simple use a dict and populate it,
+            NOTE not sure if this changes things though if monkey patching import.....
+            """
+            # __builtins__
+            def __getitem__(self, key):
+                try:
+                    return getattr(builtin, key)
+                except AttributeError:
+                    raise KeyError(key)
+
+            def __setitem__(self, key, value):
+                setattr(self, key, value)
+
         global __builtins__
         __builtins__ = mybuiltin()
 
@@ -462,6 +410,11 @@ def save_pyc(filename):
     py_compile.compile(filename, cfile=cfile)
 
 
+if PY2:
+    MARSHAL_HEADER_SIZE = 8
+else:
+    MARSHAL_HEADER_SIZE = 16 if sys.version_info[1] >= 7 else 12
+
 def read_pyc(filename):
     """
     Read the code inside a bytecode compiled file if the MAGIC number is
@@ -471,44 +424,49 @@ def read_pyc(filename):
         a code object
     """
     data = read_file(filename, 'rb')
-    if not is_gae and data[:4] != imp.get_magic():
+    if not global_settings.web2py_runtime_gae and \
+        not data.startswith(imp.get_magic()):
         raise SystemError('compiled code is incompatible')
-    return marshal.loads(data[marshal_header_size:])
+    return marshal.loads(data[MARSHAL_HEADER_SIZE:])
 
+
+REGEX_PATH_CLASS = r"[\w%s-]" % os.sep if os.sep != '\\' else r'[\w\\-]'
+REGEX_VIEW_PATH = r"%s+(?:\.\w+)*$" % REGEX_PATH_CLASS
 
 def compile_views(folder, skip_failed_views=False):
     """
     Compiles all the views in the application specified by `folder`
     """
-
     path = pjoin(folder, 'views')
     failed_views = []
-    for fname in listdir(path, '^[\w/\-]+(\.\w+)*$'):
+    for fname in listdir(path, REGEX_VIEW_PATH):
         try:
             data = parse_template(fname, path)
         except Exception as e:
             if skip_failed_views:
                 failed_views.append(fname)
             else:
+                # FIXME: should raise something more specific than Exception
                 raise Exception("%s in %s" % (e, fname))
         else:
-            filename = 'views.%s.py' % fname.replace(os.path.sep, '.')
+            filename = 'views.%s.py' % fname.replace(os.sep, '.')
             filename = pjoin(folder, 'compiled', filename)
             write_file(filename, data)
             save_pyc(filename)
             os.unlink(filename)
-    return failed_views if failed_views else None
+    return failed_views or None
 
+
+REGEX_MODEL_PATH = r"%s+\.py$" % REGEX_PATH_CLASS
 
 def compile_models(folder):
     """
     Compiles all the models in the application specified by `folder`
     """
-
     path = pjoin(folder, 'models')
-    for fname in listdir(path, '.+\.py$'):
+    for fname in listdir(path, REGEX_MODEL_PATH):
         data = read_file(pjoin(path, fname))
-        modelfile = 'models.'+fname.replace(os.path.sep, '.')
+        modelfile = 'models.'+fname.replace(os.sep, '.')
         filename = pjoin(folder, 'compiled', modelfile)
         mktree(filename)
         write_file(filename, data)
@@ -516,19 +474,22 @@ def compile_models(folder):
         os.unlink(filename)
 
 
-def find_exposed_functions(data):
-    data = regex_longcomments.sub('', data)
-    return regex_expose.findall(data)
+REGEX_LONG_STRING = re.compile('(""".*?"""|' "'''.*?''')", re.DOTALL)
+REGEX_EXPOSED = re.compile(r'^def\s+(_?[a-zA-Z0-9]\w*)\( *\)\s*:', re.MULTILINE)
 
+def find_exposed_functions(data):
+    data = REGEX_LONG_STRING.sub('', data)
+    return REGEX_EXPOSED.findall(data)
+
+
+REGEX_CONTROLLER = r'[\w-]+\.py$'
 
 def compile_controllers(folder):
     """
     Compiles all the controllers in the application specified by `folder`
     """
-
     path = pjoin(folder, 'controllers')
-    for fname in listdir(path, '.+\.py$'):
-        ### why is this here? save_pyc(pjoin(path, file))
+    for fname in listdir(path, REGEX_CONTROLLER):
         data = read_file(pjoin(path, fname))
         exposed = find_exposed_functions(data)
         for function in exposed:
@@ -541,20 +502,22 @@ def compile_controllers(folder):
             os.unlink(filename)
 
 
-def model_cmp(a, b, sep='.'):
-    return cmp(a.count(sep), b.count(sep)) or cmp(a, b)
+if PY2:
+    def model_cmp(a, b, sep='.'):
+        return cmp(a.count(sep), b.count(sep)) or cmp(a, b)
+
+    def model_cmp_sep(a, b, sep=os.sep):
+        return model_cmp(a, b, sep)
 
 
-def model_cmp_sep(a, b, sep=os.path.sep):
-    return model_cmp(a, b, sep)
-
+REGEX_COMPILED_MODEL = r'models[_.][\w.-]+\.pyc$'
+REGEX_MODEL = r'[\w-]+\.py$'
 
 def run_models_in(environment):
     """
     Runs all models (in the app specified by the current folder)
     It tries pre-compiled models first before compiling them.
     """
-
     request = current.request
     folder = request.folder
     c = request.controller
@@ -563,19 +526,21 @@ def run_models_in(environment):
 
     path = pjoin(folder, 'models')
     cpath = pjoin(folder, 'compiled')
-    compiled = os.path.exists(cpath)
+    compiled = exists(cpath)
     if PY2:
         if compiled:
-            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), model_cmp)
+            models = sorted(listdir(cpath, REGEX_COMPILED_MODEL, 0),
+                            model_cmp)
         else:
-            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
+            models = sorted(listdir(path, REGEX_MODEL, 0, sort=False),
+                            model_cmp_sep)
     else:
         if compiled:
-            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0),
+            models = sorted(listdir(cpath, REGEX_COMPILED_MODEL, 0),
                             key=lambda f: '{0:03d}'.format(f.count('.')) + f)
         else:
-            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False),
-                            key=lambda f: '{0:03d}'.format(f.count(os.path.sep)) + f)
+            models = sorted(listdir(path, REGEX_MODEL, 0, sort=False),
+                            key=lambda f: '{0:03d}'.format(f.count(os.sep)) + f)
 
     models_to_run = None
     for model in models:
@@ -589,7 +554,7 @@ def run_models_in(environment):
                 fname = model[n:-4].replace('.', '/')+'.py'
             else:
                 n = len(path)+1
-                fname = model[n:].replace(os.path.sep, '/')
+                fname = model[n:].replace(os.sep, '/')
             if not regex.search(fname) and c != 'appadmin':
                 continue
             elif compiled:
@@ -600,19 +565,56 @@ def run_models_in(environment):
             restricted(ccode, environment, layer=model)
 
 
+TEST_CODE = r"""
+def _TEST():
+    import doctest, sys, cStringIO, types, cgi, gluon.fileutils
+    if not gluon.fileutils.check_credentials(request):
+        raise HTTP(401, web2py_error='invalid credentials')
+    stdout = sys.stdout
+    html = '<h2>Testing controller "%s.py" ... done.</h2><br/>\n' \
+        % request.controller
+    for key in sorted([key for key in globals() if not key in __symbols__+['_TEST']]):
+        eval_key = eval(key)
+        if type(eval_key) == types.FunctionType:
+            number_doctests = sum([len(ds.examples) for ds in doctest.DocTestFinder().find(eval_key)])
+            if number_doctests>0:
+                sys.stdout = cStringIO.StringIO()
+                name = '%s/controllers/%s.py in %s.__doc__' \
+                    % (request.folder, request.controller, key)
+                doctest.run_docstring_examples(eval_key,
+                    globals(), False, name=name)
+                report = sys.stdout.getvalue().strip()
+                if report:
+                    pf = 'failed'
+                else:
+                    pf = 'passed'
+                html += '<h3 class="%s">Function %s [%s]</h3>\n' \
+                    % (pf, key, pf)
+                if report:
+                    html += CODE(report, language='web2py', \
+                        link='/examples/global/vars/').xml()
+                html += '<br/>\n'
+            else:
+                html += \
+                    '<h3 class="nodoctests">Function %s [no doctests]</h3><br/>\n' \
+                    % (key)
+    response._vars = html
+    sys.stdout = stdout
+_TEST()
+"""
+
 def run_controller_in(controller, function, environment):
     """
     Runs the controller.function() (for the app specified by
     the current folder).
     It tries pre-compiled controller.function.pyc first before compiling it.
     """
-
     # if compiled should run compiled!
     folder = current.request.folder
     cpath = pjoin(folder, 'compiled')
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
-    if os.path.exists(cpath):
+    if exists(cpath):
         filename = pjoin(cpath, 'controllers.%s.%s.pyc' % (controller, function))
         try:
             ccode = getcfs(filename, filename, lambda: read_pyc(filename))
@@ -622,8 +624,6 @@ def run_controller_in(controller, function, environment):
                        web2py_error=badf)
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
-        from gluon.settings import global_settings
-        from gluon.admin import abspath, add_path_first
         paths = (global_settings.gluon_parent, abspath(
             'site-packages', gluon=True), abspath('gluon', gluon=True), '')
         [add_path_first(path) for path in paths]
@@ -631,7 +631,7 @@ def run_controller_in(controller, function, environment):
 
         filename = pjoin(folder, 'controllers/%s.py'
                                  % controller)
-        if not os.path.exists(filename):
+        if not exists(filename):
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
@@ -696,12 +696,12 @@ def run_view_in(environment):
         layer = 'file stream'
     else:
         filename = pjoin(folder, 'views', view)
-        if os.path.exists(cpath):  # compiled views
+        if exists(cpath):  # compiled views
             x = view.replace('/', '.')
             files = ['views.%s.pyc' % x]
-            is_compiled = os.path.exists(pjoin(cpath, files[0]))
+            is_compiled = exists(pjoin(cpath, files[0]))
             # Don't use a generic view if the non-compiled view exists.
-            if is_compiled or (not is_compiled and not os.path.exists(filename)):
+            if is_compiled or (not is_compiled and not exists(filename)):
                 if allow_generic:
                     files.append('views.generic.%s.pyc' % request.extension)
                 # for backward compatibility
@@ -712,16 +712,16 @@ def run_view_in(environment):
                 # end backward compatibility code
                 for f in files:
                     compiled = pjoin(cpath, f)
-                    if os.path.exists(compiled):
+                    if exists(compiled):
                         ccode = getcfs(compiled, compiled, lambda: read_pyc(compiled))
                         layer = compiled
                         break
         # if the view is not compiled
         if not layer:
-            if not os.path.exists(filename) and allow_generic:
+            if not exists(filename) and allow_generic:
                 view = 'generic.' + request.extension
                 filename = pjoin(folder, 'views', view)
-            if not os.path.exists(filename):
+            if not exists(filename):
                 raise HTTP(404,
                            rewrite.THREAD_LOCAL.routes.error_message % badv,
                            web2py_error=badv)
@@ -737,6 +737,8 @@ def run_view_in(environment):
     return environment['response'].body.getvalue()
 
 
+REGEX_COMPILED_CONTROLLER = r'[\w-]+\.pyc$'
+
 def remove_compiled_application(folder):
     """
     Deletes the folder `compiled` containing the compiled application.
@@ -744,7 +746,7 @@ def remove_compiled_application(folder):
     try:
         shutil.rmtree(pjoin(folder, 'compiled'))
         path = pjoin(folder, 'controllers')
-        for file in listdir(path, '.*\.pyc$', drop=False):
+        for file in listdir(path, REGEX_COMPILED_CONTROLLER, drop=False):
             os.unlink(file)
     except OSError:
         pass
