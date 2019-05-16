@@ -28,6 +28,7 @@ from gluon.restricted import RestrictedError
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
+from gluon.fileutils import create_missing_app_folders
 from pydal.base import BaseAdapter
 from gluon._compat import iteritems, ClassType, PY2
 
@@ -166,6 +167,9 @@ def env(
         path_info = '%s?%s' % (path_info, '&'.join(vars))
     request.env.path_info = path_info
 
+    # Ensure necessary folders are created
+    create_missing_app_folders(request)
+
     # Monkey patch so credentials checks pass.
 
     def check_credentials(request, other_application='admin'):
@@ -257,6 +261,7 @@ def run(
         # underscore necessary because request.vars is a property
         extra_request['_vars'] = vars
     _env = env(a, c=c, f=f, import_models=import_models, extra_request=extra_request)
+
     if c:
         pyfile = os.path.join('applications', a, 'controllers', c + '.py')
         pycfile = os.path.join('applications', a, 'compiled',

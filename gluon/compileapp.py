@@ -40,12 +40,10 @@ from gluon.validators import Validator
 from gluon.settings import global_settings
 from pydal.base import BaseAdapter
 from gluon.custom_import import custom_import_install
-from gluon.fileutils import mktree, listdir, read_file, write_file, abspath
+from gluon.fileutils import mktree, listdir, read_file, write_file, abspath, add_path_first
 from gluon.template import parse_template
 from gluon.cfs import getcfs
 from gluon.restricted import restricted, compile2
-from gluon.admin import add_path_first
-
 
 CACHED_REGEXES = {}
 CACHED_REGEXES_MAX_SIZE = 1000
