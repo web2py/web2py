@@ -554,10 +554,14 @@ def wsgibase(environ, responder):
         http_response, request, environ, ticket)
     if not http_response:
         return wsgibase(new_environ, responder)
+
     if global_settings.web2py_crontype == 'soft':
+        # FIXME: calling softcron crondance in a new thread at every
+        #        request is not a good idea in a long running process
         cmd_opts = global_settings.cmd_options
         newcron.softcron(global_settings.applications_parent,
                          apps=cmd_opts and cmd_opts.crontabs).start()
+
     return http_response.to(responder, env=env)
 
 
@@ -783,7 +787,11 @@ class HttpServer(object):
         """
         stop cron and the web server
         """
-        newcron.stopcron()
+        if global_settings.web2py_crontype == 'soft':
+            try:
+                newcron.stopcron()
+            except:
+                pass
         self.server.stop(stoplogging)
         try:
             os.unlink(self.pid_filename)

@@ -12,24 +12,29 @@ Cron-style interface
 
 import threading
 import os
-from logging import getLogger, DEBUG
+from logging import getLogger
 import time
 import sched
 import sys
 import re
+from functools import reduce
+import datetime
 import shlex
 
-import datetime
-from functools import reduce
-from gluon.settings import global_settings
 from gluon import fileutils
 from gluon._compat import to_bytes, pickle
 from pydal.contrib import portalocker
+from gluon.settings import global_settings
 
 logger_name = 'web2py.cron'
 
 
 _cron_stopping = False
+
+def reset():
+    global _cron_stopping
+    _cron_stopping = False
+
 
 _cron_subprocs_lock = threading.RLock()
 _cron_subprocs = []
@@ -75,9 +80,8 @@ class extcron(threading.Thread):
         self.apps = apps
 
     def run(self):
-        if not _cron_stopping:
-            getLogger(logger_name).debug('external cron invocation')
-            crondance(self.path, 'external', startup=False, apps=self.apps)
+        getLogger(logger_name).debug('external cron invocation')
+        crondance(self.path, 'external', startup=False, apps=self.apps)
 
 
 class hardcron(threading.Thread):
@@ -119,7 +123,6 @@ class softcron(threading.Thread):
             crondance(self.path, 'soft', startup=False, apps=self.apps)
 
 
-# TODO: context manager
 class Token(object):
 
     def __init__(self, path):
@@ -140,7 +143,7 @@ class Token(object):
         stop == 0 if job started but did not yet complete
         if a cron job started within less than 60 seconds, acquire returns None
         if a cron job started before 60 seconds and did not stop,
-        a warning is issue "Stale cron.master detected"
+        a warning is issued ("Stale cron.master detected")
         """
         if sys.platform == 'win32':
             locktime = 59.5
@@ -150,8 +153,8 @@ class Token(object):
             self.logger.warning('cron disabled because no file locking')
             return None
         self.master = fileutils.open_file(self.path, 'rb+')
+        ret = None
         try:
-            ret = None
             portalocker.lock(self.master, portalocker.LOCK_EX)
             try:
                 (start, stop) = pickle.load(self.master)
@@ -278,7 +281,7 @@ class cronlauncher(threading.Thread):
         if proc.returncode != 0:
             logger.warning('%r call returned code %s:\n%s\n%s',
                 ' '.join(self.cmd), proc.returncode, stdoutdata, stderrdata)
-        elif logger.isEnabledFor(DEBUG):
+        else:
             logger.debug('%r call returned success:\n%s',
                 ' '.join(self.cmd), stdoutdata)
 
