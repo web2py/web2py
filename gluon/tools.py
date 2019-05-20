@@ -1754,7 +1754,7 @@ class Auth(AuthAPI):
         # _next variable in the request.
         if next:
             parts = next.split('/')
-            if ':' not in parts[0]:
+            if ':' not in parts[0] and parts[:2] != ['', '']:
                 return next
             elif len(parts) > 2 and parts[0].endswith(':') and parts[1:3] == ['', host]:
                 return next
