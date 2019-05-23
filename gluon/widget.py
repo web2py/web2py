@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# vim: set ts=4 sw=4 et ai:
 
 """
 | This file is part of the web2py Web Framework
@@ -11,23 +12,26 @@ GUI widget and services start function
 
 from __future__ import print_function
 
-import sys
-from gluon._compat import thread, xrange, PY2
 import time
-import threading
+import sys
 import os
+from collections import OrderedDict
 import socket
-import signal
+import threading
 import math
 import logging
+import signal
 import getpass
 
-from gluon import main, newcron
 from gluon.fileutils import read_file, create_welcome_w2p
-from gluon.console import console
-from gluon.settings import global_settings
 from gluon.shell import die, run, test
-from gluon.utils import is_valid_ip_address, is_loopback_ip_address, getipaddrinfo
+from gluon._compat import PY2, xrange
+from gluon.utils import (getipaddrinfo, is_loopback_ip_address,
+    is_valid_ip_address)
+from gluon.console import is_appdir, console
+from gluon import newcron
+from gluon import main
+from gluon.settings import global_settings
 
 
 ProgramName = 'web2py Web Framework'
@@ -119,24 +123,27 @@ class web2pyDialog(object):
             import tkinter
             from tkinter import messagebox
 
-
-        bg_color = 'white'
         root.withdraw()
 
+        bg_color = 'white'
         self.root = tkinter.Toplevel(root, bg=bg_color)
         self.root.resizable(0, 0)
         self.root.title(ProgramName)
 
         self.options = options
-        self.scheduler_processes = {}
-        self.menu = tkinter.Menu(self.root)
-        servermenu = tkinter.Menu(self.menu, tearoff=0)
-        httplog = os.path.join(self.options.folder, self.options.log_filename)
+        self.scheduler_processes_lock = threading.RLock()
+        self.scheduler_processes = OrderedDict()
+
         iconphoto = os.path.join('extras', 'icons', 'web2py.gif')
         if os.path.exists(iconphoto):
             img = tkinter.PhotoImage(file=iconphoto)
             self.root.tk.call('wm', 'iconphoto', self.root._w, img)
+
         # Building the Menu
+        self.menu = tkinter.Menu(self.root)
+        servermenu = tkinter.Menu(self.menu, tearoff=0)
+
+        httplog = os.path.join(options.folder, options.log_filename)
         item = lambda: start_browser(httplog)
         servermenu.add_command(label='View httpserver.log',
                                command=item)
@@ -149,10 +156,9 @@ class web2pyDialog(object):
         self.pagesmenu = tkinter.Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label='Pages', menu=self.pagesmenu)
 
-        #scheduler menu
         self.schedmenu = tkinter.Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label='Scheduler', menu=self.schedmenu)
-        #start and register schedulers from options
+        # register and start schedulers
         self.update_schedulers(start=True)
 
         helpmenu = tkinter.Menu(self.menu, tearoff=0)
@@ -257,7 +263,7 @@ class web2pyDialog(object):
                                                   sticky=sticky)
 
         self.port_number = tkinter.Entry(self.root)
-        self.port_number.insert(tkinter.END, self.options.port)
+        self.port_number.insert(tkinter.END, options.port)
         self.port_number.grid(row=shift, column=2, sticky=sticky, pady=10)
 
         # Password
@@ -314,6 +320,26 @@ class web2pyDialog(object):
             self.tb = None
 
     def update_schedulers(self, start=False):
+        applications_folder = os.path.join(self.options.folder, 'applications')
+        available_apps = [
+            arq for arq in os.listdir(applications_folder)
+            if os.path.isdir(os.path.join(applications_folder, arq))
+        ]
+        with self.scheduler_processes_lock:
+            # reset the menu
+            # since applications can disappear (be disinstalled) must
+            # clear the menu (should use tkinter.END or tkinter.LAST)
+            self.schedmenu.delete(0, 'end')
+            for arq in available_apps:
+                if arq not in self.scheduler_processes:
+                    item = lambda a = arq: self.try_start_scheduler(a)
+                    self.schedmenu.add_command(label="start %s" % arq,
+                                               command=item)
+                if arq in self.scheduler_processes:
+                    item = lambda a = arq: self.try_stop_scheduler(a)
+                    self.schedmenu.add_command(label="stop %s" % arq,
+                                               command=item)
+
         if start and self.options.with_scheduler and self.options.schedulers:
             # the widget takes care of starting the schedulers
             apps = [ag.split(':', 1)[0] for ag in self.options.schedulers]
@@ -322,100 +348,90 @@ class web2pyDialog(object):
         for app in apps:
             self.try_start_scheduler(app)
 
-        # reset the menu
-        applications_folder = os.path.join(self.options.folder, 'applications')
-        available_apps = [
-            arq for arq in os.listdir(applications_folder)
-            if os.path.isdir(os.path.join(applications_folder, arq))
-        ]
-        self.schedmenu.delete(0, len(available_apps))
-
-        for arq in available_apps:
-            if arq not in self.scheduler_processes:
-                item = lambda u = arq: self.try_start_scheduler(u)
-                self.schedmenu.add_command(label="start %s" % arq,
-                                           command=item)
-            if arq in self.scheduler_processes:
-                item = lambda u = arq: self.try_stop_scheduler(u)
-                self.schedmenu.add_command(label="stop %s" % arq,
-                                           command=item)
-
     def start_schedulers(self, app):
-        try:
-            from multiprocessing import Process
-        except:
-            sys.stderr.write('Sorry, -K only supported for Python 2.6+\n')
-            return
+        from multiprocessing import Process
         code = "from gluon.globals import current;current._scheduler.loop()"
         print('starting scheduler from widget for "%s"...' % app)
         args = (app, True, True, None, False, code, False, True)
-        logging.getLogger().setLevel(self.options.log_level)
         p = Process(target=run, args=args)
-        self.scheduler_processes[app] = p
-        self.update_schedulers()
-        print("Currently running %s scheduler processes" % (
-            len(self.scheduler_processes)))
+        with self.scheduler_processes_lock:
+            self.scheduler_processes[app] = p
+            self.update_schedulers()
+            print("Currently running %s scheduler processes" % (
+                len(self.scheduler_processes)))
         p.start()
         print("Processes started")
 
-    def try_stop_scheduler(self, app):
-        if app in self.scheduler_processes:
-            p = self.scheduler_processes[app]
-            del self.scheduler_processes[app]
+    def try_stop_scheduler(self, app, skip_update=False):
+        p = None
+        with self.scheduler_processes_lock:
+            if app in self.scheduler_processes:
+                p = self.scheduler_processes[app]
+                del self.scheduler_processes[app]
+        if p is not None:
             p.terminate()
             p.join()
-        self.update_schedulers()
+        if not skip_update:
+            self.update_schedulers()
 
     def try_start_scheduler(self, app):
-        if app not in self.scheduler_processes:
-            t = threading.Thread(target=self.start_schedulers, args=(app,))
+        t = None
+        with self.scheduler_processes_lock:
+            if not is_appdir(self.options.folder, app):
+                self.schedmenu.delete("start %s" % app)
+                return
+            if app not in self.scheduler_processes:
+                t = threading.Thread(target=self.start_schedulers, args=(app,))
+        if t is not None:
             t.start()
 
     def checkTaskBar(self):
         """ Checks taskbar status """
-
-        if self.tb.status:
-            if self.tb.status[0] == self.tb.EnumStatus.QUIT:
+        tb = self.tb
+        if tb.status:
+            st0 = tb.status[0]
+            EnumStatus = tb.EnumStatus
+            if st0 == EnumStatus.QUIT:
                 self.quit()
-            elif self.tb.status[0] == self.tb.EnumStatus.TOGGLE:
+            elif st0 == EnumStatus.TOGGLE:
                 if self.root.state() == 'withdrawn':
                     self.root.deiconify()
                 else:
                     self.root.withdraw()
-            elif self.tb.status[0] == self.tb.EnumStatus.STOP:
+            elif st0 == EnumStatus.STOP:
                 self.stop()
-            elif self.tb.status[0] == self.tb.EnumStatus.START:
+            elif st0 == EnumStatus.START:
                 self.start()
-            elif self.tb.status[0] == self.tb.EnumStatus.RESTART:
+            elif st0 == EnumStatus.RESTART:
                 self.stop()
                 self.start()
-            del self.tb.status[0]
+            del tb.status[0]
 
         self.root.after(1000, self.checkTaskBar)
 
-    def update(self, text):
-        """ Updates app text """
-
-        try:
-            self.text.configure(state='normal')
-            self.text.insert('end', text)
-            self.text.configure(state='disabled')
-        except:
-            pass  # ## this should only happen in case app is destroyed
-
     def connect_pages(self):
         """ Connects pages """
-        # reset the menu
+        # reset the menu,
+        # since applications can disappear (be disinstalled) must
+        # clear the menu (should use tkinter.END or tkinter.LAST)
+        self.pagesmenu.delete(0, 'end')
         applications_folder = os.path.join(self.options.folder, 'applications')
         available_apps = [
             arq for arq in os.listdir(applications_folder)
             if os.path.exists(os.path.join(applications_folder, arq, '__init__.py'))
         ]
-        self.pagesmenu.delete(0, len(available_apps))
         for arq in available_apps:
             url = self.url + arq
+            item = lambda a = arq: self.try_start_browser(a)
             self.pagesmenu.add_command(
-                label=url, command=lambda u=url: start_browser(u))
+                label=url, command=item)
+
+    def try_start_browser(self, app):
+        url = self.url + app
+        if not is_appdir(self.options.folder, app):
+            self.pagesmenu.delete(url)
+            return
+        start_browser(url)
 
     def quit(self, justHide=False):
         """ Finishes the program execution """
@@ -423,16 +439,20 @@ class web2pyDialog(object):
             self.root.withdraw()
         else:
             try:
-                scheds = self.scheduler_processes.keys()
+                with self.scheduler_processes_lock:
+                    scheds = list(self.scheduler_processes.keys())
                 for t in scheds:
-                    self.try_stop_scheduler(t)
+                    self.try_stop_scheduler(t, skip_update=True)
             except:
                 pass
+            if self.options.with_cron and not self.options.soft_cron:
+                # shutting down hardcron
+                try:
+                    newcron.stopcron()
+                except:
+                    pass
             try:
-                newcron.stopcron()
-            except:
-                pass
-            try:
+                # HttpServer.stop takes care of stopping softcron
                 self.server.stop()
             except:
                 pass
@@ -450,34 +470,40 @@ class web2pyDialog(object):
             import tkMessageBox as messagebox
         else:
             from tkinter import messagebox
-
         messagebox.showerror('web2py start server', message)
 
     def start(self):
         """ Starts web2py server """
-
         password = self.password.get()
-
         if not password:
             self.error('no password, no web admin interface')
 
         ip = self.selected_ip.get()
-
         if not is_valid_ip_address(ip):
             return self.error('invalid host ip address')
-
         try:
             port = int(self.port_number.get())
-        except:
+        except ValueError:
             return self.error('invalid port number')
 
         if self.options.server_key and self.options.server_cert:
             proto = 'https'
         else:
             proto = 'http'
-
         self.url = get_url(ip, proto=proto, port=port)
+
         self.connect_pages()
+        self.update_schedulers()
+
+        # softcron is stopped with HttpServer, thus if starting again
+        # need to reset newcron._stopping to re-enable cron
+        if self.options.soft_cron:
+            newcron.reset()
+
+        # FIXME: if the HttpServer is stopped, then started again,
+        #        does not start because of following error:
+        # WARNING:Rocket.Errors.Port8000:Listener started when not ready.
+
         self.button_start.configure(state='disabled')
 
         try:
@@ -502,7 +528,7 @@ class web2pyDialog(object):
                 path=options.folder,
                 interfaces=options.interfaces)
 
-            thread.start_new_thread(self.server.start, ())
+            threading.Thread(target=self.server.start).start()
         except Exception as e:
             self.button_start.configure(state='normal')
             return self.error(str(e))
@@ -514,11 +540,14 @@ class web2pyDialog(object):
         self.button_stop.configure(state='normal')
 
         if not options.taskbar:
-            thread.start_new_thread(
-                start_browser, (get_url(ip, proto=proto, port=port), True))
+            cpt = threading.Thread(target=start_browser,
+                args=(get_url(ip, proto=proto, port=port), True))
+            cpt.setDaemon(True)
+            cpt.start()
 
         self.password.configure(state='readonly')
-        [ip.configure(state='disabled') for ip in self.ips.values()]
+        for ip in self.ips.values():
+            ip.configure(state='disabled')
         self.port_number.configure(state='readonly')
 
         if self.tb:
@@ -528,16 +557,15 @@ class web2pyDialog(object):
         for listener in self.server.server.listeners:
             if listener.ready:
                 return True
-
         return False
 
     def stop(self):
         """ Stops web2py server """
-
         self.button_start.configure(state='normal')
         self.button_stop.configure(state='disabled')
         self.password.configure(state='normal')
-        [ip.configure(state='normal') for ip in self.ips.values()]
+        for ip in self.ips.values():
+            ip.configure(state='normal')
         self.port_number.configure(state='normal')
         self.server.stop()
 
@@ -546,48 +574,41 @@ class web2pyDialog(object):
 
     def update_canvas(self):
         """ Updates canvas """
-
         httplog = os.path.join(self.options.folder, self.options.log_filename)
+        canvas = self.canvas
         try:
             t1 = os.path.getsize(httplog)
-        except:
-            self.canvas.after(1000, self.update_canvas)
+        except OSError:
+            canvas.after(1000, self.update_canvas)
             return
 
+        points = 400
         try:
-            fp = open(httplog, 'r')
-            fp.seek(self.t0)
-            data = fp.read(t1 - self.t0)
-            fp.close()
-            value = self.p0[1:] + [10 + 90.0 / math.sqrt(1 + data.count('\n'))]
-            self.p0 = value
+            pvalues = self.p0[1:]
+            with open(httplog, 'r') as fp:
+                fp.seek(self.t0)
+                data = fp.read(t1 - self.t0)
+            self.p0 = pvalues + [10 + 90.0 / math.sqrt(1 + data.count('\n'))]
 
-            for i in xrange(len(self.p0) - 1):
-                c = self.canvas.coords(self.q0[i])
-                self.canvas.coords(self.q0[i],
-                                   (c[0],
-                                    self.p0[i],
-                                    c[2],
-                                    self.p0[i + 1]))
+            for i in xrange(points - 1):
+                c = canvas.coords(self.q0[i])
+                canvas.coords(self.q0[i],
+                                   (c[0], self.p0[i],
+                                    c[2], self.p0[i + 1]))
             self.t0 = t1
-        except BaseException:
+        except AttributeError:
             self.t0 = time.time()
             self.t0 = t1
-            self.p0 = [100] * 400
-            self.q0 = [self.canvas.create_line(i, 100, i + 1, 100,
-                       fill='green') for i in xrange(len(self.p0) - 1)]
+            self.p0 = [100] * points
+            self.q0 = [canvas.create_line(i, 100, i + 1, 100,
+                       fill='green') for i in xrange(points - 1)]
 
-        self.canvas.after(1000, self.update_canvas)
-
-
-def check_existent_app(options, appname):
-    if os.path.isdir(os.path.join(options.folder, 'applications', appname)):
-        return True
+        canvas.after(1000, self.update_canvas)
 
 
-def get_code_for_scheduler(app_groups, options):
+def get_code_for_scheduler(applications_parent, app_groups):
     app = app_groups[0]
-    if not check_existent_app(options, app):
+    if not is_appdir(applications_parent, app):
         print("Application '%s' doesn't exist, skipping" % app)
         return None, None
     code = 'from gluon.globals import current;'
@@ -599,16 +620,10 @@ def get_code_for_scheduler(app_groups, options):
 
 
 def start_schedulers(options):
-    try:
-        from multiprocessing import Process
-    except:
-        sys.stderr.write('Sorry, -K only supported for Python 2.6+\n')
-        return
-    logging.getLogger().setLevel(options.log_level)
-
+    from multiprocessing import Process
     apps = [ag.split(':') for ag in options.schedulers]
     if not options.with_scheduler and len(apps) == 1:
-        app, code = get_code_for_scheduler(apps[0], options)
+        app, code = get_code_for_scheduler(options.folder, apps[0])
         if not app:
             return
         print('starting single-scheduler for "%s"...' % app)
@@ -624,7 +639,7 @@ def start_schedulers(options):
 
     processes = []
     for app_groups in apps:
-        app, code = get_code_for_scheduler(app_groups, options)
+        app, code = get_code_for_scheduler(options.folder, app_groups)
         if not app:
             continue
         print('starting scheduler for "%s"...' % app)
@@ -652,6 +667,12 @@ def start():
     # get command line arguments
     options = console(version=ProgramVersion)
 
+    if options.with_scheduler or len(options.schedulers) > 1:
+        try:
+            from multiprocessing import Process
+        except:
+            die('Sorry, -K/--scheduler only supported for Python 2.6+')
+
     if options.gae:
         # write app.yaml, gaehandler.py, and exit
         if not os.path.exists('app.yaml'):
@@ -673,6 +694,7 @@ def start():
 
     logger = logging.getLogger("web2py")
     logger.setLevel(options.log_level)
+    logging.getLogger().setLevel(options.log_level) # root logger
 
     # on new installation build the scaffolding app
     create_welcome_w2p()
@@ -724,11 +746,9 @@ def start():
 
     if options.cron_run:
         # run cron (extcron) and exit
-        logger.debug('Starting extcron...')
+        logger.debug('Running extcron...')
         global_settings.web2py_crontype = 'external'
-        extcron = newcron.extcron(options.folder, apps=options.crontabs)
-        extcron.start()
-        extcron.join()
+        newcron.extcron(options.folder, apps=options.crontabs)
         return
 
     if not options.with_scheduler and options.schedulers:
@@ -807,7 +827,7 @@ end tell
         options.password = getpass.getpass('choose a password:')
 
     if not options.password and not options.no_banner:
-        print('no password, disable admin interface')
+        print('no password, no web admin interface')
 
     # Use first interface IP and port if interfaces specified, since the
     # interfaces option overrides the IP (and related) options.
@@ -883,5 +903,4 @@ end tell
                 spt.join()
             except:
                 logger.exception('error terminating schedulers')
-                pass
     logging.shutdown()
