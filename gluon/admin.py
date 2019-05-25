@@ -36,7 +36,7 @@ REGEX_EXTEND = r"""^\s*(?P<all>\{\{\s*extend\s+['"](?P<name>[^'"]+)['"]\s*\}\})"
 REGEX_INCLUDE = r"""(?P<all>\{\{\s*include\s+['"](?P<name>[^'"]+)['"]\s*\}\})"""
 
 
-# TODO: swap arguments, let first ('r' or whatever) be mandatory 
+# TODO: swap arguments, let first ('r' or whatever) be mandatory
 def apath(path='', r=None):
     """Builds a path inside an application folder
 

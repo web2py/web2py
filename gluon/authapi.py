@@ -444,7 +444,6 @@ class AuthAPI(object):
         if type(description).__name__ == 'lazyT':
             description = description.m
         if not user_id or self.table_user()[user_id]:
-            description = description.replace('%', '%%')
             self.table_event().insert(
                 description=str(description % vars), origin=origin, user_id=user_id)
 
