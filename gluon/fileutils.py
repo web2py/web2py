@@ -11,6 +11,7 @@ File operations
 
 from gluon import storage
 import os
+import sys
 import re
 import tarfile
 import glob
@@ -47,6 +48,9 @@ __all__ = (
     'w2p_pack_plugin',
     'w2p_unpack_plugin',
     'fix_newlines',
+    'create_missing_folders',
+    'create_missing_app_folders',
+    'add_path_first',
 )
 
 
@@ -441,3 +445,50 @@ def abspath(*relpath, **kwargs):
     if kwargs.get('gluon', False):
         return os.path.join(global_settings.gluon_parent, path)
     return os.path.join(global_settings.applications_parent, path)
+
+
+def try_mkdir(path):
+    if not os.path.exists(path):
+        try:
+            if os.path.islink(path):
+                # path is a broken link, try to mkdir the target of the link
+                # instead of the link itself.
+                os.mkdir(os.path.realpath(path))
+            else:
+                os.mkdir(path)
+        except OSError as e:
+            if e.errno == 17:  # "File exists" (race condition).
+                pass
+            else:
+                raise
+
+
+def create_missing_folders():
+    if not global_settings.web2py_runtime_gae:
+        for path in ('applications', 'deposit', 'site-packages', 'logs'):
+            try_mkdir(abspath(path, gluon=True))
+    """
+    OLD sys.path dance
+    paths = (global_settings.gluon_parent, abspath(
+        'site-packages', gluon=True), abspath('gluon', gluon=True), '')
+    """
+    for p in (global_settings.gluon_parent,
+              abspath('site-packages', gluon=True),
+              ''):
+        add_path_first(p)
+
+
+def create_missing_app_folders(request):
+    if not global_settings.web2py_runtime_gae:
+        if request.folder not in global_settings.app_folders:
+            for amf in missing_app_folders(request.folder):
+                try_mkdir(amf)
+            global_settings.app_folders.add(request.folder)
+
+
+def add_path_first(path):
+    sys.path = [path] + [p for p in sys.path if (
+        not p == path and not p == (path + '/'))]
+    if not global_settings.web2py_runtime_gae:
+        if not path in sys.path:
+            site.addsitedir(path)
