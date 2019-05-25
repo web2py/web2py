@@ -259,6 +259,12 @@ web2py will attempt to run a GUI to ask for it when starting the web server
         '(default is %(default)s), see -S above. NOTE: when the APP_ENV '
         'argument of -S include a controller c automatic import of '
         'models is always enabled')
+    g.add_argument('--force_migrate',
+                   default=False,
+                   action='store_true',
+                   help=
+                   'force DAL to migrate all tables that should be migrated when enabled; '
+                   'monkeypatch in the DAL class to force _migrate_enabled=True')
     g.add_argument('-R', '--run',
                    type=existing_file,
                    metavar='PYTHON_FILE', help=
