@@ -10,6 +10,14 @@ environment:
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
 
+    - PYTHON: "C:/Python36"
+      COVERAGE_PROCESS_START: gluon/tests/coverage.ini
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:/Python37"
+      COVERAGE_PROCESS_START: gluon/tests/coverage.ini
+      PYTHON_ARCH: "64"
+
 clone_depth: 50
 
 init:
@@ -20,7 +28,6 @@ install:
   - python -m ensurepip
   - pip install codecov
   - git submodule update --init --recursive
-  - pip install pycrypto
   # Check that we have the expected version and architecture for Python
   - "python --version"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""

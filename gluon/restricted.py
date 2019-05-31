@@ -10,7 +10,7 @@ Restricted environment to execute application's code
 """
 
 import sys
-from gluon._compat import pickle, ClassType
+from gluon._compat import pickle, ClassType, unicodeT, to_bytes
 import traceback
 import types
 import os
@@ -137,7 +137,10 @@ class RestrictedError(Exception):
         self.environment = environment
         if layer:
             try:
-                self.traceback = traceback.format_exc()
+                try:
+                    self.traceback = traceback.format_exc()
+                except:
+                    self.traceback = traceback.format_exc(limit=1)
             except:
                 self.traceback = 'no traceback because template parsing error'
             try:
@@ -164,7 +167,7 @@ class RestrictedError(Exception):
             ticket_storage = TicketStorage(db=request.tickets_db)
             ticket_storage.store(request, request.uuid.split('/', 1)[1], d)
             cmd_opts = global_settings.cmd_options
-            if cmd_opts and cmd_opts.print_errors:
+            if cmd_opts and cmd_opts.errors_to_console:
                 logger.error(self.traceback)
             return request.uuid
         except:
@@ -189,10 +192,10 @@ class RestrictedError(Exception):
         # safely show an useful message to the user
         try:
             output = self.output
-            if isinstance(output, unicode):
-                output = output.encode("utf8")
-            elif not isinstance(output, str):
+            if not isinstance(output, str, bytes, bytearray):
                 output = str(output)
+            if isinstance(output, unicodeT):
+                output = to_bytes(output)
         except:
             output = ""
         return output
@@ -202,7 +205,7 @@ def compile2(code, layer):
     return compile(code, layer, 'exec')
 
 
-def restricted(ccode, environment=None, layer='Unknown'):
+def restricted(ccode, environment=None, layer='Unknown', scode=None):
     """
     Runs code in environment and returns the output. If an exception occurs
     in code it raises a RestrictedError containing the traceback. Layer is
@@ -227,7 +230,9 @@ def restricted(ccode, environment=None, layer='Unknown'):
             sys.excepthook(etype, evalue, tb)
         del tb
         output = "%s %s" % (etype, evalue)
-        raise RestrictedError(layer, ccode, output, environment)
+        # Save source code in ticket when available
+        scode = scode if scode else ccode
+        raise RestrictedError(layer, scode, output, environment)
 
 
 def snapshot(info=None, context=5, code=None, environment=None):

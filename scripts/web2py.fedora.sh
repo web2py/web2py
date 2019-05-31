@@ -29,7 +29,7 @@ cd $DAEMON_DIR
 
 start() {
         echo -n $"Starting $DESC ($NAME): "
-        daemon --check $NAME $PYTHON $DAEMON_DIR/web2py.py -Q --nogui -a $ADMINPASS -d $PIDFILE -p $PORT &
+        daemon --check $NAME $PYTHON $DAEMON_DIR/web2py.py -Q --no_gui -a $ADMINPASS -d $PIDFILE -p $PORT &
         RETVAL=$?
         if [ $RETVAL -eq 0 ]; then
                 touch /var/lock/subsys/$NAME

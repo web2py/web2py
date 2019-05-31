@@ -4,19 +4,20 @@
 """
     Unit tests for gluon.sqlhtml
 """
-from __future__ import print_function
+
 import os
 import sys
 import unittest
 
 
 from gluon.compileapp import run_controller_in, run_view_in, compile_application, remove_compiled_application
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.storage import Storage, List
 from gluon import fileutils
 from gluon.dal import DAL, Field, Table
 from gluon.http import HTTP
 from gluon.fileutils import open_file
+from gluon.cache import CacheInRam
 
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
@@ -49,7 +50,7 @@ class TestAppAdmin(unittest.TestCase):
         request.env.remote_addr = '127.0.0.1'
         response = Response()
         session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         session.connect(request, response)
         current.request = request
         current.response = response
@@ -103,6 +104,21 @@ class TestAppAdmin(unittest.TestCase):
         compile_application(appname_path)
         self._test_index()
         remove_compiled_application(appname_path)
+
+    def test_index_minify(self):
+        # test for gluon/contrib/minify
+        self.env['response'].optimize_css = 'concat|minify'
+        self.env['response'].optimize_js = 'concat|minify'
+        self.env['current'].cache = Storage({'ram':CacheInRam()})
+        appname_path = os.path.join(os.getcwd(), 'applications', 'welcome')
+        self._test_index()
+        file_l = os.listdir(os.path.join(appname_path, 'static', 'temp'))
+        file_l.sort()
+        self.assertTrue(len(file_l) == 2)
+        self.assertEqual(file_l[0][0:10], 'compressed')
+        self.assertEqual(file_l[1][0:10], 'compressed')
+        self.assertEqual(file_l[0][-3:], 'css')
+        self.assertEqual(file_l[1][-2:], 'js')
 
     def test_select(self):
         request = self.env['request']
@@ -180,4 +196,3 @@ class TestAppAdmin(unittest.TestCase):
         data['id'] = '1'
         request._vars = data
         self.assertRaises(HTTP, self.run_function)
-

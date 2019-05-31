@@ -6,6 +6,7 @@ import gluon.validators
 import code
 from gluon.debug import communicate, web_debugger, dbg_debugger
 from gluon._compat import thread
+from gluon.fileutils import open_file
 import pydoc
 
 
@@ -54,7 +55,7 @@ def interact():
     if filename:
         # prevent IOError 2 on some circuntances (EAFP instead of os.access)
         try:
-            lines = open(filename).readlines()
+            lines = open_file(filename, 'r').readlines()
         except:
             lines = ""
         lines = dict([(i + 1, l) for (i, l) in enumerate(

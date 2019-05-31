@@ -48,7 +48,7 @@
       </tr>
       <tr>
         <td>
-          <a class="btn btn180 rounded green" href="https://dl.dropbox.com/u/18065445/web2py/web2py_manual_5th.pdf">Manual</a>
+          <a class="btn btn180 rounded green" href="http://mdipierro.github.io/web2py/web2py_manual_5th.pdf">Manual</a>
         </td>
         <td>
           <a class="btn btn180 rounded" href="https://github.com/web2py/web2py/releases">Change Log</a>
@@ -62,16 +62,16 @@
 </center>
 
 <p style="text-align:left;">
-  The source code version works on all supported platforms, including Linux, but it requires Python 2.6, or 2.7 (recommended).
-  It runs on Windows and most Unix systems, including <b>Linux</b> and <b>BSD</b>.
+  The source code version works on Windows and most Unix systems, including <b>Linux</b>,  <b>BSD</b> and  <b>Mac</b> . It requires Python 2.6 (no more supported),  Python 2.7 (stable) or Python 3.5+ (recommended for new projects) already installed on your system.
+  There are also binary packages for Windows and Mac OS X. They include the Python 2.7 interpreter so you do not need to have it pre-installed.
 </p>
 
 <h3>Instructions</h3>
-<p>After download, unzip it and click on web2py.exe (windows) or web2py.app (osx).
-  To run from source, type:</p>
-{{=CODE("python2.7 web2py.py", language=None, counter='>', _class='boxCode')}}
+<p>With the binary packages, after download, just unzip it and then click on web2py.exe (windows) or web2py.app (osx).
+  If you prefer to run it from source with your own Python interpreter alreay installed, type:</p>
+{{=CODE("python web2py.py", language=None, counter='>', _class='boxCode')}}
 <p>or for more info type:</p>
-{{=CODE("python2.7 web2py.py -h", language=None, counter='>', _class='boxCode')}}
+{{=CODE("python web2py.py -h", language=None, counter='>', _class='boxCode')}}
 
 
 <h3>Caveats</h3>
@@ -81,7 +81,7 @@
 
 <h3 id="license">License</h3>
 <p>Web2py code is released under <a href="http://www.gnu.org/licenses/lgpl.html">LGPLv3 License</a>. This license does not extend to third party libraries distributed with web2py (which can be MIT, BSD or Apache type licenses) nor does it extend to applications built with web2py (under the terms of the LGPL.</p>
-<p>Applications built with web2py can be released under any license the author wishes as long they do not contain web2py code. They can link unmodified web2py libraries and they can be distributed with official web2py binaries. In particular web2py applications can be distributed in closed source. The admin interface provides a button to byte-code compile.</p>
+<p>Applications built with web2py can be released under any license the author wishes as long as they do not contain web2py code. They can link unmodified web2py libraries and they can be distributed with official web2py binaries. In particular web2py applications can be distributed in closed source. The admin interface provides a button to byte-code compile.</p>
 <p>It is fine to distribute web2py (source or compiled) with your applications as long as you make it clear in the license where your application ends and web2py starts.</p>
 <p>web2py is copyrighted by Massimo Di Pierro. The web2py trademark is owned by Massimo Di Pierro.</p>
 <a class="btn btn-small rounded" href="{{=URL('license')}}">read more</a>

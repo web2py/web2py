@@ -11,7 +11,7 @@ Utilities and class for UTF8 strings managing
 ----------------------------------------------
 """
 from __future__ import print_function
-from gluon._compat import builtin as __builtin__, unicodeT, iteritems, to_unicode, to_native
+from gluon._compat import builtin as __builtin__, unicodeT, iteritems, to_unicode, to_native, reload
 
 __all__ = ['Utf8']
 

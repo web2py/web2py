@@ -10,7 +10,7 @@ try:
     import ldap.filter
     ldap.set_option(ldap.OPT_REFERRALS, 0)
 except Exception as e:
-    logging.error('missing ldap, try "easy_install python-ldap"')
+    logging.error('missing ldap, try "pip install python-ldap"')
     raise e
 
 
@@ -169,16 +169,10 @@ def ldap_auth(server='ldap',
     You can set the logging level with the "logging_level" parameter, default
     is "error" and can be set to error, warning, info, debug.
     """
-
-    if self_signed_certificate:
-        # NOTE : If you have a self-signed SSL Certificate pointing over "port=686" and "secure=True" alone
-        #        will not work, you need also to set "self_signed_certificate=True".
-        # Ref1: https://onemoretech.wordpress.com/2015/06/25/connecting-to-ldap-over-self-signed-tls-with-python/
-        # Ref2: http://bneijt.nl/blog/post/connecting-to-ldaps-with-self-signed-cert-using-python/
-        ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
-
     logger = logging.getLogger('web2py.auth.ldap_auth')
-    if logging_level == 'error':
+    if isinstance(logging_level, int):
+        logger.setLevel(logging_level)
+    elif logging_level == 'error':
         logger.setLevel(logging.ERROR)
     elif logging_level == 'warning':
         logger.setLevel(logging.WARNING)
@@ -406,17 +400,25 @@ def ldap_auth(server='ldap',
             if manage_user:
                 logger.info('[%s] Manage user data' % str(username))
                 try:
+                    user_firstname = result[user_firstname_attrib][0]
                     if user_firstname_part is not None:
-                        store_user_firstname = result[user_firstname_attrib][0].split(' ', 1)[user_firstname_part]
+                        store_user_firstname = user_firstname.split(
+                            b' ' if isinstance(user_firstname, bytes) else ' ',
+                            1
+                        )[user_firstname_part]
                     else:
-                        store_user_firstname = result[user_firstname_attrib][0]
+                        store_user_firstname = user_firstname
                 except KeyError as e:
                     store_user_firstname = None
                 try:
+                    user_lastname = result[user_lastname_attrib][0]
                     if user_lastname_part is not None:
-                        store_user_lastname = result[user_lastname_attrib][0].split(' ', 1)[user_lastname_part]
+                        store_user_lastname = user_lastname.split(
+                            b' ' if isinstance(user_lastname, bytes) else ' ',
+                            1
+                        )[user_lastname_part]
                     else:
-                        store_user_lastname = result[user_lastname_attrib][0]
+                        store_user_lastname = user_lastname
                 except KeyError as e:
                     store_user_lastname = None
                 try:
@@ -601,7 +603,14 @@ def ldap_auth(server='ldap',
         if secure:
             if not ldap_port:
                 ldap_port = 636
-                
+
+            if self_signed_certificate:
+                # NOTE : If you have a self-signed SSL Certificate pointing over "port=686" and "secure=True" alone
+                #        will not work, you need also to set "self_signed_certificate=True".
+                # Ref1: https://onemoretech.wordpress.com/2015/06/25/connecting-to-ldap-over-self-signed-tls-with-python/
+                # Ref2: http://bneijt.nl/blog/post/connecting-to-ldaps-with-self-signed-cert-using-python/
+                ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+
             if cacert_path:
                 ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, cacert_path)
                 

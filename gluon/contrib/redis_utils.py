@@ -11,7 +11,7 @@ to ensure compatibility with another - similar - library
 """
 
 import logging
-import thread
+from threading import Lock
 import time
 from gluon import current
 
@@ -26,17 +26,19 @@ except ImportError:
     raise RuntimeError('Needs redis library to work')
 
 
-locker = thread.allocate_lock()
+locker = Lock()
 
 
-def RConn(*args, **vars):
+def RConn(application=None, *args, **vars):
     """
     Istantiates a StrictRedis connection with parameters, at the first time
     only
     """
     locker.acquire()
     try:
-        instance_name = 'redis_conn_' + current.request.application
+        if application is None:
+            application = current.request.application
+        instance_name = 'redis_conn_' + application
         if not hasattr(RConn, instance_name):
             setattr(RConn, instance_name, redis.StrictRedis(*args, **vars))
         return getattr(RConn, instance_name)

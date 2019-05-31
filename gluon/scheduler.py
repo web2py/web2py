@@ -8,7 +8,6 @@
 Background processes made simple
 ---------------------------------
 """
-from __future__ import print_function
 
 import os
 import re
@@ -29,7 +28,7 @@ from json import loads, dumps
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_EMPTY_OR
 from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
 from gluon.utils import web2py_uuid
-from gluon._compat import Queue, long, iteritems, PY2
+from gluon._compat import Queue, long, iteritems, PY2, to_bytes, string_types, integer_types
 from gluon.storage import Storage
 
 USAGE = """
@@ -417,8 +416,8 @@ def _decode_list(lst):
         return lst
     newlist = []
     for i in lst:
-        if isinstance(i, unicode):
-            i = i.encode('utf-8')
+        if isinstance(i, string_types):
+            i = to_bytes(i)
         elif isinstance(i, list):
             i = _decode_list(i)
         newlist.append(i)
@@ -430,10 +429,9 @@ def _decode_dict(dct):
         return dct
     newdict = {}
     for k, v in iteritems(dct):
-        if isinstance(k, unicode):
-            k = k.encode('utf-8')
-        if isinstance(v, unicode):
-            v = v.encode('utf-8')
+        k = to_bytes(k)
+        if isinstance(v, string_types):
+            v = to_bytes(v)
         elif isinstance(v, list):
             v = _decode_list(v)
         newdict[k] = v
@@ -525,7 +523,7 @@ class MetaScheduler(threading.Thread):
         self.have_heartbeat = True   # set to False to kill
         self.empty_runs = 0
 
-    def async(self, task):
+    def local_async(self, task):
         """Start the background process.
 
         Args:
@@ -804,6 +802,7 @@ class Scheduler(MetaScheduler):
             Field('group_name', default='main'),
             Field('status', requires=IS_IN_SET(TASK_STATUS),
                   default=QUEUED, writable=False),
+            Field('broadcast', 'boolean', default=False),
             Field('function_name',
                   requires=IS_IN_SET(sorted(self.tasks.keys()))
                   if self.tasks else DEFAULT),
@@ -913,7 +912,7 @@ class Scheduler(MetaScheduler):
                     self.w_stats.empty_runs = 0
                     self.w_stats.status = RUNNING
                     self.w_stats.total += 1
-                    self.wrapped_report_task(task, self.async(task))
+                    self.wrapped_report_task(task, self.local_async(task))
                     if not self.w_stats.status == DISABLED:
                         self.w_stats.status = ACTIVE
                 else:
@@ -1155,10 +1154,19 @@ class Scheduler(MetaScheduler):
         - does "housecleaning" for dead workers
         - triggers tasks assignment to workers
         """
+        if self.db_thread:
+            # BKR 20180612 check if connection still works
+            try:
+                query = self.db_thread.scheduler_worker.worker_name == self.worker_name
+                self.db_thread(query).count()
+            except self.db_thread._adapter.connection.OperationalError:
+                # if not -> throw away self.db_thread and force reconnect
+                self.db_thread = None
+
         if not self.db_thread:
             logger.debug('thread building own DAL object')
             self.db_thread = DAL(
-                self.db._uri, folder=self.db._adapter.folder)
+                self.db._uri, folder=self.db._adapter.folder, decode_credentials=True)
             self.define_tables(self.db_thread, migrate=False)
         try:
             db = self.db_thread
@@ -1358,23 +1366,48 @@ class Scheduler(MetaScheduler):
                 gname = task.group_name
                 ws = wkgroups.get(gname)
                 if ws:
-                    counter = 0
-                    myw = 0
-                    for i, w in enumerate(ws['workers']):
-                        if w['c'] < counter:
-                            myw = i
-                        counter = w['c']
-                    assigned_wn = wkgroups[gname]['workers'][myw]['name']
-                    d = dict(
-                        status=ASSIGNED,
-                        assigned_worker_name=assigned_wn
-                    )
-                    db(
-                        (st.id == task.id) &
-                        (st.status.belongs((QUEUED, ASSIGNED)))
-                    ).update(**d)
-                    wkgroups[gname]['workers'][myw]['c'] += 1
-            db.commit()
+                    if task.broadcast:
+                        for worker in ws['workers']:
+                            new_task = db.scheduler_task.insert(
+                                application_name = task.application_name,
+                                task_name = task.task_name,
+                                group_name = task.group_name,
+                                status = ASSIGNED,
+                                broadcast = False,
+                                function_name = task.function_name,
+                                args = task.args,
+                                start_time = now,
+                                repeats = 1,
+                                retry_failed = task.retry_failed,
+                                sync_output = task.sync_output,
+                                assigned_worker_name = worker['name'])
+                        if task.period:
+                            next_run_time = now+datetime.timedelta(seconds=task.period)
+                        else:
+                            # must be cronline
+                            raise NotImplementedError
+                        db(st.id == task.id).update(times_run=task.times_run+1,
+                                                    next_run_time=next_run_time,
+                                                    last_run_time=now)
+                        db.commit()
+                    else:
+                        counter = 0
+                        myw = 0
+                        for i, w in enumerate(ws['workers']):
+                            if w['c'] < counter:
+                                myw = i
+                            counter = w['c']
+                        assigned_wn = wkgroups[gname]['workers'][myw]['name']
+                        d = dict(
+                            status=ASSIGNED,
+                            assigned_worker_name=assigned_wn
+                        )
+                        db(
+                            (st.id == task.id) &
+                            (st.status.belongs((QUEUED, ASSIGNED)))
+                        ).update(**d)
+                        wkgroups[gname]['workers'][myw]['c'] += 1
+                db.commit()
         # I didn't report tasks but I'm working nonetheless!!!!
         if x > 0:
             self.w_stats.empty_runs = 0
@@ -1537,7 +1570,7 @@ class Scheduler(MetaScheduler):
         """
         from pydal.objects import Query
         sr, st = self.db.scheduler_run, self.db.scheduler_task
-        if isinstance(ref, (int, long)):
+        if isinstance(ref, integer_types):
             q = st.id == ref
         elif isinstance(ref, str):
             q = st.uuid == ref
@@ -1588,7 +1621,7 @@ class Scheduler(MetaScheduler):
             Experimental
         """
         st, sw = self.db.scheduler_task, self.db.scheduler_worker
-        if isinstance(ref, (int, long)):
+        if isinstance(ref, integer_types):
             q = st.id == ref
         elif isinstance(ref, str):
             q = st.uuid == ref
@@ -1688,7 +1721,7 @@ def main():
         sys.path.append(path)
         print('importing tasks...')
         tasks = __import__(filename, globals(), locals(), [], -1).tasks
-        print('tasks found: ' + ', '.join(tasks.keys()))
+        print('tasks found: ' + ', '.join(list(tasks.keys())))
     else:
         tasks = {}
     group_names = [x.strip() for x in options.group_names.split(',')]
@@ -1698,7 +1731,7 @@ def main():
     print('groups for this worker: ' + ', '.join(group_names))
     print('connecting to database in folder: ' + options.db_folder or './')
     print('using URI: ' + options.db_uri)
-    db = DAL(options.db_uri, folder=options.db_folder)
+    db = DAL(options.db_uri, folder=options.db_folder, decode_credentials=True)
     print('instantiating scheduler...')
     scheduler = Scheduler(db=db,
                           worker_name=options.worker_name,

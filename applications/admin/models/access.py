@@ -52,7 +52,7 @@ def verify_password(password):
     if DEMO_MODE:
         ret = True
     elif not _config.get('password'):
-        ret - False
+        ret = False
     elif _config['password'].startswith('pam_user:'):
         session.pam_user = _config['password'][9:].strip()
         import gluon.contrib.pam

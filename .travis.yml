@@ -4,11 +4,24 @@ sudo: required
 
 cache: pip
 
+dist: "xenial"
+
+services:
+  - mysql
+
 python:
   - '2.7'
-  - 'pypy'
   - '3.5'
   - '3.6'
+  - '3.6-dev'
+  - '3.7'
+  - '3.7-dev'
+  - 'pypy3.5'
+
+matrix:
+  allow_failures:
+    - python: '3.6-dev'
+    - python: '3.7-dev'
 
 install:
   - pip install -e .
@@ -16,11 +29,9 @@ install:
 before_script:
   - pip install coverage
   - pip install codecov
-  - mysql -e 'create database pydal;'
-  - psql -c 'create database pydal;' -U postgres
-  - psql -c 'create extension postgis;' -U postgres -d pydal;
-  - psql -c 'SHOW SERVER_VERSION' -U postgres
 
+before_install:
+  - mysql -e 'create database pydal;'
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 
@@ -30,6 +41,3 @@ after_success:
 
 notifications:
   email: true
-
-addons:
-  postgresql: "9.4"

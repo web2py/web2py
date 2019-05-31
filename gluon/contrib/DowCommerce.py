@@ -14,7 +14,7 @@ from __future__ import print_function
 __all__ = ['DowCommerce']
 
 from operator import itemgetter
-import urllib
+from gluon._compat import urlopen, urlencode, FancyURLopene
 
 
 class DowCommerce:
@@ -49,12 +49,12 @@ class DowCommerce:
         self.setParameter('password', password)
 
     def process(self):
-        encoded_args = urllib.urlencode(self.parameters)
+        encoded_args = urlencode(self.parameters)
         if self.proxy is None:
-            results = str(urllib.urlopen(
+            results = str(urlopen(
                 self.url, encoded_args).read()).split(self.delimiter)
         else:
-            opener = urllib.FancyURLopener(self.proxy)
+            opener = FancyURLopener(self.proxy)
             opened = opener.open(self.url, encoded_args)
             try:
                 results = str(opened.read()).split(self.delimiter)

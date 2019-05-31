@@ -9,7 +9,6 @@
 Template helpers
 --------------------------------------------
 """
-from __future__ import print_function
 
 import cgi
 import os
@@ -18,24 +17,50 @@ import copy
 import types
 import urllib
 import base64
-from gluon import sanitizer, decoder
 import itertools
-from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool, text_type
-from gluon.utils import local_html_escape
+from pydal._compat import PY2, reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, \
+    urllib_quote, to_bytes, to_native, to_unicode, basestring, urlencode, implements_bool, text_type, long
+from yatl import sanitizer
 import marshal
 
+from gluon import decoder
 from gluon.storage import Storage
-from gluon.utils import web2py_uuid, simple_hash, compare
+from gluon.utils import web2py_uuid, compare
 from gluon.highlight import highlight
+from gluon.validators import simple_hash
 
+
+def local_html_escape(data, quote=False):
+    """
+    Works with bytes.
+    Replace special characters "&", "<" and ">" to HTML-safe sequences.
+    If the optional flag quote is true (the default), the quotation mark
+    characters, both double quote (") and single quote (') characters are also
+    translated.
+    """
+    if PY2:
+        import cgi
+        data = cgi.escape(data, quote)
+        return data.replace("'", "&#x27;") if quote else data
+    else:
+        import html
+        if isinstance(data, str):
+            return html.escape(data, quote=quote)
+        data = data.replace(b"&", b"&amp;")  # Must be done first!
+        data = data.replace(b"<", b"&lt;")
+        data = data.replace(b">", b"&gt;")
+        if quote:
+            data = data.replace(b'"', b"&quot;")
+            data = data.replace(b'\'', b"&#x27;")
+        return data
 
 regex_crlf = re.compile('\r|\n')
 
 join = ''.join
 
 # name2codepoint is incomplete respect to xhtml (and xml): 'apos' is missing.
-entitydefs = dict(map(lambda k_v: (k_v[0], unichr(k_v[1]).encode('utf-8')), iteritems(name2codepoint)))
-entitydefs.setdefault('apos', u"'".encode('utf-8'))
+entitydefs = dict([(k_v[0], to_bytes(unichr(k_v[1]))) for k_v in iteritems(name2codepoint)])
+entitydefs.setdefault('apos', to_bytes("'"))
 
 
 __all__ = [
@@ -109,6 +134,7 @@ __all__ = [
 
 DEFAULT_PASSWORD_DISPLAY = '*' * 8
 
+
 def xmlescape(data, quote=True):
     """
     Returns an escaped string of the provided data
@@ -124,9 +150,8 @@ def xmlescape(data, quote=True):
 
     if not(isinstance(data, (text_type, bytes))):
         # i.e., integers
-        data=str(data)
+        data = str(data)
     data = to_bytes(data, 'utf8', 'xmlcharrefreplace')
-
 
     # ... and do the escaping
     data = local_html_escape(data, quote)
@@ -596,10 +621,10 @@ class XML(XmlComponent):
                 for A, IMG and BlockQuote).
                 The key is the tag; the value is a list of allowed attributes.
         """
-        if sanitize:
-            text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
         if isinstance(text, unicodeT):
             text = to_native(text.encode('utf8', 'xmlcharrefreplace'))
+        if sanitize:
+            text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
         elif isinstance(text, bytes):
             text = to_native(text)
         elif not isinstance(text, str):
@@ -670,6 +695,7 @@ def XML_unpickle(data):
 def XML_pickle(data):
     return XML_unpickle, (marshal.dumps(str(data)),)
 copyreg.pickle(XML, XML_pickle, XML_unpickle)
+
 
 @implements_bool
 class DIV(XmlComponent):
@@ -998,9 +1024,9 @@ class DIV(XmlComponent):
             if isinstance(c, XmlComponent):
                 s = c.flatten(render)
             elif render:
-                s = render(str(c))
+                s = render(to_native(c))
             else:
-                s = str(c)
+                s = to_native(c)
             text += s
         if render:
             text = render(text, self.tag, self.attributes)
@@ -1281,7 +1307,6 @@ class __TAG__(XmlComponent):
     def __getattr__(self, name):
         if name[-1:] == '_':
             name = name[:-1] + '/'
-        name=to_bytes(name)
         return lambda *a, **b: __tag_div__(name, *a, **b)
 
     def __call__(self, html):
@@ -1310,8 +1335,10 @@ class HTML(DIV):
     tag = b'html'
 
     strict = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n'
-    transitional = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n'
-    frameset = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">\n'
+    transitional = \
+        b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n'
+    frameset = \
+        b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">\n'
     html5 = b'<!DOCTYPE HTML>\n'
 
     def xml(self):
@@ -1416,20 +1443,21 @@ class LINK(DIV):
 
 class SCRIPT(DIV):
 
-    tag = 'script'
+    tag = b'script'
+    tagname = to_bytes(tag)
 
     def xml(self):
         (fa, co) = self._xml()
-        fa = to_native(fa)
+        fa = to_bytes(fa)
         # no escaping of subcomponents
-        co = '\n'.join([str(component) for component in
+        co = b'\n'.join([to_bytes(component) for component in
                        self.components])
         if co:
             # <script [attributes]><!--//--><![CDATA[//><!--
             # script body
             # //--><!]]></script>
             # return '<%s%s><!--//--><![CDATA[//><!--\n%s\n//--><!]]></%s>' % (self.tag, fa, co, self.tag)
-            return '<%s%s><!--\n%s\n//--></%s>' % (self.tag, fa, co, self.tag)
+            return b'<%s%s><!--\n%s\n//--></%s>' % (self.tagname, fa, co, self.tagname)
         else:
             return DIV.xml(self)
 
@@ -1437,18 +1465,19 @@ class SCRIPT(DIV):
 class STYLE(DIV):
 
     tag = 'style'
+    tagname = to_bytes(tag)
 
     def xml(self):
         (fa, co) = self._xml()
-        fa = to_native(fa)
+        fa = to_bytes(fa)
         # no escaping of subcomponents
-        co = '\n'.join([str(component) for component in
+        co = b'\n'.join([to_bytes(component) for component in
                        self.components])
         if co:
             # <style [attributes]><!--/*--><![CDATA[/*><!--*/
             # style body
             # /*]]>*/--></style>
-            return '<%s%s><!--/*--><![CDATA[/*><!--*/\n%s\n/*]]>*/--></%s>' % (self.tag, fa, co, self.tag)
+            return b'<%s%s><!--/*--><![CDATA[/*><!--*/\n%s\n/*]]>*/--></%s>' % (self.tagname, fa, co, self.tagname)
         else:
             return DIV.xml(self)
 
@@ -1862,7 +1891,7 @@ class INPUT(DIV):
                 except:
                     import traceback
                     print(traceback.format_exc())
-                    msg = "Validation error, field:%s %s" % (name,validator)
+                    msg = "Validation error, field:%s %s" % (name, validator)
                     raise Exception(msg)
                 if errors is not None:
                     self.vars[name] = value
@@ -1912,7 +1941,7 @@ class INPUT(DIV):
         name = self.attributes.get('_name', None)
         if name and hasattr(self, 'errors') \
                 and self.errors.get(name, None) \
-                and self['hideerror'] != True:
+                and self['hideerror'] is not True:
             self['_class'] = (self['_class'] and self['_class'] + ' ' or '') + 'invalidinput'
             return DIV.xml(self) + DIV(
                 DIV(
@@ -1980,7 +2009,6 @@ class OPTGROUP(DIV):
 
 
 class SELECT(INPUT):
-
     """
     Examples:
 
@@ -2015,7 +2043,7 @@ class SELECT(INPUT):
         if value is not None:
             if not self['_multiple']:
                 for c in options:  # my patch
-                    if ((value is not None) and (str(c['_value']) == str(value))):
+                    if (value is not None) and (str(c['_value']) == str(value)):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
@@ -2025,7 +2053,7 @@ class SELECT(INPUT):
                 else:
                     values = [str(value)]
                 for c in options:  # my patch
-                    if ((value is not None) and (str(c['_value']) in values)):
+                    if (value is not None) and (str(c['_value']) in values):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
@@ -2376,22 +2404,21 @@ class FORM(DIV):
 
     def as_json(self, sanitize=True):
         d = self.as_dict(flat=True, sanitize=sanitize)
-        from serializers import json
+        from gluon.serializers import json
         return json(d)
 
     def as_yaml(self, sanitize=True):
         d = self.as_dict(flat=True, sanitize=sanitize)
-        from serializers import yaml
+        from gluon.serializers import yaml
         return yaml(d)
 
     def as_xml(self, sanitize=True):
         d = self.as_dict(flat=True, sanitize=sanitize)
-        from serializers import xml
+        from gluon.serializers import xml
         return xml(d)
 
 
 class BEAUTIFY(DIV):
-
     """
     Turns any list, dictionary, etc into decent looking html.
 
@@ -2430,7 +2457,7 @@ class BEAUTIFY(DIV):
         if level == 0:
             return
         for c in self.components:
-            if hasattr(c, 'value') and not callable(c.value):
+            if hasattr(c, 'value') and not callable(c.value) and not isinstance(c, cgi.FieldStorage):
                 if c.value:
                     components.append(c.value)
             if hasattr(c, 'xml') and callable(c.xml):
@@ -2548,7 +2575,7 @@ class MENU(DIV):
                         li['_class'] = li['_class'] + ' ' + self['li_active']
                     else:
                         li['_class'] = self['li_active']
-                if len(item) <= 4 or item[4] == True:
+                if len(item) <= 4 or item[4] is True:
                     ul.append(li)
         return ul
 
@@ -2562,7 +2589,7 @@ class MENU(DIV):
                 # ex: ('', False, A('title', _href=URL(...), _title="title"))
                 # ex: (A('title', _href=URL(...), _title="title"), False, None)
                 custom_items.append(item)
-            elif len(item) <= 4 or item[4] == True:
+            elif len(item) <= 4 or item[4] is True:
                 select.append(OPTION(CAT(prefix, item[0]),
                                      _value=item[2], _selected=item[1]))
                 if len(item) > 3 and len(item[3]):
@@ -2655,36 +2682,24 @@ class web2pyHTMLParser(HTMLParser):
     """
     obj = web2pyHTMLParser(text) parses and html/xml text into web2py helpers.
     obj.tree contains the root of the tree, and tree can be manipulated
-
-    >>> str(web2pyHTMLParser('hello<div a="b" c=3>wor&lt;ld<span>xxx</span>y<script/>yy</div>zzz').tree)
-    'hello<div a="b" c="3">wor&lt;ld<span>xxx</span>y<script></script>yy</div>zzz'
-    >>> str(web2pyHTMLParser('<div>a<span>b</div>c').tree)
-    '<div>a<span>b</span></div>c'
-    >>> tree = web2pyHTMLParser('hello<div a="b">world</div>').tree
-    >>> tree.element(_a='b')['_c']=5
-    >>> str(tree)
-    'hello<div a="b" c="5">world</div>'
     """
+
     def __init__(self, text, closed=('input', 'link')):
         HTMLParser.__init__(self)
         self.tree = self.parent = TAG['']()
         self.closed = closed
-        self.tags = [x for x in __all__ if isinstance(eval(x), DIV)]
         self.last = None
         self.feed(text)
 
     def handle_starttag(self, tagname, attrs):
-        if tagname.upper() in self.tags:
-            tag = eval(tagname.upper())
-        else:
-            if tagname in self.closed:
-                tagname += '/'
-            tag = TAG[tagname]()
+        if tagname in self.closed:
+            tagname += '/'
+        tag = TAG[tagname]()
         for key, value in attrs:
             tag['_' + key] = value
         tag.parent = self.parent
         self.parent.append(tag)
-        if not tag.tag.endswith(b'/'):
+        if not tag.tag.endswith('/'):
             self.parent = tag
         else:
             self.last = tag.tag[:-1]
@@ -2707,7 +2722,6 @@ class web2pyHTMLParser(HTMLParser):
         self.parent.append(entitydefs[name])
 
     def handle_endtag(self, tagname):
-        tagname = to_bytes(tagname)
         # this deals with unbalanced tags
         if tagname == self.last:
             return
@@ -2717,7 +2731,8 @@ class web2pyHTMLParser(HTMLParser):
                 self.parent = self.parent.parent
             except:
                 raise RuntimeError("unable to balance tag %s" % tagname)
-            if parent_tagname[:len(tagname)] == tagname: break
+            if parent_tagname[:len(tagname)] == tagname:
+                break
 
 
 def markdown_serializer(text, tag=None, attr=None):

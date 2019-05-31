@@ -25,6 +25,9 @@ def division(a, b):
     "Divide two values "
     return a / b
 
+@service.soap('DummyCustomElement', returns={'out0': str}, args={'in0': str}, response_element_name='customResponseTag')
+def dummy(in0):
+    return in0
 
 # expose the soap methods
 
@@ -51,3 +54,20 @@ def test_soap_sub():
                 xml_response=client.xml_response,
                 result=result)
 
+def test_custom_response_element_name():
+    from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
+    # build the url to the WSDL (web service description)
+    # like "http://localhost:8000/webservices/sample/call/soap?WSDL"
+    url = URL(f="call/soap", vars={"WSDL": ""}, scheme=True)
+    # create a SOAP client
+    client = SoapClient(wsdl=url)
+    # call the SOAP remote method
+    try:
+        ret = client.DummyCustomElement(in0="Hello World!")
+        result = ret['out0']
+    except SoapFault as sf:
+        result = sf
+    response.view = "soap_examples/generic.html"
+    return dict(xml_request=client.xml_request, 
+                xml_response=client.xml_response,
+                result=result)

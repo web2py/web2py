@@ -8,15 +8,16 @@ Redis-backed sessions
 """
 
 import logging
-import thread
+from threading import Lock
 from gluon import current
 from gluon.storage import Storage
 from gluon.contrib.redis_utils import acquire_lock, release_lock
 from gluon.contrib.redis_utils import register_release_lock
+from gluon._compat import to_bytes
 
 logger = logging.getLogger("web2py.session.redis")
 
-locker = thread.allocate_lock()
+locker = Lock()
 
 
 def RedisSession(redis_conn, session_expiry=False, with_lock=False, db=None):
@@ -43,7 +44,7 @@ def RedisSession(redis_conn, session_expiry=False, with_lock=False, db=None):
     try:
         instance_name = 'redis_instance_' + current.request.application
         if not hasattr(RedisSession, instance_name):
-            setattr(RedisSession, instance_name, 
+            setattr(RedisSession, instance_name,
                     RedisClient(redis_conn, session_expiry=session_expiry, with_lock=with_lock))
         return getattr(RedisSession, instance_name)
     finally:

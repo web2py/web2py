@@ -62,3 +62,4 @@ HOWTO-web2py-devel
 .idea/*
 site-packages/
 logs/
+__pycache__/

@@ -104,11 +104,12 @@ def obj2dict(obj, processed=None):
                                     types.BuiltinFunctionType,
                                     types.BuiltinMethodType))
 
-def saml2_handler(session, request, config_filename = None):
+def saml2_handler(session, request, config_filename = None, entityid = None):
     config_filename = config_filename or os.path.join(request.folder,'private','sp_conf')
     client = Saml2Client(config_file = config_filename)
-    idps = client.metadata.with_descriptor("idpsso")
-    entityid = idps.keys()[0]
+    if not entityid:
+        idps = client.metadata.with_descriptor("idpsso")
+        entityid = idps.keys()[0]
     bindings = [BINDING_HTTP_REDIRECT, BINDING_HTTP_POST]
     binding, destination = client.pick_binding(
         "single_sign_on_service", bindings, "idpsso", entity_id=entityid)
@@ -117,9 +118,9 @@ def saml2_handler(session, request, config_filename = None):
     elif request.env.request_method == 'POST':
         binding = BINDING_HTTP_POST
     if not request.vars.SAMLResponse:
-        req_id, req = client.create_authn_request(destination, binding=binding)
+        req_id, req = client.create_authn_request(destination, binding=BINDING_HTTP_POST)
         relay_state = web2py_uuid().replace('-','')
-        session.saml_outstanding_queries = {req_id: request.url}
+        session.saml_outstanding_queries = {req_id: request.url}    
         session.saml_req_id = req_id
         http_args = client.apply_binding(binding, str(req), destination,
                                          relay_state=relay_state)
@@ -145,12 +146,21 @@ class Saml2Auth(object):
             username=lambda v:v['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn'][0],
             email=lambda v:v['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn'][0],
             user_id=lambda v:v['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn'][0],
-            )):
+            ), logout_url=None, change_password_url=None, entityid=None):
         self.config_file = config_file
         self.maps = maps
 
+    # URL for redirecting users to when they sign out
+        self.saml_logout_url = logout_url
+
+        # URL to let users change their password in the IDP system
+        self.saml_change_password_url = change_password_url
+    
+    # URL to specify an IDP if using federation metadata or an MDQ
+    self.entityid = entityid
+
     def login_url(self, next="/"):
-        d = saml2_handler(current.session, current.request)
+        d = saml2_handler(current.session, current.request, entityid=self.entityid)
         if 'url' in d:
             redirect(d['url'])
         elif 'error' in d:
@@ -170,6 +180,12 @@ class Saml2Auth(object):
 
     def logout_url(self, next="/"):
         current.session.saml2_info = None
+        current.session.auth = None
+        self._SAML_logout()
+        return next
+
+    def change_password_url(self, next="/"):
+        self._SAML_change_password()
         return next
 
     def get_user(self):        
@@ -180,3 +196,13 @@ class Saml2Auth(object):
                 d[key] = self.maps[key](user)
             return d
         return None
+
+    def _SAML_logout(self):
+        """
+        exposed SAML.logout()
+        redirects to the SAML logout page
+        """
+        redirect(self.saml_logout_url)
+
+    def _SAML_change_password(self):
+        redirect(self.saml_change_password_url)

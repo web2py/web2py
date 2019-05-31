@@ -1,0 +1,9 @@
+#FROM mariadb:latest
+#FROM mysql:latest
+#FROM percona:latest
+FROM postgres:latest
+#FROM mongo:latest
+#FROM couchdb:latest
+
+ENV MYSQL_ROOT_PASSWORD=example \
+ POSTGRES_PASSWORD=example
