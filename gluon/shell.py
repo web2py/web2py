@@ -28,7 +28,6 @@ from gluon.restricted import RestrictedError
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
-from gluon.fileutils import create_missing_app_folders
 from pydal.base import BaseAdapter
 from gluon._compat import iteritems, ClassType, PY2
 
@@ -166,9 +165,6 @@ def env(
                 for (k, v) in iteritems(request.vars)]
         path_info = '%s?%s' % (path_info, '&'.join(vars))
     request.env.path_info = path_info
-
-    # Ensure necessary folders are created
-    create_missing_app_folders(request)
 
     # Monkey patch so credentials checks pass.
 
