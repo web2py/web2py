@@ -148,7 +148,8 @@ def listdir(path,
             add_dirs=False,
             sort=True,
             maxnum=None,
-            exclude_content_from=None
+            exclude_content_from=None,
+            followlinks=False
             ):
     """
     Like `os.listdir()` but you can specify a regex pattern to filter files.
@@ -164,7 +165,7 @@ def listdir(path,
         n = 0
     regex = re.compile(expression)
     items = []
-    for (root, dirs, files) in os.walk(path, topdown=True):
+    for (root, dirs, files) in os.walk(path, topdown=True, followlinks=followlinks):
         for dir in dirs[:]:
             if dir.startswith('.'):
                 dirs.remove(dir)
