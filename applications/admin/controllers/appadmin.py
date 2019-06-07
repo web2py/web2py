@@ -636,7 +636,7 @@ def hooks():
     # Render
     ul_main = UL(_class='nav nav-list')
     for t in tables:
-        ul_main.append(A(t['name'], _onclick='collapse('a_%s')' % t['slug']))
+        ul_main.append(A(t['name'], _onclick="collapse('a_%s')" % t['slug']))
         ul_t = UL(_class='nav nav-list', _id='a_%s' % t['slug'], _style='display:none')
         for op in t['method_hooks']:
             ul_t.append(LI(op['name']))
