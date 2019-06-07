@@ -334,7 +334,7 @@ class SimplePool(object):
         self.running = set()
 
     def grow(self, size):
-        if size > self.size:
+        if size and size > self.size:
             self.size = size
 
     def start(self, t):
@@ -380,7 +380,13 @@ class SimplePool(object):
 
 _dancer = SimplePool(5, worker_cls=SoftWorker)
 
+def dancer_size(size):
+    _dancer.grow(size)
+
 _launcher = SimplePool(5)
+
+def launcher_size(size):
+    _launcher.grow(size)
 
 def crondance(applications_parent, ctype='hard', startup=False, apps=None):
     """

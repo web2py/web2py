@@ -23,9 +23,15 @@ for the benefit of code maintainers/developers:
   '--run_system_tests')
 - remember to allow the '-' too as word separator (e.g.
   '--run-system-tests') but do not use this form on help
+  (add the minus version of the option to _omitted_opts
+  to hide it in usage help)
 - prefer short names on help messages, instead use
   all options names in warning/error messages (e.g.
   '-R/--run requires -S/--shell')
+
+Notice that options must be included into opt_map dictionary
+(defined in parse_args function) to be available in
+configuration file.
 """
 
 from __future__ import print_function
@@ -90,11 +96,12 @@ def console(version):
         #       most of the options but do not show both versions on help
         _omitted_opts = ('--add-options', '--errors-to-console',
             '--no-banner', '--log-level', '--no-gui', '--import-models',
+            '--force-migrate',
             '--server-name', '--server-key', '--server-cert', '--ca-cert',
             '--pid-filename', '--log-filename', '--min-threads',
             '--max-threads', '--request-queue-size', '--socket-timeout',
             '--profiler-dir', '--with-scheduler', '--with-cron',
-            '--soft-cron', '--cron-run',
+            '--cron-threads', '--soft-cron', '--cron-run',
             '--run-doctests', '--run-system-tests', '--with-coverage')
 
         _hidden_options = _omitted_opts + tuple(deprecated_opts.keys())
@@ -259,12 +266,11 @@ web2py will attempt to run a GUI to ask for it when starting the web server
         '(default is %(default)s), see -S above. NOTE: when the APP_ENV '
         'argument of -S include a controller c automatic import of '
         'models is always enabled')
-    g.add_argument('--force_migrate',
+    g.add_argument('--force_migrate', '--force-migrate',
                    default=False,
-                   action='store_true',
-                   help=
-                   'force DAL to migrate all tables that should be migrated when enabled; '
-                   'monkeypatch in the DAL class to force _migrate_enabled=True')
+                   action='store_true', help=
+        'force DAL to migrate all tables that should be migrated when enabled; '
+        'monkeypatch in the DAL class to force _migrate_enabled=True')
     g.add_argument('-R', '--run',
                    type=existing_file,
                    metavar='PYTHON_FILE', help=
@@ -452,6 +458,19 @@ web2py will attempt to run a GUI to ask for it when starting the web server
         'only, the default behaviour is to read the crontab for all of the '
         'installed applications. NOTE: this option can be used multiple '
         'times to build the list of crontabs to be processed by cron')
+    def positive_int(v, err_label='value'):
+        try:
+            iv = int(v)
+            if iv <= 0: raise ValueError()
+            return iv
+        except ValueError:
+            pass
+        raise argparse.ArgumentTypeError("bad %s %s" % (err_label, v))
+    def cron_threads(v):
+        return positive_int(v, err_label='cron_threads')
+    g.add_argument('--cron_threads', '--cron-threads',
+                   type=cron_threads, metavar='NUM',
+                   help='maximum number of cron threads (5)')
     g.add_argument('--soft_cron', '--soft-cron',
                    '--softcron', # deprecated
                    default=False,
@@ -664,6 +683,7 @@ def parse_args(parser, cli_args, deprecated_opts, integer_log_level,
             'bpython': store_true,
             'plain': store_true,
             'import_models': store_true,
+            'force_migrate': store_true,
             'run': str_or_default,
             'args': list_or_default,
             # web server options
@@ -688,6 +708,7 @@ def parse_args(parser, cli_args, deprecated_opts, integer_log_level,
             # cron options
             'with_cron': store_true,
             'crontab': list_or_default,
+            'cron_threads': str_or_default,
             'soft_cron': store_true,
             'cron_run': store_true,
             # test options
