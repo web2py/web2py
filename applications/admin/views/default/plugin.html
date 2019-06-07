@@ -24,7 +24,7 @@ def file_upload_form(location):
               INPUT(_type="hidden",_name="location",_value=location),
               INPUT(_type="hidden",_name="token",_value=session.token),
               INPUT(_type="hidden",_name="sender",_value=URL('design/'+app)),
-              INPUT(_type="submit",_value=T("submit")),_action=URL('upload_file'))
+              INPUT(_type="submit",_value=T("Submit")),_action=URL('upload_file'))
     return form
 def file_create_form(location):
     form=FORM(T("create file with filename:")," ",
@@ -32,7 +32,7 @@ def file_create_form(location):
               INPUT(_type="hidden",_name="location",_value=location),
               INPUT(_type="hidden",_name="token",_value=session.token),
               INPUT(_type="hidden",_name="sender",_value=URL('design/'+app)),
-              INPUT(_type="submit",_value=T("submit")),_action=URL('create_file'))
+              INPUT(_type="submit",_value=T("Submit")),_action=URL('create_file'))
     return form
 def deletefile(arglist):
 	return A(TAG[''](IMG(_src=URL('static', 'images/delete_icon.png')), 
