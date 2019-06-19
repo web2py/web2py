@@ -27,10 +27,10 @@ import string
 from gluon._compat import Cookie, urllib_quote
 # from thread import allocate_lock
 
-from gluon.fileutils import abspath, read_file, write_file
+from gluon.fileutils import abspath, read_file, write_file, create_missing_folders, create_missing_app_folders, \
+    add_path_first
 from gluon.settings import global_settings
 from gluon.utils import web2py_uuid, unlocalised_http_header_date
-from gluon.admin import add_path_first, create_missing_folders, create_missing_app_folders
 from gluon.globals import current
 
 #  Remarks:

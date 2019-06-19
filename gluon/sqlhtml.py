@@ -2666,7 +2666,7 @@ class SQLFORM(FORM):
                     otablename, ofieldname = order.split('~')[-1].split('.', 1)
                     sort_field = db[otablename][ofieldname]
                     orderby = sort_field if order[:1] != '~' else ~sort_field
-                    
+
             orderby = fix_orderby(orderby)
 
             # expcolumns start with the visible columns, which
@@ -2815,11 +2815,11 @@ class SQLFORM(FORM):
                 if key == order.lstrip('~'):
                     if inverted:
                         if key == order:
-                            key, marker = 'None', asc_icon 
+                            key, marker = 'None', asc_icon
                         else:
                             key, marker = order[1:], desc_icon
                     else:
-                        if key == order:                            
+                        if key == order:
                             key, marker = '~' + order, asc_icon
                         else:
                             key, marker = 'None', desc_icon

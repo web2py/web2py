@@ -741,8 +741,12 @@ def start():
         sys.argv = [options.run or ''] + options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
             import_models=options.import_models, startfile=options.run,
-            cron_job=options.cron_job)
+            cron_job=options.cron_job, force_migrate=options.force_migrate)
         return
+
+    # set size of cron thread pools
+    newcron.dancer_size(options.min_threads)
+    newcron.launcher_size(options.cron_threads)
 
     if options.cron_run:
         # run cron (extcron) and exit

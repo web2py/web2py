@@ -16,12 +16,11 @@ import os
 import traceback
 from shutil import rmtree, copyfileobj
 import zipfile
-import sys
 
 from gluon.fileutils import (w2p_pack, create_app, w2p_unpack,
-    w2p_pack_plugin, w2p_unpack_plugin,
-    up, fix_newlines, abspath, recursive_unlink,
-    read_file, write_file, parse_version, missing_app_folders)
+                             w2p_pack_plugin, w2p_unpack_plugin,
+                             up, fix_newlines, abspath, recursive_unlink,
+                             write_file, parse_version)
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 from gluon.cache import CacheOnDisk
@@ -29,7 +28,7 @@ from gluon._compat import urlopen, to_native
 
 # TODO: move into add_path_first
 if not global_settings.web2py_runtime_gae:
-    import site
+    pass
 
 
 REGEX_DEFINE_TABLE = r"""^\w+\.define_table\(\s*['"](?P<name>\w+)['"]"""
@@ -37,7 +36,7 @@ REGEX_EXTEND = r"""^\s*(?P<all>\{\{\s*extend\s+['"](?P<name>[^'"]+)['"]\s*\}\})"
 REGEX_INCLUDE = r"""(?P<all>\{\{\s*include\s+['"](?P<name>[^'"]+)['"]\s*\}\})"""
 
 
-# TODO: swap arguments, let first ('r' or whatever) be mandatory 
+# TODO: swap arguments, let first ('r' or whatever) be mandatory
 def apath(path='', r=None):
     """Builds a path inside an application folder
 
@@ -442,54 +441,3 @@ def upgrade(request, url='http://web2py.com'):
         return True, None
     except Exception as e:
         return False, e
-
-
-# TODO: move to fileutils
-def add_path_first(path):
-    sys.path = [path] + [p for p in sys.path if (
-        not p == path and not p == (path + '/'))]
-    if not global_settings.web2py_runtime_gae:
-        if not path in sys.path:
-            site.addsitedir(path)
-
-
-# TODO: move to fileutils
-def try_mkdir(path):
-    if not os.path.exists(path):
-        try:
-            if os.path.islink(path):
-                # path is a broken link, try to mkdir the target of the link
-                # instead of the link itself.
-                os.mkdir(os.path.realpath(path))
-            else:
-                os.mkdir(path)
-        except OSError as e:
-            if e.errno == 17:  # "File exists" (race condition).
-                pass
-            else:
-                raise
-
-
-# TODO: move to fileutils
-def create_missing_folders():
-    if not global_settings.web2py_runtime_gae:
-        for path in ('applications', 'deposit', 'site-packages', 'logs'):
-            try_mkdir(abspath(path, gluon=True))
-    """
-    OLD sys.path dance
-    paths = (global_settings.gluon_parent, abspath(
-        'site-packages', gluon=True), abspath('gluon', gluon=True), '')
-    """
-    for p in (global_settings.gluon_parent,
-              abspath('site-packages', gluon=True),
-              ''):
-        add_path_first(p)
-
-
-# TODO: move to fileutils
-def create_missing_app_folders(request):
-    if not global_settings.web2py_runtime_gae:
-        if request.folder not in global_settings.app_folders:
-            for amf in missing_app_folders(request.folder):
-                try_mkdir(amf)
-            global_settings.app_folders.add(request.folder)
