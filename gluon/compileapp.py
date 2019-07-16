@@ -437,7 +437,7 @@ def compile_views(folder, skip_failed_views=False):
     """
     path = pjoin(folder, 'views')
     failed_views = []
-    for fname in listdir(path, REGEX_VIEW_PATH):
+    for fname in listdir(path, REGEX_VIEW_PATH, followlinks=True):
         try:
             data = parse_template(fname, path)
         except Exception as e:
@@ -462,7 +462,7 @@ def compile_models(folder):
     Compiles all the models in the application specified by `folder`
     """
     path = pjoin(folder, 'models')
-    for fname in listdir(path, REGEX_MODEL_PATH):
+    for fname in listdir(path, REGEX_MODEL_PATH, followlinks=True):
         data = read_file(pjoin(path, fname))
         modelfile = 'models.'+fname.replace(os.sep, '.')
         filename = pjoin(folder, 'compiled', modelfile)
@@ -487,7 +487,7 @@ def compile_controllers(folder):
     Compiles all the controllers in the application specified by `folder`
     """
     path = pjoin(folder, 'controllers')
-    for fname in listdir(path, REGEX_CONTROLLER):
+    for fname in listdir(path, REGEX_CONTROLLER, followlinks=True):
         data = read_file(pjoin(path, fname))
         exposed = find_exposed_functions(data)
         for function in exposed:
