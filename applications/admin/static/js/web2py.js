@@ -284,6 +284,7 @@
                 var redirect = xhr.getResponseHeader('web2py-redirect-location');
                 if (redirect !== null) {
                     window.location = redirect;
+                    window.location.reload(); // Force reload even with anchors
                 }
                 /* run this here only if this Ajax request is NOT for a web2py component. */
                 if (xhr.getResponseHeader('web2py-component-content') === null) {
