@@ -38,19 +38,19 @@ def file_upload_form(location):
               INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY()),
               INPUT(_type="hidden",_name="location",_value=location),
               INPUT(_type="hidden",_name="sender",_value=URL('design/'+app)),
-              INPUT(_type="submit",_value=T("submit")),_action=URL('upload_file'))
+              INPUT(_type="submit",_value=T("Submit")),_action=URL('upload_file'))
     return form
 def file_create_form(location):
     form=FORM(T("create file with filename:")," ",
               INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY()),
               INPUT(_type="hidden",_name="location",_value=location),
               INPUT(_type="hidden",_name="sender",_value=URL('design/'+app)),
-              INPUT(_type="submit",_value=T("submit")),_action=URL('create_file'))
+              INPUT(_type="submit",_value=T("Submit")),_action=URL('create_file'))
     return form
 def upload_plugin_form(app):
     form=FORM(T("upload plugin file:")," ",
               INPUT(_type="file",_name="pluginfile"),
-              INPUT(_type="submit",_value=T("submit")))
+              INPUT(_type="submit",_value=T("Submit")))
     return form
 def deletefile(arglist):
     return A_delete(SPAN(T('Delete')), _href=URL('delete',args=arglist,vars=dict(sender=request.function+'/'+app)))

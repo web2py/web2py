@@ -348,7 +348,7 @@ class TestBareHelpers(unittest.TestCase):
 <>
 //--></script>''')
         self.assertEqual(SCRIPT().xml(), b'<script></script>')
-        self.assertEqual(SCRIPT(';').xml() + DIV().xml(), 
+        self.assertEqual(SCRIPT(';').xml() + DIV().xml(),
                          b'<script><!--\n;\n//--></script><div></div>')
 
     def test_STYLE(self):

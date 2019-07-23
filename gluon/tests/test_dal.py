@@ -32,7 +32,7 @@ class TestDALSubclass(unittest.TestCase):
 
     def testSerialization(self):
         from gluon._compat import pickle
-        db = DAL(check_reserved=['all'])
+        db = DAL('sqlite:memory', check_reserved=['all'])
         db.define_table('t_a', Field('f_a'))
         db.t_a.insert(f_a='test')
         a = db(db.t_a.id > 0).select(cacheable=True)
@@ -56,7 +56,7 @@ def _prepare_exec_for_file(filename):
     elif os.path.split(filename)[1] == '__init__.py':
         filename = os.path.dirname(filename)
     else:
-        raise 'The file provided (%s) does is not a valid Python file.'
+        raise IOError('The file provided (%s) is not a valid Python file.')
     filename = os.path.realpath(filename)
     dirpath = filename
     while True:

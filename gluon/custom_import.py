@@ -8,7 +8,7 @@
 Support for smart import syntax for web2py applications
 -------------------------------------------------------
 """
-from gluon._compat import builtin, unicodeT, PY2, to_native, reload
+from gluon._compat import builtin, unicodeT, to_native, reload
 import os
 import sys
 import threading
@@ -18,7 +18,6 @@ NATIVE_IMPORTER = builtin.__import__
 INVALID_MODULES = set(('', 'gluon', 'applications', 'custom_import'))
 
 # backward compatibility API
-
 
 def custom_import_install():
     if builtin.__import__ == NATIVE_IMPORTER:
@@ -35,78 +34,55 @@ def is_tracking_changes():
     return current.request._custom_import_track_changes
 
 
-class CustomImportException(ImportError):
-    pass
+# see https://docs.python.org/3/library/functions.html#__import__
+# Changed in Python 3.3: Negative values for level are no longer supported,
+# which also changes the default value to 0 (was -1)
+_DEFAULT_LEVEL = 0 if sys.version_info[:2] >= (3, 3) else -1
 
-
-def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
+def custom_importer(name, globals={}, locals=None, fromlist=(), level=_DEFAULT_LEVEL):
     """
     web2py's custom importer. It behaves like the standard Python importer but
     it tries to transform import statements as something like
     "import applications.app_name.modules.x".
-    If the import fails, it falls back on naive_importer
+    If the import fails, it falls back on builtin importer.
     """
 
+    # support for non-ascii name
     if isinstance(name, unicodeT):
         name = to_native(name)
 
-    globals = globals or {}
-    locals = locals or {}
-    fromlist = fromlist or []
-
-    try:
+    if hasattr(current, 'request') \
+            and level <= 0 \
+            and name.partition('.')[0] not in INVALID_MODULES:
+        # absolute import from application code
+        try:
+            return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
+        except (ImportError, KeyError):
+            pass
         if current.request._custom_import_track_changes:
             base_importer = TRACK_IMPORTER
         else:
             base_importer = NATIVE_IMPORTER
-    except:  # there is no current.request (should never happen)
-        base_importer = NATIVE_IMPORTER
-
-    if not(PY2) and level < 0:
-        level = 0
-
-    # if not relative and not from applications:
-    if hasattr(current, 'request') \
-            and level <= 0 \
-            and not name.partition('.')[0] in INVALID_MODULES \
-            and isinstance(globals, dict):
-        import_tb = None
-        try:
-            try:
-                oname = name if not name.startswith('.') else '.'+name
-                return NATIVE_IMPORTER(oname, globals, locals, fromlist, level)
-            except (ImportError, KeyError):
-                items = current.request.folder.split(os.path.sep)
-                if not items[-1]:
-                    items = items[:-1]
-                modules_prefix = '.'.join(items[-2:]) + '.modules'
-                if not fromlist:
-                    # import like "import x" or "import x.y"
-                    result = None
-                    for itemname in name.split("."):
-                        new_mod = base_importer(
-                            modules_prefix, globals, locals, [itemname], level)
-                        try:
-                            result = result or sys.modules[modules_prefix+'.'+itemname]
-                        except KeyError as e:
-                            raise ImportError('Cannot import module %s' % str(e))
-                        modules_prefix += "." + itemname
-                    return result
-                else:
-                    # import like "from x import a, b, ..."
-                    pname = modules_prefix + "." + name
-                    return base_importer(pname, globals, locals, fromlist, level)
-        except ImportError as e1:
-            import_tb = sys.exc_info()[2]
-            try:
-                return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
-            except (ImportError, KeyError) as e3:
-                raise ImportError(e1, import_tb)  # there an import error in the module
-        except Exception as e2:
-            raise  # there is an error in the module
-        finally:
-            if import_tb:
-                import_tb = None
+        # rstrip for backward compatibility
+        items = current.request.folder.rstrip(os.sep).split(os.sep)
+        modules_prefix = '.'.join(items[-2:]) + '.modules'
+        if not fromlist:
+            # "import x" or "import x.y"
+            result = None
+            for itemname in name.split("."):
+                new_mod = base_importer(
+                    modules_prefix, globals, locals, (itemname,), level)
+                modules_prefix += "." + itemname
+                if result is None:
+                    try:
+                        result = sys.modules[modules_prefix]
+                    except KeyError:
+                        raise ImportError("No module named %s" % modules_prefix)
+            return result
+        else:
+            # "from x import a, b, ..."
+            pname = "%s.%s" % (modules_prefix, name)
+            return base_importer(pname, globals, locals, fromlist, level)
 
     return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
 
@@ -123,30 +99,23 @@ class TrackImporter(object):
     def __init__(self):
         self._import_dates = {}  # Import dates of the files of the modules
 
-    def __call__(self, name, globals=None, locals=None, fromlist=None, level=-1):
+    def __call__(self, name, globals={}, locals=None, fromlist=(), level=_DEFAULT_LEVEL):
         """
         The import method itself.
         """
-        globals = globals or {}
-        locals = locals or {}
-        fromlist = fromlist or []
-        try:
-            # Check the date and reload if needed:
-            self._update_dates(name, globals, locals, fromlist, level)
-            # Try to load the module and update the dates if it works:
-            result = NATIVE_IMPORTER(name, globals, locals, fromlist, level)
-            # Module maybe loaded for the 1st time so we need to set the date
-            self._update_dates(name, globals, locals, fromlist, level)
-            return result
-        except Exception as e:
-            raise  # Don't hide something that went wrong
+        # Check the date and reload if needed:
+        self._update_dates(name, globals, locals, fromlist, level)
+        # Try to load the module and update the dates if it works:
+        result = NATIVE_IMPORTER(name, globals, locals, fromlist, level)
+        # Module maybe loaded for the 1st time so we need to set the date
+        self._update_dates(name, globals, locals, fromlist, level)
+        return result
 
     def _update_dates(self, name, globals, locals, fromlist, level):
         """
         Update all the dates associated to the statement import. A single
         import statement may import many modules.
         """
-
         self._reload_check(name, globals, locals, level)
         for fromlist_name in fromlist or []:
             pname = "%s.%s" % (name, fromlist_name)
@@ -169,7 +138,7 @@ class TrackImporter(object):
             except:
                 self._import_dates.pop(file, None)  # Clean up
                 # Handle module changing in package and
-                #package changing in module:
+                # package changing in module:
                 if file.endswith(".py"):
                     # Get path without file ext:
                     file = os.path.splitext(file)[0]

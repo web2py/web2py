@@ -6,12 +6,29 @@
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
-from __future__ import print_function
-from gluon._compat import xrange
-from gluon.utils import local_html_escape
+
+from pydal._compat import xrange
+from yatl.sanitizer import xmlescape
 import re
 
 __all__ = ['highlight']
+
+
+class  all_styles(object):
+    """
+    Custom non-data descriptor for lazy initialization of
+    Highlighter.all_styles class attribute.
+
+    see:
+    https://docs.python.org/2/reference/datamodel.html#implementing-descriptors
+    or
+    https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
+    """
+
+    def __get__(self, instance, owner):
+        val = _get_all_styles(owner)
+        setattr(owner, 'all_styles', val)
+        return val
 
 
 class Highlighter(object):
@@ -63,7 +80,7 @@ class Highlighter(object):
         Callback for C specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
 
@@ -77,7 +94,7 @@ class Highlighter(object):
         Callback for python specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         if token == 'MULTILINESTRING':
             self.change_style(token, style)
             self.output.append(value)
@@ -114,90 +131,14 @@ class Highlighter(object):
         Callback for HTML specific highlighting.
         """
 
-        value = local_html_escape(match.group(), quote=False)
+        value = xmlescape(match.group(), quote=False)
         self.change_style(token, style)
         self.output.append(value)
         if token == 'GOTOPYTHON':
             return 'PYTHON'
         return None
 
-    all_styles = {
-        'C': (c_tokenizer, (
-            ('COMMENT', re.compile(r'//.*\r?\n'),
-             'color: green; font-style: italic'),
-            ('MULTILINECOMMENT', re.compile(r'/\*.*?\*/', re.DOTALL),
-             'color: green; font-style: italic'),
-            ('PREPROCESSOR', re.compile(r'\s*#.*?[^\\]\s*\n',
-             re.DOTALL), 'color: magenta; font-style: italic'),
-            ('PUNC', re.compile(r'[-+*!&|^~/%\=<>\[\]{}(),.:]'),
-             'font-weight: bold'),
-            ('NUMBER',
-             re.compile(r'0x[0-9a-fA-F]+|[+-]?\d+(\.\d+)?([eE][+-]\d+)?|\d+'),
-             'color: red'),
-            ('KEYWORD', re.compile(r'(sizeof|int|long|short|char|void|'
-                                   + r'signed|unsigned|float|double|'
-                                   + r'goto|break|return|continue|asm|'
-                                   + r'case|default|if|else|switch|while|for|do|'
-                                   + r'struct|union|enum|typedef|'
-                                   + r'static|register|auto|volatile|extern|const)(?![a-zA-Z0-9_])'),
-             'color:#185369; font-weight: bold'),
-            ('CPPKEYWORD',
-             re.compile(r'(class|private|protected|public|template|new|delete|'
-                        + r'this|friend|using|inline|export|bool|throw|try|catch|'
-                        + r'operator|typeid|virtual)(?![a-zA-Z0-9_])'),
-             'color: blue; font-weight: bold'),
-            ('STRING', re.compile(r'r?u?\'(.*?)(?<!\\)\'|"(.*?)(?<!\\)"'),
-             'color: #FF9966'),
-            ('IDENTIFIER', re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
-             None),
-            ('WHITESPACE', re.compile(r'[   \r\n]+'), 'Keep'),
-        )),
-        'PYTHON': (python_tokenizer, (
-            ('GOTOHTML', re.compile(r'\}\}'), 'color: red'),
-            ('PUNC', re.compile(r'[-+*!|&^~/%\=<>\[\]{}(),.:]'),
-             'font-weight: bold'),
-            ('NUMBER',
-             re.compile(r'0x[0-9a-fA-F]+|[+-]?\d+(\.\d+)?([eE][+-]\d+)?|\d+'
-                        ), 'color: red'),
-            ('KEYWORD',
-             re.compile(r'(def|class|break|continue|del|exec|finally|pass|'
-                        + r'print|raise|return|try|except|global|assert|lambda|'
-                        + r'yield|for|while|if|elif|else|and|in|is|not|or|import|'
-                        + r'from|True|False)(?![a-zA-Z0-9_])'),
-             'color:#185369; font-weight: bold'),
-            ('WEB2PY',
-             re.compile(r'(request|response|session|cache|redirect|local_import|HTTP|TR|XML|URL|BEAUTIFY|A|BODY|BR|B|CAT|CENTER|CODE|COL|COLGROUP|DIV|EM|EMBED|FIELDSET|LEGEND|FORM|H1|H2|H3|H4|H5|H6|IFRAME|HEAD|HR|HTML|I|IMG|INPUT|LABEL|LI|LINK|MARKMIN|MENU|META|OBJECT|OL|ON|OPTION|P|PRE|SCRIPT|SELECT|SPAN|STYLE|TABLE|THEAD|TBODY|TFOOT|TAG|TD|TEXTAREA|TH|TITLE|TT|T|UL|XHTML|IS_SLUG|IS_STRONG|IS_LOWER|IS_UPPER|IS_ALPHANUMERIC|IS_DATETIME|IS_DATETIME_IN_RANGE|IS_DATE|IS_DATE_IN_RANGE|IS_DECIMAL_IN_RANGE|IS_EMAIL|IS_EXPR|IS_FLOAT_IN_RANGE|IS_IMAGE|IS_INT_IN_RANGE|IS_IN_SET|IS_IPV4|IS_LIST_OF|IS_LENGTH|IS_MATCH|IS_EQUAL_TO|IS_EMPTY_OR|IS_NULL_OR|IS_NOT_EMPTY|IS_TIME|IS_UPLOAD_FILENAME|IS_URL|CLEANUP|CRYPT|IS_IN_DB|IS_NOT_IN_DB|DAL|Field|SQLFORM|SQLTABLE|xmlescape|embed64)(?![a-zA-Z0-9_])'
-                        ), 'link:%(link)s;text-decoration:None;color:#FF5C1F;'),
-            ('MAGIC', re.compile(r'self|None'),
-             'color:#185369; font-weight: bold'),
-            ('MULTILINESTRING', re.compile(r'r?u?(\'\'\'|""")'),
-             'color: #FF9966'),
-            ('STRING', re.compile(r'r?u?\'(.*?)(?<!\\)\'|"(.*?)(?<!\\)"'
-                                  ), 'color: #FF9966'),
-            ('IDENTIFIER', re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
-             None),
-            ('COMMENT', re.compile(r'\#.*\r?\n'),
-             'color: green; font-style: italic'),
-            ('WHITESPACE', re.compile(r'[   \r\n]+'), 'Keep'),
-        )),
-        'PYTHONMultilineString': (python_tokenizer,
-                                  (('ENDMULTILINESTRING',
-                                    re.compile(r'.*?("""|\'\'\')',
-                                               re.DOTALL), 'color: darkred'), )),
-        'HTML': (html_tokenizer, (
-            ('GOTOPYTHON', re.compile(r'\{\{'), 'color: red'),
-            ('COMMENT', re.compile(r'<!--[^>]*-->|<!>'),
-             'color: green; font-style: italic'),
-            ('XMLCRAP', re.compile(r'<![^>]*>'),
-             'color: blue; font-style: italic'),
-            ('SCRIPT', re.compile(r'<script .*?</script>', re.IGNORECASE
-                                  + re.DOTALL), 'color: black'),
-            ('TAG', re.compile(r'</?\s*[a-zA-Z0-9]+'),
-             'color: darkred; font-weight: bold'),
-            ('ENDTAG', re.compile(r'/?>'),
-             'color: darkred; font-weight: bold'),
-        )),
-    }
+    all_styles = all_styles()
 
     def highlight(self, data):
         """
@@ -248,6 +189,86 @@ class Highlighter(object):
                 self.span_style = style
 
 
+def _get_all_styles(cls):
+    return {
+        'C': (cls.c_tokenizer, (
+            ('COMMENT', re.compile(r'//.*\r?\n'),
+             'color: green; font-style: italic'),
+            ('MULTILINECOMMENT', re.compile(r'/\*.*?\*/', re.DOTALL),
+             'color: green; font-style: italic'),
+            ('PREPROCESSOR', re.compile(r'\s*#.*?[^\\]\s*\n',
+             re.DOTALL), 'color: magenta; font-style: italic'),
+            ('PUNC', re.compile(r'[-+*!&|^~/%\=<>\[\]{}(),.:]'),
+             'font-weight: bold'),
+            ('NUMBER',
+             re.compile(r'0x[0-9a-fA-F]+|[+-]?\d+(\.\d+)?([eE][+-]\d+)?|\d+'),
+             'color: red'),
+            ('KEYWORD', re.compile(r'(sizeof|int|long|short|char|void|'
+                                   + r'signed|unsigned|float|double|'
+                                   + r'goto|break|return|continue|asm|'
+                                   + r'case|default|if|else|switch|while|for|do|'
+                                   + r'struct|union|enum|typedef|'
+                                   + r'static|register|auto|volatile|extern|const)(?![a-zA-Z0-9_])'),
+             'color:#185369; font-weight: bold'),
+            ('CPPKEYWORD',
+             re.compile(r'(class|private|protected|public|template|new|delete|'
+                        + r'this|friend|using|inline|export|bool|throw|try|catch|'
+                        + r'operator|typeid|virtual)(?![a-zA-Z0-9_])'),
+             'color: blue; font-weight: bold'),
+            ('STRING', re.compile(r'r?u?\'(.*?)(?<!\\)\'|"(.*?)(?<!\\)"'),
+             'color: #FF9966'),
+            ('IDENTIFIER', re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
+             None),
+            ('WHITESPACE', re.compile(r'[   \r\n]+'), 'Keep'),
+        )),
+        'PYTHON': (cls.python_tokenizer, (
+            ('GOTOHTML', re.compile(r'\}\}'), 'color: red'),
+            ('PUNC', re.compile(r'[-+*!|&^~/%\=<>\[\]{}(),.:]'),
+             'font-weight: bold'),
+            ('NUMBER',
+             re.compile(r'0x[0-9a-fA-F]+|[+-]?\d+(\.\d+)?([eE][+-]\d+)?|\d+'
+                        ), 'color: red'),
+            ('KEYWORD',
+             re.compile(r'(def|class|break|continue|del|exec|finally|pass|'
+                        + r'print|raise|return|try|except|global|assert|lambda|'
+                        + r'yield|for|while|if|elif|else|and|in|is|not|or|import|'
+                        + r'from|True|False)(?![a-zA-Z0-9_])'),
+             'color:#185369; font-weight: bold'),
+            ('WEB2PY',
+             re.compile(r'(request|response|session|cache|redirect|local_import|HTTP|TR|XML|URL|BEAUTIFY|A|BODY|BR|B|CAT|CENTER|CODE|COL|COLGROUP|DIV|EM|EMBED|FIELDSET|LEGEND|FORM|H1|H2|H3|H4|H5|H6|IFRAME|HEAD|HR|HTML|I|IMG|INPUT|LABEL|LI|LINK|MARKMIN|MENU|META|OBJECT|OL|ON|OPTION|P|PRE|SCRIPT|SELECT|SPAN|STYLE|TABLE|THEAD|TBODY|TFOOT|TAG|TD|TEXTAREA|TH|TITLE|TT|T|UL|XHTML|IS_SLUG|IS_STRONG|IS_LOWER|IS_UPPER|IS_ALPHANUMERIC|IS_DATETIME|IS_DATETIME_IN_RANGE|IS_DATE|IS_DATE_IN_RANGE|IS_DECIMAL_IN_RANGE|IS_EMAIL|IS_EXPR|IS_FILE|IS_FLOAT_IN_RANGE|IS_IMAGE|IS_INT_IN_RANGE|IS_IN_SET|IS_IPV4|IS_LIST_OF|IS_LENGTH|IS_MATCH|IS_EQUAL_TO|IS_EMPTY_OR|IS_NULL_OR|IS_NOT_EMPTY|IS_TIME|IS_UPLOAD_FILENAME|IS_URL|CLEANUP|CRYPT|IS_IN_DB|IS_NOT_IN_DB|DAL|Field|SQLFORM|SQLTABLE|xmlescape|embed64)(?![a-zA-Z0-9_])'
+                        ), 'link:%(link)s;text-decoration:None;color:#FF5C1F;'),
+            ('MAGIC', re.compile(r'self|None'),
+             'color:#185369; font-weight: bold'),
+            ('MULTILINESTRING', re.compile(r'r?u?(\'\'\'|""")'),
+             'color: #FF9966'),
+            ('STRING', re.compile(r'r?u?\'(.*?)(?<!\\)\'|"(.*?)(?<!\\)"'
+                                  ), 'color: #FF9966'),
+            ('IDENTIFIER', re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
+             None),
+            ('COMMENT', re.compile(r'\#.*\r?\n'),
+             'color: green; font-style: italic'),
+            ('WHITESPACE', re.compile(r'[   \r\n]+'), 'Keep'),
+        )),
+        'PYTHONMultilineString': (cls.python_tokenizer,
+                                  (('ENDMULTILINESTRING',
+                                    re.compile(r'.*?("""|\'\'\')',
+                                               re.DOTALL), 'color: darkred'), )),
+        'HTML': (cls.html_tokenizer, (
+            ('GOTOPYTHON', re.compile(r'\{\{'), 'color: red'),
+            ('COMMENT', re.compile(r'<!--[^>]*-->|<!>'),
+             'color: green; font-style: italic'),
+            ('XMLCRAP', re.compile(r'<![^>]*>'),
+             'color: blue; font-style: italic'),
+            ('SCRIPT', re.compile(r'<script .*?</script>', re.IGNORECASE
+                                  + re.DOTALL), 'color: black'),
+            ('TAG', re.compile(r'</?\s*[a-zA-Z0-9]+'),
+             'color: darkred; font-weight: bold'),
+            ('ENDTAG', re.compile(r'/?>'),
+             'color: darkred; font-weight: bold'),
+        )),
+    }
+
+
 def highlight(
     code,
     language,
@@ -286,13 +307,13 @@ color: #A0A0A0;
                                          'WEB2PY']:
         code = Highlighter(language, link, styles).highlight(code)
     else:
-        code = local_html_escape(code, quote=False)
+        code = xmlescape(code, quote=False)
     lines = code.split('\n')
 
     if counter is None:
         linenumbers = [''] * len(lines)
     elif isinstance(counter, str):
-        linenumbers = [local_html_escape(counter, quote=False)] * len(lines)
+        linenumbers = [xmlescape(counter, quote=False)] * len(lines)
     else:
         linenumbers = [str(i + counter) + '.' for i in
                        xrange(len(lines))]
@@ -325,7 +346,7 @@ color: #A0A0A0;
     fa = ' '.join([key[1:].lower() for (key, value) in items if key[:1]
                    == '_' and value is None] + ['%s="%s"'
                                                 % (key[1:].lower(), str(value).replace('"', "'"))
-                  for (key, value) in attributes.items() if key[:1]
+                  for (key, value) in items if key[:1]
                   == '_' and value])
     if fa:
         fa = ' ' + fa

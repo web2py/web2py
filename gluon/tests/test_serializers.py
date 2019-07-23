@@ -13,7 +13,7 @@ import decimal
 from gluon.serializers import *
 from gluon.storage import Storage
 # careful with the import path 'cause of isinstance() checks
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.html import SPAN
 
 
@@ -46,11 +46,12 @@ class TestSerializers(unittest.TestCase):
         obj = {'a': decimal.Decimal('4.312312312312')}
         self.assertEqual(json(obj), u'{"a": "4.312312312312"}')
         # lazyT translated
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         lazy_translation = T('abc')
         self.assertEqual(json(lazy_translation), u'"abc"')
         # html helpers are xml()ed before too
-        self.assertEqual(json(SPAN('abc')), u'"<span>abc</span>"')
+        self.assertEqual(json(SPAN('abc'), cls=None), u'"<span>abc</span>"')
+        self.assertEqual(json(SPAN('abc')), u'"\\u003cspan\\u003eabc\\u003c/span\\u003e"')
         # unicode keys make a difference with loads_json
         base = {u'è': 1, 'b': 2}
         base_enc = json(base)

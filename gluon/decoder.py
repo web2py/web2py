@@ -57,8 +57,8 @@ def autoDetectXMLEncoding(buffer):
         secret_decoder_ring = codecs.lookup(encoding)[1]
         (decoded, length) = secret_decoder_ring(buffer)
         first_line = decoded.split("\n")[0]
-        if first_line and first_line.startswith(u"<?xml"):
-            encoding_pos = first_line.find(u"encoding")
+        if first_line and first_line.startswith("<?xml"):
+            encoding_pos = first_line.find("encoding")
             if encoding_pos != -1:
                 # look for double quote
                 quote_pos = first_line.find('"', encoding_pos)

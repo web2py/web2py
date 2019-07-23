@@ -5,14 +5,14 @@
 # Modified by Massimo Di Pierro
 
 # Import System Modules
-from __future__ import print_function
+
 import sys
 import errno
 import socket
 import logging
 import platform
-from gluon._compat import iteritems, to_bytes, StringIO
-from gluon._compat import urllib_unquote, to_native
+from gluon._compat import iteritems, to_bytes, to_unicode, StringIO
+from gluon._compat import urllib_unquote, to_native, PY2
 
 # Define Constants
 VERSION = '1.2.6'
@@ -32,7 +32,7 @@ DEFAULTS = dict(LISTEN_QUEUE_SIZE=DEFAULT_LISTEN_QUEUE_SIZE,
                 MIN_THREADS=DEFAULT_MIN_THREADS,
                 MAX_THREADS=DEFAULT_MAX_THREADS)
 
-PY3K = sys.version_info[0] > 2
+PY3K = not PY2
 
 
 class NullHandler(logging.Handler):
@@ -40,39 +40,8 @@ class NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
-if PY3K:
-    def b(val):
-        """ Convert string/unicode/bytes literals into bytes.  This allows for
-        the same code to run on Python 2.x and 3.x. """
-        if isinstance(val, str):
-            return val.encode()
-        else:
-            return val
-
-    def u(val, encoding="us-ascii"):
-        """ Convert bytes into string/unicode.  This allows for the
-        same code to run on Python 2.x and 3.x. """
-        if isinstance(val, bytes):
-            return val.decode(encoding)
-        else:
-            return val
-
-else:
-    def b(val):
-        """ Convert string/unicode/bytes literals into bytes.  This allows for
-        the same code to run on Python 2.x and 3.x. """
-        if isinstance(val, unicode):
-            return val.encode()
-        else:
-            return val
-
-    def u(val, encoding="us-ascii"):
-        """ Convert bytes into string/unicode.  This allows for the
-        same code to run on Python 2.x and 3.x. """
-        if isinstance(val, str):
-            return val.decode(encoding)
-        else:
-            return val
+b = to_bytes
+u = to_unicode
 
 # Import Package Modules
 # package imports removed in monolithic build
@@ -613,9 +582,9 @@ import socket
 import logging
 import traceback
 from threading import Lock
-try:
+if PY3K:
     from queue import Queue
-except ImportError:
+else:
     from Queue import Queue
 
 # Import Package Modules

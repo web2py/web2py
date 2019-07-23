@@ -4,14 +4,14 @@
 """
     Unit tests for gluon.sqlhtml
 """
-from __future__ import print_function
+
 import os
 import sys
 import unittest
 
 
 from gluon.compileapp import run_controller_in, run_view_in, compile_application, remove_compiled_application
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.storage import Storage, List
 from gluon import fileutils
 from gluon.dal import DAL, Field, Table
@@ -50,7 +50,7 @@ class TestAppAdmin(unittest.TestCase):
         request.env.remote_addr = '127.0.0.1'
         response = Response()
         session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         session.connect(request, response)
         current.request = request
         current.response = response
@@ -196,4 +196,3 @@ class TestAppAdmin(unittest.TestCase):
         data['id'] = '1'
         request._vars = data
         self.assertRaises(HTTP, self.run_function)
-

@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "This script will:
 1) Install modules needed to run web2py on Fedora and CentOS/RHEL
-2) Install Python 2.6 to /opt and recompile wsgi if not provided
+2) Install Python 3.7 to /opt and recompile wsgi if not provided
 2) Install web2py in /opt/web-apps/
 3) Configure SELinux and iptables
 5) Create a self signed ssl certificate
@@ -55,7 +55,7 @@ echo
 yum update
 
 # Install required packages
-yum install httpd mod_ssl mod_wsgi wget python
+yum install httpd mod_ssl mod_wsgi wget python3
 
 # Verify we have at least Python 2.5
 typeset -i version_major

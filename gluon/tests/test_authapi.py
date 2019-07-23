@@ -5,7 +5,7 @@
 import os
 import unittest
 from gluon.globals import Request, Response, Session
-from gluon.languages import translator
+from gluon.languages import TranslatorFactory
 from gluon.dal import DAL, Field
 from gluon.authapi import AuthAPI
 from gluon.storage import Storage
@@ -24,7 +24,7 @@ class TestAuthAPI(unittest.TestCase):
         self.request.folder = 'applications/admin'
         self.response = Response()
         self.session = Session()
-        T = translator('', 'en')
+        T = TranslatorFactory('', 'en')
         self.session.connect(self.request, self.response)
         from gluon.globals import current
         self.current = current
