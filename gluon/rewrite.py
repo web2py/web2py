@@ -204,7 +204,7 @@ def url_out(request, environ, application, controller, function,
     if host is True or (host is None and (scheme or port is not None)):
         host = request.env.http_host
     if not scheme or scheme is True:
-        scheme = request.env.get('wsgi_url_scheme', 'http').lower() if request else 'http'
+        scheme = 'https' if request and request.is_https else 'http'
     if host:
         host_port = host if not port else host.split(':', 1)[0] + ':%s' % port
         url = '%s://%s%s' % (scheme, host_port, url)
