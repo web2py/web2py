@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 To use, e.g. python .\web2py.py -S APPNAME --force_migrate
+To use, e.g. python .\web2py.py -S APPNAME --force_migrate --fake_migrate
 '''
 
 import logging
@@ -31,5 +32,6 @@ for db_name in databases:
     for table_name in tables:
         # Force migration of lazy tables
         logger.debug("Ensuring migration of table '%s'", table_name)
-        db(db[table_name]).isempty()
+        table = db[table_name]
+        db(table).isempty()
     db.commit()
