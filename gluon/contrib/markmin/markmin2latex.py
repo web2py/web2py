@@ -237,6 +237,7 @@ WRAPPER = """
 \\usepackage{graphicx}
 \\usepackage{grffile}
 \\usepackage[utf8x]{inputenc}
+\\usepackage{textgreek}
 \\definecolor{lg}{rgb}{0.9,0.9,0.9}
 \\definecolor{dg}{rgb}{0.3,0.3,0.3}
 \\def\\ft{\\small\\tt}
