@@ -249,6 +249,7 @@ def run(
             fileutils.create_app(adir)
 
     if force_migrate:
+        c = 'appadmin' # Load all models (hack already used for appadmin controller)
         import_models = True
         from gluon.dal import DAL
         orig_init = DAL.__init__
