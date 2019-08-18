@@ -1,10 +1,8 @@
 language: python
 
 sudo: required
-
 cache: pip
-
-dist: "bionic""
+dist: "bionic"
 
 services:
   - mysql
@@ -13,13 +11,11 @@ python:
   - '2.7'
   - '3.6'
   - '3.7'
-  - '3.8-dev'
-  - 'pypy3.6-beta'
+  - 'pypy3.5'
 
 matrix:
   allow_failures:
-    - python: '3.8-dev'
-    - python: 'pypy3.6-beta'
+    - python: 'pypy3.5'
 
 install:
   - pip install -e .
