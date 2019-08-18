@@ -4,24 +4,22 @@ sudo: required
 
 cache: pip
 
-dist: "xenial"
+dist: "bionic""
 
 services:
   - mysql
 
 python:
   - '2.7'
-  - '3.5'
   - '3.6'
-  - '3.6-dev'
   - '3.7'
-  - '3.7-dev'
-  - 'pypy3.5'
+  - '3.8-dev'
+  - 'pypy3.6-beta'
 
 matrix:
   allow_failures:
-    - python: '3.6-dev'
-    - python: '3.7-dev'
+    - python: '3.8-dev'
+    - python: 'pypy3.6-beta'
 
 install:
   - pip install -e .
