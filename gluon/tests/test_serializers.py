@@ -44,7 +44,7 @@ class TestSerializers(unittest.TestCase):
         # self.assertEqual(json(1), json(1))
         # decimal stringified
         obj = {'a': decimal.Decimal('4.312312312312')}
-        self.assertEqual(json(obj), u'{"a": "4.312312312312"}')
+        self.assertEqual(json(obj), u'{"a": 4.312312312312}')
         # lazyT translated
         T = TranslatorFactory('', 'en')
         lazy_translation = T('abc')
