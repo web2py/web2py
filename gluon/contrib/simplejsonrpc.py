@@ -35,9 +35,11 @@ import json
 class JSONRPCError(RuntimeError):
     "Error object for remote procedure call fail"
     def __init__(self, code, message, data=''):        
-        if not PY2:            
-            basestring = str
-        if isinstance(data, basestring):
+        if PY2:
+            str_type = basestring
+        else:
+            str_type = str
+        if isinstance(data, str_type):
             data = [data]
         value = "%s: %s\n%s" % (code, message, '\n'.join(data))
         RuntimeError.__init__(self, value)
