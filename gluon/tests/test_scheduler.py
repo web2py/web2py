@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -9,43 +8,46 @@ import unittest
 import glob
 import datetime
 import sys
+import shutil
 
 from gluon.storage import Storage
 from gluon.languages import TranslatorFactory
 from gluon.scheduler import JobGraph, Scheduler, CronParser
 from gluon.dal import DAL
+from gluon.fileutils import create_app
 
+
+test_app_name = '_test_scheduler'
 
 class BaseTestScheduler(unittest.TestCase):
+
     def setUp(self):
+        self.tearDown()
+        appdir = os.path.join('applications', test_app_name)
+        os.mkdir(appdir)
+        create_app(appdir)
+
         self.db = None
-        self.cleanfolder()
         from gluon.globals import current
-        s = Storage({'application': 'welcome',
-                     'folder': 'applications/welcome',
+        s = Storage({'application': test_app_name,
+                     'folder': "applications/%s" % test_app_name,
                      'controller': 'default'})
         current.request = s
         T = TranslatorFactory('', 'en')
         current.T = T
-        self.db = DAL('sqlite://dummy2.db', check_reserved=['all'])
-
-    def cleanfolder(self):
-        if self.db:
-            self.db.close()
-        try:
-            os.unlink('dummy2.db')
-        except:
-            pass
-        tfiles = glob.glob('*_scheduler*.table')
-        for a in tfiles:
-            os.unlink(a)
+        self.db = DAL('sqlite://dummy2.db',
+                      folder="applications/%s/databases" % test_app_name,
+                      check_reserved=['all'])
 
     def tearDown(self):
-        self.cleanfolder()
         try:
             self.inner_teardown()
         except:
             pass
+        appdir = os.path.join('applications', test_app_name)
+        if os.path.exists(appdir):
+            shutil.rmtree(appdir)
+
 
 
 class CronParserTest(unittest.TestCase):
@@ -54,105 +56,105 @@ class CronParserTest(unittest.TestCase):
         # minute asterisk
         base = datetime.datetime(2010, 1, 23, 12, 18)
         itr = CronParser('*/1 * * * *', base)
-        n1 = itr.get_next()    # 19
+        n1 = itr.next()    # 19
         self.assertEqual(base.year, n1.year)
         self.assertEqual(base.month, n1.month)
         self.assertEqual(base.day, n1.day)
         self.assertEqual(base.hour, n1.hour)
         self.assertEqual(base.minute, n1.minute - 1)
         for i in range(39):  # ~ 58
-            itr.get_next()
-        n2 = itr.get_next()
+            itr.next()
+        n2 = itr.next()
         self.assertEqual(n2.minute, 59)
-        n3 = itr.get_next()
+        n3 = itr.next()
         self.assertEqual(n3.minute, 0)
         self.assertEqual(n3.hour, 13)
 
         itr = CronParser('*/5 * * * *', base)
-        n4 = itr.get_next()
+        n4 = itr.next()
         self.assertEqual(n4.minute, 20)
         for i in range(6):
-            itr.get_next()
-        n5 = itr.get_next()
+            itr.next()
+        n5 = itr.next()
         self.assertEqual(n5.minute, 55)
-        n6 = itr.get_next()
+        n6 = itr.next()
         self.assertEqual(n6.minute, 0)
         self.assertEqual(n6.hour, 13)
 
         base = datetime.datetime(2010, 1, 23, 12, 18)
         itr = CronParser('4/34 * * * *', base)
-        n7 = itr.get_next()
+        n7 = itr.next()
         self.assertEqual(n7.minute, 38)
         self.assertEqual(n7.hour, 12)
-        n8 = itr.get_next()
+        n8 = itr.next()
         self.assertEqual(n8.minute, 4)
         self.assertEqual(n8.hour, 13)
 
     def testHour(self):
         base = datetime.datetime(2010, 1, 24, 12, 2)
         itr = CronParser('0 */3 * * *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.hour, 15)
         self.assertEqual(n1.minute, 0)
         for i in range(2):
-            itr.get_next()
-        n2 = itr.get_next()
+            itr.next()
+        n2 = itr.next()
         self.assertEqual(n2.hour, 0)
         self.assertEqual(n2.day, 25)
 
     def testDay(self):
         base = datetime.datetime(2010, 2, 24, 12, 9)
         itr = CronParser('0 0 */3 * *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         # 1 4 7 10 13 16 19 22 25 28
         self.assertEqual(n1.day, 25)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.day, 28)
-        n3 = itr.get_next()
+        n3 = itr.next()
         self.assertEqual(n3.day, 1)
         self.assertEqual(n3.month, 3)
 
         # test leap year
         base = datetime.datetime(1996, 2, 27)
         itr = CronParser('0 0 * * *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 28)
         self.assertEqual(n1.month, 2)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.day, 29)
         self.assertEqual(n2.month, 2)
 
         base2 = datetime.datetime(2000, 2, 27)
         itr2 = CronParser('0 0 * * *', base2)
-        n3 = itr2.get_next()
+        n3 = itr2.next()
         self.assertEqual(n3.day, 28)
         self.assertEqual(n3.month, 2)
-        n4 = itr2.get_next()
+        n4 = itr2.next()
         self.assertEqual(n4.day, 29)
         self.assertEqual(n4.month, 2)
 
     def testWeekDay(self):
         base = datetime.datetime(2010, 2, 25)
         itr = CronParser('0 0 * * sat', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.isoweekday(), 6)
         self.assertEqual(n1.day, 27)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.isoweekday(), 6)
         self.assertEqual(n2.day, 6)
         self.assertEqual(n2.month, 3)
 
         base = datetime.datetime(2010, 1, 25)
         itr = CronParser('0 0 1 * wed', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.month, 1)
         self.assertEqual(n1.day, 27)
         self.assertEqual(n1.year, 2010)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.month, 2)
         self.assertEqual(n2.day, 1)
         self.assertEqual(n2.year, 2010)
-        n3 = itr.get_next()
+        n3 = itr.next()
         self.assertEqual(n3.month, 2)
         self.assertEqual(n3.day, 3)
         self.assertEqual(n3.year, 2010)
@@ -160,43 +162,43 @@ class CronParserTest(unittest.TestCase):
     def testMonth(self):
         base = datetime.datetime(2010, 1, 25)
         itr = CronParser('0 0 1 * *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.month, 2)
         self.assertEqual(n1.day, 1)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.month, 3)
         self.assertEqual(n2.day, 1)
         for i in range(8):
-            itr.get_next()
-        n3 = itr.get_next()
+            itr.next()
+        n3 = itr.next()
         self.assertEqual(n3.month, 12)
         self.assertEqual(n3.year, 2010)
-        n4 = itr.get_next()
+        n4 = itr.next()
         self.assertEqual(n4.month, 1)
         self.assertEqual(n4.year, 2011)
 
         base = datetime.datetime(2010, 1, 25)
         itr = CronParser('0 0 1 */4 *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.month, 5)
         self.assertEqual(n1.day, 1)
 
         base = datetime.datetime(2010, 1, 25)
         itr = CronParser('0 0 1 1-3 *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.month, 2)
         self.assertEqual(n1.day, 1)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.month, 3)
         self.assertEqual(n2.day, 1)
-        n3 = itr.get_next()
+        n3 = itr.next()
         self.assertEqual(n3.month, 1)
         self.assertEqual(n3.day, 1)
 
     def testSundayToThursdayWithAlphaConversion(self):
         base = datetime.datetime(2010, 8, 25, 15, 56)
         itr = CronParser("30 22 * * sun-thu", base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(base.year, n1.year)
         self.assertEqual(base.month, n1.month)
         self.assertEqual(base.day, n1.day)
@@ -206,19 +208,19 @@ class CronParserTest(unittest.TestCase):
     def testISOWeekday(self):
         base = datetime.datetime(2010, 2, 25)
         itr = CronParser('0 0 * * 7', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.isoweekday(), 7)
         self.assertEqual(n1.day, 28)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.isoweekday(), 7)
         self.assertEqual(n2.day, 7)
         self.assertEqual(n2.month, 3)
         base = datetime.datetime(2010, 2, 22)
         itr = CronParser('0 0 * * */2', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.isoweekday(), 2)
         self.assertEqual(n1.day, 23)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.isoweekday(), 4)
         self.assertEqual(n2.day, 25)
 
@@ -226,21 +228,21 @@ class CronParserTest(unittest.TestCase):
 
         base = datetime.datetime(2012, 1, 1, 0, 0)
         itr = CronParser('0 * * 3 *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.year, base.year)
         self.assertEqual(n1.month, 3)
         self.assertEqual(n1.day, base.day)
         self.assertEqual(n1.hour, base.hour)
         self.assertEqual(n1.minute, base.minute)
 
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.year, base.year)
         self.assertEqual(n2.month, 3)
         self.assertEqual(n2.day, base.day)
         self.assertEqual(n2.hour, base.hour + 1)
         self.assertEqual(n2.minute, base.minute)
 
-        n3 = itr.get_next()
+        n3 = itr.next()
         self.assertEqual(n3.year, base.year)
         self.assertEqual(n3.month, 3)
         self.assertEqual(n3.day, base.day)
@@ -251,26 +253,26 @@ class CronParserTest(unittest.TestCase):
         base = datetime.datetime(2013, 3, 1, 12, 17, 34, 257877)
         c = CronParser('00 03 16,30 * *', base)
 
-        n1 = c.get_next()
+        n1 = c.next()
         self.assertEqual(n1.month, 3)
         self.assertEqual(n1.day, 16)
 
-        n2 = c.get_next()
+        n2 = c.next()
         self.assertEqual(n2.month, 3)
         self.assertEqual(n2.day, 30)
 
-        n3 = c.get_next()
+        n3 = c.next()
         self.assertEqual(n3.month, 4)
         self.assertEqual(n3.day, 16)
 
     def test_rangeGenerator(self):
         base = datetime.datetime(2013, 3, 4, 0, 0)
         itr = CronParser('1-9/2 0 1 * *', base)
-        n1 = itr.get_next()
-        n2 = itr.get_next()
-        n3 = itr.get_next()
-        n4 = itr.get_next()
-        n5 = itr.get_next()
+        n1 = itr.next()
+        n2 = itr.next()
+        n3 = itr.next()
+        n4 = itr.next()
+        n5 = itr.next()
         self.assertEqual(n1.minute, 1)
         self.assertEqual(n2.minute, 3)
         self.assertEqual(n3.minute, 5)
@@ -290,45 +292,49 @@ class CronParserTest(unittest.TestCase):
     def test_invalidcron(self):
         base = datetime.datetime(2013, 3, 4, 0, 0)
         itr = CronParser('5 4 31 2 *', base)
-        self.assertRaises(ValueError, itr.get_next)
+        self.assertRaises(ValueError, itr.next)
+        itr = CronParser('1- * * * *', base)
+        self.assertRaises(ValueError, itr.next)
+        itr = CronParser('-1 * * * *', base)
+        self.assertRaises(ValueError, itr.next)
         itr = CronParser('* * 5-1 * *', base)
-        self.assertRaises(ValueError, itr.get_next)
+        self.assertRaises(ValueError, itr.next)
         itr = CronParser('* * * janu-jun *', base)
-        self.assertRaises(KeyError, itr.get_next)
+        self.assertRaises(ValueError, itr.next)
         itr = CronParser('* * * * * *', base)
-        self.assertRaises(ValueError, itr.get_next)
+        self.assertRaises(ValueError, itr.next)
         itr = CronParser('* * * *', base)
-        self.assertRaises(ValueError, itr.get_next)
+        self.assertRaises(ValueError, itr.next)
 
     def testLastDayOfMonth(self):
         base = datetime.datetime(2015, 9, 4)
         itr = CronParser('0 0 L * *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.month, 9)
         self.assertEqual(n1.day, 30)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.month, 10)
         self.assertEqual(n2.day, 31)
-        n3 = itr.get_next()
+        n3 = itr.next()
         self.assertEqual(n3.month, 11)
         self.assertEqual(n3.day, 30)
-        n4 = itr.get_next()
+        n4 = itr.next()
         self.assertEqual(n4.month, 12)
         self.assertEqual(n4.day, 31)
 
         base = datetime.datetime(1996, 2, 27)
         itr = CronParser('0 0 L * *', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 29)
         self.assertEqual(n1.month, 2)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.day, 31)
         self.assertEqual(n2.month, 3)
 
     def testSpecialExpr(self):
         base = datetime.datetime(2000, 1, 1)
         itr = CronParser('@yearly', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 1)
         self.assertEqual(n1.month, 1)
         self.assertEqual(n1.year, base.year + 1)
@@ -336,7 +342,7 @@ class CronParserTest(unittest.TestCase):
         self.assertEqual(n1.minute, 0)
 
         itr = CronParser('@annually', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 1)
         self.assertEqual(n1.month, 1)
         self.assertEqual(n1.year, base.year + 1)
@@ -344,7 +350,7 @@ class CronParserTest(unittest.TestCase):
         self.assertEqual(n1.minute, 0)
 
         itr = CronParser('@monthly', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 1)
         self.assertEqual(n1.month, base.month + 1)
         self.assertEqual(n1.year, base.year)
@@ -352,19 +358,19 @@ class CronParserTest(unittest.TestCase):
         self.assertEqual(n1.minute, 0)
 
         itr = CronParser('@weekly', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 2)
         self.assertEqual(n1.month, base.month)
         self.assertEqual(n1.year, base.year)
         self.assertEqual(n1.hour, 0)
         self.assertEqual(n1.minute, 0)
-        n2 = itr.get_next()
+        n2 = itr.next()
         self.assertEqual(n2.day, 9)
         self.assertEqual(n2.month, base.month)
         self.assertEqual(n2.year, base.year)
         self.assertEqual(n2.hour, 0)
         self.assertEqual(n2.minute, 0)
-        n3 = itr.get_next()
+        n3 = itr.next()
         self.assertEqual(n3.day, 16)
         self.assertEqual(n3.month, base.month)
         self.assertEqual(n3.year, base.year)
@@ -372,7 +378,7 @@ class CronParserTest(unittest.TestCase):
         self.assertEqual(n3.minute, 0)
 
         itr = CronParser('@daily', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 2)
         self.assertEqual(n1.month, base.month)
         self.assertEqual(n1.year, base.year)
@@ -380,7 +386,7 @@ class CronParserTest(unittest.TestCase):
         self.assertEqual(n1.minute, 0)
 
         itr = CronParser('@midnight', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 2)
         self.assertEqual(n1.month, base.month)
         self.assertEqual(n1.year, base.year)
@@ -388,7 +394,7 @@ class CronParserTest(unittest.TestCase):
         self.assertEqual(n1.minute, 0)
 
         itr = CronParser('@hourly', base)
-        n1 = itr.get_next()
+        n1 = itr.next()
         self.assertEqual(n1.day, 1)
         self.assertEqual(n1.month, base.month)
         self.assertEqual(n1.year, base.year)
@@ -624,7 +630,7 @@ class testForSchedulerRunnerBase(BaseTestScheduler):
 import os
 import time
 from gluon.scheduler import Scheduler
-db_dal = os.path.abspath(os.path.join(request.folder, '..', '..', 'dummy2.db'))
+db_dal = os.path.abspath(os.path.join(request.folder, 'databases', 'dummy2.db'))
 sched_dal = DAL('sqlite://%s' % db_dal, folder=os.path.dirname(db_dal))
 sched = Scheduler(sched_dal, max_empty_runs=15, migrate=False, heartbeat=1)
 def termination():
@@ -636,7 +642,7 @@ def termination():
 
     def exec_sched(self):
         import subprocess
-        call_args = [sys.executable, 'web2py.py', '--no-banner', '-D', '20','-K', 'welcome']
+        call_args = [sys.executable, 'web2py.py', '--no_banner', '-D', 'INFO','-K', test_app_name]
         ret = subprocess.call(call_args, env=dict(os.environ))
         return ret
 
@@ -679,7 +685,7 @@ def demo4():
             ("task times_run is 2", task.times_run == 2),
             ("task ran 2 times only", len(task_run) == 2),
             ("scheduler_run records are COMPLETED ", (task_run[0].status == task_run[1].status == 'COMPLETED')),
-            ("period is respected", (task_run[1].start_time > task_run[0].start_time + datetime.timedelta(seconds=task.period)))
+            ("period is respected", (task_run[1].start_time >= task_run[0].start_time + datetime.timedelta(seconds=task.period)))
         ]
         self.exec_asserts(res, 'REPEATS')
 
@@ -839,7 +845,7 @@ def demo8():
             ("task times_failed is 2", task.times_failed == 2),
             ("task ran 2 times only", len(task_run) == 2),
             ("scheduler_run records are FAILED", (task_run[0].status == task_run[1].status == 'FAILED')),
-            ("period is respected", (task_run[1].start_time > task_run[0].start_time + datetime.timedelta(seconds=task.period)))
+            ("period is respected", (task_run[1].start_time >= task_run[0].start_time + datetime.timedelta(seconds=task.period)))
         ]
         self.exec_asserts(res, 'FAILED')
 

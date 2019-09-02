@@ -20,4 +20,4 @@ WORKDIR /home/web2py/web2py
 
 EXPOSE 8000
 
-CMD python /home/web2py/web2py/web2py.py --nogui --no-banner -a 'a' -i 0.0.0.0 -p 8000
+CMD python /home/web2py/web2py/web2py.py --no_gui --no_banner -a 'a' -i 0.0.0.0 -p 8000

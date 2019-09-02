@@ -27,7 +27,7 @@ def create_user(username):
     run('EDITOR="cp /tmp/sudoers.new" visudo')
     uncomment('~%s/.bashrc' % username, '#force_color_prompt=yes')
 
-def install_web2py():        
+def install_web2py():
     """fab -H username@host install_web2py"""
     sudo('wget https://raw.githubusercontent.com/web2py/web2py/master/scripts/%s' % INSTALL_SCRIPT)
     sudo('chmod +x %s' % INSTALL_SCRIPT)
@@ -119,7 +119,7 @@ def deploy(appname=None, all=False):
         os.unlink(zipfile)
 
     backup = mkdir_or_backup(appname)
-            
+
     if all=='all' or not backup:
         local('zip -r _update.zip * -x *~ -x .* -x \#* -x *.bak -x *.bak2')
     else:
@@ -131,10 +131,10 @@ def deploy(appname=None, all=False):
             sudo('unzip -o /tmp/_update.zip')
             sudo('chown -R www-data:www-data *')
             sudo('echo "%s" > DATE_DEPLOYMENT' % now)
-    
+
     finally:
         sudo('rm /tmp/_update.zip')
-               
+
     if backup:
         print 'TO RESTORE: fab restore:%s' % backup
 
@@ -154,10 +154,10 @@ def deploynobackup(appname=None):
             sudo('unzip -o /tmp/_update.zip')
             sudo('chown -R www-data:www-data *')
             sudo('echo "%s" > DATE_DEPLOYMENT' % now)
-    
+
     finally:
         sudo('rm /tmp/_update.zip')
-             
+
 def restore(backup):
     """fab -H username@host restore:backupfilename"""
     appname = backup.split('/')[-1].split('.')[0]

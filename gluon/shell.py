@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -20,12 +19,10 @@ import copy
 import logging
 import types
 import re
-import optparse
 import glob
 import traceback
 import gluon.fileutils as fileutils
 from gluon.settings import global_settings
-from gluon.utils import web2py_uuid
 from gluon.compileapp import build_environment, read_pyc, run_models_in
 from gluon.restricted import RestrictedError
 from gluon.globals import Request, Response, Session
@@ -62,6 +59,8 @@ def enable_autocomplete_and_history(adir, env):
         readline.set_completer(rlcompleter.Completer(env).complete)
 
 
+REGEX_APP_PATH = '(?:.*/)?applications/(?P<a>[^/]+)'
+
 def exec_environment(
     pyfile='',
     request=None,
@@ -86,10 +85,10 @@ def exec_environment(
         session = Session()
 
     if request.folder is None:
-        mo = re.match(r'(|.*/)applications/(?P<appname>[^/]+)', pyfile)
+        mo = re.match(REGEX_APP_PATH, pyfile)
         if mo:
-            appname = mo.group('appname')
-            request.folder = os.path.abspath(os.path.join('applications', appname))
+            a = mo.group('a')
+            request.folder = os.path.abspath(os.path.join('applications', a))
         else:
             request.folder = ''
     env = build_environment(request, response, session, store_current=False)
@@ -137,13 +136,20 @@ def env(
     request.function = f or 'index'
     response.view = '%s/%s.html' % (request.controller,
                                     request.function)
-    if global_settings.cmd_options:
-        ip = global_settings.cmd_options.ip
-        port = global_settings.cmd_options.port
-        request.is_shell = global_settings.cmd_options.shell is not None
-        request.is_scheduler = global_settings.cmd_options.scheduler is not None
+    cmd_opts = global_settings.cmd_options
+    if cmd_opts:
+        if not cmd_opts.interfaces:
+            ip = cmd_opts.ip
+            port = cmd_opts.port
+        else:
+            first_if = cmd_opts.interfaces[0]
+            ip = first_if[0]
+            port = first_if[1]
+        request.is_shell = cmd_opts.shell is not None
     else:
-        ip, port = '127.0.0.1', '8000'
+        ip = '127.0.0.1'; port = 8000
+        request.is_shell = False
+    request.is_scheduler = False
     request.env.http_host = '%s:%s' % (ip, port)
     request.env.remote_addr = '127.0.0.1'
     request.env.web2py_runtime_gae = global_settings.web2py_runtime_gae
@@ -195,72 +201,91 @@ def exec_pythonrc():
     return dict()
 
 
+def die(msg, exit_status=1, error_preamble=True):
+    if error_preamble:
+        msg = "%s: error: %s" % (sys.argv[0], msg)
+    print(msg, file=sys.stderr)
+    sys.exit(exit_status)
+
+
 def run(
     appname,
     plain=False,
     import_models=False,
     startfile=None,
     bpython=False,
-    python_code=False,
-    cronjob=False):
+    python_code=None,
+    cron_job=False,
+    scheduler_job=False,
+    force_migrate=False,
+    fake_migrate=False):
     """
     Start interactive shell or run Python script (startfile) in web2py
     controller environment. appname is formatted like:
 
     - a : web2py application name
     - a/c : exec the controller c into the application environment
+    - a/c/f : exec the controller c, then the action f
+              into the application environment
+    - a/c/f?x=y : as above
     """
 
     (a, c, f, args, vars) = parse_path_info(appname, av=True)
     errmsg = 'invalid application name: %s' % appname
     if not a:
-        die(errmsg)
+        die(errmsg, error_preamble=False)
     adir = os.path.join('applications', a)
 
     if not os.path.exists(adir):
-        if sys.stdin and not sys.stdin.name == '/dev/null':
+        if not cron_job and not scheduler_job and \
+            sys.stdin and not sys.stdin.name == '/dev/null':
             confirm = raw_input(
                 'application %s does not exist, create (y/n)?' % a)
         else:
             logging.warn('application does not exist and will not be created')
             return
-        if confirm.lower() in ['y', 'yes']:
-
+        if confirm.lower() in ('y', 'yes'):
             os.mkdir(adir)
-            w2p_unpack('welcome.w2p', adir)
-            for subfolder in ['models', 'views', 'controllers', 'databases',
-                              'modules', 'cron', 'errors', 'sessions',
-                              'languages', 'static', 'private', 'uploads']:
-                subpath = os.path.join(adir, subfolder)
-                if not os.path.exists(subpath):
-                    os.mkdir(subpath)
-            db = os.path.join(adir, 'models/db.py')
-            if os.path.exists(db):
-                data = fileutils.read_file(db)
-                data = data.replace(
-                    '<your secret key>', 'sha512:' + web2py_uuid())
-                fileutils.write_file(db, data)
+            fileutils.create_app(adir)
+
+    if force_migrate:
+        c = 'appadmin' # Load all models (hack already used for appadmin controller)
+        import_models = True
+        from gluon.dal import DAL
+        orig_init = DAL.__init__
+
+        def custom_init(*args, **kwargs):
+            kwargs['migrate_enabled'] = True
+            kwargs['migrate'] = True
+            kwargs['fake_migrate'] = fake_migrate
+            logger.info('Forcing migrate_enabled=True')
+            orig_init(*args, **kwargs)
+
+        DAL.__init__ = custom_init
 
     if c:
         import_models = True
     extra_request = {}
     if args:
         extra_request['args'] = args
+    if scheduler_job:
+        extra_request['is_scheduler'] = True
     if vars:
         # underscore necessary because request.vars is a property
         extra_request['_vars'] = vars
     _env = env(a, c=c, f=f, import_models=import_models, extra_request=extra_request)
+
     if c:
         pyfile = os.path.join('applications', a, 'controllers', c + '.py')
         pycfile = os.path.join('applications', a, 'compiled',
-                                 "controllers_%s_%s.pyc" % (c, f))
-        if ((cronjob and os.path.isfile(pycfile))
+                                 "controllers.%s.%s.pyc" % (c, f))
+        if ((cron_job and os.path.isfile(pycfile))
             or not os.path.isfile(pyfile)):
             exec(read_pyc(pycfile), _env)
         elif os.path.isfile(pyfile):
             execfile(pyfile, _env)
         else:
-            die(errmsg)
+            die(errmsg, error_preamble=False)
 
     if f:
         exec('print( %s())' % f, _env)
@@ -278,7 +303,7 @@ def run(
 
             if import_models:
                 BaseAdapter.close_all_instances('commit')
-        except Exception as e:
+        except:
             print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
@@ -287,7 +312,16 @@ def run(
             exec(python_code, _env)
             if import_models:
                 BaseAdapter.close_all_instances('commit')
-        except Exception as e:
+        except:
+            print(traceback.format_exc())
+            if import_models:
+                BaseAdapter.close_all_instances('rollback')
+    elif force_migrate:
+        try:
+            execfile("scripts/migrator.py", _env)
+            if import_models:
+                BaseAdapter.close_all_instances('commit')
+        except:
             print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
@@ -360,11 +394,6 @@ def parse_path_info(path_info, av=False):
         return (None, None, None)
 
 
-def die(msg):
-    print(msg, file=sys.stderr)
-    sys.exit(1)
-
-
 def test(testpath, import_models=True, verbose=False):
     """
     Run doctests in web2py environment. testpath is formatted like:
@@ -380,7 +409,7 @@ def test(testpath, import_models=True, verbose=False):
 
     import doctest
     if os.path.isfile(testpath):
-        mo = re.match(r'(|.*/)applications/(?P<a>[^/]+)', testpath)
+        mo = re.match(REGEX_APP_PATH, testpath)
         if not mo:
             die('test file is not in application directory: %s'
                 % testpath)
@@ -432,75 +461,3 @@ def test(testpath, import_models=True, verbose=False):
         for (name, obj) in globs.items():
             if name not in ignores and (f is None or f == name):
                 doctest_object(name, obj)
-
-
-def get_usage():
-    usage = """
-  %prog [options] pythonfile
-"""
-    return usage
-
-
-def execute_from_command_line(argv=None):
-    if argv is None:
-        argv = sys.argv
-
-    parser = optparse.OptionParser(usage=get_usage())
-
-    parser.add_option('-S', '--shell', dest='shell', metavar='APPNAME',
-                      help='run web2py in interactive shell ' +
-                      'or IPython(if installed) with specified appname')
-    msg = 'run web2py in interactive shell or bpython (if installed) with'
-    msg += ' specified appname (if app does not exist it will be created).'
-    msg += '\n Use combined with --shell'
-    parser.add_option(
-        '-B',
-        '--bpython',
-        action='store_true',
-        default=False,
-        dest='bpython',
-        help=msg,
-    )
-    parser.add_option(
-        '-P',
-        '--plain',
-        action='store_true',
-        default=False,
-        dest='plain',
-        help='only use plain python shell, should be used with --shell option',
-    )
-    parser.add_option(
-        '-M',
-        '--import_models',
-        action='store_true',
-        default=False,
-        dest='import_models',
-        help='auto import model files, default is False, ' +
-        ' should be used with --shell option',
-    )
-    parser.add_option(
-        '-R',
-        '--run',
-        dest='run',
-        metavar='PYTHON_FILE',
-        default='',
-        help='run PYTHON_FILE in web2py environment, ' +
-        'should be used with --shell option',
-    )
-
-    (options, args) = parser.parse_args(argv[1:])
-
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(0)
-
-    if len(args) > 0:
-        startfile = args[0]
-    else:
-        startfile = ''
-    run(options.shell, options.plain, startfile=startfile,
-        bpython=options.bpython)
-
-
-if __name__ == '__main__':
-    execute_from_command_line()

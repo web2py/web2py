@@ -1,4 +1,3 @@
-#!/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -28,10 +27,10 @@ import string
 from gluon._compat import Cookie, urllib_quote
 # from thread import allocate_lock
 
-from gluon.fileutils import abspath, write_file
+from gluon.fileutils import abspath, read_file, write_file, create_missing_folders, create_missing_app_folders, \
+    add_path_first
 from gluon.settings import global_settings
 from gluon.utils import web2py_uuid, unlocalised_http_header_date
-from gluon.admin import add_path_first, create_missing_folders, create_missing_app_folders
 from gluon.globals import current
 
 #  Remarks:
@@ -55,7 +54,6 @@ web2py_path = global_settings.applications_parent  # backward compatibility
 create_missing_folders()
 
 # set up logging for subsequent imports
-import logging
 import logging.config
 
 # This needed to prevent exception on Python 2.5:
@@ -99,13 +97,9 @@ requests = 0    # gc timer
 # Security Checks: validate URL and session_id here,
 # accept_language is validated in languages
 
-# pattern used to validate client address
-regex_client = re.compile('[\w\-:]+(\.[\w\-]+)*\.?')  # ## to account for IPV6
-
 try:
-    version_info = open(pjoin(global_settings.gluon_parent, 'VERSION'), 'r')
-    raw_version_string = version_info.read().split()[-1].strip()
-    version_info.close()
+    version_info = read_file(pjoin(global_settings.gluon_parent, 'VERSION'))
+    raw_version_string = version_info.split()[-1].strip()
     global_settings.web2py_version = raw_version_string
     web2py_version = global_settings.web2py_version
 except:
@@ -122,6 +116,9 @@ load_routes()
 HTTPS_SCHEMES = set(('https', 'HTTPS'))
 
 
+# pattern used to match client IP address
+REGEX_CLIENT = re.compile(r'[\w:]+(\.\w+)*')
+
 def get_client(env):
     """
     Guesses the client address from the environment variables
@@ -130,12 +127,12 @@ def get_client(env):
     if all fails, assume '127.0.0.1' or '::1' (running locally)
     """
     eget = env.get
-    g = regex_client.search(eget('http_x_forwarded_for', ''))
-    client = (g.group() or '').split(',')[0] if g else None
+    m = REGEX_CLIENT.search(eget('http_x_forwarded_for', ''))
+    client = m and m.group()
     if client in (None, '', 'unknown'):
-        g = regex_client.search(eget('remote_addr', ''))
-        if g:
-            client = g.group()
+        m = REGEX_CLIENT.search(eget('remote_addr', ''))
+        if m:
+            client = m.group()
         elif env.http_host.startswith('['):  # IPv6
             client = '::1'
         else:
@@ -353,11 +350,10 @@ def wsgibase(environ, responder):
                     local_hosts = global_settings.local_hosts
                 client = get_client(env)
                 x_req_with = str(env.http_x_requested_with).lower()
-                cmd_opts = global_settings.cmd_options
 
                 request.update(
                     client=client,
-                    folder=abspath('applications', app) + os.sep,
+                    folder=abspath('applications', app),
                     ajax=x_req_with == 'xmlhttprequest',
                     cid=env.http_web2py_component_element,
                     is_local=(env.remote_addr in local_hosts and client == env.remote_addr),
@@ -558,8 +554,12 @@ def wsgibase(environ, responder):
         http_response, request, environ, ticket)
     if not http_response:
         return wsgibase(new_environ, responder)
+
     if global_settings.web2py_crontype == 'soft':
-        newcron.softcron(global_settings.applications_parent).start()
+        cmd_opts = global_settings.cmd_options
+        newcron.softcron(global_settings.applications_parent,
+                         apps=cmd_opts and cmd_opts.crontabs)
+
     return http_response.to(responder, env=env)
 
 
@@ -712,7 +712,6 @@ class HttpServer(object):
         if interfaces:
             # if interfaces is specified, it must be tested for rocket parameter correctness
             # not necessarily completely tested (e.g. content of tuples or ip-format)
-            import types
             if isinstance(interfaces, list):
                 for i in interfaces:
                     if not isinstance(i, tuple):
@@ -765,8 +764,8 @@ class HttpServer(object):
                                     app_info=app_info,
                                     min_threads=min_threads,
                                     max_threads=max_threads,
-                                    queue_size=int(request_queue_size),
-                                    timeout=int(timeout),
+                                    queue_size=request_queue_size,
+                                    timeout=timeout,
                                     handle_signals=False,
                                     )
 
@@ -786,7 +785,11 @@ class HttpServer(object):
         """
         stop cron and the web server
         """
-        newcron.stopcron()
+        if global_settings.web2py_crontype == 'soft':
+            try:
+                newcron.stopcron()
+            except:
+                pass
         self.server.stop(stoplogging)
         try:
             os.unlink(self.pid_filename)

@@ -47,9 +47,8 @@ try:
 except ImportError:
     settings = {}
 
-widget_class = re.compile('^\w*')
 
-REGEX_ALIAS_MATCH = re.compile('^(.*) AS (.*)$')
+REGEX_WIDGET_CLASS = re.compile(r'^\w*')
 
 
 def add_class(a, b):
@@ -143,6 +142,34 @@ def show_if(cond):
     raise RuntimeError("Not Implemented Error")
 
 
+PLURALIZE_RULES = None
+
+def pluralize(singular, rules=None):
+    if rules is None:
+        global PLURALIZE_RULES
+        if PLURALIZE_RULES is None:
+            PLURALIZE_RULES = [
+    (re.compile('child$'), re.compile('child$'), 'children'),
+    (re.compile('oot$'), re.compile('oot$'), 'eet'),
+    (re.compile('ooth$'), re.compile('ooth$'), 'eeth'),
+    (re.compile('l[eo]af$'), re.compile('l([eo])af$'), 'l\\1aves'),
+    (re.compile('sis$'), re.compile('sis$'), 'ses'),
+    (re.compile('man$'), re.compile('man$'), 'men'),
+    (re.compile('ife$'), re.compile('ife$'), 'ives'),
+    (re.compile('eau$'), re.compile('eau$'), 'eaux'),
+    (re.compile('lf$'), re.compile('lf$'), 'lves'),
+    (re.compile('[sxz]$'), re.compile('$'), 'es'),
+    (re.compile('[^aeioudgkprt]h$'), re.compile('$'), 'es'),
+    (re.compile('(qu|[^aeiou])y$'), re.compile('y$'), 'ies'),
+    (re.compile('$'), re.compile('$'), 's'),
+            ]
+        rules = PLURALIZE_RULES
+    for line in rules:
+        re_search, re_sub, replace = line
+        plural = re_search.search(singular) and re_sub.sub(replace, singular)
+        if plural: return plural
+
+
 class FormWidget(object):
     """
     Helper for SQLFORM to generate form input fields (widget), related to the
@@ -165,7 +192,7 @@ class FormWidget(object):
         attr = dict(
             _id='%s_%s' % (field.tablename, field.name),
             _class=cls._class or
-                widget_class.match(str(field.type)).group(),
+                REGEX_WIDGET_CLASS.match(str(field.type)).group(),
             _name=field.name,
             requires=field.requires,
         )
@@ -1541,7 +1568,7 @@ class SQLFORM(FORM):
                 # SQLCustomType has a widget, use it
                 inp = field.type.widget(field, default)
             else:
-                field_type = widget_class.match(str(field.type)).group()
+                field_type = REGEX_WIDGET_CLASS.match(str(field.type)).group()
                 field_type = field_type in self.widgets and field_type or 'string'
                 inp = self.widgets[field_type].widget(field, default)
 
@@ -2638,11 +2665,7 @@ class SQLFORM(FORM):
                 if order and not order == 'None':
                     otablename, ofieldname = order.split('~')[-1].split('.', 1)
                     sort_field = db[otablename][ofieldname]
-                    exception = sort_field.type in ('date', 'datetime', 'time')
-                    if exception:
-                        orderby = (order[:1] == '~' and sort_field) or ~sort_field
-                    else:
-                        orderby = (order[:1] == '~' and ~sort_field) or sort_field
+                    orderby = sort_field if order[:1] != '~' else ~sort_field
 
             orderby = fix_orderby(orderby)
 
@@ -2775,25 +2798,12 @@ class SQLFORM(FORM):
             if order and not order == 'None':
                 otablename, ofieldname = order.split('~')[-1].split('.', 1)
                 sort_field = db[otablename][ofieldname]
-                # invert order direction on date/time fields
-                exception = sort_field.type in ('date', 'datetime', 'time')
-                if exception:
-                    desc_icon, asc_icon = sorter_icons
-                    orderby = (order[:1] == '~' and sort_field) or ~sort_field
-                else:
-                    orderby = (order[:1] == '~' and ~sort_field) or sort_field
+                orderby = sort_field if order[:1] != '~' else ~sort_field
 
         headcols = []
         if selectable:
             headcols.append(TH(_class=ui.get('default')))
 
-        ordermatch = orderby; marker = ''
-        if orderby:
-            # if orderby is a single column, remember to put the marker
-            if isinstance(orderby, Expression):
-                if orderby.first and not orderby.second:
-                    ordermatch = orderby.first; marker = '~'
-        ordermatch = marker + str(ordermatch)
         for field in columns:
             if not field.readable:
                 continue
@@ -2801,19 +2811,23 @@ class SQLFORM(FORM):
             header = headers.get(key, field.label or key)
             if sortable and not isinstance(field, Field.Virtual):
                 marker = ''
-                if order:
-                    if key == order:
-                        key = '~' + order; marker = asc_icon
-                    elif key == order[1:]:
-                        key = 'None'; marker = desc_icon
-                else:
-                    if key == ordermatch:
-                        key = '~' + ordermatch; marker = asc_icon
-                    elif key == ordermatch[1:]:
-                        marker = desc_icon
+                inverted = field.type in ('date', 'datetime', 'time')
+                if key == order.lstrip('~'):
+                    if inverted:
+                        if key == order:
+                            key, marker = 'None', asc_icon
+                        else:
+                            key, marker = order[1:], desc_icon
+                    else:
+                        if key == order:
+                            key, marker = '~' + order, asc_icon
+                        else:
+                            key, marker = 'None', desc_icon
+                elif inverted and key ==  str(field):
+                    key = '~' + key
                 header = A(header, marker, _href=url(vars=dict(
-                    keywords=keywords,
-                    order=key)), cid=request.cid)
+                            keywords=keywords,
+                            order=key)), cid=request.cid)
             headcols.append(TH(header, _class=ui.get('default')))
 
         toadd = []
@@ -3180,7 +3194,8 @@ class SQLFORM(FORM):
                     return dict(form=form)
 
         """
-        request, T = current.request, current.T
+        request = current.request
+        T = current.T
         if args is None:
             args = []
 
@@ -3198,8 +3213,7 @@ class SQLFORM(FORM):
             links = {}
         if constraints is None:
             constraints = {}
-        field = None
-        name = None
+        field = name = None
 
         def format(table, row):
             if not row:
@@ -3210,10 +3224,14 @@ class SQLFORM(FORM):
                 return table._format(row)
             else:
                 return '#' + str(row.id)
+
+        def plural(table):
+            return table._plural or pluralize(table._singular.lower()).capitalize()
+
         try:
             nargs = len(args) + 1
-            previous_tablename, previous_fieldname, previous_id = \
-                table._tablename, None, None
+            previous_tablename = table._tablename
+            previous_fieldname = previous_id = None
             while len(request.args) > nargs:
                 key = request.args(nargs)
                 if '.' in key:
@@ -3234,11 +3252,12 @@ class SQLFORM(FORM):
                     if previous_id:
                         if record[previous_fieldname] != int(previous_id):
                             raise HTTP(400)
-                    previous_tablename, previous_fieldname, previous_id = \
-                        tablename, fieldname, id
+                    previous_tablename = tablename
+                    previous_fieldname = fieldname
+                    previous_id = id
                     name = format(db[referee], record)
                     breadcrumbs.append(
-                        LI(A(T(db[referee]._plural),
+                        LI(A(T(plural(db[referee])),
                              cid=request.cid,
                              _href=url()),
                            SPAN(divider, _class='divider'),
@@ -3319,8 +3338,8 @@ class SQLFORM(FORM):
                 if tb:
                     multiple_links = len(linked_fieldnames) > 1
                     for fieldname in linked_fieldnames:
-                        t = T(tb._plural) if not multiple_links else \
-                            T(tb._plural + '(' + fieldname + ')')
+                        t = T(plural(tb)) if not multiple_links else \
+                            T("%s(%s)" % (plural(tb), fieldname))
                         args0 = tablename + '.' + fieldname
                         linked.append(
                             lambda row, t=t, nargs=nargs, args0=args0:
@@ -3332,7 +3351,7 @@ class SQLFORM(FORM):
                             user_signature=user_signature, **kwargs)
 
         if isinstance(grid, DIV):
-            header = table._plural
+            header = plural(table)
             next = grid.create_form or grid.update_form or grid.view_form
             breadcrumbs.append(LI(
                     A(T(header), cid=request.cid, _href=url()),
@@ -3397,6 +3416,8 @@ class SQLTABLE(TABLE):
 
     """
 
+    REGEX_ALIAS_MATCH = '^(.*) AS (.*)$'
+
     def __init__(self,
                  sqlrows,
                  linkto=None,
@@ -3450,7 +3471,7 @@ class SQLTABLE(TABLE):
                 if isinstance(f, field_types):
                     headers[c] = make_name(f)
                 else:
-                    headers[c] = REGEX_ALIAS_MATCH.sub(r'\2', c)
+                    headers[c] = re.sub(self.REGEX_ALIAS_MATCH, r'\2', c)
         if colgroup:
             cols = [COL(_id=c.replace('.', '-'), data={'column': i + 1})
                     for i, c in enumerate(columns)]
@@ -3476,7 +3497,7 @@ class SQLTABLE(TABLE):
                     row.append(TH(A(headers.get(c, c),
                                     _href=th_link + '?orderby=' + c, cid=cid)))
                 else:
-                    row.append(TH(headers.get(c, REGEX_ALIAS_MATCH.sub(r'\2', c))))
+                    row.append(TH(headers.get(c, re.sub(self.REGEX_ALIAS_MATCH, r'\2', c))))
 
             if extracolumns:  # new implement dict
                 for c in extracolumns:

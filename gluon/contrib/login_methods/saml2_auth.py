@@ -118,7 +118,7 @@ def saml2_handler(session, request, config_filename = None, entityid = None):
     elif request.env.request_method == 'POST':
         binding = BINDING_HTTP_POST
     if not request.vars.SAMLResponse:
-        req_id, req = client.create_authn_request(destination, binding=binding)
+        req_id, req = client.create_authn_request(destination, binding=BINDING_HTTP_POST)
         relay_state = web2py_uuid().replace('-','')
         session.saml_outstanding_queries = {req_id: request.url}    
         session.saml_req_id = req_id

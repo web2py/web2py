@@ -82,7 +82,7 @@ def custom_json(o):
     elif isinstance(o, integer_types):
         return int(o)
     elif isinstance(o, decimal.Decimal):
-        return str(o)
+        return float(o)
     elif isinstance(o, (bytes, bytearray)):
         return str(o)
     elif isinstance(o, lazyT):
@@ -119,13 +119,43 @@ def xml(value, encoding='UTF-8', key='document', quote=True):
     return ('<?xml version="1.0" encoding="%s"?>' % encoding) + str(xml_rec(value, key, quote))
 
 
-def json(value, default=custom_json, indent=None, sort_keys=False):
-    value = json_parser.dumps(value, default=default, sort_keys=sort_keys, indent=indent)
-    # replace JavaScript incompatible spacing
-    # http://timelessrepo.com/json-isnt-a-javascript-subset
-    # PY3 FIXME
-    # return value.replace(ur'\u2028', '\\u2028').replace(ur'\2029', '\\u2029')
-    return value
+class JSONEncoderForHTML(json_parser.JSONEncoder):
+    """An encoder that produces JSON safe to embed in HTML.
+    To embed JSON content in, say, a script tag on a web page, the
+    characters &, < and > should be escaped. They cannot be escaped
+    with the usual entities (e.g. &amp;) because they are not expanded
+    within <script> tags.
+    This class also escapes the line separator and paragraph separator
+    characters U+2028 and U+2029, irrespective of the ensure_ascii setting,
+    as these characters are not valid in JavaScript strings (see
+    http://timelessrepo.com/json-isnt-a-javascript-subset).
+    """
+
+    def encode(self, o):
+        # Override JSONEncoder.encode because it has hacks for
+        # performance that make things more complicated.
+        chunks = self.iterencode(o, True)
+        if self.ensure_ascii:
+            return ''.join(chunks)
+        else:
+            return u''.join(chunks)
+
+    def iterencode(self, o, _one_shot=False):
+        chunks = super(JSONEncoderForHTML, self).iterencode(o, _one_shot)
+        for chunk in chunks:
+            chunk = chunk.replace('&', '\\u0026')
+            chunk = chunk.replace('<', '\\u003c')
+            chunk = chunk.replace('>', '\\u003e')
+
+            if not self.ensure_ascii:
+                chunk = chunk.replace(u'\u2028', '\\u2028')
+                chunk = chunk.replace(u'\u2029', '\\u2029')
+
+            yield chunk
+
+
+def json(value, default=custom_json, indent=None, sort_keys=False, cls=JSONEncoderForHTML):
+    return json_parser.dumps(value, default=default, cls=cls, sort_keys=sort_keys, indent=indent)
 
 def csv(value):
     return ''

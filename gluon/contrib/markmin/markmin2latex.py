@@ -18,14 +18,14 @@ regex_title = re.compile('^#{1} (?P<t>[^\n]+)', re.M)
 regex_maps = [
     (re.compile('[ \t\r]+\n'), '\n'),
     (re.compile('\*\*(?P<t>[^\s\*]+( +[^\s\*]+)*)\*\*'), '{\\\\bf \g<t>}'),
-    (re.compile("''(?P<t>[^\s']+( +[^\s']+)*)''"), '{\\it \g<t>}'),
+    (re.compile("''(?P<t>[^\s']+( +[^\s']+)*)''"), '{\\\it \g<t>}'),
     (re.compile('^#{5,6}\s*(?P<t>[^\n]+)', re.M), '\n\n{\\\\bf \g<t>}\n'),
-    (re.compile('^#{4}\s*(?P<t>[^\n]+)', re.M), '\n\n\\\\goodbreak\\subsubsection{\g<t>}\n'),
-    (re.compile('^#{3}\s*(?P<t>[^\n]+)', re.M), '\n\n\\\\goodbreak\\subsection{\g<t>}\n'),
-    (re.compile('^#{2}\s*(?P<t>[^\n]+)', re.M), '\n\n\\\\goodbreak\\section{\g<t>}\n'),
+    (re.compile('^#{4}\s*(?P<t>[^\n]+)', re.M), '\n\n\\\\goodbreak\\\subsubsection{\g<t>}\n'),
+    (re.compile('^#{3}\s*(?P<t>[^\n]+)', re.M), '\n\n\\\\goodbreak\\\subsection{\g<t>}\n'),
+    (re.compile('^#{2}\s*(?P<t>[^\n]+)', re.M), '\n\n\\\\goodbreak\\\section{\g<t>}\n'),
     (re.compile('^#{1}\s*(?P<t>[^\n]+)', re.M), ''),
-    (re.compile('^\- +(?P<t>.*)', re.M), '\\\\begin{itemize}\n\\item \g<t>\n\\end{itemize}'),
-    (re.compile('^\+ +(?P<t>.*)', re.M), '\\\\begin{itemize}\n\\item \g<t>\n\\end{itemize}'),
+    (re.compile('^\- +(?P<t>.*)', re.M), '\\\\begin{itemize}\n\\\item \g<t>\n\\\end{itemize}'),
+    (re.compile('^\+ +(?P<t>.*)', re.M), '\\\\begin{itemize}\n\\\item \g<t>\n\\\end{itemize}'),
     (re.compile('\\\\end\{itemize\}\s+\\\\begin\{itemize\}'), '\n'),
     (re.compile('\n\s+\n'), '\n\n')]
 regex_table = re.compile('^\-{4,}\n(?P<t>.*?)\n\-{4,}(:(?P<c>\w+))?\n', re.M | re.S)
@@ -97,7 +97,7 @@ def render(text,
     text = latex_escape(text, pound=False)
 
     texts = text.split('## References', 1)
-    text = regex_anchor.sub('\\label{\g<t>}', texts[0])
+    text = regex_anchor.sub('\\\label{\g<t>}', texts[0])
     if len(texts) == 2:
         text += '\n\\begin{thebibliography}{999}\n'
         text += regex_bibitem.sub('\n\\\\bibitem{\g<t>}', texts[1])
@@ -145,7 +145,7 @@ def render(text,
     text = regex_image_width.sub(sub, text)
     text = regex_image.sub(sub, text)
 
-    text = regex_link.sub('{\\\\footnotesize\\href{\g<k>}{\g<t>}}', text)
+    text = regex_link.sub('{\\\\footnotesize\\\href{\g<k>}{\g<t>}}', text)
     text = regex_commas.sub('\g<t>', text)
     text = regex_noindent.sub('\n\\\\noindent \g<t>', text)
 
@@ -237,6 +237,7 @@ WRAPPER = """
 \\usepackage{graphicx}
 \\usepackage{grffile}
 \\usepackage[utf8x]{inputenc}
+\\usepackage{textgreek}
 \\definecolor{lg}{rgb}{0.9,0.9,0.9}
 \\definecolor{dg}{rgb}{0.3,0.3,0.3}
 \\def\\ft{\\small\\tt}

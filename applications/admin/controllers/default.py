@@ -166,9 +166,9 @@ def check_version():
     new_version, version = check_new_version(request.env.web2py_version,
                                              WEB2PY_VERSION_URL)
 
-    if new_version == -1:
+    if new_version in (-1, -2):
         return A(T('Unable to check for upgrades'), _href=WEB2PY_URL)
-    elif new_version != True:
+    elif not new_version:
         return A(T('web2py is up to date'), _href=WEB2PY_URL)
     elif platform.system().lower() in ('windows', 'win32', 'win64') and os.path.exists("web2py.exe"):
         return SPAN('You should upgrade to %s' % version.split('(')[0])
@@ -814,8 +814,11 @@ def edit():
 
     if len(request.args) > 2 and request.args[1] == 'controllers':
         controller = (request.args[2])[:-3]
-        functions = find_exposed_functions(data)
-        functions = functions and sorted(functions) or []
+        try:
+            functions = find_exposed_functions(data)
+            functions = functions and sorted(functions) or []
+        except SyntaxError as err:
+            functions = ['SyntaxError:Line:%d' % err.lineno]
     else:
         (controller, functions) = (None, None)
 
@@ -1117,7 +1120,7 @@ def design():
     defines = {}
     for m in models:
         data = safe_read(apath('%s/models/%s' % (app, m), r=request))
-        defines[m] = regex_tables.findall(data)
+        defines[m] = re.findall(REGEX_DEFINE_TABLE, data, re.MULTILINE)
         defines[m].sort()
 
     # Get all controllers
@@ -1127,8 +1130,11 @@ def design():
     functions = {}
     for c in controllers:
         data = safe_read(apath('%s/controllers/%s' % (app, c), r=request))
-        items = find_exposed_functions(data)
-        functions[c] = items and sorted(items) or []
+        try:
+            items = find_exposed_functions(data)
+            functions[c] = items and sorted(items) or []
+        except SyntaxError as err:
+            functions[c] = ['SyntaxError:Line:%d' % err.lineno]
 
     # Get all views
     views = sorted(
@@ -1138,12 +1144,12 @@ def design():
     include = {}
     for c in views:
         data = safe_read(apath('%s/views/%s' % (app, c), r=request))
-        items = regex_extend.findall(data)
+        items = re.findall(REGEX_EXTEND, data, re.MULTILINE)
 
         if items:
             extend[c] = items[0][1]
 
-        items = regex_include.findall(data)
+        items = re.findall(REGEX_INCLUDE, data)
         include[c] = [i[1] for i in items]
 
     # Get all modules
@@ -1265,8 +1271,11 @@ def plugin():
     functions = {}
     for c in controllers:
         data = safe_read(apath('%s/controllers/%s' % (app, c), r=request))
-        items = find_exposed_functions(data)
-        functions[c] = items and sorted(items) or []
+        try:
+            items = find_exposed_functions(data)
+            functions[c] = items and sorted(items) or []
+        except SyntaxError as err:
+            functions[c] = ['SyntaxError:Line:%d' % err.lineno]
 
     # Get all views
     views = sorted(
@@ -1276,11 +1285,11 @@ def plugin():
     include = {}
     for c in views:
         data = safe_read(apath('%s/views/%s' % (app, c), r=request))
-        items = regex_extend.findall(data)
+        items = re.findall(REGEX_EXTEND, data, re.MULTILINE)
         if items:
             extend[c] = items[0][1]
 
-        items = regex_include.findall(data)
+        items = re.findall(REGEX_INCLUDE, data)
         include[c] = [i[1] for i in items]
 
     # Get all modules

@@ -6,7 +6,7 @@
       return files
 }}
 {{themes = [f[:-4] for f in listfiles('admin', "static/codemirror/theme", regexp='.*\.css$' )]}}
-{{editors = ['default', 'vim', 'emacs']}}
+{{editors = ['default', 'vim', 'emacs', 'sublime']}}
 
 <form id="editor_settings_form" class="form-horizontal" action="">
 	<div class="control-group">
@@ -27,7 +27,7 @@
 	</div>
 	<div class="control-group">
 		<label class="control-label" for="tabwidth">{{=T('Tab width (# characters)')}}</label>
-		<div class="controls">{{=SELECT(range(1,9, 1), value=editor_settings['tabwidth'], _name="tabwidth" )}}</div>
+		<div class="controls">{{=SELECT(list(range(1,9, 1)), value=editor_settings['tabwidth'], _name="tabwidth" )}}</div>
 	</div>
 	<div class="control-group">
 		<label class="control-label" for="indentwithtabs">{{=T('Indent with tabs')}}</label>

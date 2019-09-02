@@ -1754,7 +1754,7 @@ class Auth(AuthAPI):
         # _next variable in the request.
         if next:
             parts = next.split('/')
-            if ':' not in parts[0]:
+            if ':' not in parts[0] and parts[:2] != ['', '']:
                 return next
             elif len(parts) > 2 and parts[0].endswith(':') and parts[1:3] == ['', host]:
                 return next
@@ -2638,9 +2638,7 @@ class Auth(AuthAPI):
                         # invalid login
                         session.flash = specific_error if self.settings.login_specify_error else self.messages.invalid_login
                         callback(onfail, None)
-                        if 'password' in request.post_vars:
-                            del request.post_vars['password']
-                        redirect(self.url(args=request.args, vars=request.vars),client_side=settings.client_side)
+                        redirect(self.url(args=request.args, vars=request.get_vars),client_side=settings.client_side)
 
             else:  # use a central authentication server
                 cas = settings.login_form

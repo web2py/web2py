@@ -64,7 +64,7 @@ class WebClient(object):
                          headers=headers, method='GET')
 
     def post(self, url, data=None, cookies=None,
-             headers=None, auth=None, method='auto'):
+             headers=None, auth=None, method='auto', charset='utf-8'):
         self.url = self.app + url
 
         # if this POST form requires a postback do it
@@ -147,7 +147,11 @@ class WebClient(object):
         else:#python2.5
             self.status = None
 
-        self.text = to_native(self.response.read())
+        self.text = self.response.read()
+        if charset:
+            if charset == 'auto':
+                charset = self.response.headers.getparam('charset')
+            self.text = to_native(self.text, charset)
         # In PY3 self.response.headers are case sensitive
         self.headers = dict()
         for h in self.response.headers:
@@ -173,9 +177,10 @@ class WebClient(object):
                     self.sessions[name] = value
 
         # find all forms and formkeys in page
-        self.forms = {}
-        for match in FORM_REGEX.finditer(to_native(self.text)):
-            self.forms[match.group('formname')] = match.group('formkey')
+        if charset:
+            self.forms = {}
+            for match in FORM_REGEX.finditer(self.text):
+                self.forms[match.group('formname')] = match.group('formkey')
 
         # log this request
         self.history.append((self.method, self.url, self.status, self.time))

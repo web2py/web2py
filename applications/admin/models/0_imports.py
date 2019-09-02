@@ -25,6 +25,5 @@ from gluon.utils import md5_hash
 from gluon.fileutils import listdir, cleanpath, up
 from gluon.fileutils import tar, tar_compiled, untar, fix_newlines
 from gluon.languages import findT, update_all_languages
-from gluon.myregex import *
 from gluon.restricted import *
 from gluon.compileapp import compile_application, remove_compiled_application

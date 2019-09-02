@@ -1,86 +1,76 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """Unit tests for rewrite.py routers option"""
 
 import os
-import unittest
 import tempfile
 import logging
+import unittest
+import shutil
 
-from gluon.rewrite import load, filter_url, filter_err, get_effective_router, map_url_out
+from gluon.rewrite import (load, filter_url, filter_err,
+    get_effective_router, map_url_out)
 from gluon.html import URL
-from gluon.fileutils import abspath
 from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.storage import Storage
 from gluon._compat import to_bytes, PY2
 
-logger = None
-oldcwd = None
-root = None
 
-def norm_root(root):
-    return root.replace('/', os.sep)
+logger = None
+
+old_root = root = None
 
 def setUpModule():
-    def make_apptree():
+    def make_apptree(root):
         "build a temporary applications tree"
-        #  applications/
-        os.mkdir(abspath('applications'))
-
-        #  applications/app/
+        # applications/
+        os.mkdir(os.path.join(root, 'applications'))
+        # applications/app/
         for app in ('admin', 'examples', 'welcome'):
-            os.mkdir(abspath('applications', app))
+            os.mkdir(os.path.join(root, 'applications', app))
             #  applications/app/(controllers, static)
             for subdir in ('controllers', 'static'):
-                os.mkdir(abspath('applications', app, subdir))
-
-        #  applications/admin/controllers/*.py
+                os.mkdir(os.path.join(root, 'applications', app, subdir))
+        # applications/admin/controllers/*.py
+        base = os.path.join(root, 'applications', 'admin', 'controllers')
         for ctr in ('appadmin', 'default', 'gae', 'mercurial', 'shell', 'wizard'):
-            open(abspath('applications', 'admin',
-                 'controllers', '%s.py' % ctr), 'w').close()
-        #  applications/examples/controllers/*.py
+            open(os.path.join(base, '%s.py' % ctr), 'w').close()
+        # applications/examples/controllers/*.py
+        base = os.path.join(root, 'applications', 'examples', 'controllers')
         for ctr in ('ajax_examples', 'appadmin', 'default', 'global', 'spreadsheet'):
-            open(abspath('applications', 'examples',
-                 'controllers', '%s.py' % ctr), 'w').close()
-        #  applications/welcome/controllers/*.py
-        #  (include controller that collides with another app)
+            open(os.path.join(base, '%s.py' % ctr), 'w').close()
+        # applications/welcome/controllers/*.py
+        # (include controller that collides with another app)
+        base = os.path.join(root, 'applications', 'welcome', 'controllers')
         for ctr in ('appadmin', 'default', 'other', 'admin'):
-            open(abspath('applications', 'welcome',
-                 'controllers', '%s.py' % ctr), 'w').close()
-
-        #  create an app-specific routes.py for examples app
-        routes = open(abspath('applications', 'examples', 'routes.py'), 'w')
-        routes.write("routers=dict(examples=dict(default_function='exdef'))")
-        routes.close()
-
-        #  create language files for examples app
+            open(os.path.join(base, '%s.py' % ctr), 'w').close()
+        # create an app-specific routes.py for examples app
+        routes = os.path.join(root, 'applications', 'examples', 'routes.py')
+        with open(routes, 'w') as r:
+            r.write("routers=dict(examples=dict(default_function='exdef'))")
+        # create language files for examples app
+        base = os.path.join(root, 'applications', 'examples', 'static')
         for lang in ('en', 'it'):
-            os.mkdir(abspath('applications', 'examples', 'static', lang))
-            open(abspath('applications', 'examples', 'static',
-                 lang, 'file'), 'w').close()
+            os.mkdir(os.path.join(base, lang))
+            open(os.path.join(base, lang, 'file'), 'w').close()
 
-    global oldcwd
-    if oldcwd is None:  # do this only once
-        oldcwd = os.getcwd()
-        if not os.path.isdir('gluon'):
-            os.chdir(os.path.realpath(
-                '../../'))    # run from web2py base directory
-        import gluon.main     # for initialization after chdir
-        global logger
+    global old_root, root, logger
+    if old_root is None:  # do this only once
+        old_root = global_settings.applications_parent
+        root = global_settings.applications_parent = tempfile.mkdtemp()
+        make_apptree(root)
         logger = logging.getLogger('web2py.rewrite')
-        global_settings.applications_parent = tempfile.mkdtemp()
-        global root
-        root = global_settings.applications_parent
-        make_apptree()
 
 
 def tearDownModule():
-    global oldcwd
-    if oldcwd is not None:
-        os.chdir(oldcwd)
-        oldcwd = None
+    if old_root is not None:
+        global_settings.applications_parent = old_root
+        shutil.rmtree(root)
+
+
+def norm_root(root):
+    return root.replace('/', os.sep)
 
 
 class TestRouter(unittest.TestCase):
@@ -1037,12 +1027,14 @@ class TestRouter(unittest.TestCase):
                 'http://domain.com/app2/static/filename-with_underscore'),
             norm_root("%s/applications/app2/static/filename-with_underscore" % root))
 
-        from gluon.globals import current
-        current.response.static_version = None
-
         self.assertEqual(str(URL(a='init', c='default', f='a_b')), "/a_b")
         self.assertEqual(str(URL(a='app1', c='default', f='a_b')), "/app1/a-b")
         self.assertEqual(str(URL(a='app2', c='default', f='a_b')), "/app2/a_b")
+
+        from gluon.globals import current
+        if hasattr(current, 'response'):
+            current.response.static_version = None
+
         self.assertEqual(
             str(URL(a='app1', c='static', f='a/b_c')), "/app1/static/a/b_c")
         self.assertEqual(

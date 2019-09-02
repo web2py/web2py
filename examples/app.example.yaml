@@ -1,7 +1,7 @@
 #  For Google App Engine deployment, copy this file to app.yaml
 #  and edit as required
-#  See http://code.google.com/appengine/docs/python/config/appconfig.html
-#  and http://web2py.com/book/default/chapter/11?search=app.yaml
+#  See https://cloud.google.com/appengine/docs/standard/python/config/appref
+#  and http://www.web2py.com/book/default/chapter/13#Deploying-on-Google-App-Engine
 
 application: yourappname
 version: 1

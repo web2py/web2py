@@ -1,22 +1,24 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
     Unit tests for running web2py
 """
+
+from __future__ import print_function
 
 import sys
 import os
 import unittest
 import subprocess
 import time
-
-
+import shutil
 
 from gluon.contrib.webclient import WebClient
 from gluon._compat import urllib2, PY2
+from gluon.fileutils import create_app
+
+test_app_name = '_test_web'
 
 webserverprocess = None
-
 
 def startwebserver():
     global webserverprocess
@@ -33,10 +35,10 @@ def startwebserver():
     print('Sleeping before web2py starts...')
     for a in range(1, 11):
         time.sleep(1)
-        print(a, '...')
+        print("%d..." % a)
         try:
-            c = WebClient('http://127.0.0.1:8000')
-            c.get('/')
+            c = WebClient('http://127.0.0.1:8000/')
+            c.get(test_app_name)
             break
         except:
             continue
@@ -71,17 +73,24 @@ class LiveTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        appdir = os.path.join('applications', test_app_name)
+        if not os.path.exists(appdir):
+            os.mkdir(appdir)
+            create_app(appdir)
         startwebserver()
 
     @classmethod
     def tearDownClass(cls):
         stopwebserver()
+        appdir = os.path.join('applications', test_app_name)
+        if os.path.exists(appdir):
+            shutil.rmtree(appdir)
 
 
 @unittest.skipIf("datastore" in os.getenv("DB", ""), "TODO: setup web test for app engine")
 class TestWeb(LiveTest):
     def testRegisterAndLogin(self):
-        client = WebClient('http://127.0.0.1:8000/welcome/default/')
+        client = WebClient("http://127.0.0.1:8000/%s/default/" % test_app_name)
 
         client.get('index')
 
@@ -102,28 +111,28 @@ class TestWeb(LiveTest):
                     password='test',
                     _formname='login')
         client.post('user/login', data=data)
-        self.assertTrue('Homer' in client.text)
+        self.assertIn('Homer', client.text)
 
         # check registration and login were successful
         client.get('index')
 
-        self.assertTrue('Homer' in client.text)
+        self.assertIn('Homer', client.text)
 
         client = WebClient('http://127.0.0.1:8000/admin/default/')
         client.post('index', data=dict(password='testpass'))
         client.get('site')
-        client.get('design/welcome')
+        client.get('design/' + test_app_name)
 
     def testStaticCache(self):
-        s = WebClient('http://127.0.0.1:8000/welcome/')
+        s = WebClient("http://127.0.0.1:8000/%s/" % test_app_name)
         s.get('static/js/web2py.js')
-        assert('expires' not in s.headers)
-        assert(not s.headers['cache-control'].startswith('max-age'))
+        self.assertNotIn('expires', s.headers)
+        self.assertFalse(s.headers['cache-control'].startswith('max-age'))
         text = s.text
         s.get('static/_1.2.3/js/web2py.js')
-        assert(text == s.text)
-        assert('expires' in s.headers)
-        assert(s.headers['cache-control'].startswith('max-age'))
+        self.assertEqual(text, s.text)
+        self.assertIn('expires', s.headers)
+        self.assertTrue(s.headers['cache-control'].startswith('max-age'))
 
     @unittest.skipIf(not(PY2), 'skip PY3 testSoap')
     def testSoap(self):
@@ -133,15 +142,15 @@ class TestWeb(LiveTest):
         client = SoapClient(wsdl=url)
         ret = client.SubIntegers(a=3, b=2)
         # check that the value returned is ok
-        assert('SubResult' in ret)
-        assert(ret['SubResult'] == 1)
+        self.assertIn('SubResult', ret)
+        self.assertEqual(ret['SubResult'], 1)
 
         try:
             ret = client.Division(a=3, b=0)
         except SoapFault as sf:
             # verify the exception value is ok
-            # assert(sf.faultstring == "float division by zero") # true only in 2.7
-            assert(sf.faultcode == "Server.ZeroDivisionError")
+            # self.assertEqual(sf.faultstring, "float division by zero") # true only in 2.7
+            self.assertEqual(sf.faultcode, "Server.ZeroDivisionError")
 
         # store sent and received xml for low level test
         xml_request = client.xml_request
@@ -152,7 +161,7 @@ class TestWeb(LiveTest):
         try:
             s.post('examples/soap_examples/call/soap', data=xml_request, method="POST")
         except urllib2.HTTPError as e:
-            assert(e.msg == 'INTERNAL SERVER ERROR')
+            self.assertEqual(e.msg, 'INTERNAL SERVER ERROR')
         # check internal server error returned (issue 153)
-        assert(s.status == 500)
-        assert(s.text == xml_response)
+        self.assertEqual(s.status, 500)
+        self.assertEqual(s.text, xml_response)
