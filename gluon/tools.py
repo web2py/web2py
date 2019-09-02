@@ -3171,12 +3171,12 @@ class Auth(AuthAPI):
                         formname='retrieve_password', dbio=False,
                         onvalidation=onvalidation, hideerror=self.settings.hideerror):
             user = table_user(email=form.vars.email)
-            key = user.registration_key
             if not user:
                 current.session.flash = \
                     self.messages.invalid_email
                 redirect(self.url(args=request.args))
-            elif key in ('pending', 'disabled', 'blocked') or (key or '').startswith('pending'):
+            key = user.registration_key
+            if key in ('pending', 'disabled', 'blocked') or (key or '').startswith('pending'):
                 current.session.flash = \
                     self.messages.registration_pending
                 redirect(self.url(args=request.args))
