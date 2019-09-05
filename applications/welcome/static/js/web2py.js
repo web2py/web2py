@@ -335,7 +335,7 @@
                     } else {
                         formData = form.serialize(); // Fallback for older browsers.
                     }
-                    web2py.ajax_page('post', url, formData, target, form);
+                    web2py.ajax_page('post', url, formData, target);
 
                     e.preventDefault();
                 });
