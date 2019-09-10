@@ -30,7 +30,7 @@ else:
     from io import StringIO
 import random
 import json
-
+from gluon._compat import basestring
 
 class JSONRPCError(RuntimeError):
     "Error object for remote procedure call fail"
