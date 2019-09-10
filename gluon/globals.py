@@ -13,7 +13,7 @@ Contains the classes for the global used variables:
 
 """
 from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, \
-    to_bytes, unicodeT, long, hashlib_md5, urllib_quote
+    to_bytes, unicodeT, long, hashlib_md5, urllib_quote, to_native
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -1055,7 +1055,7 @@ class Session(Storage):
             if record_id.isdigit() and long(record_id) > 0:
                 new_unique_key = web2py_uuid()
                 row = table(record_id)
-                if row and row['unique_key'] == unique_key:
+                if row and to_native(row['unique_key']) == to_native(unique_key):
                     table._db(table.id == record_id).update(unique_key=new_unique_key)
                 else:
                     record_id = None
@@ -1231,9 +1231,9 @@ class Session(Storage):
 
         session_pickled = response.session_pickled or pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
 
-        dd = dict(locked=False,
+        dd = dict(locked=0,
                   client_ip=response.session_client,
-                  modified_datetime=request.now,
+                  modified_datetime=request.now.isostring(),
                   session_data=session_pickled,
                   unique_key=unique_key)
         if record_id:
