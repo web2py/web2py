@@ -150,14 +150,14 @@ class Saml2Auth(object):
         self.config_file = config_file
         self.maps = maps
 
-    # URL for redirecting users to when they sign out
+        # URL for redirecting users to when they sign out
         self.saml_logout_url = logout_url
 
         # URL to let users change their password in the IDP system
         self.saml_change_password_url = change_password_url
     
-    # URL to specify an IDP if using federation metadata or an MDQ
-    self.entityid = entityid
+        # URL to specify an IDP if using federation metadata or an MDQ
+        self.entityid = entityid
 
     def login_url(self, next="/"):
         d = saml2_handler(current.session, current.request, entityid=self.entityid)
