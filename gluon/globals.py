@@ -1233,7 +1233,7 @@ class Session(Storage):
 
         dd = dict(locked=0,
                   client_ip=response.session_client,
-                  modified_datetime=request.now.isostring(),
+                  modified_datetime=request.now.isoformat(),
                   session_data=session_pickled,
                   unique_key=unique_key)
         if record_id:
