@@ -158,6 +158,9 @@ if [ -e web2py_src.zip* ]; then
     rm web2py_src.zip*
 fi
 
+# Centos 7.6 minimal does not have zip installed. So there was ab error a few lines below. Unzip failed
+yum install unzip
+
 wget http://web2py.com/examples/static/web2py_src.zip
 unzip web2py_src.zip
 mv web2py/handlers/wsgihandler.py web2py/wsgihandler.py
