@@ -283,7 +283,11 @@
             doc.ajaxSuccess(function (e, xhr) {
                 var redirect = xhr.getResponseHeader('web2py-redirect-location');
                 if (redirect !== null) {
-                    window.location = redirect;
+                    if (!redirect.endsWith('#')) {
+                        window.location.href = redirect;
+                    } else {
+                        window.location.reload();
+                    }
                 }
                 /* run this here only if this Ajax request is NOT for a web2py component. */
                 if (xhr.getResponseHeader('web2py-component-content') === null) {
