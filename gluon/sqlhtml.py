@@ -1814,7 +1814,7 @@ class SQLFORM(FORM):
                 if not field.widget and field.type.startswith('list:') and \
                         not OptionsWidget.has_options(field):
                     field.widget = self.widgets.list.widget
-                if field.widget and fieldname in request_vars:
+                if field.widget == self.widgets.list.widget and fieldname in request_vars:
                     if fieldname in self.request_vars:
                         value = self.request_vars[fieldname]
                     elif self.record:
