@@ -367,6 +367,24 @@
                     'data': data,
                     'processData': !isFormData,
                     'contentType': contentType,
+                    'xhr': function() {
+                        var xhr = new window.XMLHttpRequest();
+
+                        xhr.upload.addEventListener("progress", function(evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total;
+                                percentComplete = parseInt(percentComplete * 100);
+                                web2py.fire(element, 'w2p:uploadProgress', [percentComplete], target);
+
+                                if (percentComplete === 100) {
+                                    web2py.fire(element, 'w2p:uploadComplete', [], target);
+                                }
+
+                            }
+                        }, false);
+
+                        return xhr;
+                    },
                     'beforeSend': function (xhr, settings) {
                         xhr.setRequestHeader('web2py-component-location', document.location);
                         xhr.setRequestHeader('web2py-component-element', target);
