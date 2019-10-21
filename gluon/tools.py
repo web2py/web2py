@@ -2301,7 +2301,7 @@ class Auth(AuthAPI):
         # in this case they will have to reset their password to login
         if fields.get(settings.passfield):
             fields[settings.passfield] = \
-                settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
+                settings.table_user[settings.passfield].validate(fields[settings.passfield], None)[0]
         if not fields.get(settings.userfield):
             raise ValueError('register_bare: userfield not provided or invalid')
         user = self.get_or_create_user(fields, login=False, get=False,
