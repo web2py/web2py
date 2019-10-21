@@ -530,7 +530,7 @@ class IS_CRONLINE(object):
     def __init__(self, error_message=None):
         self.error_message = error_message
 
-    def __call__(self, value):
+    def __call__(self, value, record_id=None):
         recur = CronParser(value, datetime.datetime.now())
         try:
             recur.next()
@@ -550,7 +550,7 @@ class TYPE(object):
         self.myclass = myclass
         self.parse = parse
 
-    def __call__(self, value):
+    def __call__(self, value, record_id=None):
         from gluon import current
         try:
             obj = loads(value)
