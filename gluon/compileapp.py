@@ -565,7 +565,7 @@ def run_models_in(environment):
 
 TEST_CODE = r"""
 def _TEST():
-    import doctest, sys, cStringIO, types, cgi, gluon.fileutils
+    import doctest, sys, cStringIO, types, gluon.fileutils
     if not gluon.fileutils.check_credentials(request):
         raise HTTP(401, web2py_error='invalid credentials')
     stdout = sys.stdout
