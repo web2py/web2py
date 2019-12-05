@@ -65,13 +65,13 @@ class RedisClient(object):
 
     def Field(self, fieldname, type='string', length=None, default=None,
               required=False, requires=None):
-        return None
+        return fieldname, type
 
     def define_table(self, tablename, *fields, **args):
         if not self.tablename:
             self.tablename = MockTable(
                 self, self.r_server, tablename, self.session_expiry,
-                self.with_lock)
+                self.with_lock, fields=fields)
         return self.tablename
 
     def __getitem__(self, key):
@@ -88,7 +88,7 @@ class RedisClient(object):
 
 class MockTable(object):
 
-    def __init__(self, db, r_server, tablename, session_expiry, with_lock=False):
+    def __init__(self, db, r_server, tablename, session_expiry, with_lock=False, fields=None):
         # here self.db is the RedisClient instance
         self.db = db
         self.tablename = tablename
@@ -101,6 +101,7 @@ class MockTable(object):
         # remember the session_expiry setting
         self.session_expiry = session_expiry
         self.with_lock = with_lock
+        self.fields = fields if fields is not None else []
 
     def __call__(self, record_id, unique_key=None):
         # Support DAL shortcut query: table(record_id)
@@ -182,7 +183,7 @@ class MockQuery(object):
             key = self.keyprefix + ':' + str(self.value)
             if self.with_lock:
                 acquire_lock(self.db.r_server, key + ':lock', self.value, 2)
-            rtn = {to_native(k.decode): v for k, v in self.db.r_server.hgetall(key).items()}
+            rtn = {to_native(k): v for k, v in self.db.r_server.hgetall(key).items()}
             if rtn:
                 if self.unique_key:
                     # make sure the id and unique_key are correct

@@ -52,27 +52,17 @@ class TestRedis(unittest.TestCase):
         rconn = RConn(host='redis')
         db = RedisSession(redis_conn=rconn, session_expiry=False)
         tname = 'testtablename'
-        Field = db.Field
-        db.define_table(
-            tname,
-            Field('locked', 'boolean', default=False),
-            Field('client_ip', length=64),
-            Field('created_datetime', 'datetime',
-                  default=datetime.now),
-            Field('modified_datetime', 'datetime'),
-            Field('unique_key', length=64),
-            Field('session_data', 'blob'),
-        )
+        db.define_table(tname)
         table = db[tname]
         unique_key = web2py_uuid()
         dd = dict(
             locked=0,
             client_ip=response.session_client,
-            modified_datetime=datetime.now,
+            modified_datetime=datetime.now().isoformat(),
             unique_key=unique_key
         )
         record_id = table.insert(**dd)
-        data_from_db = db(table.id == record_id).select()
-        #print('data_from_db=', data_from_db)
-        self.assertDictEqual(dd, data_from_db)
+        data_from_db = db(table.id == record_id).select()[0]
+        print('data_from_db=', data_from_db)
+        self.assertDictEqual(Storage(dd), data_from_db)
 
