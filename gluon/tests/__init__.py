@@ -8,6 +8,7 @@ from .test_dal import *
 from .test_cache import *
 from .test_html import *
 from .test_contribs import *
+from .test_redis import *
 from .test_routes import *
 from .test_router import *
 from .test_authapi import *
