@@ -90,7 +90,7 @@ class RedisClient(object):
         fields = self.tablename.fields
         typed_dict = dict()
         converters = {
-            'boolean': lambda(x): 1 if x == '1' else 0,
+            'boolean': lambda x: 1 if x == '1' else 0,
         }
         for field, ftype in fields:
             if field not in dict_string:
