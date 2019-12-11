@@ -14,6 +14,7 @@ from gluon.storage import Storage
 from gluon.contrib.redis_utils import acquire_lock, release_lock
 from gluon.contrib.redis_utils import register_release_lock
 from gluon._compat import to_native
+from datetime import datetime
 
 logger = logging.getLogger("web2py.session.redis")
 
@@ -71,7 +72,7 @@ class RedisClient(object):
         if not self.tablename:
             self.tablename = MockTable(
                 self, self.r_server, tablename, self.session_expiry,
-                self.with_lock, fields=fields)
+                with_lock=self.with_lock, fields=fields)
         return self.tablename
 
     def __getitem__(self, key):
@@ -84,6 +85,18 @@ class RedisClient(object):
     def commit(self):
         # this is only called by session2trash.py
         pass
+
+    def convert_dict_string(self, dict_string):
+        fields = self.tablename.fields
+        typed_dict = dict()
+        converters = {
+            'boolean': lambda(x): 1 if x == '1' else 0,
+        }
+        for field, ftype in fields:
+            if field not in dict_string:
+                continue
+            typed_dict[field] = converters[ftype](dict_string[field]) if ftype in converters else dict_string[field]
+        return typed_dict
 
 
 class MockTable(object):
@@ -191,7 +204,7 @@ class MockQuery(object):
                         rtn['update_record'] = self.update  # update record support
                     else:
                         rtn = None
-            return [Storage(rtn)] if rtn else []
+            return [Storage(self.db.convert_dict_string(rtn))] if rtn else []
         elif self.op == 'ge' and self.field == 'id' and self.value == 0:
             # means that someone wants the complete list
             rtn = []
