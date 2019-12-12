@@ -74,9 +74,19 @@ class TestRedis(unittest.TestCase):
         )
         record_id = table.insert(**dd)
         data_from_db = db(table.id == record_id).select()[0]
-        self.assertDictEqual(Storage(dd), data_from_db)
+        self.assertDictEqual(Storage(dd), data_from_db, 'get inserted dict')
 
         dd['locked'] = 1
         table._db(table.id == record_id).update(**dd)
         data_from_db = db(table.id == record_id).select()[0]
-        self.assertDictEqual(Storage(dd), data_from_db)
+        self.assertDictEqual(Storage(dd), data_from_db, 'get the updated value')
+
+        all_sessions = db(table.id > 0).select()
+        self.assertIsNotNone(all_sessions, 'we must have some keys in db')
+
+        for entry in all_sessions:
+            res = entry.delete_record()
+            self.assertIsNone(res, 'delete should return None')
+
+        empty_sessions = db(table.id > 0).select()
+        self.assertEqual(empty_sessions, [], 'no sessions left')
