@@ -4,8 +4,6 @@
 """ Unit tests for redis """
 
 import unittest
-import os
-import time
 from datetime import datetime
 
 from gluon._compat import to_bytes, pickle
