@@ -33,7 +33,7 @@ class TestRedis(unittest.TestCase):
         current.response = response
         current.session = session
         self.current = current
-        rconn = RConn(host='redis')
+        rconn = RConn(host='localhost')
         self.db = RedisSession(redis_conn=rconn, session_expiry=False)
         self.tname = 'testtablename'
         return current
