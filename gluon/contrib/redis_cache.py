@@ -208,12 +208,12 @@ class RedisClient(object):
 
     def retry_call(self, key, f, time_expire, with_lock):
         self.RETRIES += 1
-        if self.RETRIES <= self.MAX_RETRIES:
-            logger.error("sleeping %s seconds before reconnecting" % (2 * self.RETRIES))
-            time.sleep(2 * self.RETRIES)
+        if self.RETRIES <= self.MAX_RETRIES:            
             if self.fail_gracefully:
                 self.RETRIES = 0
                 return f()
+            logger.error("sleeping %s seconds before reconnecting" % (2 * self.RETRIES))            
+            time.sleep(2 * self.RETRIES)
             return self.__call__(key, f, time_expire, with_lock)
         else:
             self.RETRIES = 0

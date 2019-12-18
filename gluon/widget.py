@@ -741,7 +741,8 @@ def start():
         sys.argv = [options.run or ''] + options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
             import_models=options.import_models, startfile=options.run,
-            cron_job=options.cron_job, force_migrate=options.force_migrate)
+            cron_job=options.cron_job, force_migrate=options.force_migrate,
+            fake_migrate=options.fake_migrate)
         return
 
     # set size of cron thread pools

@@ -82,7 +82,7 @@ def custom_json(o):
     elif isinstance(o, integer_types):
         return int(o)
     elif isinstance(o, decimal.Decimal):
-        return str(o)
+        return float(o)
     elif isinstance(o, (bytes, bytearray)):
         return str(o)
     elif isinstance(o, lazyT):

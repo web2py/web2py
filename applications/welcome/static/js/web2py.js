@@ -283,7 +283,11 @@
             doc.ajaxSuccess(function (e, xhr) {
                 var redirect = xhr.getResponseHeader('web2py-redirect-location');
                 if (redirect !== null) {
-                    window.location = redirect;
+                    if (!redirect.endsWith('#')) {
+                        window.location.href = redirect;
+                    } else {
+                        window.location.reload();
+                    }
                 }
                 /* run this here only if this Ajax request is NOT for a web2py component. */
                 if (xhr.getResponseHeader('web2py-component-content') === null) {
@@ -335,7 +339,7 @@
                     } else {
                         formData = form.serialize(); // Fallback for older browsers.
                     }
-                    web2py.ajax_page('post', url, formData, target, form);
+                    web2py.ajax_page('post', url, formData, target);
 
                     e.preventDefault();
                 });
@@ -367,6 +371,24 @@
                     'data': data,
                     'processData': !isFormData,
                     'contentType': contentType,
+                    'xhr': function() {
+                        var xhr = new window.XMLHttpRequest();
+
+                        xhr.upload.addEventListener("progress", function(evt) {
+                            if (evt.lengthComputable) {
+                                var percentComplete = evt.loaded / evt.total;
+                                percentComplete = parseInt(percentComplete * 100);
+                                web2py.fire(element, 'w2p:uploadProgress', [percentComplete], target);
+
+                                if (percentComplete === 100) {
+                                    web2py.fire(element, 'w2p:uploadComplete', [], target);
+                                }
+
+                            }
+                        }, false);
+
+                        return xhr;
+                    },
                     'beforeSend': function (xhr, settings) {
                         xhr.setRequestHeader('web2py-component-location', document.location);
                         xhr.setRequestHeader('web2py-component-element', target);

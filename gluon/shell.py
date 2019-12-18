@@ -217,7 +217,8 @@ def run(
     python_code=None,
     cron_job=False,
     scheduler_job=False,
-    force_migrate=False):
+    force_migrate=False,
+    fake_migrate=False):
     """
     Start interactive shell or run Python script (startfile) in web2py
     controller environment. appname is formatted like:
@@ -248,6 +249,7 @@ def run(
             fileutils.create_app(adir)
 
     if force_migrate:
+        c = 'appadmin' # Load all models (hack already used for appadmin controller)
         import_models = True
         from gluon.dal import DAL
         orig_init = DAL.__init__
@@ -255,6 +257,7 @@ def run(
         def custom_init(*args, **kwargs):
             kwargs['migrate_enabled'] = True
             kwargs['migrate'] = True
+            kwargs['fake_migrate'] = fake_migrate
             logger.info('Forcing migrate_enabled=True')
             orig_init(*args, **kwargs)
 

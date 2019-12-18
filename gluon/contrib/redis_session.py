@@ -13,7 +13,7 @@ from gluon import current
 from gluon.storage import Storage
 from gluon.contrib.redis_utils import acquire_lock, release_lock
 from gluon.contrib.redis_utils import register_release_lock
-from gluon._compat import to_bytes
+from gluon._compat import to_native
 
 logger = logging.getLogger("web2py.session.redis")
 
@@ -182,11 +182,11 @@ class MockQuery(object):
             key = self.keyprefix + ':' + str(self.value)
             if self.with_lock:
                 acquire_lock(self.db.r_server, key + ':lock', self.value, 2)
-            rtn = self.db.r_server.hgetall(key)
+            rtn = {to_native(k.decode): v for k, v in self.db.r_server.hgetall(key).items()}
             if rtn:
                 if self.unique_key:
                     # make sure the id and unique_key are correct
-                    if rtn['unique_key'] == self.unique_key:
+                    if rtn['unique_key'] == to_native(self.unique_key):
                         rtn['update_record'] = self.update  # update record support
                     else:
                         rtn = None
