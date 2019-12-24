@@ -1,4 +1,8 @@
 build: false
+before_build:
+  - choco install redis-64
+  - redis-server --service-install
+  - redis-server --service-start
 
 environment:
   matrix:
@@ -26,7 +30,7 @@ init:
 
 install:
   - python -m ensurepip
-  - pip install codecov
+  - pip install codecov redis
   - git submodule update --init --recursive
   # Check that we have the expected version and architecture for Python
   - "python --version"
