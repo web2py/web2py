@@ -3726,7 +3726,7 @@ class Auth(AuthAPI):
         are passed to the constructor of class AuthJWT. Look there for documentation.
         """
         if not self.jwt_handler:
-            raise HTTP(400, "Not authorized")
+            raise HTTP(401, "Not authorized")
         else:
             rtn = self.jwt_handler.jwt_token_manager()
             raise HTTP(200, rtn, cookies=None, **current.response.headers)
@@ -3820,7 +3820,7 @@ class Auth(AuthAPI):
 
     def allows_jwt(self, otherwise=None):
         if not self.jwt_handler:
-            raise HTTP(400, "Not authorized")
+            raise HTTP(401, "Not authorized")
         else:
             return self.jwt_handler.allows_jwt(otherwise=otherwise)
 
