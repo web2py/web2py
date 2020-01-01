@@ -13,6 +13,12 @@ legacy_db(legacy_db.mytable.id>0).select()
 extract_sqlite_models.py -- Copyright (C) Michele Comitini
 This code is distributed with web2py.
 
+Extended version with support of 
+ - "ID_MYTABLE" as REFERENCE PRIMARY KEY
+ - Inline CREATE TABLE declaration in sqlite DB. 
+Copyright (C) Guillaume DELVIT.
+
+
 The regexp code and the dictionary type map was extended from
 extact_mysql_models.py that comes with web2py. extact_mysql_models.py is Copyright (C) Falko Krause.
 
@@ -58,6 +64,10 @@ def get_foreign_keys(sql_lines):
         hit = re.search(r'FOREIGN\s+KEY\s+\("(\S+)"\)\s+REFERENCES\s+"(\S+)"\s+\("(\S+)"\)', line)
         if hit:
             fks[hit.group(1)] =  hit.groups()[1:]
+        else:
+            hit = re.search(r'ID_(\S+)\s+INTEGER', line)
+            if hit:
+                fks['ID_'+hit.group(1)] =  [hit.group(1), 'ID']
 
     return fks
 
@@ -74,6 +84,8 @@ def sqlite(database_name):
         if 'CREATE' in sql_create_stmnt:  # check if the table exists
             #remove garbage lines from sql statement
             sql_lines = sql_create_stmnt.split('\n')
+            if len(sql_lines) == 1 :
+                sql_lines = re.split('[()\n]|, ',sql_create_stmnt)
             sql_lines = [x for x in sql_lines if not(
                 x.startswith('--') or x.startswith('/*') or x == '')]
             #generate the web2py code from the create statement
@@ -84,6 +96,8 @@ def sqlite(database_name):
                 if re.search('KEY', line) or re.search('PRIMARY', line) or re.search('"ID"', line) or line.startswith(')'):
                     continue
                 hit = re.search(r'\[(\S+)\]\s+(\w+(\(\S+\))?),?( .*)?', line)
+                if not hit:
+                    hit = re.search(r'(\S+)\s(\S+)', line)
                 if hit is not None:
                     name, d_type = hit.group(1), hit.group(2)
                     d_type = re.sub(r'(\w+)\(.*', r'\1', d_type)
