@@ -6,6 +6,7 @@ dist: "bionic"
 
 services:
   - mysql
+  - redis-server
 
 python:
   - '2.7'
@@ -23,6 +24,7 @@ install:
 before_script:
   - pip install coverage
   - pip install codecov
+  - pip install redis
 
 before_install:
   - mysql -e 'create database pydal;'

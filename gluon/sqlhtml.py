@@ -461,7 +461,12 @@ class RadioWidget(OptionsWidget):
             opts.append(child(tds))
 
         if opts:
-            opts[-1][0][0]['hideerror'] = False
+            opts.append(
+                INPUT(requires=attr.get('requires', None),
+                      _style="display:none;",
+                      _disabled="disabled",
+                      _name=field.name,
+                      hideerror=False))
         return parent(*opts, **attr)
 
 
@@ -1814,7 +1819,7 @@ class SQLFORM(FORM):
                 if not field.widget and field.type.startswith('list:') and \
                         not OptionsWidget.has_options(field):
                     field.widget = self.widgets.list.widget
-                if field.widget and fieldname in request_vars:
+                if field.widget == self.widgets.list.widget and fieldname in request_vars:
                     if fieldname in self.request_vars:
                         value = self.request_vars[fieldname]
                     elif self.record:
