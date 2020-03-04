@@ -656,7 +656,7 @@ class Scheduler(threading.Thread):
             ctx = multiprocessing.get_context('spawn')
             outq = ctx.Queue()
             retq = ctx.Queue(maxsize=1)
-            sel.process = p = ctx.Process(target=executor, args=(retq, task, outq))
+            self.process = p = ctx.Process(target=executor, args=(retq, task, outq))
         else:
             outq = multiprocessing.Queue()
             retq = multiprocessing.Queue(maxsize=1)
