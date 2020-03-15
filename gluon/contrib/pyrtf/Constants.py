@@ -1,3 +1,7 @@
+import sys
+
+PY2 = sys.version_info[0] == 2
+
 class ViewKind :
     """An integer (0-5) that represents the view mode of the document."""
 

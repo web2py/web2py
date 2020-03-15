@@ -9,9 +9,14 @@ The TextPropertySet can be used for text or in a Paragraph Style.
 
 """
 
-from    types       import  StringType
-from    copy        import  deepcopy
+from copy import  deepcopy
 
+from .Constants import PY2
+
+if PY2:
+    StringType = basestring
+else:
+    StringType = str
 
 #
 #   We need some basic Type like fonts, colours and paper definitions
