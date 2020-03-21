@@ -242,7 +242,8 @@ class Request(Storage):
         # parse POST variables on POST, PUT, BOTH only in post_vars
         if body and not is_json and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH'):
             query_string = env.pop('QUERY_STRING', None)
-            dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
+            decoded_body = body if global_settings.is_py2 else body.decode()
+            dpost = cgi.FieldStorage(fp=decoded_body, environ=env, keep_blank_values=1)
             try:
                 post_vars.update(dpost)
             except:
