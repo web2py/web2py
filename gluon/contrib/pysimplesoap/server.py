@@ -15,7 +15,11 @@
 
 from __future__ import unicode_literals
 import sys
-if sys.version > '3':
+
+if sys.version_info[0] < 3:
+    is_py2 = True
+else:
+    is_py2 = False
     unicode = str
 
 
@@ -160,7 +164,8 @@ class SoapDispatcher(object):
                     # Now we change 'external' and 'model' to the received forms i.e. 'ext' and 'mod'
                 # After that we know how the client has prefixed additional namespaces
 
-            ns = NS_RX.findall(xml)
+            decoded_xml = xml if is_py2 else xml.decode('utf8')
+            ns = NS_RX.findall(decoded_xml)
             for k, v in ns:
                 if v in self.namespaces.values():
                     _ns_reversed[v] = k
@@ -369,23 +374,23 @@ class SoapDispatcher(object):
                     e['name'] = k
                     if array:
                         e[:] = {'minOccurs': "0", 'maxOccurs': "unbounded"}
-                    if v in TYPE_MAP.keys():
-                        t = 'xsd:%s' % TYPE_MAP[v]
-                    elif v is None:
+                    if v is None:
                         t = 'xsd:anyType'
-                    elif isinstance(v, list):
+                    elif type(v) == list:
                         n = "ArrayOf%s%s" % (name, k)
                         l = []
                         for d in v:
                             l.extend(d.items())
                         parse_element(n, l, array=True, complex=True)
                         t = "tns:%s" % n
-                    elif isinstance(v, dict):
+                    elif type(v) == dict:
                         n = "%s%s" % (name, k)
                         parse_element(n, v.items(), complex=True)
                         t = "tns:%s" % n
+                    elif v in TYPE_MAP:
+                        t = 'xsd:%s' % TYPE_MAP[v]
                     else:
-                        raise TypeError("unknonw type %s for marshalling" % str(v))
+                        raise TypeError("unknown type %s for marshalling" % str(v))
                     e.add_attribute('type', t)
 
             parse_element("%s" % method, args and args.items())
