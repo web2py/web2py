@@ -303,6 +303,11 @@ def run(
 
             if import_models:
                 BaseAdapter.close_all_instances('commit')
+        except SystemExit:
+            print(traceback.format_exc())
+            if import_models:
+                BaseAdapter.close_all_instances('rollback')
+            raise
         except:
             print(traceback.format_exc())
             if import_models:
@@ -312,6 +317,11 @@ def run(
             exec(python_code, _env)
             if import_models:
                 BaseAdapter.close_all_instances('commit')
+        except SystemExit:
+            print(traceback.format_exc())
+            if import_models:
+                BaseAdapter.close_all_instances('rollback')
+            raise
         except:
             print(traceback.format_exc())
             if import_models:
@@ -321,6 +331,11 @@ def run(
             execfile("scripts/migrator.py", _env)
             if import_models:
                 BaseAdapter.close_all_instances('commit')
+        except SystemExit:
+            print(traceback.format_exc())
+            if import_models:
+                BaseAdapter.close_all_instances('rollback')
+            raise
         except:
             print(traceback.format_exc())
             if import_models:
