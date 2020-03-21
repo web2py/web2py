@@ -1330,7 +1330,7 @@ class SQLFORM(FORM):
             # - user not trying to upload a new file
             # - there is existing file and user is not trying to delete it
             # this is because removing the file may not pass validation
-            for key in self.errors.keys():
+            for key in list(self.errors):
                 if key in self.table \
                         and self.table[key].type == 'upload' \
                         and request_vars.get(key, None) in (None, '') \
