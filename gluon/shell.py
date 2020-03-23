@@ -20,6 +20,7 @@ import logging
 import types
 import re
 import glob
+import site
 import traceback
 import gluon.fileutils as fileutils
 from gluon.settings import global_settings
