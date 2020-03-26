@@ -84,7 +84,7 @@ def custom_json(o):
     elif isinstance(o, decimal.Decimal):
         return float(o)
     elif isinstance(o, (bytes, bytearray)):
-        return str(o) if harattr(str, 'decode') else str(o, encoding='utf-8')
+        return str(o) if hasattr(str, 'decode') else str(o, encoding='utf-8')
     elif isinstance(o, lazyT):
         return str(o)
     elif isinstance(o, XmlComponent):
