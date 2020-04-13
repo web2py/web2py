@@ -242,7 +242,15 @@ class Request(Storage):
         # parse POST variables on POST, PUT, BOTH only in post_vars
         if body and not is_json and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH'):
             query_string = env.pop('QUERY_STRING', None)
-            dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
+            content_disposition = env.get('HTTP_CONTENT_DISPOSITION')
+            if content_disposition:
+                headers = {'content-disposition': content_disposition,
+                           'content-type': env['CONTENT_TYPE'],
+                           'content-length': env['CONTENT_LENGTH'],
+                           }
+            else:
+                headers = None
+            dpost = cgi.FieldStorage(fp=body, environ=env, headers=headers, keep_blank_values=1)
             try:
                 post_vars.update(dpost)
             except:
