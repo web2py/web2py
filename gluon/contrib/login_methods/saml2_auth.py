@@ -109,7 +109,7 @@ def saml2_handler(session, request, config_filename = None, entityid = None):
     client = Saml2Client(config_file = config_filename)
     if not entityid:
         idps = client.metadata.with_descriptor("idpsso")
-        entityid = idps.keys()[0]
+        entityid = list(idps.keys())[0]
     bindings = [BINDING_HTTP_REDIRECT, BINDING_HTTP_POST]
     binding, destination = client.pick_binding(
         "single_sign_on_service", bindings, "idpsso", entity_id=entityid)
