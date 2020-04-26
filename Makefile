@@ -118,7 +118,7 @@ binaries:
 	cp -r applications/admin ../web2py_win_py27/web2py/applications/
 	cp -r applications/welcome ../web2py_win_py27/web2py/applications/
 	cp -r applications/examples ../web2py_win_py27/web2py/applications/
-	cd ../web2py_win_py27; zip -r web2py_win_py27.zip web2py
+	cd ../web2py_win_py27; zip -r ../web2py/web2py_win_py27.zip web2py
 
 	cp VERSION ../web2py_win_py37/web2py/
 	cp README.markdown ../web2py_win_py37/web2py/
@@ -132,7 +132,7 @@ binaries:
 	cp -r applications/admin ../web2py_win_py37/web2py/applications/
 	cp -r applications/welcome ../web2py_win_py37/web2py/applications/
 	cp -r applications/examples ../web2py_win_py37/web2py/applications/
-	cd ../web2py_win_py37; zip -r web2py_win_py37.zip web2py
+	cd ../web2py_win_py37; zip -r ../web2py/web2py_win_py37.zip web2py
 
 	cp VERSION ../web2py_osx_py27/web2py.app/Contents/MacOS/
 	cp README.markdown ../web2py_osx_py27/web2py.app/Contents/MacOS/
@@ -146,7 +146,7 @@ binaries:
 	cp -r applications/admin ../web2py_osx_py27/web2py.app/Contents/MacOS/applications/
 	cp -r applications/welcome ../web2py_osx_py27/web2py.app/Contents/MacOS/applications/
 	cp -r applications/examples ../web2py_osx_py27/web2py.app/Contents/MacOS/applications/
-	cd ../web2py_osx_py27; zip -r web2py_osx_py27.zip web2py.app
+	cd ../web2py_osx_py27; zip -r ../web2py/web2py_osx_py27.zip web2py.app
 
 	cp VERSION ../web2py_osx_py37/web2py.app/Contents/MacOS/
 	cp README.markdown ../web2py_osx_py37/web2py.app/Contents/MacOS/
@@ -160,7 +160,7 @@ binaries:
 	cp -r applications/admin ../web2py_osx_py37/web2py.app/Contents/MacOS/applications/
 	cp -r applications/welcome ../web2py_osx_py37/web2py.app/Contents/MacOS/applications/
 	cp -r applications/examples ../web2py_osx_py37/web2py.app/Contents/MacOS/applications/
-	cd ../web2py_osx_py37; zip -r web2py_osx_py37.zip web2py.app
+	cd ../web2py_osx_py37; zip -r ../web2py/web2py_osx_py37.zip web2py.app
 run:
 	python2.7 web2py.py -a hello
 commit:
