@@ -248,6 +248,9 @@ def run(
         if confirm.lower() in ('y', 'yes'):
             os.mkdir(adir)
             fileutils.create_app(adir)
+        else:
+            logging.warn('application folder does not exist and has not been created as requested')
+            return
 
     if force_migrate:
         c = 'appadmin' # Load all models (hack already used for appadmin controller)
