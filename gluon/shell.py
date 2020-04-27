@@ -241,7 +241,7 @@ def run(
         if not cron_job and not scheduler_job and \
             sys.stdin and not sys.stdin.name == '/dev/null':
             confirm = raw_input(
-                'application %s does not exist, create (y/n)?' % a)
+                'application %s does not exist, create (y/N)?' % a)
         else:
             logging.warn('application does not exist and will not be created')
             return
