@@ -188,7 +188,7 @@ class TestBareHelpers(unittest.TestCase):
                          XML('<h1>HelloWorld</h1>').__repr__())
         # bug check for the sanitizer for closing no-close tags
         self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True).xml(),
-                         XML('<p>Test</p><br /><p>Test</p><br />').xml())
+                         XML('<p>Test</p><br/><p>Test</p><br/>').xml())
         # basic flatten test
         self.assertEqual(XML('<p>Test</p>').flatten(), '<p>Test</p>')
         self.assertEqual(XML('<p>Test</p>').flatten(render=lambda text, tag, attr: text), '<p>Test</p>')
