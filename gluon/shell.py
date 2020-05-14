@@ -241,13 +241,16 @@ def run(
         if not cron_job and not scheduler_job and \
             sys.stdin and not sys.stdin.name == '/dev/null':
             confirm = raw_input(
-                'application %s does not exist, create (y/n)?' % a)
+                'application %s does not exist, create (y/N)?' % a)
         else:
             logging.warn('application does not exist and will not be created')
             return
         if confirm.lower() in ('y', 'yes'):
             os.mkdir(adir)
             fileutils.create_app(adir)
+        else:
+            logging.warn('application folder does not exist and has not been created as requested')
+            return
 
     if force_migrate:
         c = 'appadmin' # Load all models (hack already used for appadmin controller)
