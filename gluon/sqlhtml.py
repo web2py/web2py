@@ -1501,7 +1501,7 @@ class SQLFORM(FORM):
             if readonly and not ignore_rw and not field.readable:
                 continue
 
-            if record:
+            if record and fieldname not in [x.name for x in extra_fields]:
                 default = record[fieldname]
             else:
                 default = field.default
