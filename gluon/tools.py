@@ -816,7 +816,16 @@ class Mail(object):
                         server.login(*self.settings.login.split(':', 1))
                     result = server.sendmail(sender, to, payload.as_string())
                 finally:
-                    server.quit()
+                    # do not want to hide errors raising some exception here
+                    try:
+                        server.quit()
+                    except:
+                        pass
+                    # ensure to close any socket with SMTP server
+                    try:
+                        server.close()
+                    except:
+                        pass
         except Exception as e:
             logger.warning('Mail.send failure:%s' % e)
             self.result = result
