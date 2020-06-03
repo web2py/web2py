@@ -194,8 +194,6 @@ def select():
             request.vars.query = '%s.%s.%s==%s' % (request.args[0],
                                                    match.group('table'), match.group('field'),
                                                    match.group('value'))
-    else:
-        request.vars.query = session.last_query
     query = get_query(request)
     if request.vars.start:
         start = int(request.vars.start)
@@ -222,7 +220,6 @@ def select():
             else:
                 orderby = '~' + orderby
     session.last_orderby = orderby
-    session.last_query = request.vars.query
     form = FORM(TABLE(TR(T('Query:'), '', INPUT(_style='width:400px',
                 _name='query', _value=request.vars.query or '', _class='form-control',
                 requires=IS_NOT_EMPTY(
