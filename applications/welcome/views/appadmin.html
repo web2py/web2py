@@ -82,7 +82,7 @@
        <div style="overflow:auto; width:80%;">
        {{linkto = lambda f, t, r: URL('update', args=[request.args[0], r, f]) if f else "#"}}
        {{upload=URL('download',args=request.args[0])}}
-       {{=SQLTABLE(rows,linkto,upload,orderby=True,_class='table table-striped table-bordered sortable')}}
+       {{=SQLTABLE(rows,linkto,upload,orderby=True,query=query,_class='table table-striped table-bordered sortable')}}
        </div>
     {{pass}}
     <br/><br/>

@@ -3393,6 +3393,7 @@ class SQLTABLE(TABLE):
         linkto: URL (or lambda to generate a URL) to edit individual records
         upload: URL to download uploaded files
         orderby: Add an orderby link to column headers.
+        query: Query string to support orderby headers.
         headers: dictionary of headers to headers redefinions
             headers can also be a string to generate the headers from data
             for now only headers="fieldname:capitalize",
@@ -3428,6 +3429,7 @@ class SQLTABLE(TABLE):
                  linkto=None,
                  upload=None,
                  orderby=None,
+                 query='',
                  headers={},
                  truncate=16,
                  columns=None,
@@ -3499,8 +3501,10 @@ class SQLTABLE(TABLE):
                         attrcol.update(_class=coldict['class'])
                     row.append(TH(coldict['label'], **attrcol))
                 elif orderby:
-                    row.append(TH(A(headers.get(c, c),
-                                    _href=th_link + '?orderby=' + c, cid=cid)))
+                    link = th_link + '?orderby=' + c
+                    if query:
+                        link += '&query=' + query
+                    row.append(TH(A(headers.get(c, c), _href=link, cid=cid)))
                 else:
                     row.append(TH(headers.get(c, re.sub(self.REGEX_ALIAS_MATCH, r'\2', c))))
 
