@@ -1450,8 +1450,10 @@ class SCRIPT(DIV):
         (fa, co) = self._xml()
         fa = to_bytes(fa)
         # no escaping of subcomponents
-        co = b'\n'.join([to_bytes(component) for component in
-                       self.components])
+        co = b'\n'.join(map(to_bytes,
+            # allow xml components (i.e. ASSIGNJS)
+            map(lambda c: c.xml() if hasattr(c, 'xml') and callable(c.xml) else c,
+            self.components)))
         if co:
             # <script [attributes]><!--//--><![CDATA[//><!--
             # script body
