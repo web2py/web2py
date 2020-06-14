@@ -819,13 +819,12 @@ class Mail(object):
                     # do not want to hide errors raising some exception here
                     try:
                         server.quit()
-                    except:
-                        pass
-                    # ensure to close any socket with SMTP server
-                    try:
-                        server.close()
-                    except:
-                        pass
+                    except smtplib.SMTPException:
+                        # ensure to close any socket with SMTP server
+                        try:
+                            server.close()
+                        except Exception:
+                            pass
         except Exception as e:
             logger.warning('Mail.send failure:%s' % e)
             self.result = result
