@@ -40,6 +40,9 @@ if not os.path.isdir('applications'):
 
 sys.path = [path] + [p for p in sys.path if not p == path]
 
+from gluon.settings import global_settings
+global_settings.web2py_runtime_handler = True
+
 import gluon.main
 import gluon.contrib.gateways.fcgi as fcgi
 
@@ -51,7 +54,6 @@ else:
     application = gluon.main.wsgibase
 
 if SOFTCRON:
-    from gluon.settings import global_settings
     global_settings.web2py_crontype = 'soft'
 
 fcgi.WSGIServer(application, bindAddress='/tmp/fcgi.sock').run()

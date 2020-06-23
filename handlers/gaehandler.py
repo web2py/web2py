@@ -49,14 +49,15 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 
+global_settings.web2py_runtime_handler = True
 global_settings.web2py_runtime_gae = True
 global_settings.db_sessions = True
 if os.environ.get('SERVER_SOFTWARE', '').startswith('Devel'):
-    (global_settings.web2py_runtime, DEBUG) = \
-        ('gae:development', True)
+    global_settings.web2py_runtime = 'gae:development'
+    DEBUG = True
 else:
-    (global_settings.web2py_runtime, DEBUG) = \
-        ('gae:production', False)
+    global_settings.web2py_runtime = 'gae:production'
+    DEBUG = False
 
 
 import gluon.main
