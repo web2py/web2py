@@ -1,4 +1,4 @@
-#!/bin/env python
+
 # -*- coding: utf-8 -*-
 
 """
@@ -35,12 +35,10 @@ pjoin = os.path.join
 logger = logging.getLogger('web2py.rewrite')
 THREAD_LOCAL = threading.local()  # thread-local storage for routing params
 
-regex_at = re.compile(r'(?<!\\)\$[a-zA-Z]\w*')
-regex_anything = re.compile(r'(?<!\\)\$anything')
-regex_redirect = re.compile(r'(\d+)->(.*)')
-regex_full_url = re.compile(
-    r'^(?P<scheme>http|https|HTTP|HTTPS)\://(?P<host>[^/]*)(?P<uri>.*)')
-regex_version = re.compile(r'^(_[\d]+\.[\d]+\.[\d]+)$')
+REGEX_AT = re.compile(r'(?<!\\)\$[a-zA-Z]\w*')
+REGEX_ANYTHING = re.compile(r'(?<!\\)\$anything')
+REGEX_REDIRECT = re.compile(r'(\d+)->(.*)')
+REGEX_VERSION = re.compile(r'^(_[\d]+\.[\d]+\.[\d]+)$')
 
 # pattern to find valid paths in url /application/controller/...
 #   this could be:
@@ -52,8 +50,8 @@ regex_version = re.compile(r'^(_[\d]+\.[\d]+\.[\d]+)$')
 #   file and args may also contain '-', '=', '.' and '/'
 #   apps in routes_apps_raw must parse raw_args into args
 
-regex_url = re.compile('^/((?P<a>\w+)(/(?P<c>\w+)(/(?P<z>(?P<f>\w+)(\.(?P<e>[\w.]+))?(?P<s>.*)))?)?)?$')
-regex_args = re.compile('[^\w/.@=-]')
+REGEX_URL = re.compile(r'^/((?P<a>\w+)(/(?P<c>\w+)(/(?P<z>(?P<f>\w+)(\.(?P<e>[\w.]+))?(?P<s>.*)))?)?)?$')
+REGEX_ARGS = re.compile(r'[^\w/.@=-]')
 
 
 def _router_default():
@@ -78,8 +76,8 @@ def _router_default():
         #  The file_match & args_match patterns use look-behind to avoid
         #  pathological backtracking from nested patterns.
         #
-        file_match = r'([-+=@$%\w]|(?<=[-+=@$%\w])[./])*$', # legal static subpath
-        args_match=r'([\w@ =-]|(?<=[\w@ -])[.])*$',
+        file_match=r'([+=@$%\w-]|(?<=[+=@$%\w-])[./])*$', # legal static subpath
+        args_match=r'([\w@ =-]|(?<=[\w@ -])\.)*$',
     )
     return router
 
@@ -237,7 +235,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                         request.env.request_uri), request.url)
                 if uri.startswith('http://') or uri.startswith('https://'):
                     # make up a response
-                    url = path_info + '?' + query_string
+                    url = '%s?%s' % (path_info, query_string)
                     message = 'You are being redirected <a href="%s">here</a>'
                     return HTTP(303, message % url, Location=url), environ
                 elif not environ.get('__ROUTES_ONERROR__', False):
@@ -412,15 +410,15 @@ def compile_regex(k, v, env=None):
         i = k.find(':/')
         if i < 0:
             raise SyntaxError("routes pattern syntax error: path needs leading '/' [%s]" % k0)
-        k = r'%s:https?://[^:/]+:[a-z]+ %s' % (k[:i], k[i + 1:])
+        k = '%s:https?://[^:/]+:[a-z]+ %s' % (k[:i], k[i + 1:])
     # $anything -> ?P<anything>.*
-    for item in regex_anything.findall(k):
+    for item in REGEX_ANYTHING.findall(k):
         k = k.replace(item, '(?P<anything>.*)')
     # $a (etc) -> ?P<a>\w+
-    for item in regex_at.findall(k):
+    for item in REGEX_AT.findall(k):
         k = k.replace(item, r'(?P<%s>\w+)' % item[1:])
     # same for replacement pattern, but with \g
-    for item in regex_at.findall(v):
+    for item in REGEX_AT.findall(v):
         v = v.replace(item, r'\g<%s>' % item[1:])
     return (re.compile(k, re.DOTALL), v, env or {})
 
@@ -578,18 +576,21 @@ def regex_filter_in(e):
     if routes.routes_in:
         path = regex_uri(e, routes.routes_in,
                          "routes_in", e['PATH_INFO'])
-        rmatch = regex_redirect.match(path)
+        rmatch = REGEX_REDIRECT.match(path)
         if rmatch:
             raise HTTP(int(rmatch.group(1)), location=rmatch.group(2))
         items = path.split('?', 1)
         e['PATH_INFO'] = items[0]
         if len(items) > 1:
             if query:
-                query = items[1] + '&' + query
+                query = '%s&%s' % (items[1], query)
             else:
                 query = items[1]
             e['QUERY_STRING'] = query
-    e['REQUEST_URI'] = e['PATH_INFO'] + (query and ('?' + query) or '')
+    if query:
+        e['REQUEST_URI'] = '%s?%s' % (e['PATH_INFO'], query)
+    else:
+        e['REQUEST_URI'] = e['PATH_INFO']
     return e
 
 
@@ -627,7 +628,7 @@ def regex_url_in(request, environ):
     path = path.replace('\\', '/')
     if path.endswith('/') and len(path) > 1:
         path = path[:-1]
-    match = regex_url.match(path)
+    match = REGEX_URL.match(path)
     if not match:
         invalid_url(routes)
     request.raw_args = (match.group('s') or '')
@@ -640,7 +641,7 @@ def regex_url_in(request, environ):
             raise HTTP(404)
         filename = filename.replace(' ','_')
         items = filename.split('/', 1)
-        if regex_version.match(items[0]):
+        if REGEX_VERSION.match(items[0]):
             version, filename = items
         static_folder = pjoin(global_settings.applications_parent,
                               'applications', application, 'static')
@@ -661,7 +662,7 @@ def regex_url_in(request, environ):
             # application is responsible for parsing args
             request.args = None
         elif request.raw_args:
-            args = regex_args.sub('_', request.raw_args)
+            args = REGEX_ARGS.sub('_', request.raw_args)
             request.args = List(args.split('/'))
         else:
             request.args = List([])
@@ -704,7 +705,7 @@ def filter_url(url, method='get', remote='0.0.0.0',
     """
     doctest/unittest interface to regex_filter_in() and regex_filter_out()
     """
-    match = regex_full_url.match(url)
+    match = re.match(r'^(?P<scheme>http|https|HTTP|HTTPS)\://(?P<host>[^/]*)(?P<uri>.*)', url)
     urlscheme = match.group('scheme').lower()
     urlhost = match.group('host').lower()
     uri = match.group('uri')
@@ -837,15 +838,18 @@ class MapUrlIn(object):
         self.query = self.env.get('QUERY_STRING', None)
         path = path.lstrip('/')
         self.env['PATH_INFO'] = '/' + path
-        self.env['WEB2PY_ORIGINAL_URI'] = self.env['PATH_INFO'] + (
-            self.query and ('?' + self.query) or '')
+        if self.query:
+			self.env['WEB2PY_ORIGINAL_URI'] = '%s?%s' % (
+                self.env['PATH_INFO'], self.query)
+        else:
+            self.env['WEB2PY_ORIGINAL_URI'] = self.env['PATH_INFO']
 
         # to handle empty args, strip exactly one trailing slash, if present
         # .../arg1// represents one trailing empty arg
         #
         if path.endswith('/'):
             path = path[:-1]
-        self.args = List(path and path.split('/') or [])
+        self.args = List(path.split('/') if path else [])
 
         # see http://www.python.org/dev/peps/pep-3333/#url-reconstruction for URL composition
         self.remote_addr = self.env.get('REMOTE_ADDR', 'localhost')
@@ -856,7 +860,8 @@ class MapUrlIn(object):
             (self.host, self.port) = (
                 self.env.get('SERVER_NAME'), self.env.get('SERVER_PORT'))
         if not self.host:
-            (self.host, self.port) = ('localhost', '80')
+            self.host = 'localhost'
+            self.port = '80'
         if ':' in self.host:
             (self.host, self.port) = self.host.rsplit(':', 1)  # for ipv6 support
         if not self.port:
@@ -989,7 +994,7 @@ class MapUrlIn(object):
         """
         if self.controller != 'static':
             return None, None
-        version = regex_version.match(self.args(0))
+        version = REGEX_VERSION.match(self.args(0))
         if self.args and version:
             file = '/'.join(self.args[1:])
         else:
