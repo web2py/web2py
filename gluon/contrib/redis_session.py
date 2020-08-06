@@ -13,7 +13,8 @@ from gluon import current
 from gluon.storage import Storage
 from gluon.contrib.redis_utils import acquire_lock, release_lock
 from gluon.contrib.redis_utils import register_release_lock
-from gluon._compat import to_bytes
+from gluon._compat import to_native
+from datetime import datetime
 
 logger = logging.getLogger("web2py.session.redis")
 
@@ -65,13 +66,13 @@ class RedisClient(object):
 
     def Field(self, fieldname, type='string', length=None, default=None,
               required=False, requires=None):
-        return None
+        return fieldname, type
 
     def define_table(self, tablename, *fields, **args):
         if not self.tablename:
             self.tablename = MockTable(
                 self, self.r_server, tablename, self.session_expiry,
-                self.with_lock)
+                with_lock=self.with_lock, fields=fields)
         return self.tablename
 
     def __getitem__(self, key):
@@ -85,10 +86,26 @@ class RedisClient(object):
         # this is only called by session2trash.py
         pass
 
+    def convert_dict_string(self, dict_string):
+        fields = self.tablename.fields
+        typed_dict = dict()
+        converters = {
+            'boolean': lambda x: 1 if x.decode() == '1' else 0,
+            'blob': lambda x: x,
+        }
+        for field, ftype in fields:
+            if field not in dict_string:
+                continue
+            if ftype in converters:
+                typed_dict[field] = converters[ftype](dict_string[field])
+            else:
+                typed_dict[field] = dict_string[field].decode()
+        return typed_dict
+
 
 class MockTable(object):
 
-    def __init__(self, db, r_server, tablename, session_expiry, with_lock=False):
+    def __init__(self, db, r_server, tablename, session_expiry, with_lock=False, fields=None):
         # here self.db is the RedisClient instance
         self.db = db
         self.tablename = tablename
@@ -101,6 +118,7 @@ class MockTable(object):
         # remember the session_expiry setting
         self.session_expiry = session_expiry
         self.with_lock = with_lock
+        self.fields = fields if fields is not None else []
 
     def __call__(self, record_id, unique_key=None):
         # Support DAL shortcut query: table(record_id)
@@ -172,7 +190,11 @@ class MockQuery(object):
         self.value = value
         self.op = op
 
-    def __gt__(self, value, op='ge'):
+    def __ge__(self, value, op='ge'):
+        self.value = value
+        self.op = op
+
+    def __gt__(self, value, op='gt'):
         self.value = value
         self.op = op
 
@@ -182,16 +204,16 @@ class MockQuery(object):
             key = self.keyprefix + ':' + str(self.value)
             if self.with_lock:
                 acquire_lock(self.db.r_server, key + ':lock', self.value, 2)
-            rtn = self.db.r_server.hgetall(key)
+            rtn = {to_native(k): v for k, v in self.db.r_server.hgetall(key).items()}
             if rtn:
                 if self.unique_key:
                     # make sure the id and unique_key are correct
-                    if rtn['unique_key'] == self.unique_key:
+                    if rtn['unique_key'] == to_native(self.unique_key):
                         rtn['update_record'] = self.update  # update record support
                     else:
                         rtn = None
-            return [Storage(rtn)] if rtn else []
-        elif self.op == 'ge' and self.field == 'id' and self.value == 0:
+            return [Storage(self.db.convert_dict_string(rtn))] if rtn else []
+        elif self.op in ('ge', 'gt') and self.field == 'id' and self.value == 0:
             # means that someone wants the complete list
             rtn = []
             id_idx = "%s:id_idx" % self.keyprefix
@@ -204,7 +226,7 @@ class MockQuery(object):
                         # clean up the idx, because the key expired
                         self.db.r_server.srem(id_idx, sess)
                     continue
-                val = Storage(val)
+                val = Storage(self.db.convert_dict_string(val))
                 # add a delete_record method (necessary for sessions2trash.py)
                 val.delete_record = RecordDeleter(
                     self.db, sess, self.keyprefix)

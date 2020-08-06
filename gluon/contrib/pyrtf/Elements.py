@@ -1,10 +1,16 @@
 from __future__ import print_function
-from    types       import  IntType, FloatType, LongType, StringTypes
-from    copy        import  deepcopy
-from    binascii    import  hexlify
+from copy import  deepcopy
+from binascii import  hexlify
 
-from    Constants   import  *
-from    Styles      import  *
+from .Constants import  *
+from .Styles import  *
+
+if PY2:
+    NumberTypes = (int, float, long)
+    StringType = basestring
+else:
+    NumberTypes = (int, float)
+    StringType = str
 
 class UnhandledParamError( Exception ) :
     def __init__( self, param ) :
@@ -587,7 +593,7 @@ class Table :
 
     def AddRow( self, *cells ) :
         height = None
-        if isinstance( cells[ 0 ], (IntType, FloatType, LongType) ):
+        if isinstance( cells[ 0 ], NumberTypes ):
             height = int( cells[ 0 ] )
             cells  = cells[ 1 : ]
 

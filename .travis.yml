@@ -6,16 +6,13 @@ dist: "bionic"
 
 services:
   - mysql
+  - redis-server
 
 python:
   - '2.7'
   - '3.6'
   - '3.7'
-  - 'pypy3.5'
-
-matrix:
-  allow_failures:
-    - python: 'pypy3.5'
+  - '3.8'
 
 install:
   - pip install -e .
@@ -23,6 +20,7 @@ install:
 before_script:
   - pip install coverage
   - pip install codecov
+  - pip install redis
 
 before_install:
   - mysql -e 'create database pydal;'

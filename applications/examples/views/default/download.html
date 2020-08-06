@@ -9,7 +9,8 @@
   <table class="twothirds">
     <thead>
       <tr>
-        <th>For Normal Users</th>
+        <th>For Python 3.7</th>
+        <th>For Python 2.7</th>
         <th>For Testers</th>
         <th>For Developers</th>
       </tr>
@@ -17,10 +18,13 @@
     <tbody>
       <tr>
         <td>
-          <a class="btn btn180 rounded green" href="https://mdipierro.pythonanywhere.com/examples/static/web2py_win.zip">For Windows</a>
+          <a class="btn btn180 rounded green" href="https://mdipierro.pythonanywhere.com/examples/static/web2py_win_py37.zip">Windows binaries</a>
         </td>
         <td>
-          <a class="btn btn180 rounded yellow" href="https://mdipierro.pythonanywhere.com/examples/static/nightly/web2py_win.zip">For Windows</a>
+          <a class="btn btn180 rounded" href="https://mdipierro.pythonanywhere.com/examples/static/web2py_win_py27.zip">Windows binaries</a>
+        </td>
+        <td>
+          <a class="btn btn180 rounded yellow" href="https://mdipierro.pythonanywhere.com/examples/static/nightly/web2py_win_py27.zip">Windows binaries</a>
         </td>
         <td>
           <a class="btn btn180 rounded red" href="http://github.com/web2py/web2py/">Git Repository</a>
@@ -28,16 +32,24 @@
       </tr>
       <tr>
         <td>
-          <a class="btn btn180 rounded green" href="https://mdipierro.pythonanywhere.com/examples/static/web2py_osx.zip">For Mac</a>
+          <a class="btn btn180 rounded green" href="https://mdipierro.pythonanywhere.com/examples/static/web2py_osx_py37.zip">Mac binaries</a>
         </td>
         <td>
-          <a class="btn btn180 rounded yellow" href="https://mdipierro.pythonanywhere.com/examples/static/nightly/web2py_osx.zip">For Mac</a>
+          <a class="btn btn180 rounded" href="https://mdipierro.pythonanywhere.com/examples/static/web2py_osx_py27.zip">Mac binaries</a>
         </td>
-        <td></td>
+        <td>
+          <a class="btn btn180 rounded yellow" href="https://mdipierro.pythonanywhere.com/examples/static/nightly/web2py_osx_py37.zip">Mac binaries</a>
+        </td>
+        <td>
+          <a class="btn btn180 rounded" href="http://mdipierro.github.io/web2py/web2py_manual_5th.pdf">Manual</a>
+        </td>
       </tr>
       <tr>
         <td>
           <a class="btn btn180 rounded green" href="https://mdipierro.pythonanywhere.com/examples/static/web2py_src.zip">Source Code</a>
+        </td>
+        <td>
+          <a class="btn btn180 rounded" href="https://mdipierro.pythonanywhere.com/examples/static/web2py_src.zip">Source Code</a>
         </td>
         <td>
           <a class="btn btn180 rounded yellow" href="https://mdipierro.pythonanywhere.com/examples/static/nightly/web2py_src.zip">Source Code</a>
@@ -48,7 +60,8 @@
       </tr>
       <tr>
         <td>
-          <a class="btn btn180 rounded green" href="http://mdipierro.github.io/web2py/web2py_manual_5th.pdf">Manual</a>
+        </td>
+        <td>
         </td>
         <td>
           <a class="btn btn180 rounded" href="https://github.com/web2py/web2py/releases">Change Log</a>
@@ -62,13 +75,19 @@
 </center>
 
 <p style="text-align:left;">
-  The source code version works on Windows and most Unix systems, including <b>Linux</b>,  <b>BSD</b> and  <b>Mac</b> . It requires Python 2.6 (no more supported),  Python 2.7 (stable) or Python 3.5+ (recommended for new projects) already installed on your system.
-  There are also binary packages for Windows and Mac OS X. They include the Python 2.7 interpreter so you do not need to have it pre-installed.
+  The source code version works on Windows and most Unix systems, including <b>Linux</b>,  <b>BSD</b> and  <b>Mac</b> . It requires Python 3.5+ (recommended for new projects) 
+  or Python 2.7+ (stable, for use with legacy apps) already installed on your system.
+</p>
+<p style="text-align:left;">
+  There are also binary packages for Windows and MacOs. They include the Python interpreter version 3.7.4 or 2.7.16, so you do not need to have it pre-installed.
 </p>
 
 <h3>Instructions</h3>
-<p>With the binary packages, after download, just unzip it and then click on web2py.exe (windows) or web2py.app (osx).
-  If you prefer to run it from source with your own Python interpreter alreay installed, type:</p>
+<p>With the binary packages, after download, just unzip it and then click on web2py.exe (Windows) or web2py (MacOs).</p>
+<p>Note that on recent MacOs versions (10.12+) you could face problems in running the binary App program, due to the last changes to the security settings. 
+In this case, press the 'control' key + click on downloaded file and then 'open' it (confirm the warnings). Finally move the program in Applications and run it from there.
+</p>
+<p> If you prefer to run it from source with your own Python interpreter already installed, type:</p>
 {{=CODE("python web2py.py", language=None, counter='>', _class='boxCode')}}
 <p>or for more info type:</p>
 {{=CODE("python web2py.py -h", language=None, counter='>', _class='boxCode')}}

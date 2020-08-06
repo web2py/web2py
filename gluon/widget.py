@@ -704,14 +704,9 @@ def start():
         run_system_tests(options)
 
     if options.quiet:
-        # to prevent writes on stdout set a null stream
-        class NullFile(object):
-            def write(self, x):
-                pass
-        sys.stdout = NullFile()
-        # but still has to mute existing loggers, to do that iterate
-        # over all existing loggers (root logger included) and remove
-        # all attached logging.StreamHandler instances currently
+        # mute existing loggers, to do that iterate
+        # over all loggers (root logger included) and remove
+        # attached logging.StreamHandler instances currently
         # streaming on sys.stdout or sys.stderr
         loggers = [logging.getLogger()]
         loggers.extend(logging.Logger.manager.loggerDict.values())
@@ -721,9 +716,18 @@ def start():
                 if isinstance(h, logging.StreamHandler) and \
                     h.stream in (sys.stdout, sys.stderr):
                     l.removeHandler(h)
+        # this is to avoid the warning
+        # ``No handlers could be found for logger "..."``
+        # emitted by logging module when no handler is found
+        logging.Logger.manager.emittedNoHandlerWarning = 1
+        # to prevent writes on stdout set a null stream
+        class NullFile(object):
+            def write(self, x):
+                pass
+        sys.stdout = NullFile()
         # NOTE: stderr.write() is still working
 
-    if not options.no_banner:
+    elif not options.no_banner:
         # banner
         print(ProgramName)
         print(ProgramAuthor)

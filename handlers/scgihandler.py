@@ -53,6 +53,9 @@ if not os.path.isdir('applications'):
 
 sys.path = [path] + [p for p in sys.path if not p == path]
 
+from gluon.settings import global_settings
+global_settings.web2py_runtime_handler = True
+
 import gluon.main
 
 # uncomment one of the two imports below depending on the SCGIWSGI server installed
@@ -70,7 +73,6 @@ else:
     application = wsgiapp
 
 if SOFTCRON:
-    from gluon.settings import global_settings
     global_settings.web2py_crontype = 'soft'
 
 # uncomment one of the two rows below depending on the SCGIWSGI server installed

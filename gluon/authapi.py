@@ -803,7 +803,7 @@ class AuthAPI(object):
 
         # Finally verify the password
         passfield = settings.password_field
-        password = table_user[passfield].validate(kwargs.get(passfield, ''))[0]
+        password = table_user[passfield].validate(kwargs.get(passfield, ''), None)[0]
 
         if password == user[passfield]:
             self.login_user(user)

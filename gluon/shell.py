@@ -20,6 +20,7 @@ import logging
 import types
 import re
 import glob
+import site
 import traceback
 import gluon.fileutils as fileutils
 from gluon.settings import global_settings
@@ -240,13 +241,16 @@ def run(
         if not cron_job and not scheduler_job and \
             sys.stdin and not sys.stdin.name == '/dev/null':
             confirm = raw_input(
-                'application %s does not exist, create (y/n)?' % a)
+                'application %s does not exist, create (y/N)?' % a)
         else:
             logging.warn('application does not exist and will not be created')
             return
         if confirm.lower() in ('y', 'yes'):
             os.mkdir(adir)
             fileutils.create_app(adir)
+        else:
+            logging.warn('application folder does not exist and has not been created as requested')
+            return
 
     if force_migrate:
         c = 'appadmin' # Load all models (hack already used for appadmin controller)
@@ -303,6 +307,11 @@ def run(
 
             if import_models:
                 BaseAdapter.close_all_instances('commit')
+        except SystemExit:
+            print(traceback.format_exc())
+            if import_models:
+                BaseAdapter.close_all_instances('rollback')
+            raise
         except:
             print(traceback.format_exc())
             if import_models:
@@ -312,6 +321,11 @@ def run(
             exec(python_code, _env)
             if import_models:
                 BaseAdapter.close_all_instances('commit')
+        except SystemExit:
+            print(traceback.format_exc())
+            if import_models:
+                BaseAdapter.close_all_instances('rollback')
+            raise
         except:
             print(traceback.format_exc())
             if import_models:
@@ -321,6 +335,11 @@ def run(
             execfile("scripts/migrator.py", _env)
             if import_models:
                 BaseAdapter.close_all_instances('commit')
+        except SystemExit:
+            print(traceback.format_exc())
+            if import_models:
+                BaseAdapter.close_all_instances('rollback')
+            raise
         except:
             print(traceback.format_exc())
             if import_models:

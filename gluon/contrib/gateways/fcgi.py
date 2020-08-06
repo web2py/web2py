@@ -44,16 +44,18 @@ See the documentation for WSGIServer/Server for more information.
 On most platforms, fcgi will fallback to regular CGI behavior if run in a
 non-FastCGI context. If you want to force CGI behavior, set the environment
 variable FCGI_FORCE_CGI to "Y" or "y".
+
+Modified for web2py
 """
 
 __author__ = 'Allan Saddi <allan@saddi.com>'
 __version__ = '$Revision$'
 
+import cgi
 import sys
 import os
 import signal
 import struct
-import cStringIO as StringIO
 import select
 import socket
 import errno
@@ -67,6 +69,15 @@ except ImportError:
     import dummy_thread as thread
     import dummy_threading as threading
     thread_available = False
+
+is_py2 = sys.version_info[0] == 2
+
+if is_py2:
+    from cgi import escape
+    import cStringIO as StringIO
+else:
+    from io import StringIO
+    from html import escape
 
 # Apparently 2.3 doesn't define SHUT_WR? Assume it is 1 in this case.
 if not hasattr(socket, 'SHUT_WR'):
@@ -234,11 +245,9 @@ class InputStream(object):
             total += len(line)
             if 0 < sizehint <= total:
                 break
-            line = self.readline()
-        return lines
+            yield self.readline()
 
-    def __iter__(self):
-        return self
+    __iter__ = readlines
 
     def next(self):
         r = self.readline()
@@ -436,13 +445,13 @@ def encode_pair(name, value):
     if nameLength < 128:
         s = chr(nameLength)
     else:
-        s = struct.pack('!L', nameLength | 0x80000000L)
+        s = struct.pack('!L', nameLength | 0x80000000)
 
     valueLength = len(value)
     if valueLength < 128:
         s += chr(valueLength)
     else:
-        s += struct.pack('!L', valueLength | 0x80000000L)
+        s += struct.pack('!L', valueLength | 0x80000000)
 
     return s + name + value
 
@@ -592,7 +601,7 @@ class Request(object):
         self._flush()
         self._end(appStatus, protocolStatus)
 
-    def _end(self, appStatus=0L, protocolStatus=FCGI_REQUEST_COMPLETE):
+    def _end(self, appStatus=0, protocolStatus=FCGI_REQUEST_COMPLETE):
         self._conn.end_request(self, appStatus, protocolStatus)
 
     def _flush(self):
@@ -615,7 +624,7 @@ class CGIRequest(Request):
         self.stderr = sys.stderr
         self.data = StringIO.StringIO()
 
-    def _end(self, appStatus=0L, protocolStatus=FCGI_REQUEST_COMPLETE):
+    def _end(self, appStatus=0, protocolStatus=FCGI_REQUEST_COMPLETE):
         sys.exit(appStatus)
 
     def _flush(self):
@@ -664,7 +673,7 @@ class Connection(object):
                 self.process_input()
             except EOFError:
                 break
-            except (select.error, socket.error), e:
+            except (select.error, socket.error) as e:
                 if e.errno == errno.EBADF: # Socket was closed by Request.
                     break
                 raise
@@ -714,7 +723,7 @@ class Connection(object):
         """
         rec.write(self._sock)
 
-    def end_request(self, req, appStatus=0L,
+    def end_request(self, req, appStatus=0,
                     protocolStatus=FCGI_REQUEST_COMPLETE, remove=True):
         """
         End a Request.
@@ -763,7 +772,7 @@ class Connection(object):
 
         if not self._multiplexed and self._requests:
             # Can't multiplex requests.
-            self.end_request(req, 0L, FCGI_CANT_MPX_CONN, remove=False)
+            self.end_request(req, 0, FCGI_CANT_MPX_CONN, remove=False)
         else:
             self._requests[inrec.requestId] = req
 
@@ -854,7 +863,7 @@ class MultiplexedConnection(Connection):
         finally:
             self._lock.release()
 
-    def end_request(self, req, appStatus=0L,
+    def end_request(self, req, appStatus=0,
                     protocolStatus=FCGI_REQUEST_COMPLETE, remove=True):
         self._lock.acquire()
         try:
@@ -949,8 +958,7 @@ class Server(object):
         this keyword is ignored; it's not possible to multiplex requests
         at all.
         """
-        if handler is not None:
-            self.handler = handler
+        self.handler = handler or self.default_handler        
         self.maxwrite = maxwrite
         if thread_available:
             try:
@@ -1077,7 +1085,7 @@ class Server(object):
         while self._keepGoing:
             try:
                 r, w, e = select.select([sock], [], [], timeout)
-            except select.error, e:
+            except select.error as e:
                 if e.errno == errno.EINTR:
                     continue
                 raise
@@ -1125,13 +1133,13 @@ class Server(object):
             self._keepGoing = False
             self._hupReceived = reload
 
-    def handler(self, req):
+    def default_handler(self, req):
         """
         Default handler, which just raises an exception. Unless a handler
         is passed at initialization time, this must be implemented by
         a subclass.
         """
-        raise NotImplementedError, self.__class__.__name__ + '.handler'
+        raise NotImplementedError(self.__class__.__name__ + '.handler')
 
     def error(self, req):
         """
@@ -1147,8 +1155,7 @@ class WSGIServer(Server):
     FastCGI server that supports the Web Server Gateway Interface. See
     <http://www.python.org/peps/pep-0333.html>.
     """
-    def __init__(self, application, environ=None,
-                 multithreaded=True, **kw):
+    def __init__(self, application, environ=None, multithreaded=True, **kw):
         """
         environ, if present, must be a dictionary-like object. Its
         contents will be copied into application's environ. Useful
@@ -1156,7 +1163,7 @@ class WSGIServer(Server):
 
         Set multithreaded to False if your application is not MT-safe.
         """
-        if kw.has_key('handler'):
+        if 'handler'in kw:
             del kw['handler'] # Doesn't make sense to let this through
         super(WSGIServer, self).__init__(**kw)
 
@@ -1170,7 +1177,7 @@ class WSGIServer(Server):
         # Used to force single-threadedness
         self._app_lock = thread.allocate_lock()
 
-    def handler(self, req):
+    def default_handler(self, req):
         """Special handler for WSGI."""
         if req.role != FCGI_RESPONDER:
             return FCGI_UNKNOWN_ROLE, 0
@@ -1240,7 +1247,7 @@ class WSGIServer(Server):
                 try:
                     if headers_sent:
                         # Re-raise if too late
-                        raise exc_info[0], exc_info[1], exc_info[2]
+                        raise exc_info[0](exc_info[1], exc_info[2])
                 finally:
                     exc_info = None # avoid dangling circular ref
             else:
@@ -1304,7 +1311,6 @@ class WSGIServer(Server):
 if __name__ == '__main__':
     def test_app(environ, start_response):
         """Probably not the most efficient example."""
-        import cgi
         start_response('200 OK', [('Content-Type', 'text/html')])
         yield '<html><head><title>Hello World!</title></head>\n' \
               '<body>\n' \
@@ -1313,10 +1319,10 @@ if __name__ == '__main__':
         names = environ.keys()
         names.sort()
         for name in names:
-            yield '<tr><td>%s</td><td>%s</td></tr>\n' % (
-                name, cgi.escape(`environ[name]`))
+            yield '<tr><td>%s</td><td>%s</td></tr>\n' % (name, escape(environ[name]))
 
-        form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ,
+        form = cgi.FieldStorage(fp=environ['wsgi.input'],
+                                environ=environ,
                                 keep_blank_values=1)
         if form.list:
             yield '<tr><th colspan="2">Form data</th></tr>'

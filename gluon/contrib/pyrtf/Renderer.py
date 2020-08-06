@@ -1,6 +1,11 @@
-from types import StringType, ListType, TupleType
 from copy import deepcopy
-from Elements import *
+
+from .Elements import *
+from .Constants import PY2
+if PY2:
+    StringType = basestring
+else:
+    StringType = str
 
 DEFAULT_TAB_WIDTH = 720
 
@@ -438,7 +443,7 @@ class Renderer :
             elif clss == Table :
                 self.WriteTableElement( element )
 
-            elif clss == StringType :
+            elif ininstance(element, StringType) :
                 self.WriteParagraphElement( Paragraph( element ) )
 
             elif clss in [ RawCode, Image ] :

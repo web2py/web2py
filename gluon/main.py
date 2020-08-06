@@ -56,25 +56,27 @@ create_missing_folders()
 # set up logging for subsequent imports
 import logging.config
 
-# This needed to prevent exception on Python 2.5:
-# NameError: name 'gluon' is not defined
-# See http://bugs.python.org/issue1436
-
-# attention!, the import Tkinter in messageboxhandler, changes locale ...
-import gluon.messageboxhandler
-logging.gluon = gluon
-# so we must restore it! Thanks ozancag
-import locale
-locale.setlocale(locale.LC_CTYPE, "C")  # IMPORTANT, web2py requires locale "C"
-
-exists = os.path.exists
-pjoin = os.path.join
+# do not need fancy graphical loggers when served by handler
+# (e.g. apache + mod_wsgi), speed up execution
+if not global_settings.web2py_runtime_handler:
+    # attention!, the import Tkinter in messageboxhandler, changes locale ...
+    import gluon.messageboxhandler
+    # This needed to prevent exception on Python 2.5:
+    # NameError: name 'gluon' is not defined
+    # See http://bugs.python.org/issue1436
+    logging.gluon = gluon
+    # so we must restore it! Thanks ozancag
+    import locale
+    locale.setlocale(locale.LC_CTYPE, "C")  # IMPORTANT, web2py requires locale "C"
 
 try:
     logging.config.fileConfig(abspath("logging.conf"))
 except:  # fails on GAE or when logfile is missing
     logging.basicConfig()
 logger = logging.getLogger("web2py")
+
+exists = os.path.exists
+pjoin = os.path.join
 
 from gluon.restricted import RestrictedError
 from gluon.http import HTTP, redirect
@@ -99,17 +101,14 @@ requests = 0    # gc timer
 
 try:
     version_info = read_file(pjoin(global_settings.gluon_parent, 'VERSION'))
-    raw_version_string = version_info.split()[-1].strip()
-    global_settings.web2py_version = raw_version_string
-    web2py_version = global_settings.web2py_version
+    web2py_version = global_settings.web2py_version = version_info.split()[-1].strip()
 except:
     raise RuntimeError("Cannot determine web2py version")
 
-try:
+# do not need rocket nor HttpServer when served by handler
+# (e.g. apache + mod_wsgi), speed up execution and save memory
+if not global_settings.web2py_runtime_handler:
     from gluon import rocket
-except:
-    if not global_settings.web2py_runtime_gae:
-        logger.warn('unable to import Rocket')
 
 load_routes()
 

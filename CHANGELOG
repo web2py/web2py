@@ -1,3 +1,7 @@
+## 2.20.1
+
+new makefile to update binaries from Nico Zanferrari
+
 ## 2.19.0
 - new command line options (Thanks Paolo Pastori)
 

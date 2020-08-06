@@ -16,7 +16,6 @@ import re
 import sys
 import pkgutil
 import logging
-from cgi import escape
 from threading import RLock
 
 from pydal._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin

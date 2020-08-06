@@ -1,12 +1,12 @@
 build: false
+before_build:
+  - choco install redis-64
+  - redis-server --service-install
+  - redis-server --service-start
 
 environment:
   matrix:
     - PYTHON: "C:/Python27"
-      COVERAGE_PROCESS_START: gluon/tests/coverage.ini
-      PYTHON_ARCH: "64"
-
-    - PYTHON: "C:/Python35"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
 
@@ -26,7 +26,7 @@ init:
 
 install:
   - python -m ensurepip
-  - pip install codecov
+  - pip install codecov redis
   - git submodule update --init --recursive
   # Check that we have the expected version and architecture for Python
   - "python --version"

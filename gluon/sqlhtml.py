@@ -461,7 +461,12 @@ class RadioWidget(OptionsWidget):
             opts.append(child(tds))
 
         if opts:
-            opts[-1][0][0]['hideerror'] = False
+            opts.append(
+                INPUT(requires=attr.get('requires', None),
+                      _style="display:none;",
+                      _disabled="disabled",
+                      _name=field.name,
+                      hideerror=False))
         return parent(*opts, **attr)
 
 
@@ -1325,7 +1330,7 @@ class SQLFORM(FORM):
             # - user not trying to upload a new file
             # - there is existing file and user is not trying to delete it
             # this is because removing the file may not pass validation
-            for key in self.errors.keys():
+            for key in list(self.errors):
                 if key in self.table \
                         and self.table[key].type == 'upload' \
                         and request_vars.get(key, None) in (None, '') \
@@ -1496,7 +1501,7 @@ class SQLFORM(FORM):
             if readonly and not ignore_rw and not field.readable:
                 continue
 
-            if record:
+            if record and fieldname not in [x.name for x in extra_fields]:
                 default = record[fieldname]
             else:
                 default = field.default
@@ -1814,7 +1819,7 @@ class SQLFORM(FORM):
                 if not field.widget and field.type.startswith('list:') and \
                         not OptionsWidget.has_options(field):
                     field.widget = self.widgets.list.widget
-                if field.widget and fieldname in request_vars:
+                if field.widget == self.widgets.list.widget and fieldname in request_vars:
                     if fieldname in self.request_vars:
                         value = self.request_vars[fieldname]
                     elif self.record:
@@ -3388,6 +3393,7 @@ class SQLTABLE(TABLE):
         linkto: URL (or lambda to generate a URL) to edit individual records
         upload: URL to download uploaded files
         orderby: Add an orderby link to column headers.
+        query: Query string to support orderby headers.
         headers: dictionary of headers to headers redefinions
             headers can also be a string to generate the headers from data
             for now only headers="fieldname:capitalize",
@@ -3423,6 +3429,7 @@ class SQLTABLE(TABLE):
                  linkto=None,
                  upload=None,
                  orderby=None,
+                 query='',
                  headers={},
                  truncate=16,
                  columns=None,
@@ -3494,8 +3501,10 @@ class SQLTABLE(TABLE):
                         attrcol.update(_class=coldict['class'])
                     row.append(TH(coldict['label'], **attrcol))
                 elif orderby:
-                    row.append(TH(A(headers.get(c, c),
-                                    _href=th_link + '?orderby=' + c, cid=cid)))
+                    link = th_link + '?orderby=' + c
+                    if query:
+                        link += '&query=' + query
+                    row.append(TH(A(headers.get(c, c), _href=link, cid=cid)))
                 else:
                     row.append(TH(headers.get(c, re.sub(self.REGEX_ALIAS_MATCH, r'\2', c))))
 
