@@ -488,7 +488,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
     if h_extension:
         h_extension = '.%s' % (h_extension)
         
-    h_args = '/%s/%s/%s.%s%s' % (request.application,
+    h_args = '/%s/%s/%s%s%s' % (request.application,
                                  request.controller,
                                  request.function,
                                  h_extension,
