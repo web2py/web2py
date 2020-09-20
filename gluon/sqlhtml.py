@@ -99,7 +99,7 @@ class CacheRepresenter(object):
                     nvalue = field.represent(value, row[field.tablename])
                 except KeyError:
                     nvalue = None
-            if isinstance(field, _repr_ref):
+            if isinstance(field.represent, _repr_ref):  # BKR ISSUE/2312 20200422
                 cache[field][value] = nvalue
         return nvalue
 
