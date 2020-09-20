@@ -2667,7 +2667,7 @@ class SQLFORM(FORM):
         if export_type:
             order = request.vars.order or ''
             if sortable:
-                if order and not order == 'None':
+                if order:
                     otablename, ofieldname = order.split('~')[-1].split('.', 1)
                     sort_field = db[otablename][ofieldname]
                     orderby = sort_field if order[:1] != '~' else ~sort_field
@@ -2800,7 +2800,7 @@ class SQLFORM(FORM):
         order = request.vars.order or ''
         asc_icon, desc_icon = sorter_icons
         if sortable:
-            if order and not order == 'None':
+            if order:
                 otablename, ofieldname = order.split('~')[-1].split('.', 1)
                 sort_field = db[otablename][ofieldname]
                 orderby = sort_field if order[:1] != '~' else ~sort_field
@@ -2820,14 +2820,14 @@ class SQLFORM(FORM):
                 if key == order.lstrip('~'):
                     if inverted:
                         if key == order:
-                            key, marker = 'None', asc_icon
+                            marker = asc_icon
                         else:
                             key, marker = order[1:], desc_icon
                     else:
                         if key == order:
                             key, marker = '~' + order, asc_icon
                         else:
-                            key, marker = 'None', desc_icon
+                            marker = desc_icon
                 elif inverted and key ==  str(field):
                     key = '~' + key
                 header = A(header, marker, _href=url(vars=dict(
