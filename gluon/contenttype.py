@@ -412,6 +412,7 @@ CONTENT_TYPE = {
     '.mrml': 'text/x-mrml',
     '.mrw': 'image/x-minolta-mrw',
     '.ms': 'text/x-troff-ms',
+    '.msg': 'application/vnd.ms-outlook',
     '.msi': 'application/x-msi',
     '.msod': 'image/x-msod',
     '.msx': 'application/x-msx-rom',
