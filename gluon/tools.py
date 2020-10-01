@@ -254,7 +254,7 @@ class Mail(object):
             self.my_payload = payload
             MIMEBase.__init__(self, *content_type.split('/', 1))
             self.set_payload(payload)
-            self['Content-Disposition'] = 'attachment; filename="%s"' % to_native(filename, encoding)
+            self['Content-Disposition'] = Header('attachment; filename="%s"' % to_native(filename, encoding), 'utf-8')
             if content_id is not None:
                 self['Content-Id'] = '<%s>' % to_native(content_id, encoding)
             Encoders.encode_base64(self)
