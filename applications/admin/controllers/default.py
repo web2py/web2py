@@ -357,6 +357,7 @@ def pack():
             fname = 'web2py.app.%s.compiled.w2p' % app
             filename = app_pack_compiled(app, request, raise_ex=True)
     except Exception as e:
+        pferror = e
         filename = None
 
     if filename:
@@ -365,7 +366,7 @@ def pack():
         response.headers['Content-Disposition'] = disposition
         return safe_read(filename, 'rb')
     else:
-        session.flash = T('internal error: %s', e)
+        session.flash = T('internal error: %s', pferror)
         redirect(URL('site'))
 
 
