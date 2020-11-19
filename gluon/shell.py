@@ -452,14 +452,14 @@ def test(testpath, import_models=True, verbose=False):
             files = glob.glob(os.path.join(cdir, '*.py'))
     for testfile in files:
         globs = env(a, import_models)
-        ignores = globs.keys()
+        ignores = globs.copy().keys()
         execfile(testfile, globs)
 
         def doctest_object(name, obj):
             """doctest obj and enclosed methods and classes."""
 
             if type(obj) in (types.FunctionType, type, ClassType, types.MethodType,
-                             types.UnboundMethodType):
+                             types.ModuleType):
 
                 # Reload environment before each test.
 
