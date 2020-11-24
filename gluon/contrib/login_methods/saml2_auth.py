@@ -164,7 +164,6 @@ class Saml2Auth(object):
         if 'url' in d:
             redirect(d['url'])
         elif 'error' in d:
-            current.session.flash = d['error']
             redirect(URL('default','index'))
         elif 'response' in d:            
             # a['assertions'][0]['attribute_statement'][0]['attribute']
