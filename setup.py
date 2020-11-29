@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
+import setuptools
 from setuptools import setup
 from gluon.fileutils import tar, untar, read_file, write_file
 import tarfile
 import sys
 
+# Ensure pydal dependencies are available to copy
+# styles over
+setuptools.dist.Distribution().fetch_build_eggs(['pydal'])
 
 def tar(file, filelist, expression='^.+$'):
     """
