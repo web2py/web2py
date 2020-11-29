@@ -20,10 +20,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 require_clean_submodules(here, sys.argv)
 
 
-try:
-	from gluon.fileutils import tar, untar, read_file, write_file
-except RuntimeError:
-	pass
+from gluon.fileutils import tar, untar, read_file, write_file
 
 
 def tar(file, filelist, expression='^.+$'):
