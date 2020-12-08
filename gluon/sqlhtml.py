@@ -1988,6 +1988,12 @@ class SQLFORM(FORM):
                 if record_id:
                     self.vars.id = self.record[self.id_field_name]
                     if fields:
+                        if self.table._update_changed_form_fields_only:
+                            # Remove fields that haven't changed.
+                            for f in self.record:
+                                if f in fields and self.record[f] == fields[f]:
+                                    fields.pop(f, None)
+
                         self.table._db(self.table._id == self.record[
                                        self.id_field_name]).update(**fields)
                 else:
