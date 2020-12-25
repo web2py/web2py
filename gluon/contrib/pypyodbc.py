@@ -997,7 +997,7 @@ def AllocateEnv():
 
     ''' 
     Allocate an ODBC environment by initializing the handle shared_env_h
-    ODBC enviroment needed to be created, so connections can be created under it
+    ODBC environment needed to be created, so connections can be created under it
     connections pooling can be shared under one environment
     '''
     global shared_env_h 
@@ -2413,7 +2413,7 @@ class Connection:
         try:
             lock.acquire()
             if shared_env_h is None:
-                #Initialize an enviroment if it is not created.
+                #Initialize an environment if it is not created.
                 AllocateEnv()
         finally:
             lock.release()
