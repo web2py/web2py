@@ -826,6 +826,12 @@ class Monitor(Thread):
         self.connections = set()
         self.active = False
 
+    def isAlive(self):
+        if self.active is None:
+            return False
+
+        return True
+
     def run(self):
         self.active = True
         conn_list = list()
