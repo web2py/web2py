@@ -617,7 +617,7 @@ def search():
 
     def match(filename, keywords):
         filename = os.path.join(apath(app, r=request), filename)
-        if keywords in read_file(filename, 'rb'):
+        if keywords in read_file(filename, 'r'):
             return True
         return False
     path = apath(request.args[0], r=request)
