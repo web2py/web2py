@@ -15,7 +15,7 @@ Then edit ./app.yaml and replace "yourappname" with yourappname.
 
 ## Important reminder about this GIT repo
 
-An important part of web2py is the Database Abstraction Layer (DAL). In early 2015 this was decoupled into a separate code-base (PyDAL). In terms of git, it is a sub-module of the main repository.
+An important part of web2py is the Database Abstraction Layer (DAL). In early 2015 this was decoupled into a separate code-base ([PyDAL](https://github.com/web2py/pydal)). In terms of git, it is a sub-module of the main repository.
 
 The use of a sub-module requires a one-time use of the --recursive flag for git clone if you are cloning web2py from scratch.
 
