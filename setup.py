@@ -1,9 +1,26 @@
 #!/usr/bin/env python
 
+import setuptools
 from setuptools import setup
-from gluon.fileutils import tar, untar, read_file, write_file
+
 import tarfile
-import sys
+import os, sys
+
+from setupbase import (
+    UpdateSubmodules,
+    check_submodule_status,
+    update_submodules,
+    require_clean_submodules
+)
+	
+#-------------------------------------------------------------------------------
+# Make sure we aren't trying to run without submodules
+#-------------------------------------------------------------------------------
+here = os.path.abspath(os.path.dirname(__file__))
+require_clean_submodules(here, sys.argv)
+
+
+from gluon.fileutils import tar, untar, read_file, write_file
 
 
 def tar(file, filelist, expression='^.+$'):
@@ -68,8 +85,9 @@ def start():
                     'gluon/contrib/pyaes',
                     'gluon/contrib/pyuca',
                     'gluon/tests',
-                    ],
+                    ] + setuptools.find_packages(),
           package_data={'gluon': ['env.tar']},
+          cmdclass={'submodule': UpdateSubmodules},
 #          scripts=['w2p_apps', 'w2p_run', 'w2p_clone'],
           )
 
