@@ -54,6 +54,7 @@ def update_languages(cwd, default_lang):
 	default = read_dict(defaultfp)
 
 	for lang in os.listdir(os.path.join(cwd, "languages")):
+		if '.DS_Store' in lang: continue
 		if lang == default_lang+".py" or lang.startswith("plural-"): continue
 		
 		i18n = read_dict(os.path.join(cwd, "languages", lang))
