@@ -65,7 +65,7 @@
 		<div class="form row-fluid">
 			{{=form.custom.begin}}
 				{{ for fieldname in form.table.fields: }}
-					{{if fieldname is not 'id':}}
+					{{if fieldname != 'id':}}
 						<label>{{=form.custom.label[fieldname]}}:</label>
 						{{=form.custom.widget[fieldname]}}
 						{{if fieldname=='layout_theme':}}
@@ -95,7 +95,7 @@
 		<div class="form row-fluid">
 			{{=form.custom.begin}}
 				{{ for fieldname in form.table.fields: }} 
-					{{if fieldname is not 'id':}}
+					{{if fieldname != 'id':}}
 						<div class="control-group">
 							<label class="control-label">{{=form.custom.label[fieldname]}}:</label>
 							<div class="controls">
