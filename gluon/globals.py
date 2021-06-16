@@ -12,8 +12,8 @@ Contains the classes for the global used variables:
 - Session
 
 """
-from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native, \
-    to_bytes, unicodeT, long, hashlib_md5, urllib_quote, to_native
+from gluon._compat import pickle, BytesIO, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, \
+    to_native, to_bytes, unicodeT, long, hashlib_md5, urllib_quote, to_native
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -129,7 +129,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
     """
     env = request.env
     if not env.get('CONTENT_LENGTH', None):
-        return StringIO()
+        return BytesIO()
     source = env['wsgi.input']
     try:
         size = int(env['CONTENT_LENGTH'])
