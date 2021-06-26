@@ -63,3 +63,4 @@ HOWTO-web2py-devel
 site-packages/
 logs/
 __pycache__/
+build/*
