@@ -497,6 +497,7 @@ class Listener(Thread):
                 ca_certs = self.interface[4]
                 cert_reqs = ssl.CERT_OPTIONAL
                 sock = ssl.wrap_socket(sock,
+                                       do_handshake_on_connect=False,
                                        keyfile=self.interface[2],
                                        certfile=self.interface[3],
                                        server_side=True,
@@ -505,6 +506,7 @@ class Listener(Thread):
                                        ssl_version=ssl.PROTOCOL_SSLv23)
             else:
                 sock = ssl.wrap_socket(sock,
+                                       do_handshake_on_connect=False,
                                        keyfile=self.interface[2],
                                        certfile=self.interface[3],
                                        server_side=True,
@@ -1632,6 +1634,7 @@ class WSGIWorker(Worker):
             environ['wsgi.url_scheme'] = 'https'
             environ['HTTPS'] = 'on'
             try:
+                conn.socket.do_handshake()
                 peercert = conn.socket.getpeercert(binary_form=True)
                 environ['SSL_CLIENT_RAW_CERT'] = \
                     peercert and to_native(ssl.DER_cert_to_PEM_cert(peercert))
