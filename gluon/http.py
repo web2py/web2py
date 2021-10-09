@@ -165,8 +165,8 @@ def redirect(location='', how=303, client_side=False, headers=None):
     Args:
         location: the url where to redirect
         how: what HTTP status code to use when redirecting
-        client_side: if set to True, it triggers a reload of the entire page
-          when the fragment has been loaded as a component
+        client_side: if set to True, it triggers a reload of the entire page when the fragment has been loaded as a component
+        headers: dictionary for request headers
     """
     headers = headers or {}
     if location:
