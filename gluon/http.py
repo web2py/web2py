@@ -122,7 +122,7 @@ class HTTP(Exception):
                 rheaders.append((k, str(v)))
         responder(status, rheaders)
         if env.get('request_method', '') == 'HEAD':
-            return ['']
+            return [to_bytes('')]
         elif isinstance(body, (str, bytes, bytearray)):
             if isinstance(body, unicodeT):
                 body = to_bytes(body)
