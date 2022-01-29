@@ -13,7 +13,7 @@ from gluon import current
 from gluon.storage import Storage
 from gluon.contrib.redis_utils import acquire_lock, release_lock
 from gluon.contrib.redis_utils import register_release_lock
-from gluon._compat import to_native
+from gluon._compat import to_native, to_bytes
 from datetime import datetime
 
 logger = logging.getLogger("web2py.session.redis")
@@ -131,7 +131,6 @@ class MockTable(object):
         q.op = 'eq'
         q.value = record_id
         q.unique_key = unique_key
-
         row = q.select()
         return row[0] if row else Storage()
 
@@ -208,7 +207,7 @@ class MockQuery(object):
             if rtn:
                 if self.unique_key:
                     # make sure the id and unique_key are correct
-                    if rtn['unique_key'] == to_native(self.unique_key):
+                    if rtn['unique_key'] == to_bytes(self.unique_key):
                         rtn['update_record'] = self.update  # update record support
                     else:
                         rtn = None
