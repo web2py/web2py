@@ -739,7 +739,7 @@ class Mail(object):
         if to:
             payload['To'] = encoded_or_raw(to_unicode(', '.join(to), encoding))
         if reply_to:
-            payload['Reply-To'] = encoded_or_raw(to_unicode(reply_to, encoding))
+            payload['Reply-To'] = encoded_or_raw(to_unicode(', '.join(reply_to), encoding))
         if cc:
             payload['Cc'] = encoded_or_raw(to_unicode(', '.join(cc), encoding))
             to.extend(cc)
