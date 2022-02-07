@@ -51,6 +51,7 @@ except ImportError:
 
 # TODO: REMOVE ME ONCE THIS IS FIXED IN DAL https://github.com/web2py/pydal/issues/668
 from pydal.objects import Row
+from pydal._compat import copyreg
 import copyreg
 def pickle_row(s):
     return Row, (dict(s),)
