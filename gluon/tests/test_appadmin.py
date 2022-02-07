@@ -142,7 +142,7 @@ class TestAppAdmin(unittest.TestCase):
         result = self.run_function()
         self.assertTrue('table' in result)
         self.assertTrue('form' in result)
-        self.assertTrue(str(result['table']) is 'auth_user')
+        self.assertTrue(str(result['table']) == 'auth_user')
         self.env.update(result)
         try:
             self.run_view()
