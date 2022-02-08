@@ -454,6 +454,9 @@ class Mail(object):
                 to = [to]
         else:
             raise Exception('Target receiver address not specified')
+        if reply_to:
+            if not isinstance(reply_to, (list, tuple)):
+                reply_to = [reply_to]            
         if cc:
             if not isinstance(cc, (list, tuple)):
                 cc = [cc]

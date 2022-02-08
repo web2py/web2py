@@ -49,6 +49,15 @@ except ImportError:
     HAVE_PSUTIL = False
 
 
+# TODO: REMOVE ME ONCE THIS IS FIXED IN DAL https://github.com/web2py/pydal/issues/668
+from pydal.objects import Row
+from pydal._compat import copyreg
+def pickle_row(s):
+    return Row, (dict(s),)
+copyreg.pickle(Row, pickle_row)
+# END TODO
+
+
 def remove_oldest_entries(storage, percentage=90):
     # compute current memory usage (%)
     old_mem = psutil.virtual_memory().percent
