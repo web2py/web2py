@@ -1728,7 +1728,7 @@ def get_ticket_storage(app):
     private_folder = apath('%s/private' % app, r=request)
     ticket_file = os.path.join(private_folder, 'ticket_storage.txt')
     if os.path.exists(ticket_file):
-        db_string = safe_open(ticket_file).read()
+        db_string = safe_read(ticket_file)
         db_string = db_string.strip().replace('\r', '').replace('\n', '')
     elif is_gae:
         # use Datastore as fallback if there is no ticket_file
