@@ -84,7 +84,7 @@ def _router_default():
         #  pathological backtracking from nested patterns.
         #
         file_match=r"([+=@$%\w-]|(?<=[+=@$%\w-])[./])*$",  # legal static subpath
-        args_match=r"([\w@ =-]|(?<=[\w@ -])\.)*$",
+        args_match=r"([\w@ =-]|(?<=[\w@ =-])\.)*$",
     )
     return router
 
