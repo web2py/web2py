@@ -18,12 +18,17 @@ __license__ = "LGPL 3.0"
 __version__ = "0.05"
 
 import sys
-from urllib import parse
-from xmlrpc.client import Transport, SafeTransport
-from io import StringIO
+PY2 = sys.version_info[0] == 2
+
+if PY2:
+    from xmlrpclib import Transport, SafeTransport
+    from cStringIO import StringIO
+else:
+    from xmlrpc.client import Transport, SafeTransport
+    from io import StringIO
 import random
 import json
-from gluon._compat import basestring
+from gluon._compat import basestring, urlparse
 
 class JSONRPCError(RuntimeError):
     "Error object for remote procedure call fail"
@@ -86,7 +91,7 @@ class ServerProxy(object):
         self.version = version          # '2.0' for jsonrpc2
         self.json_encoder = json_encoder  # Allow for a custom JSON encoding class
 
-        parsed = parse.urlparse(uri)
+        parsed = urlparse.urlparse(uri)
         type = parsed.scheme
         if type not in ("http", "https"):
             raise IOError("unsupported JSON-RPC protocol")
