@@ -18,16 +18,9 @@ __license__ = "LGPL 3.0"
 __version__ = "0.05"
 
 import sys
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    import urllib
-    from xmlrpclib import Transport, SafeTransport
-    from cStringIO import StringIO
-else:
-    import urllib.request as urllib
-    from xmlrpc.client import Transport, SafeTransport
-    from io import StringIO
+from urllib import parse
+from xmlrpc.client import Transport, SafeTransport
+from io import StringIO
 import random
 import json
 from gluon._compat import basestring
@@ -93,10 +86,12 @@ class ServerProxy(object):
         self.version = version          # '2.0' for jsonrpc2
         self.json_encoder = json_encoder  # Allow for a custom JSON encoding class
 
-        type, uri = urllib.splittype(uri)
+        parsed = parse.urlparse(uri)
+        type = parsed.scheme
         if type not in ("http", "https"):
             raise IOError("unsupported JSON-RPC protocol")
-        self.__host, self.__handler = urllib.splithost(uri)
+        self.__host = parsed.netloc
+        self.__handler = parsed.path
 
         if transport is None:
             if type == "https":
