@@ -27,7 +27,7 @@ If you have an existing repository, the commands below need to be executed at le
 
 If you have a folder gluon/dal you must remove it:
 
-    rm -r gluon/dal
+    rm -r gluon/packages/dal
 
 PyDAL uses a separate stable release cycle to the rest of web2py. PyDAL releases will use a date-naming scheme similar to Ubuntu. Issues related to PyDAL should be reported to its separate repository.
 
