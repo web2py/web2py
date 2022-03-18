@@ -171,6 +171,10 @@ def truncate_string(text, length, dots='...'):
         text = to_native(text[:length - len(dots)]) + dots
     return text
 
+class SafeString(str):
+    """ A string know to be safe that does not need to be escaped """
+    def xml(self):
+        return self
 
 def URL(a=None,
         c=None,
@@ -415,7 +419,7 @@ def URL(a=None,
 
     url = url_out(r, env, application, controller, function,
                   args, other, scheme, host, port, language=language)
-    return url
+    return SafeString(url)
 
 
 def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=None, hash_extension=True):
