@@ -246,15 +246,13 @@ class Mail(object):
                 if filename is None:
                     raise Exception('Missing attachment name')
                 payload = payload.read()
-            # FIXME PY3 can be used to_native?
-            filename = filename.encode(encoding)
             if content_type is None:
                 content_type = contenttype(filename)
             self.my_filename = filename
             self.my_payload = payload
             MIMEBase.__init__(self, *content_type.split('/', 1))
             self.set_payload(payload)
-            self['Content-Disposition'] = Header('attachment; filename="%s"' % to_native(filename, encoding), 'utf-8')
+            self.add_header('Content-Disposition', 'attachment', filename=filename)
             if content_id is not None:
                 self['Content-Id'] = '<%s>' % to_native(content_id, encoding)
             Encoders.encode_base64(self)
