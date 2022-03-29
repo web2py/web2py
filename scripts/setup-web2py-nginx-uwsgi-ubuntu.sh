@@ -28,7 +28,7 @@ apt-get -y upgrade
 apt-get autoremove
 apt-get autoclean
 apt-get -y install nginx-full
-apt-get -y install build-essential python-dev libxml2-dev python-pip unzip
+apt-get -y install build-essential python3-dev libxml2-dev python3-pip unzip
 pip install setuptools --no-use-wheel --upgrade
 PIPPATH=`which pip`
 $PIPPATH install --upgrade uwsgi
@@ -130,7 +130,7 @@ mkdir /etc/nginx/ssl
 cd /etc/nginx/ssl
 if [ "$nocertificate" -eq 0 ]
 then
-  openssl genrsa 1024 > web2py.key
+  openssl genrsa 2048 > web2py.key
   chmod 400 web2py.key
   openssl req -new -x509 -nodes -sha1 -days 1780 -key web2py.key > web2py.crt
   openssl x509 -noout -fingerprint -text < web2py.crt > web2py.info
@@ -178,7 +178,7 @@ reload-on-rss = 192
 uid = www-data
 gid = www-data
 touch-reload = /home/www-data/web2py/routes.py
-cron = 0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o
+cron = 0 0 -1 -1 -1 python3 /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o
 no-orphans = true
 ' >/etc/uwsgi/web2py.ini
 
@@ -194,12 +194,15 @@ stop on runlevel [06]
 #in that case, turn on gzip_static on; on /etc/nginx/nginx.conf
 ##
 #pre-start script
-#    python /home/www-data/web2py/web2py.py -S welcome -R scripts/zip_static_files.py
+#    python3 /home/www-data/web2py/web2py.py -S welcome -R scripts/zip_static_files.py
 #    chown -R www-data:www-data /home/www-data/web2py/*
 #end script
 respawn
 exec uwsgi --master --die-on-term --emperor /etc/uwsgi --logto /var/log/uwsgi/uwsgi.log
 ' > /etc/init/uwsgi-emperor.conf
+
+chmod +x /usr/local/bin/uwsgi
+
 # Install Web2py
 mkdir /home/www-data
 cd /home/www-data
@@ -211,7 +214,7 @@ chown -R www-data:www-data web2py
 cd /home/www-data/web2py
 if [ "$nopassword" -eq 0 ]
 then
-   sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
+   sudo -u www-data python3 -c "from gluon.main import save_password; save_password('$PW',443)"
 fi
 
 /etc/init.d/nginx start
