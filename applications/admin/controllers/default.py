@@ -15,7 +15,7 @@ from gluon.utils import web2py_uuid
 from gluon.tools import Config
 from gluon.compileapp import find_exposed_functions
 from glob import glob
-from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native
+from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native, reload
 import gluon.rewrite
 import shutil
 import platform
