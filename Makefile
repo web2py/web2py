@@ -45,7 +45,7 @@ rmfiles:
 	rm -rf applications/examples/uploads/* 
 src:
 	### Use semantic versioning
-	echo 'Version 2.22.3-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 2.22.4-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
 	make clean
 	# make rmfiles
