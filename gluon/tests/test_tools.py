@@ -17,7 +17,7 @@ DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 from gluon.dal import DAL, Field
 from pydal.objects import Table
 from gluon import tools
-from gluon.tools import Auth, Mail, Recaptcha2, prettydate, Expose
+from gluon.tools import Auth, Mail, Recaptcha2, prettydate, Expose, prevent_open_redirect
 from gluon._compat import PY2, to_bytes
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
@@ -1380,3 +1380,35 @@ class TestExpose(unittest.TestCase):
     def test_not_authorized(self):
         with self.assertRaises(HTTP):
             self.make_expose(base='inside', show='link_to_file3')
+
+
+class Test_OpenRedirectPrevention(unittest.TestCase):
+
+    def test_open_redirect(self):
+        bad_urls = [
+            "/",
+            "//",
+            "~/",
+            "//example.com",
+            "/\example.com"
+            "~/example.com"
+            "//example.com/a/b/c",
+            "//example.com/a/b/c",
+            "~/example.com/a/b/c"
+        ]
+        good_urls = [
+            "a/b/c",
+            "/a",
+            "/a/b",
+            "/a/b/c",
+        ]
+        prefixes = ["", ":", "http:", "https:", "ftp:"]
+        for prefix in prefixes:
+            for url in bad_urls:
+                self.assertEqual(prevent_open_redirect(prefix + url), None)
+        for prefix in prefixes:
+            for url in good_urls:
+                self.assertEqual(prevent_open_redirect(prefix + url), prefix + url)
+
+
+

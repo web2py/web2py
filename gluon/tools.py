@@ -105,6 +105,22 @@ def replace_id(url, form):
             return url
     return URL(url)
 
+REGEX_OPEN_REDIRECT = re.compile(r"^(\w+)?[:]?(/$|//.*|/\\.*|[~]/.*)")
+
+def prevent_open_redirect(url):
+    # Prevent an attacker from adding an arbitrary url after the
+    # _next variable in the request.
+    host = current.request.env.http_host
+    print(host)
+    if not url:
+        return None
+    if REGEX_OPEN_REDIRECT.match(url):
+        parts = url.split('/')
+        if len(parts) > 2 and parts[2] == host:
+            return url
+        return None
+    return url
+
 
 class Mail(object):
     """
@@ -1752,24 +1768,11 @@ class Auth(AuthAPI):
 
     def get_vars_next(self):
         next = current.request.vars._next
-        host = current.request.env.http_host
         if isinstance(next, (list, tuple)):
             next = next[0]
         if next and self.settings.prevent_open_redirect_attacks:
-            return self.prevent_open_redirect(next, host)
+            return prevent_open_redirect(next)
         return next or None
-
-    @staticmethod
-    def prevent_open_redirect(next, host):
-        # Prevent an attacker from adding an arbitrary url after the
-        # _next variable in the request.
-        if next:
-            parts = next.split('/')
-            if ':' not in parts[0] and parts[:2] != ['', '']:
-                return next
-            elif len(parts) > 2 and parts[0].endswith(':') and parts[1:3] == ['', host]:
-                return next
-        return None
 
     def table_cas(self):
         return self.db[self.settings.table_cas_name]
@@ -4276,8 +4279,8 @@ class Crud(object):  # pragma: no cover
         if request.extension == 'json' and request.vars.json:
             request.vars.update(json.loads(request.vars.json))
         if next is DEFAULT:
-            next = request.get_vars._next \
-                or request.post_vars._next \
+            next = prevent_open_redirect(request.get_vars._next) \
+                or prevent_open_redirect(request.post_vars._next) \
                 or self.settings.update_next
         if onvalidation is DEFAULT:
             onvalidation = self.settings.update_onvalidation
@@ -4422,8 +4425,8 @@ class Crud(object):  # pragma: no cover
         request = current.request
         session = current.session
         if next is DEFAULT:
-            next = request.get_vars._next \
-                or request.post_vars._next \
+            next = prevent_open_redirect(request.get_vars._next) \
+                or prevent_open_redirect(request.post_vars._next) \
                 or self.settings.delete_next
         if message is DEFAULT:
             message = self.messages.record_deleted
