@@ -12,7 +12,7 @@ import re
 from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
 from gluon.utils import web2py_uuid
-from gluon.tools import Config
+from gluon.tools import Config, prevent_open_redirect
 from gluon.compileapp import find_exposed_functions
 from glob import glob
 from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native, reload
@@ -118,7 +118,7 @@ def get_app(name=None):
 def index():
     """ Index handler """
 
-    send = request.vars.send
+    send = prevent_open_redirect(request.vars.send)
     if DEMO_MODE:
         session.authorized = True
         session.last_time = t0
