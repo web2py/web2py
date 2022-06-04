@@ -111,7 +111,6 @@ def prevent_open_redirect(url):
     # Prevent an attacker from adding an arbitrary url after the
     # _next variable in the request.
     host = current.request.env.http_host
-    print(host)
     if not url:
         return None
     if REGEX_OPEN_REDIRECT.match(url):
