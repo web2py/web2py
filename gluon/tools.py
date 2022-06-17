@@ -851,6 +851,38 @@ class Mail(object):
         return True
 
 
+def dkim_sign(payload, dkim_key, dkim_selector):
+
+    import dkim
+
+    # sign all existing mail headers except those specified in
+    # http://dkim.org/specs/rfc4871-dkimbase.html#rfc.section.5.5
+    headers = list(filter(
+        lambda h: h not in [
+            "Return-Path",
+            "Received",
+            "Comments",
+            "Keywords",
+            "Resent-Bcc",
+            "Bcc",
+            "DKIM-Signature",
+        ],
+        payload))
+
+    domain = re.sub(r".*@", "", payload["From"])
+    domain = re.sub(r">.*", "", domain)
+
+    sig = dkim.sign(
+            message=payload.as_bytes(),
+            selector=dkim_selector.encode(),
+            domain=domain.encode(),
+            privkey=dkim_key.encode(),
+            include_headers=[h.encode() for h in headers])
+
+    return sig[len("DKIM-Signature: "):].decode()
+
+
+
 class Recaptcha2(DIV):
     """
     Experimental:
