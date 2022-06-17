@@ -310,6 +310,8 @@ class Mail(object):
              raw=False,
              headers={},
              from_address=None,
+             dkim=None,
+             list_unsubscribe=None,
              cipher_type=None,
              sign=None,
              sign_passphrase=None,
@@ -765,6 +767,12 @@ class Mail(object):
         payload['Date'] = email.utils.formatdate()
         for k, v in iteritems(headers):
             payload[k] = encoded_or_raw(to_unicode(v, encoding))
+
+        if list_unsubscribe:
+            payload['List-Unsubscribe'] = "<mailto:%s>" % list_unsubscribe
+        if dkim:
+            payload['DKIM-Signature'] = dkim_sign(payload, dkim.key, dkim.selector)
+
         result = {}
         try:
             if self.settings.server == 'logging':
