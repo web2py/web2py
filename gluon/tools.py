@@ -2677,7 +2677,12 @@ class Auth(AuthAPI):
         # If auth.settings.auth_two_factor_enabled it will enable two factor
         # for all the app. Another way to anble two factor is that the user
         # must be part of a group that is called auth.settings.two_factor_authentication_group
-        if user and self.settings.auth_two_factor_enabled is True:
+        if user and (
+            self.settings.auth_two_factor_enabled(user)
+            if callable(self.settings.auth_two_factor_enabled)
+            else self.settings.auth_two_factor_enabled is True
+        ):
+
             session.auth_two_factor_enabled = True
         elif user and self.settings.two_factor_authentication_group:
             role = self.settings.two_factor_authentication_group
