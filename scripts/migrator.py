@@ -33,5 +33,11 @@ for db_name in databases:
         # Force migration of lazy tables
         logger.debug("Ensuring migration of table '%s'", table_name)
         table = db[table_name]
+        # virtual fields can actually cause problems with migrations because
+        # the migration script uses db(table).isempty() to "unlazy" the table.
+        # isempty is implemented with a select with limitby=(0, 1)
+        # if the table is not empty the virtual fields will be processed
+        # and if they query other tables you will have problems.
+        table._virtual_fields = []        
         db(table).isempty()
     db.commit()
