@@ -83,6 +83,12 @@ def safe_open(a, b):
             def close(self):
                 pass
         return tmp()
+
+    a_for_check = os.path.abspath(os.path.normpath(a))
+    web2py_apps_root = os.path.abspath(up(request.folder))
+    if not a_for_check.startswith(web2py_apps_root):
+        raise HTTP(403)
+
     if PY2 or 'b' in b:
         return open(a, b)
     else:
