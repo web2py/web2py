@@ -17,7 +17,7 @@ from gluon._compat import configparser, MIMEBase, MIMEMultipart, MIMEText, Heade
 from gluon._compat import Encoders, Charset, long, urllib_quote, iteritems
 from gluon._compat import to_bytes, to_native, add_charset, string_types
 from gluon._compat import charset_QP, basestring, unicodeT, to_unicode
-from gluon._compat import urllib2, urlopen
+from gluon._compat import urllib2, urlopen, urlparse
 import datetime
 import logging
 import sys
@@ -105,7 +105,6 @@ def replace_id(url, form):
             return url
     return URL(url)
 
-REGEX_OPEN_REDIRECT = re.compile(r"^(\w+)?[:]?(/$|//.*|/\\.*|[~]/.*)")
 
 def prevent_open_redirect(url):
     # Prevent an attacker from adding an arbitrary url after the
@@ -113,9 +112,9 @@ def prevent_open_redirect(url):
     host = current.request.env.http_host
     if not url:
         return None
-    if REGEX_OPEN_REDIRECT.match(url):
-        parts = url.split('/')
-        if len(parts) > 2 and parts[2] == host:
+    parsed = urlparse.urlparse(url)
+    if parsed.scheme:
+        if parsed.netloc == host:
             return url
         return None
     return url
