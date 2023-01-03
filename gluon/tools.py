@@ -110,22 +110,22 @@ def prevent_open_redirect(url, host=None):
     # Prevent an attacker from adding an arbitrary url after the
     # _next variable in the request.
     host = host or current.request.env.http_host
-    default_scheme = 'https:' if current.request.is_https else 'http:'
+    default_scheme = 'https' if current.request.is_https else 'http'
     original = url
 
     if url is not None:
         url = url.strip()
+        url = url.replace('\\', '/')
     
     if not url:
-        return None
-
-    if url.startswith('///') or url.startswith('/\\') or url.startswith('://') or url.startswith(':/\\'):
         return None
     
     if all(c in '~/:.' for c in url):
         return None
 
     if url.startswith('//'):
+        url = default_scheme + ':' + url
+    if url.startswith('://'):
         url = default_scheme + url
 
     try:
@@ -139,7 +139,7 @@ def prevent_open_redirect(url, host=None):
         return None
     elif parsed.scheme: # doesn't have a netloc but has a scheme eg http:///example.com
         return None
-    elif parsed.path.startswith('~') or parsed.path.startswith(':~') or parsed.path.startswith('/\\'):
+    elif parsed.path.startswith('~') or parsed.path.startswith(':~'):
         return None
     return original
 
