@@ -1390,25 +1390,33 @@ class Test_OpenRedirectPrevention(unittest.TestCase):
             "//",
             "~/",
             "//example.com",
+            "///example.com",
             "/\example.com"
             "~/example.com"
             "//example.com/a/b/c",
             "//example.com/a/b/c",
             "~/example.com/a/b/c"
         ]
-        good_urls = [
+        good_urls = [        
             "a/b/c",
             "/a",
             "/a/b",
             "/a/b/c",
+            "//test.com",
+            "//test.com/a/c",
+            "http://test.com/a/c",
+            "https://test.com/a/c",
         ]
         prefixes = ["", ":", "http:", "https:", "ftp:"]
         for prefix in prefixes:
             for url in bad_urls:
-                self.assertEqual(prevent_open_redirect(prefix + url), None)
+                self.assertEqual(prevent_open_redirect(prefix + url, 'test.com'), None)
         for prefix in prefixes:
             for url in good_urls:
-                self.assertEqual(prevent_open_redirect(prefix + url), prefix + url)
+                self.assertEqual(prevent_open_redirect(url, 'test.com'), url)
+        # extra corner cases
+        self.assertEqual(prevent_open_redirect('https:/example.com'), None)
+
 
 
 
