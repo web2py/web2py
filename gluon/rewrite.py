@@ -1127,7 +1127,7 @@ class MapUrlIn(object):
         """
         if self.controller != "static":
             return None, None
-        version = REGEX_VERSION.match(self.args(0))
+        version = REGEX_VERSION.match(self.args(0) or "")
         if self.args and version:
             file = "/".join(self.args[1:])
         else:
