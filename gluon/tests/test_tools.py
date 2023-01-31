@@ -1391,11 +1391,17 @@ class Test_OpenRedirectPrevention(unittest.TestCase):
             "~/",
             "//example.com",
             "///example.com",
-            "/\example.com"
-            "~/example.com"
+            "/\example.com",
+            "/\\example.com",
+            "~/example.com",
             "//example.com/a/b/c",
             "//example.com/a/b/c",
-            "~/example.com/a/b/c"
+            "~/example.com/a/b/c",
+            "\\\/example.com",
+            "\\\\example.com",
+            "\\\\\\example.com",
+            "\\\\\\\\example.com",
+            "\\\\\\\\\\example.com"
         ]
         good_urls = [        
             "a/b/c",
