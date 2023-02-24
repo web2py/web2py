@@ -450,7 +450,13 @@ class CacheOnDisk(CacheAbstract):
         dt = time_expire
         self.storage.acquire(key)
         self.storage.acquire(CacheAbstract.cache_stats_name)
-        item = self.storage.get(key)
+
+        try:
+            item = self.storage.get(key)
+        except:
+            del self.storage[key]
+            item = self.storage.get(key)
+
         self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_hit_total,
                                 default_value={'hit_total': 0, 'misses': 0})
 
