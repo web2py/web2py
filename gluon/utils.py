@@ -79,12 +79,15 @@ def AES_dec(cipher, data):
 
 def compare(a, b):
     """ Compares two strings and not vulnerable to timing attacks """
-    if HAVE_COMPARE_DIGEST:
-        return hmac.compare_digest(a, b)
-    result = len(a) ^ len(b)
-    for i in xrange(len(b)):
-        result |= ord(a[i % len(a)]) ^ ord(b[i])
-    return result == 0
+    try:
+        if HAVE_COMPARE_DIGEST:
+            return hmac.compare_digest(a, b)
+        result = len(a) ^ len(b)
+        for i in xrange(len(b)):
+            result |= ord(a[i % len(a)]) ^ ord(b[i])
+        return result == 0
+    except:
+        return False
 
 
 def md5_hash(text):
