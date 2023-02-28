@@ -29,6 +29,14 @@ class TestUtils(unittest.TestCase):
         compare_result_false = compare(a, b)
         self.assertFalse(compare_result_false)
 
+        a, b = 'test123', ['test123', 'test123']
+        compare_result_false = compare(a, b)
+        self.assertFalse(compare_result_false)
+
+        a, b = '123', 123
+        compare_result_false = compare(a, b)
+        self.assertFalse(compare_result_false)
+
     def test_md5_hash(self):
         """ Tests the md5_hash function """
 
