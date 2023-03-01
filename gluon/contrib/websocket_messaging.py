@@ -94,12 +94,13 @@ import optparse
 import time
 import sys
 import gluon.utils
+import hashlib
 from gluon._compat import to_native, to_bytes, urlencode, urlopen
 
 listeners, names, tokens = {}, {}, {}
 
 def websocket_send(url, message, hmac_key=None, group='default'):
-    sig = hmac_key and hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest() or ''
+    sig = hmac_key and hmac.new(to_bytes(hmac_key), to_bytes(message), hashlib.md5).hexdigest() or ''
     params = urlencode(
         {'message': message, 'signature': sig, 'group': group})
     f = urlopen(url, to_bytes(params))
@@ -121,7 +122,7 @@ class PostHandler(tornado.web.RequestHandler):
             print('%s:MESSAGE to %s:%s' % (time.time(), group, message))
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
-                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest()
+                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message), hashlib.md5).hexdigest()
                 if not gluon.utils.compare(to_native(signature), actual_signature):
                     self.send_error(401)
             for client in listeners.get(group, []):
@@ -141,7 +142,7 @@ class TokenHandler(tornado.web.RequestHandler):
             message = self.request.arguments['message'][0]
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
-                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message)).hexdigest()
+                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message), hashlib.md5).hexdigest()
                 if not gluon.utils.compare(to_native(signature), actual_signature):
                     self.send_error(401)
             tokens[message] = None
