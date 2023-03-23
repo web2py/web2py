@@ -10,6 +10,7 @@ import unittest
 from gluon.storage import Storage
 from gluon.cache import CacheInRam, CacheOnDisk, Cache
 from gluon.dal import DAL, Field
+from gluon import recfile
 
 oldcwd = None
 
@@ -92,6 +93,19 @@ class TestCache(unittest.TestCase):
         self.assertEqual(cache('a', lambda: 1, 100), 6)
         cache.increment('b')
         self.assertEqual(cache('b', lambda: 'x', 100), 1)
+    
+    def test_corrupt_CacheOnDsk(self):
+        s = Storage({'application': 'admin',
+                     'folder': 'applications/admin'})
+        cache = CacheOnDisk(s)
+        self.assertEqual(cache('a', lambda: 1, 100), 1)
+
+        # empty cache file
+        folder = os.path.join(s.folder, 'cache') 
+        val_file = recfile.open('a', mode='r+b', path=folder)
+        val_file.truncate()
+
+        self.assertEqual(cache('a', lambda: 2, 0), 2)
 
     # TODO: def test_CacheAction(self):
 

@@ -85,8 +85,12 @@ def safe_open(a, b):
         return tmp()
 
     a_for_check = os.path.abspath(os.path.normpath(a))
+    
     web2py_apps_root = os.path.abspath(up(request.folder))
-    if not a_for_check.startswith(web2py_apps_root):
+    web2py_deposit_root = os.path.join(up(web2py_apps_root), 'deposit')
+
+    if not (a_for_check.startswith(web2py_apps_root) or
+        a_for_check.startswith(web2py_deposit_root)):
         raise HTTP(403)
 
     if PY2 or 'b' in b:
