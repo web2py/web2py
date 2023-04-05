@@ -696,6 +696,7 @@ class Scheduler(threading.Thread):
                         task_output += tout
                     try:
                         db = self.db
+                        db.get_connection_from_pool_or_new() # try to reconnect if needed
                         db(db.scheduler_run.id == task.run_id).update(run_output=task_output)
                         db.commit()
                         tout = ''
@@ -978,14 +979,17 @@ class Scheduler(threading.Thread):
         contention and retries `pop_task` after 0.5 seconds
         """
         db = self.db
-        db.commit()  # for MySQL only; FIXME: Niphlod, still needed? could avoid when not MySQL?
         for x in range(10):
             try:
+                db.get_connection_from_pool_or_new()
                 return self.pop_task()
             except Exception:
                 logger.exception('    error popping tasks')
                 self.w_stats.errors += 1
-                db.rollback()
+                try:
+                    db.rollback()
+                except: # we probably don't even have working connection
+                    pass
                 time.sleep(0.5)
 
     def pop_task(self):
@@ -1074,12 +1078,16 @@ class Scheduler(threading.Thread):
         db = self.db
         while True:  # FIXME: forever?
             try:
+                db.get_connection_from_pool_or_new()
                 self.report_task(task, task_report)
                 db.commit()
                 break
             except Exception:
                 logger.exception('    error storing result')
-                db.rollback()
+                try:
+                    db.rollback()
+                except: # we probably don't even have working connection
+                    pass
                 time.sleep(0.5)
 
     def report_task(self, task, task_report):
@@ -1255,7 +1263,10 @@ class Scheduler(threading.Thread):
             db.commit()
         except:
             logger.exception('Error retrieving status')
-            db.rollback()
+            try:
+                db.rollback()
+            except: # we probably don't even have working connection
+                pass
         self.adj_hibernation()
         self.sleep()
 
@@ -1266,6 +1277,7 @@ class Scheduler(threading.Thread):
         to allow a proper distribution of tasks among all active workers ASAP
         """
         db = self.db_thread
+        db.get_connection_from_pool_or_new()
         sw = db.scheduler_worker
         my_name = self.worker_name
         all_active = db(
@@ -1303,9 +1315,9 @@ class Scheduler(threading.Thread):
         """
         logger.debug('Assigning tasks...')
         db = self.db
-        db.commit()  # for MySQL only; FIXME: Niphlod, still needed? could avoid when not MySQL?
         for x in range(10):
             try:
+                db.get_connection_from_pool_or_new()
                 self.assign_tasks()
                 db.commit()
                 logger.debug('Tasks assigned...')
@@ -1313,7 +1325,10 @@ class Scheduler(threading.Thread):
             except Exception:
                 logger.exception('TICKER: error assigning tasks')
                 self.w_stats.errors += 1
-                db.rollback()
+                try:
+                    db.rollback()
+                except: # we probably don't even have working connection
+                    pass
                 time.sleep(0.5)
 
     def assign_tasks(self):
