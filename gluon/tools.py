@@ -3685,7 +3685,7 @@ class Auth(AuthAPI):
             if not form.vars['old_password'] == current_user[passfield]:
                 form.errors['old_password'] = self.messages.invalid_password
             else:
-                d = {passfield: str(form.vars.new_password)}
+                d = {passfield: str(form.vars.new_password), 'reset_password_key': ''}
                 s.update(**d)
                 session.flash = self.messages.password_changed
                 self.log_event(log, self.user)
