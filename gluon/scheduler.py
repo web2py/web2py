@@ -488,7 +488,10 @@ def executor(retq, task, outq):
                        extra_request={'is_scheduler': True})
             #logging.getLogger().setLevel(level)
             f = task.function
-            functions = current._scheduler.tasks
+            if hasattr(current, '_scheduler') and hasattr(current._scheduler, 'tasks'):
+                functions = current._scheduler.tasks
+            else:
+                functions = None
             if functions:
                 _function = functions.get(f)
             else:
