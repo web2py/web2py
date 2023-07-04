@@ -60,6 +60,7 @@ defined_status = {
 }
 
 regex_status = re.compile('^\d{3} [0-9A-Z ]+$')
+regex_header_newlines = re.compile(r'[\r\n]')
 
 
 class HTTP(Exception):
@@ -85,7 +86,12 @@ class HTTP(Exception):
     ):
         self.status = status
         self.body = body
-        self.headers = headers
+        self.headers = {}
+        for k, v in iteritems(headers):
+            if isinstance(v, list):
+                self.headers[k] = [regex_header_newlines.sub("", str(item)) for item in v]
+            elif v is not None:
+                self.headers[k] = regex_header_newlines.sub("", str(v))
         self.cookies2headers(cookies)
 
     def cookies2headers(self, cookies):
@@ -117,9 +123,9 @@ class HTTP(Exception):
         rheaders = []
         for k, v in iteritems(headers):
             if isinstance(v, list):
-                rheaders += [(k, str(item)) for item in v]
-            elif v is not None:
-                rheaders.append((k, str(v)))
+                rheaders += [(k, item) for item in v]
+            else:
+                rheaders.append((k, v))
         responder(status, rheaders)
         if env.get('request_method', '') == 'HEAD':
             return [to_bytes('')]
