@@ -1,6 +1,6 @@
 import logging
-import os
 import sys
+import subprocess
 
 try:
     if sys.version_info[0] == 2:
@@ -36,4 +36,4 @@ class NotifySendHandler(logging.Handler):
     def emit(self, record):
         if tkinter:
             msg = self.format(record)
-            os.system("notify-send '%s'" % msg)
+            subprocess.run(["notify-send", msg], check=False, timeout=2)
