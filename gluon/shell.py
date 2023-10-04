@@ -235,7 +235,7 @@ def run(
     errmsg = 'invalid application name: %s' % appname
     if not a:
         die(errmsg, error_preamble=False)
-    adir = os.path.join('applications', a)
+    adir = os.path.absdir(os.path.join('applications', a))
 
     if not os.path.exists(adir):
         if not cron_job and not scheduler_job and \
@@ -277,7 +277,7 @@ def run(
     if vars:
         # underscore necessary because request.vars is a property
         extra_request['_vars'] = vars
-    _env = env(a, c=c, f=f, import_models=import_models, extra_request=extra_request)
+    _env = env(a, c=c, f=f, import_models=import_models, extra_request=extra_request, dir=adir)
 
     if c:
         pyfile = os.path.join('applications', a, 'controllers', c + '.py')
