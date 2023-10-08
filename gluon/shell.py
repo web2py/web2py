@@ -244,7 +244,7 @@ def run(
     errmsg = "invalid application name: %s" % appname
     if not a:
         die(errmsg, error_preamble=False)
-    adir = os.path.absdir(os.path.join("applications", a))
+    adir = os.path.abspath(os.path.join("applications", a))
 
     if not os.path.exists(adir):
         if (
