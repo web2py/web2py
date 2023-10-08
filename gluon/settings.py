@@ -7,22 +7,22 @@
 """
 
 import os
-import sys
 import platform
-from gluon.storage import Storage
+import sys
+
 from gluon._compat import PY2
+from gluon.storage import Storage
 
 global_settings = Storage()
 settings = global_settings  # legacy compatibility
 
-if not hasattr(os, 'mkdir'):
+if not hasattr(os, "mkdir"):
     global_settings.db_sessions = True
 
 if global_settings.db_sessions is not True:
     global_settings.db_sessions = set()
 
-global_settings.gluon_parent = \
-    os.environ.get('web2py_path', os.getcwd())
+global_settings.gluon_parent = os.environ.get("web2py_path", os.getcwd())
 
 global_settings.applications_parent = global_settings.gluon_parent
 
@@ -30,20 +30,23 @@ global_settings.app_folders = set()
 
 global_settings.debugging = False
 
-global_settings.is_pypy = \
-    hasattr(platform, 'python_implementation') and \
-    platform.python_implementation() == 'PyPy'
+global_settings.is_pypy = (
+    hasattr(platform, "python_implementation")
+    and platform.python_implementation() == "PyPy"
+)
 
-global_settings.is_jython = \
-    'java' in sys.platform.lower() or \
-    hasattr(sys, 'JYTHON_JAR') or \
-    str(sys.copyright).find('Jython') > 0
+global_settings.is_jython = (
+    "java" in sys.platform.lower()
+    or hasattr(sys, "JYTHON_JAR")
+    or str(sys.copyright).find("Jython") > 0
+)
 
-global_settings.is_source = os.path.exists(os.path.join(
-        global_settings.gluon_parent, 'web2py.py'))
+global_settings.is_source = os.path.exists(
+    os.path.join(global_settings.gluon_parent, "web2py.py")
+)
 
 global_settings.is_py2 = PY2
 
 # allow admin app for clients on trusted LAN when over plain http,
 # default is to allow only from localhost or when serving https
-#global_settings.trusted_lan_prefix = '192.168.0.'
+# global_settings.trusted_lan_prefix = '192.168.0.'

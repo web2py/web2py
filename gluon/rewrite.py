@@ -15,22 +15,18 @@ Refer to router.example.py and routes.example.py for additional documentation.
 
 """
 
+import logging
 import os
 import re
-import logging
-import traceback
 import threading
-from gluon.storage import Storage, List
-from gluon.http import HTTP
+import traceback
+
+from gluon._compat import (iteritems, urllib_quote, urllib_quote_plus,
+                           urllib_unquote, xrange)
 from gluon.fileutils import abspath, read_file
+from gluon.http import HTTP
 from gluon.settings import global_settings
-from gluon._compat import (
-    urllib_unquote,
-    urllib_quote,
-    iteritems,
-    xrange,
-    urllib_quote_plus,
-)
+from gluon.storage import List, Storage
 
 isdir = os.path.isdir
 isfile = os.path.isfile

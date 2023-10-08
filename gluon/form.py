@@ -1,11 +1,12 @@
 from gluon.dal import DAL
 from gluon.storage import Storage
 from gluon.utils import web2py_uuid
+
 try:
     # web3py
     from gluon.current import current
-    from gluon.url import URL
     from gluon.helpers import *
+    from gluon.url import URL
 except:
     # web2py
     from gluon import current
@@ -145,7 +146,6 @@ class Form(object):
                 self.vars = self.record
         else:
             post_vars = request.post_vars
-            print post_vars
             self.submitted = True
             # check for CSRF
             if csrf and self.formname in (current.session._formkeys or {}):

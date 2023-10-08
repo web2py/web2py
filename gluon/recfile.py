@@ -10,17 +10,21 @@ Generates names for cache and session files
 --------------------------------------------
 """
 import os
+
 from gluon._compat import builtin
+
 
 def generate(filename, depth=2, base=512):
     if os.path.sep in filename:
         path, filename = os.path.split(filename)
     else:
         path = None
-    dummyhash = sum(ord(c) * 256 ** (i % 4) for i, c in enumerate(filename)) % base ** depth
+    dummyhash = (
+        sum(ord(c) * 256 ** (i % 4) for i, c in enumerate(filename)) % base**depth
+    )
     folders = []
     for level in range(depth - 1, -1, -1):
-        code, dummyhash = divmod(dummyhash, base ** level)
+        code, dummyhash = divmod(dummyhash, base**level)
         folders.append("%03x" % code)
     folders.append(filename)
     if path:
@@ -54,12 +58,12 @@ def open(filename, mode="r", path=None):
     if not path:
         path, filename = os.path.split(filename)
     fullfilename = None
-    if not mode.startswith('w'):
+    if not mode.startswith("w"):
         fullfilename = os.path.join(path, filename)
         if not os.path.exists(fullfilename):
             fullfilename = None
     if not fullfilename:
         fullfilename = os.path.join(path, generate(filename))
-        if mode.startswith('w') and not os.path.exists(os.path.dirname(fullfilename)):
+        if mode.startswith("w") and not os.path.exists(os.path.dirname(fullfilename)):
             os.makedirs(os.path.dirname(fullfilename))
     return builtin.open(fullfilename, mode)

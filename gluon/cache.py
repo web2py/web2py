@@ -19,41 +19,48 @@ When web2py is running on Google App Engine,
 caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
-import time
-import os
-import gc
-import sys
-import logging
-import re
-import random
-import hashlib
 import datetime
+import gc
+import hashlib
+import logging
+import os
+import random
+import re
+import sys
 import tempfile
+import time
+from collections import OrderedDict, defaultdict
+
 from gluon import recfile
-from collections import defaultdict
-from collections import OrderedDict
 
 try:
     from gluon import settings
+
     have_settings = True
 except ImportError:
     have_settings = False
 
 from pydal.contrib import portalocker
-from gluon._compat import pickle, thread, to_bytes, to_native, hashlib_md5
+
+from gluon._compat import hashlib_md5, pickle, thread, to_bytes, to_native
 
 try:
     import psutil
+
     HAVE_PSUTIL = True
 except ImportError:
     HAVE_PSUTIL = False
 
 
+from pydal._compat import copyreg
 # TODO: REMOVE ME ONCE THIS IS FIXED IN DAL https://github.com/web2py/pydal/issues/668
 from pydal.objects import Row
-from pydal._compat import copyreg
+
+
 def pickle_row(s):
     return Row, (dict(s),)
+
+
 copyreg.pickle(Row, pickle_row)
 # END TODO
 
@@ -78,7 +85,7 @@ def remove_oldest_entries(storage, percentage=90):
 
 logger = logging.getLogger("web2py.cache")
 
-__all__ = ['Cache', 'lazy_cache']
+__all__ = ["Cache", "lazy_cache"]
 
 
 DEFAULT_TIME_EXPIRE = 300
@@ -104,7 +111,7 @@ class CacheAbstract(object):
         The possible consequences are memory leaks and broken sessions.
     """
 
-    cache_stats_name = 'web2py_cache_statistics'
+    cache_stats_name = "web2py_cache_statistics"
     max_ram_utilization = None  # percent
 
     def __init__(self, request=None):
@@ -115,8 +122,7 @@ class CacheAbstract(object):
         """
         raise NotImplementedError
 
-    def __call__(self, key, f,
-                 time_expire=DEFAULT_TIME_EXPIRE):
+    def __call__(self, key, f, time_expire=DEFAULT_TIME_EXPIRE):
         """
         Tries to retrieve the value corresponding to `key` from the cache if the
         object exists and if it did not expire, else it calls the function `f`
@@ -187,7 +193,7 @@ class CacheInRam(CacheAbstract):
         self.initialized = False
         self.request = request
         self.storage = OrderedDict() if HAVE_PSUTIL else {}
-        self.app = request.application if request else ''
+        self.app = request.application if request else ""
 
     def initialize(self):
         if self.initialized:
@@ -196,9 +202,10 @@ class CacheInRam(CacheAbstract):
             self.initialized = True
         self.locker.acquire()
         if self.app not in self.meta_storage:
-            self.storage = self.meta_storage[self.app] = \
+            self.storage = self.meta_storage[self.app] = (
                 OrderedDict() if HAVE_PSUTIL else {}
-            self.stats[self.app] = {'hit_total': 0, 'misses': 0}
+            )
+            self.stats[self.app] = {"hit_total": 0, "misses": 0}
         else:
             self.storage = self.meta_storage[self.app]
         self.locker.release()
@@ -213,13 +220,11 @@ class CacheInRam(CacheAbstract):
             self._clear(storage, regex)
 
         if self.app not in self.stats:
-            self.stats[self.app] = {'hit_total': 0, 'misses': 0}
+            self.stats[self.app] = {"hit_total": 0, "misses": 0}
 
         self.locker.release()
 
-    def __call__(self, key, f,
-                 time_expire=DEFAULT_TIME_EXPIRE,
-                 destroyer=None):
+    def __call__(self, key, f, time_expire=DEFAULT_TIME_EXPIRE, destroyer=None):
         """
         Attention! cache.ram does not copy the cached object.
         It just stores a reference to it. Turns out the deepcopying the object
@@ -244,7 +249,7 @@ class CacheInRam(CacheAbstract):
             del self.storage[key]
             if destroyer:
                 destroyer(item[1])
-        self.stats[self.app]['hit_total'] += 1
+        self.stats[self.app]["hit_total"] += 1
         self.locker.release()
 
         if f is None:
@@ -257,8 +262,12 @@ class CacheInRam(CacheAbstract):
 
         self.locker.acquire()
         self.storage[key] = (now, value)
-        self.stats[self.app]['misses'] += 1
-        if HAVE_PSUTIL and self.max_ram_utilization is not None and random.random() < 0.10:
+        self.stats[self.app]["misses"] += 1
+        if (
+            HAVE_PSUTIL
+            and self.max_ram_utilization is not None
+            and random.random() < 0.10
+        ):
             remove_oldest_entries(self.storage, percentage=self.max_ram_utilization)
         self.locker.release()
         return value
@@ -343,7 +352,7 @@ class CacheOnDisk(CacheAbstract):
 
         def __setitem__(self, key, value):
             key = self.key_filter_in(key)
-            val_file = recfile.open(key, mode='wb', path=self.folder)
+            val_file = recfile.open(key, mode="wb", path=self.folder)
             self.wait_portalock(val_file)
             pickle.dump(value, val_file, pickle.HIGHEST_PROTOCOL)
             val_file.close()
@@ -351,7 +360,7 @@ class CacheOnDisk(CacheAbstract):
         def __getitem__(self, key):
             key = self.key_filter_in(key)
             try:
-                val_file = recfile.open(key, mode='rb', path=self.folder)
+                val_file = recfile.open(key, mode="rb", path=self.folder)
             except IOError:
                 raise KeyError
 
@@ -386,10 +395,10 @@ class CacheOnDisk(CacheAbstract):
             key = self.key_filter_in(key)
             exists = True
             try:
-                val_file = recfile.open(key, mode='r+b', path=self.folder)
+                val_file = recfile.open(key, mode="r+b", path=self.folder)
             except IOError:
                 exists = False
-                val_file = recfile.open(key, mode='wb', path=self.folder)
+                val_file = recfile.open(key, mode="wb", path=self.folder)
             self.wait_portalock(val_file)
             if exists:
                 timestamp, value = pickle.load(val_file)
@@ -428,23 +437,22 @@ class CacheOnDisk(CacheAbstract):
 
         # Lets test if the cache folder exists, if not
         # we are going to create it
-        folder = os.path.join(folder or request.folder, 'cache')
+        folder = os.path.join(folder or request.folder, "cache")
 
         if not os.path.exists(folder):
             os.mkdir(folder)
 
         self.storage = CacheOnDisk.PersistentStorage(folder)
 
-    def __call__(self, key, f,
-                 time_expire=DEFAULT_TIME_EXPIRE):
+    def __call__(self, key, f, time_expire=DEFAULT_TIME_EXPIRE):
         self.initialize()
 
         def inc_hit_total(v):
-            v['hit_total'] += 1
+            v["hit_total"] += 1
             return v
 
         def inc_misses(v):
-            v['misses'] += 1
+            v["misses"] += 1
             return v
 
         dt = time_expire
@@ -457,8 +465,11 @@ class CacheOnDisk(CacheAbstract):
             del self.storage[key]
             item = self.storage.get(key)
 
-        self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_hit_total,
-                                default_value={'hit_total': 0, 'misses': 0})
+        self.storage.safe_apply(
+            CacheAbstract.cache_stats_name,
+            inc_hit_total,
+            default_value={"hit_total": 0, "misses": 0},
+        )
 
         if item and f is None:
             del self.storage[key]
@@ -480,8 +491,11 @@ class CacheOnDisk(CacheAbstract):
                 self.storage.release(key)
                 raise
             self.storage[key] = (now, value)
-            self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_misses,
-                                    default_value={'hit_total': 0, 'misses': 0})
+            self.storage.safe_apply(
+                CacheAbstract.cache_stats_name,
+                inc_misses,
+                default_value={"hit_total": 0, "misses": 0},
+            )
 
         self.storage.release(CacheAbstract.cache_stats_name)
         self.storage.release(key)
@@ -523,16 +537,17 @@ class CacheAction(object):
 
     def __call__(self, *a, **b):
         if not self.key:
-            key2 = self.__name__ + ':' + repr(a) + ':' + repr(b)
+            key2 = self.__name__ + ":" + repr(a) + ":" + repr(b)
         else:
-            key2 = self.key.replace('%(name)s', self.__name__)\
-                .replace('%(args)s', str(a)).replace('%(vars)s', str(b))
+            key2 = (
+                self.key.replace("%(name)s", self.__name__)
+                .replace("%(args)s", str(a))
+                .replace("%(vars)s", str(b))
+            )
         cache_model = self.cache_model
         if not cache_model or isinstance(cache_model, str):
-            cache_model = getattr(self.cache, cache_model or 'ram')
-        return cache_model(key2,
-                           lambda a=a, b=b: self.func(*a, **b),
-                           self.time_expire)
+            cache_model = getattr(self.cache, cache_model or "ram")
+        return cache_model(key2, lambda a=a, b=b: self.func(*a, **b), self.time_expire)
 
 
 class Cache(object):
@@ -545,7 +560,7 @@ class Cache(object):
     - self.disk is an instance of CacheOnDisk
     """
 
-    autokey = ':%(name)s:%(args)s:%(vars)s'
+    autokey = ":%(name)s:%(args)s:%(vars)s"
 
     def __init__(self, request):
         """
@@ -555,6 +570,7 @@ class Cache(object):
         # GAE will have a special caching
         if have_settings and settings.global_settings.web2py_runtime_gae:
             from gluon.contrib.gae_memcache import MemcacheClient
+
             self.ram = self.disk = MemcacheClient(request)
         else:
             # Otherwise use ram (and try also disk)
@@ -562,16 +578,25 @@ class Cache(object):
             try:
                 self.disk = CacheOnDisk(request)
             except IOError:
-                logger.warning('no cache.disk (IOError)')
+                logger.warning("no cache.disk (IOError)")
             except AttributeError:
                 # normally not expected anymore, as GAE has already
                 # been accounted for
-                logger.warning('no cache.disk (AttributeError)')
+                logger.warning("no cache.disk (AttributeError)")
 
-    def action(self, time_expire=DEFAULT_TIME_EXPIRE, cache_model=None,
-               prefix=None, session=False, vars=True, lang=True,
-               user_agent=False, public=True, valid_statuses=None,
-               quick=None):
+    def action(
+        self,
+        time_expire=DEFAULT_TIME_EXPIRE,
+        cache_model=None,
+        prefix=None,
+        session=False,
+        vars=True,
+        lang=True,
+        user_agent=False,
+        public=True,
+        valid_statuses=None,
+        quick=None,
+    ):
         """Better fit for caching an action
 
         Warning:
@@ -602,27 +627,38 @@ class Cache(object):
 
         def wrap(func):
             def wrapped_f():
-                if current.request.env.request_method != 'GET':
+                if current.request.env.request_method != "GET":
                     return func()
 
                 if quick:
-                    session_ = True if 'S' in quick else False
-                    vars_ = True if 'V' in quick else False
-                    lang_ = True if 'L' in quick else False
-                    user_agent_ = True if 'U' in quick else False
-                    public_ = True if 'P' in quick else False
+                    session_ = True if "S" in quick else False
+                    vars_ = True if "V" in quick else False
+                    lang_ = True if "L" in quick else False
+                    user_agent_ = True if "U" in quick else False
+                    public_ = True if "P" in quick else False
                 else:
-                    (session_, vars_, lang_, user_agent_, public_) = \
-                        (session, vars, lang, user_agent, public)
+                    (session_, vars_, lang_, user_agent_, public_) = (
+                        session,
+                        vars,
+                        lang,
+                        user_agent,
+                        public,
+                    )
 
-                expires = 'Fri, 01 Jan 1990 00:00:00 GMT'
+                expires = "Fri, 01 Jan 1990 00:00:00 GMT"
                 if time_expire:
-                    cache_control = 'max-age=%(time_expire)s, s-maxage=%(time_expire)s' % dict(time_expire=time_expire)
-                    expires = (current.request.utcnow + datetime.timedelta(seconds=time_expire)).strftime(
-                        '%a, %d %b %Y %H:%M:%S GMT')
+                    cache_control = (
+                        "max-age=%(time_expire)s, s-maxage=%(time_expire)s"
+                        % dict(time_expire=time_expire)
+                    )
+                    expires = (
+                        current.request.utcnow + datetime.timedelta(seconds=time_expire)
+                    ).strftime("%a, %d %b %Y %H:%M:%S GMT")
                 else:
-                    cache_control = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0'
-                cache_control += ', public' if not session_ and public_ else ', private'
+                    cache_control = (
+                        "no-store, no-cache, must-revalidate, post-check=0, pre-check=0"
+                    )
+                cache_control += ", public" if not session_ and public_ else ", private"
 
                 if cache_model:
                     # figure out the correct cache key
@@ -631,23 +667,30 @@ class Cache(object):
                         cache_key.append(current.response.session_id)
                     elif user_agent_:
                         if user_agent_ is True:
-                            cache_key.append("%(is_mobile)s_%(is_tablet)s" % current.request.user_agent())
+                            cache_key.append(
+                                "%(is_mobile)s_%(is_tablet)s"
+                                % current.request.user_agent()
+                            )
                         else:
                             cache_key.append(str(list(user_agent_.items())))
                     if vars_:
                         cache_key.append(current.request.env.query_string)
                     if lang_:
                         cache_key.append(current.T.accepted_language)
-                    cache_key = hashlib_md5('__'.join(cache_key)).hexdigest()
+                    cache_key = hashlib_md5("__".join(cache_key)).hexdigest()
                     if prefix:
                         cache_key = prefix + cache_key
                     try:
                         # action returns something
-                        rtn = cache_model(cache_key, lambda: func(), time_expire=time_expire)
+                        rtn = cache_model(
+                            cache_key, lambda: func(), time_expire=time_expire
+                        )
                         http, status = None, current.response.status
                     except HTTP as e:
                         # action raises HTTP (can still be valid)
-                        rtn = cache_model(cache_key, lambda: e.body, time_expire=time_expire)
+                        rtn = cache_model(
+                            cache_key, lambda: e.body, time_expire=time_expire
+                        )
                         http, status = HTTP(e.status, rtn, **e.headers), e.status
                     else:
                         # action raised a generic exception
@@ -670,12 +713,14 @@ class Cache(object):
                     if status in valid_statuses:
                         send_headers = True
                 elif valid_statuses is None:
-                    if str(status)[0] in '123':
+                    if str(status)[0] in "123":
                         send_headers = True
                 if send_headers:
-                    headers = {'Pragma': None,
-                               'Expires': expires,
-                               'Cache-Control': cache_control}
+                    headers = {
+                        "Pragma": None,
+                        "Expires": expires,
+                        "Cache-Control": cache_control,
+                    }
                     current.response.headers.update(headers)
                 if cache_model and not send_headers:
                     # we cached already the value, but the status is not valid
@@ -686,15 +731,14 @@ class Cache(object):
                         http.headers.update(current.response.headers)
                     raise http
                 return rtn
+
             wrapped_f.__name__ = func.__name__
             wrapped_f.__doc__ = func.__doc__
             return wrapped_f
+
         return wrap
 
-    def __call__(self,
-                 key=None,
-                 time_expire=DEFAULT_TIME_EXPIRE,
-                 cache_model=None):
+    def __call__(self, key=None, time_expire=DEFAULT_TIME_EXPIRE, cache_model=None):
         """
         Decorator function that can be used to cache any function/method.
 
@@ -728,6 +772,7 @@ class Cache(object):
 
         def tmp(func, cache=self, cache_model=cache_model):
             return CacheAction(func, key, time_expire, self, cache_model)
+
         return tmp
 
     @staticmethod
@@ -736,10 +781,14 @@ class Cache(object):
         allow replacing cache.ram with cache.with_prefix(cache.ram,'prefix')
         it will add prefix to all the cache keys used.
         """
-        return lambda key, f, time_expire=DEFAULT_TIME_EXPIRE, prefix=prefix: cache_model(prefix + key, f, time_expire)
+        return (
+            lambda key, f, time_expire=DEFAULT_TIME_EXPIRE, prefix=prefix: cache_model(
+                prefix + key, f, time_expire
+            )
+        )
 
 
-def lazy_cache(key=None, time_expire=None, cache_model='ram'):
+def lazy_cache(key=None, time_expire=None, cache_model="ram"):
     """
     Can be used to cache any function including ones in modules,
     as long as the cached function is only called within a web2py request
@@ -749,12 +798,16 @@ def lazy_cache(key=None, time_expire=None, cache_model='ram'):
 
     If cache_model is "ram" then the model is current.cache.ram, etc.
     """
+
     def decorator(f, key=key, time_expire=time_expire, cache_model=cache_model):
         key = key or repr(f)
 
         def g(*c, **d):
             from gluon import current
+
             return current.cache(key, time_expire, cache_model)(f)(*c, **d)
+
         g.__name__ = f.__name__
         return g
+
     return decorator

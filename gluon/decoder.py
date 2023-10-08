@@ -9,24 +9,25 @@ Based on http://code.activestate.com/recipes/52257/
 
 Licensed under the PSF License
 """
-from gluon._compat import to_unicode
 import codecs
+
+from gluon._compat import to_unicode
 
 # None represents a potentially variable byte. "##" in the XML spec...
 autodetect_dict = {  # bytepattern     : ("name",
-                                         (0x00, 0x00, 0xFE, 0xFF): ("ucs4_be"),
-                                         (0xFF, 0xFE, 0x00, 0x00): ("ucs4_le"),
-                                         (0xFE, 0xFF, None, None): ("utf_16_be"),
-                                         (0xFF, 0xFE, None, None): ("utf_16_le"),
-                                         (0x00, 0x3C, 0x00, 0x3F): ("utf_16_be"),
-                                         (0x3C, 0x00, 0x3F, 0x00): ("utf_16_le"),
-                                         (0x3C, 0x3F, 0x78, 0x6D): ("utf_8"),
-                                         (0x4C, 0x6F, 0xA7, 0x94): ("EBCDIC")
+    (0x00, 0x00, 0xFE, 0xFF): ("ucs4_be"),
+    (0xFF, 0xFE, 0x00, 0x00): ("ucs4_le"),
+    (0xFE, 0xFF, None, None): ("utf_16_be"),
+    (0xFF, 0xFE, None, None): ("utf_16_le"),
+    (0x00, 0x3C, 0x00, 0x3F): ("utf_16_be"),
+    (0x3C, 0x00, 0x3F, 0x00): ("utf_16_le"),
+    (0x3C, 0x3F, 0x78, 0x6D): ("utf_8"),
+    (0x4C, 0x6F, 0xA7, 0x94): ("EBCDIC"),
 }
 
 
 def autoDetectXMLEncoding(buffer):
-    """ buffer -> encoding_name
+    """buffer -> encoding_name
     The buffer should be at least 4 bytes long.
     Returns None if encoding cannot be detected.
     Note that encoding_name might not have an installed
@@ -63,13 +64,15 @@ def autoDetectXMLEncoding(buffer):
                 # look for double quote
                 quote_pos = first_line.find('"', encoding_pos)
 
-                if quote_pos == -1:                 # look for single quote
+                if quote_pos == -1:  # look for single quote
                     quote_pos = first_line.find("'", encoding_pos)
 
                 if quote_pos > -1:
-                    quote_char, rest = (first_line[quote_pos],
-                                        first_line[quote_pos + 1:])
-                    encoding = rest[:rest.find(quote_char)]
+                    quote_char, rest = (
+                        first_line[quote_pos],
+                        first_line[quote_pos + 1 :],
+                    )
+                    encoding = rest[: rest.find(quote_char)]
 
     return encoding
 

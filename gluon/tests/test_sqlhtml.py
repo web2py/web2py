@@ -9,17 +9,18 @@ import os
 import sys
 import unittest
 
-from gluon.sqlhtml import safe_int, SQLFORM, SQLTABLE
+from gluon.sqlhtml import SQLFORM, SQLTABLE, safe_int
 
-DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
+DEFAULT_URI = os.getenv("DB", "sqlite:memory")
+
+from pydal.objects import Table
 
 from gluon.dal import DAL, Field
-from pydal.objects import Table
-from gluon.tools import Auth, Mail
 from gluon.globals import Request, Response, Session
-from gluon.storage import Storage
-from gluon.languages import TranslatorFactory
 from gluon.http import HTTP
+from gluon.languages import TranslatorFactory
+from gluon.storage import Storage
+from gluon.tools import Auth, Mail
 from gluon.validators import *
 
 # TODO: Create these test...
@@ -47,9 +48,9 @@ class Test_safe_int(unittest.TestCase):
         # safe int
         self.assertEqual(safe_int(1), 1)
         # not safe int
-        self.assertEqual(safe_int('1x'), 0)
+        self.assertEqual(safe_int("1x"), 0)
         # not safe int (alternate default)
-        self.assertEqual(safe_int('1x', 1), 1)
+        self.assertEqual(safe_int("1x", 1), 1)
 
 
 # class Test_safe_float(unittest.TestCase):
@@ -245,42 +246,43 @@ class Test_safe_int(unittest.TestCase):
 
 
 class TestSQLFORM(unittest.TestCase):
-
     def setUp(self):
         request = Request(env={})
-        request.application = 'a'
-        request.controller = 'c'
-        request.function = 'f'
-        request.folder = 'applications/admin'
+        request.application = "a"
+        request.controller = "c"
+        request.function = "f"
+        request.folder = "applications/admin"
         response = Response()
         session = Session()
-        T = TranslatorFactory('', 'en')
+        T = TranslatorFactory("", "en")
         session.connect(request, response)
         from gluon.globals import current
+
         current.request = request
         current.response = response
         current.session = session
         current.T = T
-        self.db = DAL(DEFAULT_URI, check_reserved=['all'])
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
         self.auth = Auth(self.db)
         self.auth.define_tables(username=True, signature=False)
-        self.db.define_table('t0', Field('tt', default='web2py'), self.auth.signature)
+        self.db.define_table("t0", Field("tt", default="web2py"), self.auth.signature)
         self.auth.enable_record_versioning(self.db)
         # Create a user
-        self.db.auth_user.insert(first_name='Bart',
-                                 last_name='Simpson',
-                                 username='user1',
-                                 email='user1@test.com',
-                                 password='password_123',
-                                 registration_key=None,
-                                 registration_id=None)
+        self.db.auth_user.insert(
+            first_name="Bart",
+            last_name="Simpson",
+            username="user1",
+            email="user1@test.com",
+            password="password_123",
+            registration_key=None,
+            registration_id=None,
+        )
 
         self.db.commit()
 
-
     def test_SQLFORM(self):
         form = SQLFORM(self.db.auth_user)
-        self.assertEqual(form.xml()[:5], b'<form')
+        self.assertEqual(form.xml()[:5], b"<form")
 
     def test_represent_SQLFORM(self):
         id = self.db.t0.insert()
@@ -288,10 +290,10 @@ class TestSQLFORM(unittest.TestCase):
         self.db.t0.tt.writable = False
         self.db.t0.tt.readable = True
         form = SQLFORM(self.db.t0, id)
-        self.assertTrue(b'Web2py' in form.xml())
+        self.assertTrue(b"Web2py" in form.xml())
         self.db.t0.tt.represent = lambda value, row: value.capitalize()
         form = SQLFORM(self.db.t0, id)
-        self.assertTrue(b'Web2py' in form.xml())
+        self.assertTrue(b"Web2py" in form.xml())
 
     # def test_assert_status(self):
     #     pass
@@ -309,25 +311,27 @@ class TestSQLFORM(unittest.TestCase):
     #     pass
 
     def test_factory(self):
-        factory_form = SQLFORM.factory(Field('field_one', 'string', IS_NOT_EMPTY()),
-                                       Field('field_two', 'string'))
-        self.assertEqual(factory_form.xml()[:5], b'<form')
+        factory_form = SQLFORM.factory(
+            Field("field_one", "string", IS_NOT_EMPTY()), Field("field_two", "string")
+        )
+        self.assertEqual(factory_form.xml()[:5], b"<form")
 
     def test_factory_applies_default_validators(self):
         from gluon import current
 
         factory_form = SQLFORM.factory(
-            Field('a_date', type='date'),
+            Field("a_date", type="date"),
         )
         # Fake user input
-        current.request.post_vars.update({
-            '_formname': 'no_table/create',
-            'a_date': '2018-09-14',
-            '_formkey': '123',
-
-        })
+        current.request.post_vars.update(
+            {
+                "_formname": "no_table/create",
+                "a_date": "2018-09-14",
+                "_formkey": "123",
+            }
+        )
         # Fake the formkey
-        current.session['_formkey[no_table/create]'] = ['123']
+        current.session["_formkey[no_table/create]"] = ["123"]
 
         self.assertTrue(factory_form.process().accepted)
         self.assertIsInstance(factory_form.vars.a_date, datetime.date)
@@ -340,48 +344,52 @@ class TestSQLFORM(unittest.TestCase):
 
     def test_grid(self):
         grid_form = SQLFORM.grid(self.db.auth_user)
-        self.assertEqual(grid_form.xml()[:4], b'<div')
+        self.assertEqual(grid_form.xml()[:4], b"<div")
 
     def test_smartgrid(self):
         smartgrid_form = SQLFORM.smartgrid(self.db.auth_user)
-        self.assertEqual(smartgrid_form.xml()[:4], b'<div')
+        self.assertEqual(smartgrid_form.xml()[:4], b"<div")
+
 
 class TestSQLTABLE(unittest.TestCase):
     def setUp(self):
         request = Request(env={})
-        request.application = 'a'
-        request.controller = 'c'
-        request.function = 'f'
-        request.folder = 'applications/admin'
+        request.application = "a"
+        request.controller = "c"
+        request.function = "f"
+        request.folder = "applications/admin"
         response = Response()
         session = Session()
-        T = TranslatorFactory('', 'en')
+        T = TranslatorFactory("", "en")
         session.connect(request, response)
         from gluon.globals import current
+
         current.request = request
         current.response = response
         current.session = session
         current.T = T
-        self.db = DAL(DEFAULT_URI, check_reserved=['all'])
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
         self.auth = Auth(self.db)
         self.auth.define_tables(username=True, signature=False)
-        self.db.define_table('t0', Field('tt'), self.auth.signature)
+        self.db.define_table("t0", Field("tt"), self.auth.signature)
         self.auth.enable_record_versioning(self.db)
         # Create a user
-        self.db.auth_user.insert(first_name='Bart',
-                                 last_name='Simpson',
-                                 username='user1',
-                                 email='user1@test.com',
-                                 password='password_123',
-                                 registration_key=None,
-                                 registration_id=None)
+        self.db.auth_user.insert(
+            first_name="Bart",
+            last_name="Simpson",
+            username="user1",
+            email="user1@test.com",
+            password="password_123",
+            registration_key=None,
+            registration_id=None,
+        )
 
         self.db.commit()
 
     def test_SQLTABLE(self):
         rows = self.db(self.db.auth_user.id > 0).select(self.db.auth_user.ALL)
         sqltable = SQLTABLE(rows)
-        self.assertEqual(sqltable.xml()[:7], b'<table>')
+        self.assertEqual(sqltable.xml()[:7], b"<table>")
 
 
 # class TestExportClass(unittest.TestCase):

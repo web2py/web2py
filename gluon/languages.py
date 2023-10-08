@@ -11,32 +11,32 @@ Translation system
 --------------------------------------------
 """
 
+import logging
 import os
+import pkgutil
 import re
 import sys
-import pkgutil
-import logging
 from threading import RLock
 
-from pydal._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
-from pydal.contrib.portalocker import read_locked, LockedFile
-
+from pydal._compat import (PY2, copyreg, iteritems, iterkeys, maketrans, pjoin,
+                           to_bytes, to_native, to_unicode, unicodeT)
+from pydal.contrib.portalocker import LockedFile, read_locked
 from yatl.sanitizer import xmlescape
 
-from gluon.fileutils import listdir
 from gluon.cfs import getcfs
+from gluon.contrib.markmin.markmin2html import markmin_escape, render
+from gluon.fileutils import listdir
 from gluon.html import XML, xmlescape
-from gluon.contrib.markmin.markmin2html import render, markmin_escape
 
-__all__ = ['translator', 'findT', 'update_all_languages']
+__all__ = ["translator", "findT", "update_all_languages"]
 
 ostat = os.stat
 oslistdir = os.listdir
 pdirname = os.path.dirname
 isdir = os.path.isdir
 
-DEFAULT_LANGUAGE = 'en'
-DEFAULT_LANGUAGE_NAME = 'English'
+DEFAULT_LANGUAGE = "en"
+DEFAULT_LANGUAGE_NAME = "English"
 
 # DEFAULT PLURAL-FORMS RULES:
 # language doesn't use plural forms
@@ -54,35 +54,44 @@ else:
     Utf8 = str
 
 # pattern to find T(blah blah blah) expressions
-PY_STRING_LITERAL_RE = r'(?<=[^\w]T\()(?P<name>'\
-    + r"[uU]?[rR]?(?:'''(?:[^']|'{1,2}(?!'))*''')|"\
-    + r"(?:'(?:[^'\\]|\\.)*')|" + r'(?:"""(?:[^"]|"{1,2}(?!"))*""")|'\
+PY_STRING_LITERAL_RE = (
+    r"(?<=[^\w]T\()(?P<name>"
+    + r"[uU]?[rR]?(?:'''(?:[^']|'{1,2}(?!'))*''')|"
+    + r"(?:'(?:[^'\\]|\\.)*')|"
+    + r'(?:"""(?:[^"]|"{1,2}(?!"))*""")|'
     + r'(?:"(?:[^"\\]|\\.)*"))'
+)
 
-PY_M_STRING_LITERAL_RE = r'(?<=[^\w]T\.M\()(?P<name>'\
-    + r"[uU]?[rR]?(?:'''(?:[^']|'{1,2}(?!'))*''')|"\
-    + r"(?:'(?:[^'\\]|\\.)*')|" + r'(?:"""(?:[^"]|"{1,2}(?!"))*""")|'\
+PY_M_STRING_LITERAL_RE = (
+    r"(?<=[^\w]T\.M\()(?P<name>"
+    + r"[uU]?[rR]?(?:'''(?:[^']|'{1,2}(?!'))*''')|"
+    + r"(?:'(?:[^'\\]|\\.)*')|"
+    + r'(?:"""(?:[^"]|"{1,2}(?!"))*""")|'
     + r'(?:"(?:[^"\\]|\\.)*"))'
+)
 
 regex_translate = re.compile(PY_STRING_LITERAL_RE, re.DOTALL)
 regex_translate_m = re.compile(PY_M_STRING_LITERAL_RE, re.DOTALL)
-regex_param = re.compile(r'{(?P<s>.+?)}')
+regex_param = re.compile(r"{(?P<s>.+?)}")
 
 # pattern for a valid accept_language
-regex_language = \
-    re.compile('([a-z]{2,3}(?:\-[a-z]{2})?(?:\-[a-z]{2})?)(?:[,;]|$)')
-regex_langfile = re.compile('^[a-z]{2,3}(-[a-z]{2})?\.py$')
+regex_language = re.compile("([a-z]{2,3}(?:\-[a-z]{2})?(?:\-[a-z]{2})?)(?:[,;]|$)")
+regex_langfile = re.compile("^[a-z]{2,3}(-[a-z]{2})?\.py$")
 regex_backslash = re.compile(r"\\([\\{}%])")
-regex_plural = re.compile('%({.+?})')
-regex_plural_dict = re.compile('^{(?P<w>[^()[\]][^()[\]]*?)\((?P<n>[^()\[\]]+)\)}$')  # %%{word(varname or number)}
+regex_plural = re.compile("%({.+?})")
+regex_plural_dict = re.compile(
+    "^{(?P<w>[^()[\]][^()[\]]*?)\((?P<n>[^()\[\]]+)\)}$"
+)  # %%{word(varname or number)}
 regex_plural_tuple = re.compile(
-    '^{(?P<w>[^[\]()]+)(?:\[(?P<i>\d+)\])?}$')  # %%{word[index]} or %%{word}
-regex_plural_file = re.compile('^plural-[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$')
+    "^{(?P<w>[^[\]()]+)(?:\[(?P<i>\d+)\])?}$"
+)  # %%{word[index]} or %%{word}
+regex_plural_file = re.compile("^plural-[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$")
 
 
 def is_writable():
-    """ returns True if and only if the filesystem is writable """
+    """returns True if and only if the filesystem is writable"""
     from gluon.settings import global_settings
+
     return not global_settings.web2py_runtime_gae
 
 
@@ -90,19 +99,24 @@ def safe_eval(text):
     if text.strip():
         try:
             import ast
+
             return ast.literal_eval(text)
         except ImportError:
             return eval(text, {}, {})
     return None
+
 
 # used as default filter in translator.M()
 
 
 def markmin(s):
     def markmin_aux(m):
-        return '{%s}' % markmin_escape(m.group('s'))
-    return render(regex_param.sub(markmin_aux, s),
-                  sep='br', autolinks=None, id_prefix='')
+        return "{%s}" % markmin_escape(m.group("s"))
+
+    return render(
+        regex_param.sub(markmin_aux, s), sep="br", autolinks=None, id_prefix=""
+    )
+
 
 # UTF8 helper functions
 
@@ -119,8 +133,8 @@ def cap_fun(s):
     return to_bytes(to_unicode(s).capitalize())
 
 
-ttab_in = maketrans("\\%{}", '\x1c\x1d\x1e\x1f')
-ttab_out = maketrans('\x1c\x1d\x1e\x1f', "\\%{}")
+ttab_in = maketrans("\\%{}", "\x1c\x1d\x1e\x1f")
+ttab_out = maketrans("\x1c\x1d\x1e\x1f", "\\%{}")
 
 # cache of translated messages:
 # global_language_cache:
@@ -153,8 +167,7 @@ def get_from_cache(cache, val, fun):
 
 
 def clear_cache(filename):
-    cache = global_language_cache.setdefault(
-        filename, ({}, RLock()))
+    cache = global_language_cache.setdefault(filename, ({}, RLock()))
     lang_dict, lock = cache
     lock.acquire()
     try:
@@ -164,22 +177,20 @@ def clear_cache(filename):
 
 
 def read_dict_aux(filename):
-    lang_text = read_locked(filename).replace(b'\r\n', b'\n')
+    lang_text = read_locked(filename).replace(b"\r\n", b"\n")
     clear_cache(filename)
     try:
         return safe_eval(to_native(lang_text)) or {}
     except Exception:
         e = sys.exc_info()[1]
-        status = 'Syntax error in %s (%s)' % (filename, e)
+        status = "Syntax error in %s (%s)" % (filename, e)
         logging.error(status)
-        return {'__corrupted__': status}
+        return {"__corrupted__": status}
 
 
 def read_dict(filename):
-    """ Returns dictionary with translation messages
-    """
-    return getcfs('lang:' + filename, filename,
-                  lambda: read_dict_aux(filename))
+    """Returns dictionary with translation messages"""
+    return getcfs("lang:" + filename, filename, lambda: read_dict_aux(filename))
 
 
 def read_possible_plural_rules():
@@ -190,61 +201,68 @@ def read_possible_plural_rules():
     plurals = {}
     try:
         import gluon.contrib.plural_rules as package
+
         for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
             if len(modname) == 2:
-                module = __import__(package.__name__ + '.' + modname,
-                                    fromlist=[modname])
+                module = __import__(
+                    package.__name__ + "." + modname, fromlist=[modname]
+                )
                 lang = modname
-                pname = modname + '.py'
-                nplurals = getattr(module, 'nplurals', DEFAULT_NPLURALS)
-                get_plural_id = getattr(
-                    module, 'get_plural_id',
-                    DEFAULT_GET_PLURAL_ID)
+                pname = modname + ".py"
+                nplurals = getattr(module, "nplurals", DEFAULT_NPLURALS)
+                get_plural_id = getattr(module, "get_plural_id", DEFAULT_GET_PLURAL_ID)
                 construct_plural_form = getattr(
-                    module, 'construct_plural_form',
-                    DEFAULT_CONSTRUCT_PLURAL_FORM)
-                plurals[lang] = (lang, nplurals, get_plural_id,
-                                 construct_plural_form)
+                    module, "construct_plural_form", DEFAULT_CONSTRUCT_PLURAL_FORM
+                )
+                plurals[lang] = (lang, nplurals, get_plural_id, construct_plural_form)
     except ImportError:
         e = sys.exc_info()[1]
-        logging.warn('Unable to import plural rules: %s' % e)
+        logging.warn("Unable to import plural rules: %s" % e)
     return plurals
+
 
 PLURAL_RULES = read_possible_plural_rules()
 
 
 def read_possible_languages_aux(langdir):
     def get_lang_struct(lang, langcode, langname, langfile_mtime):
-        if lang == 'default':
+        if lang == "default":
             real_lang = langcode.lower()
         else:
             real_lang = lang
-        (prules_langcode,
-         nplurals,
-         get_plural_id,
-         construct_plural_form
-         ) = PLURAL_RULES.get(real_lang[:2], ('default',
-                                              DEFAULT_NPLURALS,
-                                              DEFAULT_GET_PLURAL_ID,
-                                              DEFAULT_CONSTRUCT_PLURAL_FORM))
-        if prules_langcode != 'default':
-            (pluraldict_fname,
-             pluraldict_mtime) = plurals.get(real_lang,
-                                             plurals.get(real_lang[:2],
-                                                         ('plural-%s.py' % real_lang, 0)))
+        (
+            prules_langcode,
+            nplurals,
+            get_plural_id,
+            construct_plural_form,
+        ) = PLURAL_RULES.get(
+            real_lang[:2],
+            (
+                "default",
+                DEFAULT_NPLURALS,
+                DEFAULT_GET_PLURAL_ID,
+                DEFAULT_CONSTRUCT_PLURAL_FORM,
+            ),
+        )
+        if prules_langcode != "default":
+            (pluraldict_fname, pluraldict_mtime) = plurals.get(
+                real_lang, plurals.get(real_lang[:2], ("plural-%s.py" % real_lang, 0))
+            )
         else:
             pluraldict_fname = None
             pluraldict_mtime = 0
-        return (langcode,        # language code from !langcode!
-                langname,
-                # language name in national spelling from !langname!
-                langfile_mtime,  # m_time of language file
-                pluraldict_fname,  # name of plural dictionary file or None (when default.py is not exist)
-                pluraldict_mtime,  # m_time of plural dictionary file or 0 if file is not exist
-                prules_langcode,  # code of plural rules language or 'default'
-                nplurals,        # nplurals for current language
-                get_plural_id,   # get_plural_id() for current language
-                construct_plural_form)  # construct_plural_form() for current language
+        return (
+            langcode,  # language code from !langcode!
+            langname,
+            # language name in national spelling from !langname!
+            langfile_mtime,  # m_time of language file
+            pluraldict_fname,  # name of plural dictionary file or None (when default.py is not exist)
+            pluraldict_mtime,  # m_time of plural dictionary file or 0 if file is not exist
+            prules_langcode,  # code of plural rules language or 'default'
+            nplurals,  # nplurals for current language
+            get_plural_id,  # get_plural_id() for current language
+            construct_plural_form,
+        )  # construct_plural_form() for current language
 
     plurals = {}
     flist = oslistdir(langdir) if isdir(langdir) else []
@@ -252,27 +270,27 @@ def read_possible_languages_aux(langdir):
     # scan languages directory for plural dict files:
     for pname in flist:
         if regex_plural_file.match(pname):
-            plurals[pname[7:-3]] = (pname,
-                                    ostat(pjoin(langdir, pname)).st_mtime)
+            plurals[pname[7:-3]] = (pname, ostat(pjoin(langdir, pname)).st_mtime)
     langs = {}
     # scan languages directory for langfiles:
     for fname in flist:
-        if regex_langfile.match(fname) or fname == 'default.py':
+        if regex_langfile.match(fname) or fname == "default.py":
             fname_with_path = pjoin(langdir, fname)
             d = read_dict(fname_with_path)
             lang = fname[:-3]
-            langcode = d.get('!langcode!', lang if lang != 'default'
-                             else DEFAULT_LANGUAGE)
-            langname = d.get('!langname!', langcode)
+            langcode = d.get(
+                "!langcode!", lang if lang != "default" else DEFAULT_LANGUAGE
+            )
+            langname = d.get("!langname!", langcode)
             langfile_mtime = ostat(fname_with_path).st_mtime
-            langs[lang] = get_lang_struct(lang, langcode,
-                                          langname, langfile_mtime)
-    if 'default' not in langs:
+            langs[lang] = get_lang_struct(lang, langcode, langname, langfile_mtime)
+    if "default" not in langs:
         # if default.py is not found,
         # add DEFAULT_LANGUAGE as default language:
-        langs['default'] = get_lang_struct('default', DEFAULT_LANGUAGE,
-                                           DEFAULT_LANGUAGE_NAME, 0)
-    deflang = langs['default']
+        langs["default"] = get_lang_struct(
+            "default", DEFAULT_LANGUAGE, DEFAULT_LANGUAGE_NAME, 0
+        )
+    deflang = langs["default"]
     deflangcode = deflang[0]
     if deflangcode not in langs:
         # create language from default.py:
@@ -282,41 +300,44 @@ def read_possible_languages_aux(langdir):
 
 
 def read_possible_languages(langpath):
-    return getcfs('langs:' + langpath, langpath,
-                  lambda: read_possible_languages_aux(langpath))
+    return getcfs(
+        "langs:" + langpath, langpath, lambda: read_possible_languages_aux(langpath)
+    )
 
 
 def read_plural_dict_aux(filename):
-    lang_text = read_locked(filename).replace(b'\r\n', b'\n')
+    lang_text = read_locked(filename).replace(b"\r\n", b"\n")
     try:
         return eval(lang_text) or {}
     except Exception:
         e = sys.exc_info()[1]
-        status = 'Syntax error in %s (%s)' % (filename, e)
+        status = "Syntax error in %s (%s)" % (filename, e)
         logging.error(status)
-        return {'__corrupted__': status}
+        return {"__corrupted__": status}
 
 
 def read_plural_dict(filename):
-    return getcfs('plurals:' + filename, filename,
-                  lambda: read_plural_dict_aux(filename))
+    return getcfs(
+        "plurals:" + filename, filename, lambda: read_plural_dict_aux(filename)
+    )
 
 
 def write_plural_dict(filename, contents):
-    if '__corrupted__' in contents:
+    if "__corrupted__" in contents:
         return
     fp = None
     try:
-        fp = LockedFile(filename, 'w')
-        fp.write('#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n{\n# "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],\n')
+        fp = LockedFile(filename, "w")
+        fp.write(
+            '#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n{\n# "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],\n'
+        )
         for key in sorted(contents, key=sort_function):
-            forms = '[' + ','.join([repr(Utf8(form))
-                                    for form in contents[key]]) + ']'
-            fp.write('%s: %s,\n' % (repr(Utf8(key)), forms))
-        fp.write('}\n')
+            forms = "[" + ",".join([repr(Utf8(form)) for form in contents[key]]) + "]"
+            fp.write("%s: %s,\n" % (repr(Utf8(key)), forms))
+        fp.write("}\n")
     except (IOError, OSError):
         if is_writable():
-            logging.warning('Unable to write to file %s' % filename)
+            logging.warning("Unable to write to file %s" % filename)
         return
     finally:
         if fp:
@@ -324,23 +345,22 @@ def write_plural_dict(filename, contents):
 
 
 def sort_function(x):
-    return to_unicode(x, 'utf-8').lower()
+    return to_unicode(x, "utf-8").lower()
 
 
 def write_dict(filename, contents):
-    if '__corrupted__' in contents:
+    if "__corrupted__" in contents:
         return
     fp = None
     try:
-        fp = LockedFile(filename, 'w')
-        fp.write('# -*- coding: utf-8 -*-\n{\n')
-        for key in sorted(contents, key=lambda x: to_unicode(x, 'utf-8').lower()):
-            fp.write('%s: %s,\n' % (repr(Utf8(key)),
-                                    repr(Utf8(contents[key]))))
-        fp.write('}\n')
+        fp = LockedFile(filename, "w")
+        fp.write("# -*- coding: utf-8 -*-\n{\n")
+        for key in sorted(contents, key=lambda x: to_unicode(x, "utf-8").lower()):
+            fp.write("%s: %s,\n" % (repr(Utf8(key)), repr(Utf8(contents[key]))))
+        fp.write("}\n")
     except (IOError, OSError):
         if is_writable():
-            logging.warning('Unable to write to file %s' % filename)
+            logging.warning("Unable to write to file %s" % filename)
         return
     finally:
         if fp:
@@ -352,18 +372,11 @@ class lazyT(object):
     Never to be called explicitly, returned by
     translator.__call__() or translator.M()
     """
+
     m = s = T = f = t = None
     M = is_copy = False
 
-    def __init__(
-        self,
-        message,
-        symbols={},
-        T=None,
-        filter=None,
-        ftag=None,
-        M=False
-    ):
+    def __init__(self, message, symbols={}, T=None, filter=None, ftag=None, M=False):
         if isinstance(message, lazyT):
             self.m = message.m
             self.s = message.s
@@ -382,11 +395,14 @@ class lazyT(object):
             self.is_copy = False
 
     def __repr__(self):
-        return "<lazyT %s>" % (repr(Utf8(self.m)), )
+        return "<lazyT %s>" % (repr(Utf8(self.m)),)
 
     def __str__(self):
-        return str(self.T.apply_filter(self.m, self.s, self.f, self.t) if self.M else
-                   self.T.translate(self.m, self.s))
+        return str(
+            self.T.apply_filter(self.m, self.s, self.f, self.t)
+            if self.M
+            else self.T.translate(self.m, self.s)
+        )
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -401,10 +417,10 @@ class lazyT(object):
         return str(self) != str(other)
 
     def __add__(self, other):
-        return '%s%s' % (self, other)
+        return "%s%s" % (self, other)
 
     def __radd__(self, other):
-        return '%s%s' % (other, self)
+        return "%s%s" % (other, self)
 
     def __mul__(self, other):
         return str(self) * other
@@ -435,7 +451,7 @@ class lazyT(object):
         return str(self) if self.M else xmlescape(str(self), quote=False)
 
     def encode(self, *a, **b):
-        if PY2 and a[0] != 'utf8':
+        if PY2 and a[0] != "utf8":
             return to_unicode(str(self)).encode(*a, **b)
         else:
             return str(self)
@@ -457,6 +473,7 @@ class lazyT(object):
 
 def pickle_lazyT(c):
     return str, (to_native(c.xml()),)
+
 
 copyreg.pickle(lazyT, pickle_lazyT)
 
@@ -506,7 +523,7 @@ class TranslatorFactory(object):
         self.lazy = True
         self.otherTs = {}
         self.filter = markmin
-        self.ftag = 'markmin'
+        self.ftag = "markmin"
         self.ns = None
         self.is_writable = True
 
@@ -551,10 +568,17 @@ class TranslatorFactory(object):
         return info
 
     def get_possible_languages(self):
-        """ Gets list of all possible languages for current application """
-        return list(set(self.current_languages +
-                        [lang for lang in read_possible_languages(self.langpath)
-                         if lang != 'default']))
+        """Gets list of all possible languages for current application"""
+        return list(
+            set(
+                self.current_languages
+                + [
+                    lang
+                    for lang in read_possible_languages(self.langpath)
+                    if lang != "default"
+                ]
+            )
+        )
 
     def set_current_languages(self, *languages):
         """
@@ -566,15 +590,14 @@ class TranslatorFactory(object):
             languages = languages[0]
         if not languages or languages[0] is None:
             # set default language from default.py/DEFAULT_LANGUAGE
-            pl_info = self.get_possible_languages_info('default')
+            pl_info = self.get_possible_languages_info("default")
             if pl_info[2] == 0:  # langfile_mtime
                 # if languages/default.py is not found
                 self.default_language_file = self.langpath
                 self.default_t = {}
                 self.current_languages = [DEFAULT_LANGUAGE]
             else:
-                self.default_language_file = pjoin(self.langpath,
-                                                   'default.py')
+                self.default_language_file = pjoin(self.langpath, "default.py")
                 self.default_t = read_dict(self.default_language_file)
                 self.current_languages = [pl_info[0]]  # !langcode!
         else:
@@ -612,13 +635,12 @@ class TranslatorFactory(object):
                     return forms[id - 1]
                 else:
                     # guessing this plural form
-                    forms += [''] * (self.nplurals - len(forms) - 1)
+                    forms += [""] * (self.nplurals - len(forms) - 1)
                     form = self.construct_plural_form(word, id)
                     forms[id - 1] = form
                     self.plural_dict[word] = forms
                     if self.is_writable and is_writable() and self.plural_file:
-                        write_plural_dict(self.plural_file,
-                                          self.plural_dict)
+                        write_plural_dict(self.plural_file, self.plural_dict)
                     return form
         return word
 
@@ -635,19 +657,21 @@ class TranslatorFactory(object):
         of them matches possible_languages.
         """
         pl_info = read_possible_languages(self.langpath)
+
         def set_plural(language):
             """
             initialize plural forms subsystem
             """
             lang_info = pl_info.get(language)
             if lang_info:
-                (pname,
-                 pmtime,
-                 self.plural_language,
-                 self.nplurals,
-                 self.get_plural_id,
-                 self.construct_plural_form
-                 ) = lang_info[3:]
+                (
+                    pname,
+                    pmtime,
+                    self.plural_language,
+                    self.nplurals,
+                    self.get_plural_id,
+                    self.construct_plural_form,
+                ) = lang_info[3:]
                 pdict = {}
                 if pname:
                     pname = pjoin(self.langpath, pname)
@@ -656,22 +680,23 @@ class TranslatorFactory(object):
                 self.plural_file = pname
                 self.plural_dict = pdict
             else:
-                self.plural_language = 'default'
+                self.plural_language = "default"
                 self.nplurals = DEFAULT_NPLURALS
                 self.get_plural_id = DEFAULT_GET_PLURAL_ID
                 self.construct_plural_form = DEFAULT_CONSTRUCT_PLURAL_FORM
                 self.plural_file = None
                 self.plural_dict = {}
-        language = ''
+
+        language = ""
         if len(languages) == 1 and isinstance(languages[0], str):
             languages = regex_language.findall(languages[0].lower())
         elif not languages or languages[0] is None:
             languages = []
         self.requested_languages = languages = tuple(languages)
         if languages:
-            all_languages = set(lang for lang in pl_info
-                                if lang != 'default') \
-                | set(self.current_languages)
+            all_languages = set(lang for lang in pl_info if lang != "default") | set(
+                self.current_languages
+            )
             for lang in languages:
                 # compare "aa-bb" | "aa" from *language* parameter
                 # with strings from langlist using such alghorythm:
@@ -690,11 +715,11 @@ class TranslatorFactory(object):
                 if language:
                     if language in self.current_languages:
                         break
-                    self.language_file = pjoin(self.langpath, language + '.py')
+                    self.language_file = pjoin(self.langpath, language + ".py")
                     self.t = read_dict(self.language_file)
                     self.cache = global_language_cache.setdefault(
-                        self.language_file,
-                        ({}, RLock()))
+                        self.language_file, ({}, RLock())
+                    )
                     set_plural(language)
                     self.accepted_language = language
                     return languages
@@ -705,8 +730,7 @@ class TranslatorFactory(object):
             else:
                 self.accepted_language = DEFAULT_LANGUAGE
         self.language_file = self.default_language_file
-        self.cache = global_language_cache.setdefault(self.language_file,
-                                                      ({}, RLock()))
+        self.cache = global_language_cache.setdefault(self.language_file, ({}, RLock()))
         self.t = self.default_t
         set_plural(self.accepted_language)
         return languages
@@ -734,11 +758,11 @@ class TranslatorFactory(object):
 
     def __get_otherT__(self, language=None, namespace=None):
         if not language and not namespace:
-            raise Exception('Incorrect parameters')
+            raise Exception("Incorrect parameters")
 
         if namespace:
             if language:
-                index = '%s/%s' % (namespace, language)
+                index = "%s/%s" % (namespace, language)
             else:
                 index = namespace
         else:
@@ -746,8 +770,9 @@ class TranslatorFactory(object):
         try:
             otherT = self.otherTs[index]
         except KeyError:
-            otherT = self.otherTs[index] = TranslatorFactory(self.langpath,
-                                                             self.http_accept_language)
+            otherT = self.otherTs[index] = TranslatorFactory(
+                self.langpath, self.http_accept_language
+            )
             if language:
                 otherT.force(language)
         return otherT
@@ -756,31 +781,43 @@ class TranslatorFactory(object):
         def get_tr(message, prefix, filter):
             s = self.get_t(message, prefix)
             return filter(s) if filter else self.filter(s)
+
         if filter:
-            prefix = '@' + (ftag or 'userdef') + '\x01'
+            prefix = "@" + (ftag or "userdef") + "\x01"
         else:
-            prefix = '@' + self.ftag + '\x01'
+            prefix = "@" + self.ftag + "\x01"
         message = get_from_cache(
-            self.cache, prefix + message,
-            lambda: get_tr(message, prefix, filter))
+            self.cache, prefix + message, lambda: get_tr(message, prefix, filter)
+        )
         if symbols or symbols == 0 or symbols == "":
             if isinstance(symbols, dict):
                 symbols.update(
                     (key, xmlescape(value).translate(ttab_in))
                     for key, value in iteritems(symbols)
-                    if not isinstance(value, NUMBERS))
+                    if not isinstance(value, NUMBERS)
+                )
             else:
                 if not isinstance(symbols, tuple):
                     symbols = (symbols,)
                 symbols = tuple(
-                    value if isinstance(value, NUMBERS)
+                    value
+                    if isinstance(value, NUMBERS)
                     else to_native(xmlescape(value)).translate(ttab_in)
-                    for value in symbols)
+                    for value in symbols
+                )
             message = self.params_substitution(message, symbols)
         return to_native(XML(message.translate(ttab_out)).xml())
 
-    def M(self, message, symbols={}, language=None,
-          lazy=None, filter=None, ftag=None, ns=None):
+    def M(
+        self,
+        message,
+        symbols={},
+        language=None,
+        lazy=None,
+        filter=None,
+        ftag=None,
+        ns=None,
+    ):
         """
         Gets cached translated markmin-message with inserted parametes
         if lazy==True lazyT object is returned
@@ -798,7 +835,7 @@ class TranslatorFactory(object):
             otherT = self.__get_otherT__(language, ns)
             return otherT.M(message, symbols, lazy=lazy)
 
-    def get_t(self, message, prefix=''):
+    def get_t(self, message, prefix=""):
         """
         Use ## to add a comment into a translation string
         the comment can be useful do discriminate different possible
@@ -811,26 +848,30 @@ class TranslatorFactory(object):
         the ## notation is ignored in multiline strings and strings that
         start with ##. This is needed to allow markmin syntax to be translated
         """
-        message = to_native(message, 'utf8')
-        prefix = to_native(prefix, 'utf8')
+        message = to_native(message, "utf8")
+        prefix = to_native(prefix, "utf8")
         key = prefix + message
         mt = self.t.get(key, None)
         if mt is not None:
             return mt
         # we did not find a translation
-        if message.find('##') > 0:
+        if message.find("##") > 0:
             pass
-        if message.find('##') > 0 and not '\n' in message:
+        if message.find("##") > 0 and not "\n" in message:
             # remove comments
-            message = message.rsplit('##', 1)[0]
+            message = message.rsplit("##", 1)[0]
         # guess translation same as original
         self.t[key] = mt = self.default_t.get(key, message)
         # update language file for latter translation
-        if self.is_writable and is_writable() and \
-                self.language_file != self.default_language_file:
+        if (
+            self.is_writable
+            and is_writable()
+            and self.language_file != self.default_language_file
+        ):
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
-            lambda m: m.group(1).translate(ttab_in), to_native(mt))
+            lambda m: m.group(1).translate(ttab_in), to_native(mt)
+        )
 
     def params_substitution(self, message, symbols):
         """
@@ -843,79 +884,81 @@ class TranslatorFactory(object):
         Note:
             *symbols* MUST BE OR tuple OR dict of parameters!
         """
+
         def sub_plural(m):
             """String in `%{}` is transformed by this rules:
-               If string starts with  `!` or `?` such transformations
-               take place:
+            If string starts with  `!` or `?` such transformations
+            take place:
 
-                   "!string of words" -> "String of word" (Capitalize)
-                   "!!string of words" -> "String Of Word" (Title)
-                   "!!!string of words" -> "STRING OF WORD" (Upper)
+                "!string of words" -> "String of word" (Capitalize)
+                "!!string of words" -> "String Of Word" (Title)
+                "!!!string of words" -> "STRING OF WORD" (Upper)
 
-                   "?word1?number" -> "word1" or "number"
-                                 (return word1 if number == 1,
-                                  return number otherwise)
-                   "??number" or "?number" -> "" or "number"
-                                 (as above with word1 = "")
+                "?word1?number" -> "word1" or "number"
+                              (return word1 if number == 1,
+                               return number otherwise)
+                "??number" or "?number" -> "" or "number"
+                              (as above with word1 = "")
 
-                   "?word1?number?word0" -> "word1" or "number" or "word0"
-                                 (return word1 if number == 1,
-                                  return word0 if number == 0,
-                                  return number otherwise)
-                   "?word1?number?" -> "word1" or "number" or ""
-                                 (as above with word0 = "")
-                   "??number?word0" -> "number" or "word0"
-                                 (as above with word1 = "")
-                   "??number?" -> "number" or ""
-                                 (as above with word1 = word0 = "")
+                "?word1?number?word0" -> "word1" or "number" or "word0"
+                              (return word1 if number == 1,
+                               return word0 if number == 0,
+                               return number otherwise)
+                "?word1?number?" -> "word1" or "number" or ""
+                              (as above with word0 = "")
+                "??number?word0" -> "number" or "word0"
+                              (as above with word1 = "")
+                "??number?" -> "number" or ""
+                              (as above with word1 = word0 = "")
 
-                   "?word1?word[number]" -> "word1" or "word"
-                                 (return word1 if symbols[number] == 1,
-                                  return word otherwise)
-                   "?word1?[number]" -> "" or "word1"
-                                 (as above with word = "")
-                   "??word[number]" or "?word[number]" -> "" or "word"
-                                 (as above with word1 = "")
+                "?word1?word[number]" -> "word1" or "word"
+                              (return word1 if symbols[number] == 1,
+                               return word otherwise)
+                "?word1?[number]" -> "" or "word1"
+                              (as above with word = "")
+                "??word[number]" or "?word[number]" -> "" or "word"
+                              (as above with word1 = "")
 
-                   "?word1?word?word0[number]" -> "word1" or "word" or "word0"
-                                 (return word1 if symbols[number] == 1,
-                                  return word0 if symbols[number] == 0,
-                                  return word otherwise)
-                   "?word1?word?[number]" -> "word1" or "word" or ""
-                                 (as above with word0 = "")
-                   "??word?word0[number]" -> "" or "word" or "word0"
-                                 (as above with word1 = "")
-                   "??word?[number]" -> "" or "word"
-                                 (as above with word1 = word0 = "")
+                "?word1?word?word0[number]" -> "word1" or "word" or "word0"
+                              (return word1 if symbols[number] == 1,
+                               return word0 if symbols[number] == 0,
+                               return word otherwise)
+                "?word1?word?[number]" -> "word1" or "word" or ""
+                              (as above with word0 = "")
+                "??word?word0[number]" -> "" or "word" or "word0"
+                              (as above with word1 = "")
+                "??word?[number]" -> "" or "word"
+                              (as above with word1 = word0 = "")
 
-               Other strings, (those not starting with  `!` or `?`)
-               are processed by self.plural
+            Other strings, (those not starting with  `!` or `?`)
+            are processed by self.plural
             """
-            def sub_tuple(m):
-                """ word
-                    !word, !!word, !!!word
-                    ?word1?number
-                         ??number, ?number
-                    ?word1?number?word0
-                    ?word1?number?
-                         ??number?word0
-                         ??number?
 
-                    word[number]
-                    !word[number], !!word[number], !!!word[number]
-                    ?word1?word[number]
-                    ?word1?[number]
-                         ??word[number], ?word[number]
-                    ?word1?word?word0[number]
-                    ?word1?word?[number]
-                         ??word?word0[number]
-                         ??word?[number]
+            def sub_tuple(m):
+                """word
+                !word, !!word, !!!word
+                ?word1?number
+                     ??number, ?number
+                ?word1?number?word0
+                ?word1?number?
+                     ??number?word0
+                     ??number?
+
+                word[number]
+                !word[number], !!word[number], !!!word[number]
+                ?word1?word[number]
+                ?word1?[number]
+                     ??word[number], ?word[number]
+                ?word1?word?word0[number]
+                ?word1?word?[number]
+                     ??word?word0[number]
+                     ??word?[number]
                 """
-                w, i = m.group('w', 'i')
+                w, i = m.group("w", "i")
                 c = w[0]
-                if c not in '!?':
+                if c not in "!?":
                     return self.plural(w, symbols[int(i or 0)])
-                elif c == '?':
+                elif c == "?":
                     (p1, sep, p2) = w[1:].partition("?")
                     part1 = p1 if sep else ""
                     (part2, sep, part3) = (p2 if sep else p1).partition("?")
@@ -930,10 +973,10 @@ class TranslatorFactory(object):
                         # ?[word1]?word[?word0][number]
                         num = int(symbols[int(i or 0)])
                     return part1 if num == 1 else part3 if num == 0 else part2
-                elif w.startswith('!!!'):
+                elif w.startswith("!!!"):
                     word = w[3:]
                     fun = upper_fun
-                elif w.startswith('!!'):
+                elif w.startswith("!!"):
                     word = w[2:]
                     fun = title_fun
                 else:
@@ -944,22 +987,22 @@ class TranslatorFactory(object):
                 return to_native(fun(word))
 
             def sub_dict(m):
-                """ word(key or num)
-                    !word(key or num), !!word(key or num), !!!word(key or num)
-                    ?word1?word(key or num)
-                         ??word(key or num), ?word(key or num)
-                    ?word1?word?word0(key or num)
-                    ?word1?word?(key or num)
-                         ??word?word0(key or num)
-                    ?word1?word?(key or num)
-                         ??word?(key or num), ?word?(key or num)
+                """word(key or num)
+                !word(key or num), !!word(key or num), !!!word(key or num)
+                ?word1?word(key or num)
+                     ??word(key or num), ?word(key or num)
+                ?word1?word?word0(key or num)
+                ?word1?word?(key or num)
+                     ??word?word0(key or num)
+                ?word1?word?(key or num)
+                     ??word?(key or num), ?word?(key or num)
                 """
-                w, n = m.group('w', 'n')
+                w, n = m.group("w", "n")
                 c = w[0]
                 n = int(n) if n.isdigit() else symbols[n]
-                if c not in '!?':
+                if c not in "!?":
                     return self.plural(w, n)
-                elif c == '?':
+                elif c == "?":
                     # ?[word1]?word[?word0](key or num), ?[word1]?word(key or num) or ?word(key or num)
                     (p1, sep, p2) = w[1:].partition("?")
                     part1 = p1 if sep else ""
@@ -968,10 +1011,10 @@ class TranslatorFactory(object):
                         part3 = part2
                     num = int(n)
                     return part1 if num == 1 else part3 if num == 0 else part2
-                elif w.startswith('!!!'):
+                elif w.startswith("!!!"):
                     word = w[3:]
                     fun = upper_fun
-                elif w.startswith('!!'):
+                elif w.startswith("!!"):
                     word = w[2:]
                     fun = title_fun
                 else:
@@ -987,6 +1030,7 @@ class TranslatorFactory(object):
                 if part == s:
                     return m.group(0)
             return part
+
         message = message % symbols
         message = regex_plural.sub(sub_plural, message)
         return message
@@ -995,21 +1039,23 @@ class TranslatorFactory(object):
         """
         Gets cached translated message with inserted parameters(symbols)
         """
-        message = get_from_cache(self.cache, message,
-                                 lambda: self.get_t(message))
+        message = get_from_cache(self.cache, message, lambda: self.get_t(message))
         if symbols or symbols == 0 or symbols == "":
             if isinstance(symbols, dict):
                 symbols.update(
                     (key, str(value).translate(ttab_in))
                     for key, value in iteritems(symbols)
-                    if not isinstance(value, NUMBERS))
+                    if not isinstance(value, NUMBERS)
+                )
             else:
                 if not isinstance(symbols, tuple):
                     symbols = (symbols,)
                 symbols = tuple(
-                    value if isinstance(value, NUMBERS)
+                    value
+                    if isinstance(value, NUMBERS)
                     else str(value).translate(ttab_in)
-                    for value in symbols)
+                    for value in symbols
+                )
             message = self.params_substitution(message, symbols)
         return message.translate(ttab_out)
 
@@ -1020,30 +1066,38 @@ def findT(path, language=DEFAULT_LANGUAGE):
         Must be run by the admin app
     """
     from gluon.tools import Auth, Crud
-    lang_file = pjoin(path, 'languages', language + '.py')
+
+    lang_file = pjoin(path, "languages", language + ".py")
     sentences = read_dict(lang_file)
-    mp = pjoin(path, 'models')
-    cp = pjoin(path, 'controllers')
-    vp = pjoin(path, 'views')
-    mop = pjoin(path, 'modules')
+    mp = pjoin(path, "models")
+    cp = pjoin(path, "controllers")
+    vp = pjoin(path, "views")
+    mop = pjoin(path, "modules")
+
     def add_message(message):
-        if not message.startswith('#') and not '\n' in message:
-            tokens = message.rsplit('##', 1)
+        if not message.startswith("#") and not "\n" in message:
+            tokens = message.rsplit("##", 1)
         else:
             # this allows markmin syntax in translations
             tokens = [message]
         if len(tokens) == 2:
-            message = tokens[0].strip() + '##' + tokens[1].strip()
+            message = tokens[0].strip() + "##" + tokens[1].strip()
         if message and not message in sentences:
             sentences[message] = message.replace("@markmin\x01", "")
-    for filename in \
-            listdir(mp, '^.+\.py$', 0) + listdir(cp, '^.+\.py$', 0)\
-            + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
+
+    for filename in (
+        listdir(mp, "^.+\.py$", 0)
+        + listdir(cp, "^.+\.py$", 0)
+        + listdir(vp, "^.+\.html$", 0)
+        + listdir(mop, "^.+\.py$", 0)
+    ):
         data = to_native(read_locked(filename))
         items = regex_translate.findall(data)
         for x in regex_translate_m.findall(data):
-            if x[0:3] in ["'''", '"""']: items.append("%s@markmin\x01%s" %(x[0:3], x[3:]))
-            else: items.append("%s@markmin\x01%s" %(x[0], x[1:]))
+            if x[0:3] in ["'''", '"""']:
+                items.append("%s@markmin\x01%s" % (x[0:3], x[3:]))
+            else:
+                items.append("%s@markmin\x01%s" % (x[0], x[1:]))
         for item in items:
             try:
                 message = safe_eval(item)
@@ -1053,13 +1107,16 @@ def findT(path, language=DEFAULT_LANGUAGE):
     gluon_msg = [Auth.default_messages, Crud.default_messages]
     for item in [x for m in gluon_msg for x in m.values() if x is not None]:
         add_message(item)
-    if not '!langcode!' in sentences:
-        sentences['!langcode!'] = (
-            DEFAULT_LANGUAGE if language in ('default', DEFAULT_LANGUAGE) else language)
-    if not '!langname!' in sentences:
-        sentences['!langname!'] = (
-            DEFAULT_LANGUAGE_NAME if language in ('default', DEFAULT_LANGUAGE)
-            else sentences['!langcode!'])
+    if not "!langcode!" in sentences:
+        sentences["!langcode!"] = (
+            DEFAULT_LANGUAGE if language in ("default", DEFAULT_LANGUAGE) else language
+        )
+    if not "!langname!" in sentences:
+        sentences["!langname!"] = (
+            DEFAULT_LANGUAGE_NAME
+            if language in ("default", DEFAULT_LANGUAGE)
+            else sentences["!langcode!"]
+        )
     write_dict(lang_file, sentences)
 
 
@@ -1068,7 +1125,7 @@ def update_all_languages(application_path):
     Note:
         Must be run by the admin app
     """
-    path = pjoin(application_path, 'languages/')
+    path = pjoin(application_path, "languages/")
     for language in oslistdir(path):
         if regex_langfile.match(language):
             findT(application_path, language[:-3])
@@ -1093,6 +1150,7 @@ def update_from_langfile(target, source, force_update=False):
     write_dict(target, sentences)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

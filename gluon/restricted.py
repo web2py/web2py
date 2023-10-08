@@ -9,21 +9,21 @@ Restricted environment to execute application's code
 -----------------------------------------------------
 """
 
+import logging
+import os
 import sys
-from gluon._compat import pickle, ClassType, unicodeT, to_bytes
 import traceback
 import types
-import os
-import logging
 
-from gluon.storage import Storage
-from gluon.http import HTTP
+from gluon._compat import ClassType, pickle, to_bytes, unicodeT
 from gluon.html import BEAUTIFY, XML
+from gluon.http import HTTP
 from gluon.settings import global_settings
+from gluon.storage import Storage
 
 logger = logging.getLogger("web2py")
 
-__all__ = ['RestrictedError', 'restricted', 'TicketStorage', 'compile2']
+__all__ = ["RestrictedError", "restricted", "TicketStorage", "compile2"]
 
 
 class TicketStorage(Storage):
@@ -32,11 +32,7 @@ class TicketStorage(Storage):
     Defines the ticket object and the default values of its members (None)
     """
 
-    def __init__(
-        self,
-        db=None,
-        tablename='web2py_ticket'
-    ):
+    def __init__(self, db=None, tablename="web2py_ticket"):
         Storage.__init__(self)
         self.db = db
         self.tablename = tablename
@@ -54,19 +50,21 @@ class TicketStorage(Storage):
         self.db._adapter.reconnect()
         try:
             table = self._get_table(self.db, self.tablename, request.application)
-            table.insert(ticket_id=ticket_id,
-                         ticket_data=pickle.dumps(ticket_data, pickle.HIGHEST_PROTOCOL),
-                         created_datetime=request.now)
+            table.insert(
+                ticket_id=ticket_id,
+                ticket_data=pickle.dumps(ticket_data, pickle.HIGHEST_PROTOCOL),
+                created_datetime=request.now,
+            )
             self.db.commit()
-            message = 'In FILE: %(layer)s\n\n%(traceback)s\n'
+            message = "In FILE: %(layer)s\n\n%(traceback)s\n"
         except Exception:
             self.db.rollback()
-            message =' Unable to store in FILE: %(layer)s\n\n%(traceback)s\n'
+            message = " Unable to store in FILE: %(layer)s\n\n%(traceback)s\n"
         self.db.close()
         logger.error(message % ticket_data)
 
     def _store_on_disk(self, request, ticket_id, ticket_data):
-        ef = self._error_file(request, ticket_id, 'wb')
+        ef = self._error_file(request, ticket_id, "wb")
         try:
             pickle.dump(ticket_data, ef)
         finally:
@@ -75,20 +73,22 @@ class TicketStorage(Storage):
     def _error_file(self, request, ticket_id, mode, app=None):
         root = request.folder
         if app:
-            root = os.path.join(os.path.join(root, '..'), app)
+            root = os.path.join(os.path.join(root, ".."), app)
         errors_folder = os.path.abspath(
-            os.path.join(root, 'errors'))  # .replace('\\', '/')
+            os.path.join(root, "errors")
+        )  # .replace('\\', '/')
         return open(os.path.join(errors_folder, ticket_id), mode)
 
     def _get_table(self, db, tablename, app):
-        tablename = tablename + '_' + app
+        tablename = tablename + "_" + app
         table = db.get(tablename)
         if not table:
             table = db.define_table(
                 tablename,
-                db.Field('ticket_id', length=100),
-                db.Field('ticket_data', 'text'),
-                db.Field('created_datetime', 'datetime'))
+                db.Field("ticket_id", length=100),
+                db.Field("ticket_data", "text"),
+                db.Field("created_datetime", "datetime"),
+            )
         return table
 
     def load(
@@ -99,7 +99,7 @@ class TicketStorage(Storage):
     ):
         if not self.db:
             try:
-                ef = self._error_file(request, ticket_id, 'rb', app)
+                ef = self._error_file(request, ticket_id, "rb", app)
             except IOError:
                 return {}
             try:
@@ -120,9 +120,9 @@ class RestrictedError(Exception):
 
     def __init__(
         self,
-        layer='',
-        code='',
-        output='',
+        layer="",
+        code="",
+        output="",
         environment=None,
     ):
         """
@@ -142,14 +142,15 @@ class RestrictedError(Exception):
                 except:
                     self.traceback = traceback.format_exc(limit=1)
             except:
-                self.traceback = 'no traceback because template parsing error'
+                self.traceback = "no traceback because template parsing error"
             try:
-                self.snapshot = snapshot(context=10, code=code,
-                                         environment=self.environment)
+                self.snapshot = snapshot(
+                    context=10, code=code, environment=self.environment
+                )
             except:
                 self.snapshot = {}
         else:
-            self.traceback = '(no error)'
+            self.traceback = "(no error)"
             self.snapshot = {}
 
     def log(self, request):
@@ -158,14 +159,14 @@ class RestrictedError(Exception):
         """
         try:
             d = {
-                'layer': str(self.layer),
-                'code': str(self.code),
-                'output': str(self.output),
-                'traceback': str(self.traceback),
-                'snapshot': self.snapshot,
+                "layer": str(self.layer),
+                "code": str(self.code),
+                "output": str(self.output),
+                "traceback": str(self.traceback),
+                "snapshot": self.snapshot,
             }
             ticket_storage = TicketStorage(db=request.tickets_db)
-            ticket_storage.store(request, request.uuid.split('/', 1)[1], d)
+            ticket_storage.store(request, request.uuid.split("/", 1)[1], d)
             cmd_opts = global_settings.cmd_options
             if cmd_opts and cmd_opts.errors_to_console:
                 logger.error(self.traceback)
@@ -174,7 +175,6 @@ class RestrictedError(Exception):
             logger.error(self.traceback)
             return None
 
-
     def load(self, request, app, ticket_id):
         """
         Loads a logged exception.
@@ -182,11 +182,11 @@ class RestrictedError(Exception):
         ticket_storage = TicketStorage(db=request.tickets_db)
         d = ticket_storage.load(request, app, ticket_id)
 
-        self.layer = d.get('layer')
-        self.code = d.get('code')
-        self.output = d.get('output')
-        self.traceback = d.get('traceback')
-        self.snapshot = d.get('snapshot')
+        self.layer = d.get("layer")
+        self.code = d.get("code")
+        self.output = d.get("output")
+        self.traceback = d.get("traceback")
+        self.snapshot = d.get("snapshot")
 
     def __str__(self):
         # safely show an useful message to the user
@@ -202,10 +202,10 @@ class RestrictedError(Exception):
 
 
 def compile2(code, layer):
-    return compile(code, layer, 'exec')
+    return compile(code, layer, "exec")
 
 
-def restricted(ccode, environment=None, layer='Unknown', scode=None):
+def restricted(ccode, environment=None, layer="Unknown", scode=None):
     """
     Runs code in environment and returns the output. If an exception occurs
     in code it raises a RestrictedError containing the traceback. Layer is
@@ -213,8 +213,8 @@ def restricted(ccode, environment=None, layer='Unknown', scode=None):
     """
     if environment is None:
         environment = {}
-    environment['__file__'] = layer
-    environment['__name__'] = '__restricted__'
+    environment["__file__"] = layer
+    environment["__name__"] = "__restricted__"
     try:
         exec(ccode, environment)
     except HTTP:
@@ -226,7 +226,7 @@ def restricted(ccode, environment=None, layer='Unknown', scode=None):
         # extract the exception type and value (used as output message)
         etype, evalue, tb = sys.exc_info()
         # XXX Show exception in Wing IDE if running in debugger
-        if __debug__ and 'WINGDB_ACTIVE' in os.environ:
+        if __debug__ and "WINGDB_ACTIVE" in os.environ:
             sys.excepthook(etype, evalue, tb)
         del tb
         output = "%s %s" % (etype, evalue)
@@ -237,11 +237,11 @@ def restricted(ccode, environment=None, layer='Unknown', scode=None):
 
 def snapshot(info=None, context=5, code=None, environment=None):
     """Return a dict describing a given traceback (based on cgitb.text)."""
-    import time
-    import linecache
-    import inspect
-    import pydoc
     import cgitb
+    import inspect
+    import linecache
+    import pydoc
+    import time
 
     # if no exception info given, get current:
     etype, evalue, etb = info or sys.exc_info()
@@ -251,24 +251,34 @@ def snapshot(info=None, context=5, code=None, environment=None):
 
     # create a snapshot dict with some basic information
     s = {}
-    s['pyver'] = 'Python ' + sys.version.split()[0] + ': ' + sys.executable + ' (prefix: %s)' % sys.prefix
-    s['date'] = time.ctime(time.time())
+    s["pyver"] = (
+        "Python "
+        + sys.version.split()[0]
+        + ": "
+        + sys.executable
+        + " (prefix: %s)" % sys.prefix
+    )
+    s["date"] = time.ctime(time.time())
 
     # start to process frames
     records = inspect.getinnerframes(etb, context)
-    del etb # Prevent circular references that would cause memory leaks
-    s['frames'] = []
+    del etb  # Prevent circular references that would cause memory leaks
+    s["frames"] = []
     for frame, file, lnum, func, lines, index in records:
-        file = file and os.path.abspath(file) or '?'
+        file = file and os.path.abspath(file) or "?"
         args, varargs, varkw, locals = inspect.getargvalues(frame)
-        call = ''
-        if func != '?':
-            call = inspect.formatargvalues(args, varargs, varkw, locals,
-                                           formatvalue=lambda value: '=' + pydoc.text.repr(value))
+        call = ""
+        if func != "?":
+            call = inspect.formatargvalues(
+                args,
+                varargs,
+                varkw,
+                locals,
+                formatvalue=lambda value: "=" + pydoc.text.repr(value),
+            )
 
         # basic frame information
-        f = {'file': file, 'func': func, 'call': call, 'lines': {},
-             'lnum': lnum}
+        f = {"file": file, "func": func, "call": call, "lines": {}, "lnum": lnum}
 
         highlight = {}
 
@@ -278,10 +288,11 @@ def snapshot(info=None, context=5, code=None, environment=None):
                 return linecache.getline(file, lnum[0])
             finally:
                 lnum[0] += 1
+
         vars = cgitb.scanvars(reader, frame, locals)
 
         # if it is a view, replace with generated code
-        if file.endswith('html'):
+        if file.endswith("html"):
             lmin = lnum > context and (lnum - context) or 0
             lmax = lnum + context
             lines = code.split("\n")[lmin:lmax]
@@ -290,42 +301,42 @@ def snapshot(info=None, context=5, code=None, environment=None):
         if index is not None:
             i = lnum - index
             for line in lines:
-                f['lines'][i] = line.rstrip()
+                f["lines"][i] = line.rstrip()
                 i += 1
 
         # dump local variables (referenced in current line only)
-        f['dump'] = {}
+        f["dump"] = {}
         for name, where, value in vars:
-            if name in f['dump']:
+            if name in f["dump"]:
                 continue
             if value is not cgitb.__UNDEF__:
-                if where == 'global':
-                    name = 'global ' + name
-                elif where != 'local':
-                    name = where + name.split('.')[-1]
-                f['dump'][name] = pydoc.text.repr(value)
+                if where == "global":
+                    name = "global " + name
+                elif where != "local":
+                    name = where + name.split(".")[-1]
+                f["dump"][name] = pydoc.text.repr(value)
             else:
-                f['dump'][name] = 'undefined'
+                f["dump"][name] = "undefined"
 
-        s['frames'].append(f)
+        s["frames"].append(f)
 
     # add exception type, value and attributes
-    s['etype'] = str(etype)
-    s['evalue'] = str(evalue)
-    s['exception'] = {}
+    s["etype"] = str(etype)
+    s["evalue"] = str(evalue)
+    s["exception"] = {}
     if isinstance(evalue, BaseException):
         for name in dir(evalue):
             value = pydoc.text.repr(getattr(evalue, name))
-            s['exception'][name] = value
+            s["exception"][name] = value
 
     # add all local values (of last frame) to the snapshot
-    s['locals'] = {}
+    s["locals"] = {}
     for name, value in locals.items():
-        s['locals'][name] = pydoc.text.repr(value)
+        s["locals"][name] = pydoc.text.repr(value)
 
     # add web2py environment variables
     for k, v in environment.items():
-        if k in ('request', 'response', 'session'):
+        if k in ("request", "response", "session"):
             s[k] = XML(str(BEAUTIFY(v)))
 
     return s

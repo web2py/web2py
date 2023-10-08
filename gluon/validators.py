@@ -1,2 +1,3 @@
 from pydal.validators import *
-from pydal.validators import simple_hash, get_digest, Validator, ValidationError, translate, __all__
+from pydal.validators import (ValidationError, Validator, __all__, get_digest,
+                              simple_hash, translate)

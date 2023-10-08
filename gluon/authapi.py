@@ -4,15 +4,17 @@
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
-from gluon._compat import long
+import datetime
+
+from pydal.objects import Field, Row, Table
+
 from gluon import current
+from gluon._compat import long
+from gluon.settings import global_settings
 from gluon.storage import Messages, Settings, Storage
 from gluon.utils import web2py_uuid
-from gluon.validators import CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE, IS_LOWER, IS_MATCH, IS_NOT_EMPTY, \
-    IS_NOT_IN_DB
-from pydal.objects import Table, Field, Row
-import datetime
-from gluon.settings import global_settings
+from gluon.validators import (CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE,
+                              IS_LOWER, IS_MATCH, IS_NOT_EMPTY, IS_NOT_IN_DB)
 
 DEFAULT = lambda: None
 
@@ -36,68 +38,68 @@ class AuthAPI(object):
     """
 
     default_settings = {
-        'create_user_groups': 'user_%(id)s',
-        'email_case_sensitive': False,
-        'everybody_group_id': None,
-        'expiration': 3600,
-        'keep_session_onlogin': True,
-        'keep_session_onlogout': False,
-        'logging_enabled': True,
-        'login_after_registration': False,
-        'login_email_validate': True,
-        'login_userfield': None,
-        'logout_onlogout': None,
-        'long_expiration': 3600 * 24 * 30,
-        'ondelete': 'CASCADE',
-        'password_field': 'password',
-        'password_min_length': 4,
-        'registration_requires_approval': False,
-        'registration_requires_verification': False,
-        'renew_session_onlogin': True,
-        'renew_session_onlogout': True,
-        'table_event_name': 'auth_event',
-        'table_group_name': 'auth_group',
-        'table_membership_name': 'auth_membership',
-        'table_permission_name': 'auth_permission',
-        'table_user_name': 'auth_user',
-        'use_username': False,
-        'username_case_sensitive': True
+        "create_user_groups": "user_%(id)s",
+        "email_case_sensitive": False,
+        "everybody_group_id": None,
+        "expiration": 3600,
+        "keep_session_onlogin": True,
+        "keep_session_onlogout": False,
+        "logging_enabled": True,
+        "login_after_registration": False,
+        "login_email_validate": True,
+        "login_userfield": None,
+        "logout_onlogout": None,
+        "long_expiration": 3600 * 24 * 30,
+        "ondelete": "CASCADE",
+        "password_field": "password",
+        "password_min_length": 4,
+        "registration_requires_approval": False,
+        "registration_requires_verification": False,
+        "renew_session_onlogin": True,
+        "renew_session_onlogout": True,
+        "table_event_name": "auth_event",
+        "table_group_name": "auth_group",
+        "table_membership_name": "auth_membership",
+        "table_permission_name": "auth_permission",
+        "table_user_name": "auth_user",
+        "use_username": False,
+        "username_case_sensitive": True,
     }
 
     default_messages = {
-        'add_group_log': 'Group %(group_id)s created',
-        'add_membership_log': None,
-        'add_permission_log': None,
-        'change_password_log': 'User %(id)s Password changed',
-        'del_group_log': 'Group %(group_id)s deleted',
-        'del_membership_log': None,
-        'del_permission_log': None,
-        'email_taken': 'This email already has an account',
-        'group_description': 'Group uniquely assigned to user %(id)s',
-        'has_membership_log': None,
-        'has_permission_log': None,
-        'invalid_email': 'Invalid email',
-        'key_verified': 'Key verified',
-        'invalid_login': 'Invalid login',
-        'invalid_password': 'Invalid password',
-        'invalid_user': 'Invalid user',
-        'invalid_key': 'Invalid key',
-        'invalid_username': 'Invalid username',
-        'logged_in': 'Logged in',
-        'logged_out': 'Logged out',
-        'login_failed_log': None,
-        'login_log': 'User %(id)s Logged-in',
-        'logout_log': 'User %(id)s Logged-out',
-        'mismatched_password': "Password fields don't match",
-        'password_changed': 'Password changed',
-        'profile_log': 'User %(id)s Profile updated',
-        'profile_updated': 'Profile updated',
-        'register_log': 'User %(id)s Registered',
-        'registration_pending': 'Registration is pending approval',
-        'registration_successful': 'Registration successful',
-        'registration_verifying': 'Registration needs verification',
-        'username_taken': 'Username already taken',
-        'verify_log': 'User %(id)s verified registration key'
+        "add_group_log": "Group %(group_id)s created",
+        "add_membership_log": None,
+        "add_permission_log": None,
+        "change_password_log": "User %(id)s Password changed",
+        "del_group_log": "Group %(group_id)s deleted",
+        "del_membership_log": None,
+        "del_permission_log": None,
+        "email_taken": "This email already has an account",
+        "group_description": "Group uniquely assigned to user %(id)s",
+        "has_membership_log": None,
+        "has_permission_log": None,
+        "invalid_email": "Invalid email",
+        "key_verified": "Key verified",
+        "invalid_login": "Invalid login",
+        "invalid_password": "Invalid password",
+        "invalid_user": "Invalid user",
+        "invalid_key": "Invalid key",
+        "invalid_username": "Invalid username",
+        "logged_in": "Logged in",
+        "logged_out": "Logged out",
+        "login_failed_log": None,
+        "login_log": "User %(id)s Logged-in",
+        "logout_log": "User %(id)s Logged-out",
+        "mismatched_password": "Password fields don't match",
+        "password_changed": "Password changed",
+        "profile_log": "User %(id)s Profile updated",
+        "profile_updated": "Profile updated",
+        "register_log": "User %(id)s Registered",
+        "registration_pending": "Registration is pending approval",
+        "registration_successful": "Registration successful",
+        "registration_verifying": "Registration needs verification",
+        "username_taken": "Username already taken",
+        "verify_log": "User %(id)s verified registration key",
     }
 
     def __init__(self, db=None, hmac_key=None, signature=True):
@@ -152,8 +154,8 @@ class AuthAPI(object):
 
     def _get_migrate(self, tablename, migrate=True):
 
-        if type(migrate).__name__ == 'str':
-            return (migrate + tablename + '.table')
+        if type(migrate).__name__ == "str":
+            return migrate + tablename + ".table"
         elif not migrate:
             return False
         else:
@@ -185,7 +187,7 @@ class AuthAPI(object):
         settings = self.settings
         request = current.request
         T = current.T
-        reference_user = 'reference %s' % settings.table_user_name
+        reference_user = "reference %s" % settings.table_user_name
 
         def lazy_user(auth=self):
             return auth.user_id
@@ -193,38 +195,68 @@ class AuthAPI(object):
         def represent(id, record=None, s=settings):
             try:
                 user = s.table_user(id)
-                return '%s %s' % (user.get("first_name", user.get("email")),
-                                  user.get("last_name", ''))
+                return "%s %s" % (
+                    user.get("first_name", user.get("email")),
+                    user.get("last_name", ""),
+                )
             except:
                 return id
+
         ondelete = self.settings.ondelete
         self.signature = Table(
-            self.db, 'auth_signature',
-            Field('is_active', 'boolean',
-                  default=True,
-                  readable=False, writable=False,
-                  label=T('Is Active')),
-            Field('created_on', 'datetime',
-                  default=request.now,
-                  writable=False, readable=False,
-                  label=T('Created On')),
-            Field('created_by',
-                  reference_user,
-                  default=lazy_user, represent=represent,
-                  writable=False, readable=False,
-                  label=T('Created By'), ondelete=ondelete),
-            Field('modified_on', 'datetime',
-                  update=request.now, default=request.now,
-                  writable=False, readable=False,
-                  label=T('Modified On')),
-            Field('modified_by',
-                  reference_user, represent=represent,
-                  default=lazy_user, update=lazy_user,
-                  writable=False, readable=False,
-                  label=T('Modified By'),  ondelete=ondelete))
+            self.db,
+            "auth_signature",
+            Field(
+                "is_active",
+                "boolean",
+                default=True,
+                readable=False,
+                writable=False,
+                label=T("Is Active"),
+            ),
+            Field(
+                "created_on",
+                "datetime",
+                default=request.now,
+                writable=False,
+                readable=False,
+                label=T("Created On"),
+            ),
+            Field(
+                "created_by",
+                reference_user,
+                default=lazy_user,
+                represent=represent,
+                writable=False,
+                readable=False,
+                label=T("Created By"),
+                ondelete=ondelete,
+            ),
+            Field(
+                "modified_on",
+                "datetime",
+                update=request.now,
+                default=request.now,
+                writable=False,
+                readable=False,
+                label=T("Modified On"),
+            ),
+            Field(
+                "modified_by",
+                reference_user,
+                represent=represent,
+                default=lazy_user,
+                update=lazy_user,
+                writable=False,
+                readable=False,
+                label=T("Modified By"),
+                ondelete=ondelete,
+            ),
+        )
 
-    def define_tables(self, username=None, signature=None, migrate=None,
-                      fake_migrate=None):
+    def define_tables(
+        self, username=None, signature=None, migrate=None, fake_migrate=None
+    ):
         """
         To be called unless tables are defined manually
 
@@ -262,170 +294,299 @@ class AuthAPI(object):
             signature_list = [signature]
         else:
             signature_list = signature
-        self._table_signature_list = signature_list  # Should it defined in __init__ first??
+        self._table_signature_list = (
+            signature_list  # Should it defined in __init__ first??
+        )
 
         is_not_empty = IS_NOT_EMPTY(error_message=self.messages.is_empty)
-        is_crypted = CRYPT(key=settings.hmac_key,
-                           min_length=settings.password_min_length)
+        is_crypted = CRYPT(
+            key=settings.hmac_key, min_length=settings.password_min_length
+        )
         is_unique_email = [
             IS_EMAIL(error_message=self.messages.invalid_email),
-            IS_NOT_IN_DB(db, '%s.email' % settings.table_user_name,
-                         error_message=self.messages.email_taken)]
+            IS_NOT_IN_DB(
+                db,
+                "%s.email" % settings.table_user_name,
+                error_message=self.messages.email_taken,
+            ),
+        ]
         if not settings.email_case_sensitive:
             is_unique_email.insert(1, IS_LOWER())
         if settings.table_user_name not in db.tables:
             passfield = settings.password_field
-            extra_fields = settings.extra_fields.get(
-                settings.table_user_name, []) + signature_list
+            extra_fields = (
+                settings.extra_fields.get(settings.table_user_name, []) + signature_list
+            )
             # cas_provider Will always be None here but we compare it anyway so subclasses can use our define_tables
             if username or settings.cas_provider:
-                is_unique_username = \
-                    [IS_MATCH('[\w\.\-]+', strict=True,
-                              error_message=self.messages.invalid_username),
-                     IS_NOT_IN_DB(db, '%s.username' % settings.table_user_name,
-                                  error_message=self.messages.username_taken)]
+                is_unique_username = [
+                    IS_MATCH(
+                        "[\w\.\-]+",
+                        strict=True,
+                        error_message=self.messages.invalid_username,
+                    ),
+                    IS_NOT_IN_DB(
+                        db,
+                        "%s.username" % settings.table_user_name,
+                        error_message=self.messages.username_taken,
+                    ),
+                ]
                 if not settings.username_case_sensitive:
                     is_unique_username.insert(1, IS_LOWER())
                 db.define_table(
                     settings.table_user_name,
-                    Field('first_name', length=128, default='',
-                          label=self.messages.label_first_name,
-                          requires=is_not_empty),
-                    Field('last_name', length=128, default='',
-                          label=self.messages.label_last_name,
-                          requires=is_not_empty),
-                    Field('email', length=512, default='',
-                          label=self.messages.label_email,
-                          requires=is_unique_email),
-                    Field('username', length=128, default='',
-                          label=self.messages.label_username,
-                          requires=is_unique_username),
-                    Field(passfield, 'password', length=512,
-                          readable=False, label=self.messages.label_password,
-                          requires=[is_crypted]),
-                    Field('registration_key', length=512,
-                          writable=False, readable=False, default='',
-                          label=self.messages.label_registration_key),
-                    Field('reset_password_key', length=512,
-                          writable=False, readable=False, default='',
-                          label=self.messages.label_reset_password_key),
-                    Field('registration_id', length=512,
-                          writable=False, readable=False, default='',
-                          label=self.messages.label_registration_id),
+                    Field(
+                        "first_name",
+                        length=128,
+                        default="",
+                        label=self.messages.label_first_name,
+                        requires=is_not_empty,
+                    ),
+                    Field(
+                        "last_name",
+                        length=128,
+                        default="",
+                        label=self.messages.label_last_name,
+                        requires=is_not_empty,
+                    ),
+                    Field(
+                        "email",
+                        length=512,
+                        default="",
+                        label=self.messages.label_email,
+                        requires=is_unique_email,
+                    ),
+                    Field(
+                        "username",
+                        length=128,
+                        default="",
+                        label=self.messages.label_username,
+                        requires=is_unique_username,
+                    ),
+                    Field(
+                        passfield,
+                        "password",
+                        length=512,
+                        readable=False,
+                        label=self.messages.label_password,
+                        requires=[is_crypted],
+                    ),
+                    Field(
+                        "registration_key",
+                        length=512,
+                        writable=False,
+                        readable=False,
+                        default="",
+                        label=self.messages.label_registration_key,
+                    ),
+                    Field(
+                        "reset_password_key",
+                        length=512,
+                        writable=False,
+                        readable=False,
+                        default="",
+                        label=self.messages.label_reset_password_key,
+                    ),
+                    Field(
+                        "registration_id",
+                        length=512,
+                        writable=False,
+                        readable=False,
+                        default="",
+                        label=self.messages.label_registration_id,
+                    ),
                     *extra_fields,
                     **dict(
-                        migrate=self._get_migrate(settings.table_user_name,
-                                                  migrate),
+                        migrate=self._get_migrate(settings.table_user_name, migrate),
                         fake_migrate=fake_migrate,
-                        format='%(username)s'))
+                        format="%(username)s",
+                    )
+                )
             else:
                 db.define_table(
                     settings.table_user_name,
-                    Field('first_name', length=128, default='',
-                          label=self.messages.label_first_name,
-                          requires=is_not_empty),
-                    Field('last_name', length=128, default='',
-                          label=self.messages.label_last_name,
-                          requires=is_not_empty),
-                    Field('email', length=512, default='',
-                          label=self.messages.label_email,
-                          requires=is_unique_email),
-                    Field(passfield, 'password', length=512,
-                          readable=False, label=self.messages.label_password,
-                          requires=[is_crypted]),
-                    Field('registration_key', length=512,
-                          writable=False, readable=False, default='',
-                          label=self.messages.label_registration_key),
-                    Field('reset_password_key', length=512,
-                          writable=False, readable=False, default='',
-                          label=self.messages.label_reset_password_key),
-                    Field('registration_id', length=512,
-                          writable=False, readable=False, default='',
-                          label=self.messages.label_registration_id),
+                    Field(
+                        "first_name",
+                        length=128,
+                        default="",
+                        label=self.messages.label_first_name,
+                        requires=is_not_empty,
+                    ),
+                    Field(
+                        "last_name",
+                        length=128,
+                        default="",
+                        label=self.messages.label_last_name,
+                        requires=is_not_empty,
+                    ),
+                    Field(
+                        "email",
+                        length=512,
+                        default="",
+                        label=self.messages.label_email,
+                        requires=is_unique_email,
+                    ),
+                    Field(
+                        passfield,
+                        "password",
+                        length=512,
+                        readable=False,
+                        label=self.messages.label_password,
+                        requires=[is_crypted],
+                    ),
+                    Field(
+                        "registration_key",
+                        length=512,
+                        writable=False,
+                        readable=False,
+                        default="",
+                        label=self.messages.label_registration_key,
+                    ),
+                    Field(
+                        "reset_password_key",
+                        length=512,
+                        writable=False,
+                        readable=False,
+                        default="",
+                        label=self.messages.label_reset_password_key,
+                    ),
+                    Field(
+                        "registration_id",
+                        length=512,
+                        writable=False,
+                        readable=False,
+                        default="",
+                        label=self.messages.label_registration_id,
+                    ),
                     *extra_fields,
                     **dict(
-                        migrate=self._get_migrate(settings.table_user_name,
-                                                  migrate),
+                        migrate=self._get_migrate(settings.table_user_name, migrate),
                         fake_migrate=fake_migrate,
-                        format='%(first_name)s %(last_name)s (%(id)s)'))
-        reference_table_user = 'reference %s' % settings.table_user_name
+                        format="%(first_name)s %(last_name)s (%(id)s)",
+                    )
+                )
+        reference_table_user = "reference %s" % settings.table_user_name
         if settings.table_group_name not in db.tables:
-            extra_fields = settings.extra_fields.get(
-                settings.table_group_name, []) + signature_list
+            extra_fields = (
+                settings.extra_fields.get(settings.table_group_name, [])
+                + signature_list
+            )
             db.define_table(
                 settings.table_group_name,
-                Field('role', length=512, default='',
-                      label=self.messages.label_role,
-                      requires=IS_NOT_IN_DB(db, '%s.role' % settings.table_group_name)),
-                Field('description', 'text',
-                      label=self.messages.label_description),
+                Field(
+                    "role",
+                    length=512,
+                    default="",
+                    label=self.messages.label_role,
+                    requires=IS_NOT_IN_DB(db, "%s.role" % settings.table_group_name),
+                ),
+                Field("description", "text", label=self.messages.label_description),
                 *extra_fields,
                 **dict(
-                    migrate=self._get_migrate(
-                        settings.table_group_name, migrate),
+                    migrate=self._get_migrate(settings.table_group_name, migrate),
                     fake_migrate=fake_migrate,
-                    format='%(role)s (%(id)s)'))
-        reference_table_group = 'reference %s' % settings.table_group_name
+                    format="%(role)s (%(id)s)",
+                )
+            )
+        reference_table_group = "reference %s" % settings.table_group_name
         if settings.table_membership_name not in db.tables:
-            extra_fields = settings.extra_fields.get(
-                settings.table_membership_name, []) + signature_list
+            extra_fields = (
+                settings.extra_fields.get(settings.table_membership_name, [])
+                + signature_list
+            )
             db.define_table(
                 settings.table_membership_name,
-                Field('user_id', reference_table_user,
-                      label=self.messages.label_user_id),
-                Field('group_id', reference_table_group,
-                      label=self.messages.label_group_id),
+                Field(
+                    "user_id", reference_table_user, label=self.messages.label_user_id
+                ),
+                Field(
+                    "group_id",
+                    reference_table_group,
+                    label=self.messages.label_group_id,
+                ),
                 *extra_fields,
                 **dict(
-                    migrate=self._get_migrate(
-                        settings.table_membership_name, migrate),
-                    fake_migrate=fake_migrate))
+                    migrate=self._get_migrate(settings.table_membership_name, migrate),
+                    fake_migrate=fake_migrate,
+                )
+            )
         if settings.table_permission_name not in db.tables:
-            extra_fields = settings.extra_fields.get(
-                settings.table_permission_name, []) + signature_list
+            extra_fields = (
+                settings.extra_fields.get(settings.table_permission_name, [])
+                + signature_list
+            )
             db.define_table(
                 settings.table_permission_name,
-                Field('group_id', reference_table_group,
-                      label=self.messages.label_group_id),
-                Field('name', default='default', length=512,
-                      label=self.messages.label_name,
-                      requires=is_not_empty),
-                Field('table_name', length=512,
-                      label=self.messages.label_table_name),
-                Field('record_id', 'integer', default=0,
-                      label=self.messages.label_record_id,
-                      requires=IS_INT_IN_RANGE(0, 10 ** 9)),
+                Field(
+                    "group_id",
+                    reference_table_group,
+                    label=self.messages.label_group_id,
+                ),
+                Field(
+                    "name",
+                    default="default",
+                    length=512,
+                    label=self.messages.label_name,
+                    requires=is_not_empty,
+                ),
+                Field("table_name", length=512, label=self.messages.label_table_name),
+                Field(
+                    "record_id",
+                    "integer",
+                    default=0,
+                    label=self.messages.label_record_id,
+                    requires=IS_INT_IN_RANGE(0, 10**9),
+                ),
                 *extra_fields,
                 **dict(
-                    migrate=self._get_migrate(
-                        settings.table_permission_name, migrate),
-                    fake_migrate=fake_migrate))
+                    migrate=self._get_migrate(settings.table_permission_name, migrate),
+                    fake_migrate=fake_migrate,
+                )
+            )
         if settings.table_event_name not in db.tables:
             db.define_table(
                 settings.table_event_name,
-                Field('time_stamp', 'datetime',
-                      default=current.request.now,
-                      label=self.messages.label_time_stamp),
-                Field('client_ip',
-                      default=current.request.client,
-                      label=self.messages.label_client_ip),
-                Field('user_id', reference_table_user, default=None,
-                      label=self.messages.label_user_id),
-                Field('origin', default='auth', length=512,
-                      label=self.messages.label_origin,
-                      requires=is_not_empty),
-                Field('description', 'text', default='',
-                      label=self.messages.label_description,
-                      requires=is_not_empty),
+                Field(
+                    "time_stamp",
+                    "datetime",
+                    default=current.request.now,
+                    label=self.messages.label_time_stamp,
+                ),
+                Field(
+                    "client_ip",
+                    default=current.request.client,
+                    label=self.messages.label_client_ip,
+                ),
+                Field(
+                    "user_id",
+                    reference_table_user,
+                    default=None,
+                    label=self.messages.label_user_id,
+                ),
+                Field(
+                    "origin",
+                    default="auth",
+                    length=512,
+                    label=self.messages.label_origin,
+                    requires=is_not_empty,
+                ),
+                Field(
+                    "description",
+                    "text",
+                    default="",
+                    label=self.messages.label_description,
+                    requires=is_not_empty,
+                ),
                 *settings.extra_fields.get(settings.table_event_name, []),
                 **dict(
-                    migrate=self._get_migrate(
-                        settings.table_event_name, migrate),
-                    fake_migrate=fake_migrate))
+                    migrate=self._get_migrate(settings.table_event_name, migrate),
+                    fake_migrate=fake_migrate,
+                )
+            )
 
         return self
 
-    def log_event(self, description, vars=None, origin='auth'):
+    def log_event(self, description, vars=None, origin="auth"):
         """
         Examples:
             Use as::
@@ -441,11 +602,12 @@ class AuthAPI(object):
             user_id = None  # user unknown
         vars = vars or {}
         # log messages should not be translated
-        if type(description).__name__ == 'lazyT':
+        if type(description).__name__ == "lazyT":
             description = description.m
         if not user_id or self.table_user()[user_id]:
             self.table_event().insert(
-                description=str(description % vars), origin=origin, user_id=user_id)
+                description=str(description % vars), origin=origin, user_id=user_id
+            )
 
     def id_group(self, role):
         """
@@ -472,12 +634,14 @@ class AuthAPI(object):
             user = self.user
         return self.settings.create_user_groups % user
 
-    def add_group(self, role, description=''):
+    def add_group(self, role, description=""):
         """
         Creates a group associated to a role
         """
         group_id = self.table_group().insert(role=role, description=description)
-        self.log_event(self.messages['add_group_log'], dict(group_id=group_id, role=role))
+        self.log_event(
+            self.messages["add_group_log"], dict(group_id=group_id, role=role)
+        )
         return group_id
 
     def del_group(self, group_id):
@@ -499,8 +663,7 @@ class AuthAPI(object):
             current.session.auth.user_groups = self.user_groups
         table_group = self.table_group()
         table_membership = self.table_membership()
-        memberships = self.db(
-            table_membership.user_id == self.user.id).select()
+        memberships = self.db(table_membership.user_id == self.user.id).select()
         for membership in memberships:
             group = table_group(membership.group_id)
             if group:
@@ -520,16 +683,21 @@ class AuthAPI(object):
         if not user_id and self.user:
             user_id = self.user.id
         if not group_id:
-            raise ValueError('group_id not provided or invalid')
+            raise ValueError("group_id not provided or invalid")
         if not user_id:
-            raise ValueError('user_id not provided or invalid')
+            raise ValueError("user_id not provided or invalid")
         membership = self.table_membership()
         db = membership._db
-        record = db((membership.user_id == user_id) &
-                    (membership.group_id == group_id),
-                    ignore_common_filters=True).select().first()
+        record = (
+            db(
+                (membership.user_id == user_id) & (membership.group_id == group_id),
+                ignore_common_filters=True,
+            )
+            .select()
+            .first()
+        )
         if record:
-            if hasattr(record, 'is_active') and not record.is_active:
+            if hasattr(record, "is_active") and not record.is_active:
                 record.update_record(is_active=True)
             return record.id
         else:
@@ -538,8 +706,10 @@ class AuthAPI(object):
             self.user_groups[group_id] = role
         else:
             self.update_groups()
-        self.log_event(self.messages['add_membership_log'],
-                       dict(user_id=user_id, group_id=group_id))
+        self.log_event(
+            self.messages["add_membership_log"],
+            dict(user_id=user_id, group_id=group_id),
+        )
         return id
 
     def del_membership(self, group_id=None, user_id=None, role=None):
@@ -556,9 +726,13 @@ class AuthAPI(object):
         if not user_id and self.user:
             user_id = self.user.id
         membership = self.table_membership()
-        self.log_event(self.messages['del_membership_log'],
-                       dict(user_id=user_id, group_id=group_id))
-        ret = self.db(membership.user_id == user_id)(membership.group_id == group_id).delete()
+        self.log_event(
+            self.messages["del_membership_log"],
+            dict(user_id=user_id, group_id=group_id),
+        )
+        ret = self.db(membership.user_id == user_id)(
+            membership.group_id == group_id
+        ).delete()
         if group_id in self.user_groups and user_id == self.user_id:
             del self.user_groups[group_id]
         return ret
@@ -583,7 +757,9 @@ class AuthAPI(object):
             user_id = self.user.id
         if cached:
             id_role = group_id or role
-            r = (user_id and id_role in self.user_groups.values()) or (user_id and id_role in self.user_groups)
+            r = (user_id and id_role in self.user_groups.values()) or (
+                user_id and id_role in self.user_groups
+            )
         else:
             group_id = group_id or self.id_group(role)
             try:
@@ -591,21 +767,29 @@ class AuthAPI(object):
             except:
                 group_id = self.id_group(group_id)  # interpret group_id as a role
             membership = self.table_membership()
-            if group_id and user_id and self.db((membership.user_id == user_id) &
-                                                (membership.group_id == group_id)).select():
+            if (
+                group_id
+                and user_id
+                and self.db(
+                    (membership.user_id == user_id) & (membership.group_id == group_id)
+                ).select()
+            ):
                 r = True
             else:
                 r = False
-        self.log_event(self.messages['has_membership_log'],
-                       dict(user_id=user_id, group_id=group_id, check=r))
+        self.log_event(
+            self.messages["has_membership_log"],
+            dict(user_id=user_id, group_id=group_id, check=r),
+        )
         return r
 
-    def add_permission(self,
-                       group_id,
-                       name='any',
-                       table_name='',
-                       record_id=0,
-                       ):
+    def add_permission(
+        self,
+        group_id,
+        name="any",
+        table_name="",
+        record_id=0,
+    ):
         """
         Gives group_id 'name' access to 'table_name' and 'record_id'
         """
@@ -613,63 +797,88 @@ class AuthAPI(object):
         permission = self.table_permission()
         if group_id == 0:
             group_id = self.user_group()
-        record = self.db((permission.group_id == group_id) &
-                         (permission.name == name) &
-                         (permission.table_name == str(table_name)) &
-                         (permission.record_id == long(record_id)),
-                         ignore_common_filters=True
-                         ).select(limitby=(0, 1), orderby_on_limitby=False).first()
+        record = (
+            self.db(
+                (permission.group_id == group_id)
+                & (permission.name == name)
+                & (permission.table_name == str(table_name))
+                & (permission.record_id == long(record_id)),
+                ignore_common_filters=True,
+            )
+            .select(limitby=(0, 1), orderby_on_limitby=False)
+            .first()
+        )
         if record:
-            if hasattr(record, 'is_active') and not record.is_active:
+            if hasattr(record, "is_active") and not record.is_active:
                 record.update_record(is_active=True)
             id = record.id
         else:
-            id = permission.insert(group_id=group_id, name=name,
-                                   table_name=str(table_name),
-                                   record_id=long(record_id))
-        self.log_event(self.messages['add_permission_log'],
-                       dict(permission_id=id, group_id=group_id,
-                            name=name, table_name=table_name,
-                            record_id=record_id))
+            id = permission.insert(
+                group_id=group_id,
+                name=name,
+                table_name=str(table_name),
+                record_id=long(record_id),
+            )
+        self.log_event(
+            self.messages["add_permission_log"],
+            dict(
+                permission_id=id,
+                group_id=group_id,
+                name=name,
+                table_name=table_name,
+                record_id=record_id,
+            ),
+        )
         return id
 
-    def del_permission(self,
-                       group_id,
-                       name='any',
-                       table_name='',
-                       record_id=0,
-                       ):
+    def del_permission(
+        self,
+        group_id,
+        name="any",
+        table_name="",
+        record_id=0,
+    ):
         """
         Revokes group_id 'name' access to 'table_name' and 'record_id'
         """
 
         permission = self.table_permission()
-        self.log_event(self.messages['del_permission_log'],
-                       dict(group_id=group_id, name=name,
-                            table_name=table_name, record_id=record_id))
-        return self.db(permission.group_id ==
-                       group_id)(permission.name ==
-                                 name)(permission.table_name ==
-                                       str(table_name))(permission.record_id ==
-                                                        long(record_id)).delete()
+        self.log_event(
+            self.messages["del_permission_log"],
+            dict(
+                group_id=group_id, name=name, table_name=table_name, record_id=record_id
+            ),
+        )
+        return self.db(permission.group_id == group_id)(permission.name == name)(
+            permission.table_name == str(table_name)
+        )(permission.record_id == long(record_id)).delete()
 
-    def has_permission(self,
-                       name='any',
-                       table_name='',
-                       record_id=0,
-                       user_id=None,
-                       group_id=None,
-                       ):
+    def has_permission(
+        self,
+        name="any",
+        table_name="",
+        record_id=0,
+        user_id=None,
+        group_id=None,
+    ):
         """
         Checks if user_id or current logged in user is member of a group
         that has 'name' permission on 'table_name' and 'record_id'
         if group_id is passed, it checks whether the group has the permission
         """
 
-        if not group_id and self.settings.everybody_group_id and \
-                self.has_permission(name, table_name, record_id, user_id=None,
-                                    group_id=self.settings.everybody_group_id):
-                return True
+        if (
+            not group_id
+            and self.settings.everybody_group_id
+            and self.has_permission(
+                name,
+                table_name,
+                record_id,
+                user_id=None,
+                group_id=self.settings.everybody_group_id,
+            )
+        ):
+            return True
 
         if not user_id and not group_id and self.user:
             user_id = self.user.id
@@ -682,25 +891,29 @@ class AuthAPI(object):
         else:
             groups = set([group_id])
         permission = self.table_permission()
-        rows = self.db(permission.name ==
-                       name)(permission.table_name ==
-                             str(table_name))(permission.record_id ==
-                                              record_id).select(permission.group_id)
+        rows = self.db(permission.name == name)(
+            permission.table_name == str(table_name)
+        )(permission.record_id == record_id).select(permission.group_id)
         groups_required = set([row.group_id for row in rows])
         if record_id:
-            rows = self.db(permission.name ==
-                           name)(permission.table_name ==
-                                 str(table_name))(permission.record_id ==
-                                                  0).select(permission.group_id)
+            rows = self.db(permission.name == name)(
+                permission.table_name == str(table_name)
+            )(permission.record_id == 0).select(permission.group_id)
             groups_required = groups_required.union(set([row.group_id for row in rows]))
         if groups.intersection(groups_required):
             r = True
         else:
             r = False
         if user_id:
-            self.log_event(self.messages['has_permission_log'],
-                           dict(user_id=user_id, name=name,
-                                table_name=table_name, record_id=record_id))
+            self.log_event(
+                self.messages["has_permission_log"],
+                dict(
+                    user_id=user_id,
+                    name=name,
+                    table_name=table_name,
+                    record_id=record_id,
+                ),
+            )
         return r
 
     def is_logged_in(self):
@@ -722,10 +935,12 @@ class AuthAPI(object):
                 value = user[key]
                 if callable(value) or key == self.settings.password_field:
                     delattr(user, key)
-        current.session.auth = Storage(user=user,
-                                       last_visit=current.request.now,
-                                       expiration=self.settings.expiration,
-                                       hmac_key=web2py_uuid())
+        current.session.auth = Storage(
+            user=user,
+            last_visit=current.request.now,
+            expiration=self.settings.expiration,
+            hmac_key=web2py_uuid(),
+        )
         return user
 
     def login_user(self, user):
@@ -751,8 +966,7 @@ class AuthAPI(object):
         session = current.session
         table_user = self.table_user()
 
-        if 'username' in table_user.fields or \
-                not settings.login_email_validate:
+        if "username" in table_user.fields or not settings.login_email_validate:
             userfield_validator = IS_NOT_EMPTY(error_message=self.messages.is_empty)
             if not settings.username_case_sensitive:
                 userfield_validator = [IS_LOWER(), userfield_validator]
@@ -764,7 +978,7 @@ class AuthAPI(object):
         passfield = settings.password_field
 
         if log is DEFAULT:
-            log = self.messages['login_log']
+            log = self.messages["login_log"]
 
         user = None
 
@@ -772,53 +986,81 @@ class AuthAPI(object):
         if self.settings.login_userfield:
             userfield = self.settings.login_userfield
         else:
-            if 'username' in table_user.fields:
-                userfield = 'username'
+            if "username" in table_user.fields:
+                userfield = "username"
             else:
-                userfield = 'email'
+                userfield = "email"
 
         # Get the userfield from kwargs and validate it
         userfield_value = kwargs.get(userfield)
         if userfield_value is None:
-            raise KeyError('%s not found in kwargs' % userfield)
+            raise KeyError("%s not found in kwargs" % userfield)
 
         validated, error = self.__validate(userfield_value, userfield_validator)
 
         if error:
-            return {'errors': {userfield: error}, 'message': self.messages.invalid_login, 'user': None}
+            return {
+                "errors": {userfield: error},
+                "message": self.messages.invalid_login,
+                "user": None,
+            }
 
         # Get the user for this userfield and check it
         user = table_user(**{userfield: validated})
 
         if user is None:
-            return {'errors': {userfield: self.messages.invalid_user},
-                    'message': self.messages.invalid_login, 'user': None}
+            return {
+                "errors": {userfield: self.messages.invalid_user},
+                "message": self.messages.invalid_login,
+                "user": None,
+            }
 
-        if (user.registration_key or '').startswith('pending'):
-            return {'errors': None, 'message': self.messages.registration_pending, 'user': None}
-        elif user.registration_key in ('disabled', 'blocked'):
-            return {'errors': None, 'message': self.messages.login_disabled, 'user': None}
-        elif (user.registration_key is not None and user.registration_key.strip()):
-            return {'errors': None, 'message': self.messages.registration_verifying, 'user': None}
+        if (user.registration_key or "").startswith("pending"):
+            return {
+                "errors": None,
+                "message": self.messages.registration_pending,
+                "user": None,
+            }
+        elif user.registration_key in ("disabled", "blocked"):
+            return {
+                "errors": None,
+                "message": self.messages.login_disabled,
+                "user": None,
+            }
+        elif user.registration_key is not None and user.registration_key.strip():
+            return {
+                "errors": None,
+                "message": self.messages.registration_verifying,
+                "user": None,
+            }
 
         # Finally verify the password
         passfield = settings.password_field
-        password = table_user[passfield].validate(kwargs.get(passfield, ''), None)[0]
+        password = table_user[passfield].validate(kwargs.get(passfield, ""), None)[0]
 
         if password == user[passfield]:
             self.login_user(user)
-            session.auth.expiration = \
-                kwargs.get('remember_me', False) and \
-                settings.long_expiration or \
-                settings.expiration
-            session.auth.remember_me = kwargs.get('remember_me', False)
+            session.auth.expiration = (
+                kwargs.get("remember_me", False)
+                and settings.long_expiration
+                or settings.expiration
+            )
+            session.auth.remember_me = kwargs.get("remember_me", False)
             self.log_event(log, user)
-            return {'errors': None, 'message': self.messages.logged_in,
-                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {
+                "errors": None,
+                "message": self.messages.logged_in,
+                "user": {
+                    k: user[k] for k in table_user.fields if table_user[k].readable
+                },
+            }
         else:
-            self.log_event(self.messages['login_failed_log'], kwargs)
-            return {'errors': {passfield: self.messages.invalid_password},
-                    'message': self.messages.invalid_login, 'user': None}
+            self.log_event(self.messages["login_failed_log"], kwargs)
+            return {
+                "errors": {passfield: self.messages.invalid_password},
+                "message": self.messages.invalid_login,
+                "user": None,
+            }
 
     def logout(self, log=DEFAULT, onlogout=DEFAULT, **kwargs):
         """
@@ -832,7 +1074,7 @@ class AuthAPI(object):
         if onlogout:
             onlogout(self.user)
         if log is DEFAULT:
-            log = self.messages['logout_log']
+            log = self.messages["logout_log"]
         if self.user:
             self.log_event(log, self.user)
 
@@ -841,7 +1083,7 @@ class AuthAPI(object):
         if settings.renew_session_onlogout:
             session.renew(clear_session=not settings.keep_session_onlogout)
 
-        return {'errors': None, 'message': self.messages.logged_out, 'user': None}
+        return {"errors": None, "message": self.messages.logged_out, "user": None}
 
     def register(self, log=DEFAULT, **kwargs):
         """
@@ -852,17 +1094,17 @@ class AuthAPI(object):
         settings = self.settings
 
         if self.is_logged_in():
-            raise AssertionError('User trying to register is logged in')
+            raise AssertionError("User trying to register is logged in")
 
         if log is DEFAULT:
-            log = self.messages['register_log']
+            log = self.messages["register_log"]
 
         if self.settings.login_userfield:
             userfield = self.settings.login_userfield
-        elif 'username' in table_user.fields:
-            userfield = 'username'
+        elif "username" in table_user.fields:
+            userfield = "username"
         else:
-            userfield = 'email'
+            userfield = "email"
 
         # Ensure the username field is unique.
         unique_validator = IS_NOT_IN_DB(self.db, table_user[userfield])
@@ -870,12 +1112,16 @@ class AuthAPI(object):
         if userfield_validator is None:
             userfield_validator = unique_validator
         elif isinstance(userfield_validator, (list, tuple)):
-            if not any([isinstance(validator, IS_NOT_IN_DB) for validator in
-                        userfield_validator]):
+            if not any(
+                [
+                    isinstance(validator, IS_NOT_IN_DB)
+                    for validator in userfield_validator
+                ]
+            ):
                 if isinstance(userfield_validator, list):
                     userfield_validator.append(unique_validator)
                 else:
-                    userfield_validator += (unique_validator, )
+                    userfield_validator += (unique_validator,)
         elif not isinstance(userfield_validator, IS_NOT_IN_DB):
             userfield_validator = [userfield_validator, unique_validator]
         table_user[userfield].requires = userfield_validator
@@ -889,13 +1135,13 @@ class AuthAPI(object):
 
         key = web2py_uuid()
         if settings.registration_requires_approval:
-            key = 'pending-' + key
+            key = "pending-" + key
 
         table_user.registration_key.default = key
 
         result = table_user.validate_and_insert(**kwargs)
         if result.errors:
-            return {'errors': result.errors.as_dict(), 'message': None, 'user': None}
+            return {"errors": result.errors.as_dict(), "message": None, "user": None}
 
         user = table_user[result.id]
 
@@ -912,23 +1158,29 @@ class AuthAPI(object):
 
         if settings.registration_requires_verification:
             d = {k: user[k] for k in table_user.fields if table_user[k].readable}
-            d['key'] = key
-            if settings.login_after_registration and not settings.registration_requires_approval:
+            d["key"] = key
+            if (
+                settings.login_after_registration
+                and not settings.registration_requires_approval
+            ):
                 self.login_user(user)
-            return {'errors': None, 'message': None, 'user': d}
+            return {"errors": None, "message": None, "user": d}
 
         if settings.registration_requires_approval:
-            user.update_record(registration_key='pending')
+            user.update_record(registration_key="pending")
             message = self.messages.registration_pending
         elif settings.login_after_registration:
-            user.update_record(registration_key='')
+            user.update_record(registration_key="")
             self.login_user(user)
             message = self.messages.logged_in
 
         self.log_event(log, user)
 
-        return {'errors': None, 'message': message,
-                'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+        return {
+            "errors": None,
+            "message": message,
+            "user": {k: user[k] for k in table_user.fields if table_user[k].readable},
+        }
 
     def profile(self, log=DEFAULT, **kwargs):
         """
@@ -940,27 +1192,40 @@ class AuthAPI(object):
         table_user[settings.password_field].writable = False
 
         if not self.is_logged_in():
-            raise AssertionError('User is not logged in')
+            raise AssertionError("User is not logged in")
 
         if not kwargs:
             user = table_user[self.user.id]
-            return {'errors': None, 'message': None,
-                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {
+                "errors": None,
+                "message": None,
+                "user": {
+                    k: user[k] for k in table_user.fields if table_user[k].readable
+                },
+            }
 
         result = self.db(table_user.id == self.user.id).validate_and_update(**kwargs)
         user = table_user[self.user.id]
 
         if result.errors:
-            return {'errors': result.errors, 'message': None,
-                    'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+            return {
+                "errors": result.errors,
+                "message": None,
+                "user": {
+                    k: user[k] for k in table_user.fields if table_user[k].readable
+                },
+            }
 
         if log is DEFAULT:
-            log = self.messages['profile_log']
+            log = self.messages["profile_log"]
 
         self.log_event(log, user)
         self._update_session_user(user)
-        return {'errors': None, 'message': self.messages.profile_updated,
-                'user': {k: user[k] for k in table_user.fields if table_user[k].readable}}
+        return {
+            "errors": None,
+            "message": self.messages.profile_updated,
+            "user": {k: user[k] for k in table_user.fields if table_user[k].readable},
+        }
 
     def change_password(self, log=DEFAULT, **kwargs):
         """
@@ -975,7 +1240,7 @@ class AuthAPI(object):
         messages = self.messages
 
         if not self.is_logged_in():
-            raise AssertionError('User is not logged in')
+            raise AssertionError("User is not logged in")
 
         db = self.db
         table_user = self.table_user()
@@ -990,45 +1255,58 @@ class AuthAPI(object):
             requires = [requires]
         requires = [t for t in requires if isinstance(t, CRYPT)]
         if requires:
-            requires[0] = CRYPT(**requires[0].__dict__) # Copy the existing CRYPT attributes
-            requires[0].min_length = 0 # But do not enforce minimum length for the old password
+            requires[0] = CRYPT(
+                **requires[0].__dict__
+            )  # Copy the existing CRYPT attributes
+            requires[
+                0
+            ].min_length = 0  # But do not enforce minimum length for the old password
 
-        old_password = kwargs.get('old_password', '')
-        new_password = kwargs.get('new_password', '')
-        new_password2 = kwargs.get('new_password2', '')
+        old_password = kwargs.get("old_password", "")
+        new_password = kwargs.get("new_password", "")
+        new_password2 = kwargs.get("new_password2", "")
 
         validator_old = requires
-        validator_pass2 = IS_EQUAL_TO(new_password, error_message=messages.mismatched_password)
+        validator_pass2 = IS_EQUAL_TO(
+            new_password, error_message=messages.mismatched_password
+        )
 
         old_password, error_old = self.__validate(old_password, validator_old)
         new_password2, error_new2 = self.__validate(new_password2, validator_pass2)
 
         errors = {}
         if error_old:
-            errors['old_password'] = error_old
+            errors["old_password"] = error_old
         if error_new2:
-            errors['new_password2'] = error_new2
+            errors["new_password2"] = error_new2
         if errors:
-            return {'errors': errors, 'message': None}
+            return {"errors": errors, "message": None}
 
         current_user = s.select(limitby=(0, 1), orderby_on_limitby=False).first()
         if not old_password == current_user[passfield]:
-            return {'errors': {'old_password': messages.invalid_password}, 'message': None}
+            return {
+                "errors": {"old_password": messages.invalid_password},
+                "message": None,
+            }
         else:
             d = {passfield: new_password}
             resp = s.validate_and_update(**d)
             if resp.errors:
-                return {'errors': {'new_password': resp.errors[passfield]}, 'message': None}
+                return {
+                    "errors": {"new_password": resp.errors[passfield]},
+                    "message": None,
+                }
             if log is DEFAULT:
-                log = messages['change_password_log']
+                log = messages["change_password_log"]
             self.log_event(log, self.user)
-            return {'errors': None, 'message': messages.password_changed}
+            return {"errors": None, "message": messages.password_changed}
 
-    def verify_key(self,
-                   key=None,
-                   ignore_approval=False,
-                   log=DEFAULT,
-                   ):
+    def verify_key(
+        self,
+        key=None,
+        ignore_approval=False,
+        log=DEFAULT,
+    ):
         """
         Verify a given registration_key actually exists in the user table.
         Resets the key to empty string '' or 'pending' if
@@ -1040,18 +1318,21 @@ class AuthAPI(object):
         table_user = self.table_user()
         user = table_user(registration_key=key)
         if (user is None) or (key is None):
-            return {'errors': {'key': self.messages.invalid_key}, 'message': self.messages.invalid_key}
+            return {
+                "errors": {"key": self.messages.invalid_key},
+                "message": self.messages.invalid_key,
+            }
 
         if self.settings.registration_requires_approval:
-            user.update_record(registration_key='pending')
-            result = {'errors': None, 'message': self.messages.registration_pending}
+            user.update_record(registration_key="pending")
+            result = {"errors": None, "message": self.messages.registration_pending}
         else:
-            user.update_record(registration_key='')
-            result = {'errors': None, 'message': self.messages.key_verified}
+            user.update_record(registration_key="")
+            result = {"errors": None, "message": self.messages.key_verified}
         # make sure session has same user.registration_key as db record
         if current.session.auth and current.session.auth.user:
             current.session.auth.user.registration_key = user.registration_key
         if log is DEFAULT:
-            log = self.messages['verify_log']
+            log = self.messages["verify_log"]
         self.log_event(log, user)
         return result

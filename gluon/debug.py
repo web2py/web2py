@@ -14,13 +14,14 @@ Debugger support classes
 import logging
 import pdb
 import sys
+
 from gluon._compat import Queue
 
 logger = logging.getLogger("web2py")
 
 
 class Pipe(Queue.Queue):
-    def __init__(self, name, mode='r', *args, **kwargs):
+    def __init__(self, name, mode="r", *args, **kwargs):
         self.__name = name
         Queue.Queue.__init__(self, *args, **kwargs)
 
@@ -37,7 +38,7 @@ class Pipe(Queue.Queue):
         logger.debug("debug %s flush done" % self.__name)
 
     def read(self, count=None, timeout=None):
-        logger.debug("debug %s reading..." % (self.__name, ))
+        logger.debug("debug %s reading..." % (self.__name,))
         data = self.get(block=True, timeout=timeout)
         # signal that we are ready
         self.task_done()
@@ -45,14 +46,18 @@ class Pipe(Queue.Queue):
         return data
 
     def readline(self):
-        logger.debug("debug %s readline..." % (self.__name, ))
+        logger.debug("debug %s readline..." % (self.__name,))
         return self.read()
 
 
-pipe_in = Pipe('in')
-pipe_out = Pipe('out')
+pipe_in = Pipe("in")
+pipe_out = Pipe("out")
 
-debugger = pdb.Pdb(completekey=None, stdin=pipe_in, stdout=pipe_out,)
+debugger = pdb.Pdb(
+    completekey=None,
+    stdin=pipe_in,
+    stdout=pipe_out,
+)
 
 
 def set_trace():
@@ -68,7 +73,7 @@ def stop_trace():
     logger.info("DEBUG: stop_trace!")
     pipe_out.write("debug finished!")
     pipe_out.write(None)
-    #pipe_out.flush()
+    # pipe_out.flush()
 
 
 def communicate(command=None):
@@ -76,7 +81,7 @@ def communicate(command=None):
     if command is not None:
         logger.info("DEBUG: sending command %s" % command)
         pipe_in.write(command)
-        #pipe_in.flush()
+        # pipe_in.flush()
     result = []
     while True:
         data = pipe_out.read()
@@ -84,13 +89,14 @@ def communicate(command=None):
             break
         result.append(data)
     logger.info("DEBUG: result %s" % repr(result))
-    return ''.join(result)
+    return "".join(result)
 
 
 # New debugger implementation using dbg and a web UI
 
-import gluon.contrib.dbg as c_dbg
 from threading import RLock
+
+import gluon.contrib.dbg as c_dbg
 
 interact_lock = RLock()
 run_lock = RLock()
@@ -98,6 +104,7 @@ run_lock = RLock()
 
 def check_interaction(fn):
     """Decorator to clean and prevent interaction when not available"""
+
     def check_fn(self, *args, **kwargs):
         interact_lock.acquire()
         try:
@@ -106,13 +113,14 @@ def check_interaction(fn):
                 return fn(self, *args, **kwargs)
         finally:
             interact_lock.release()
+
     return check_fn
 
 
 class WebDebugger(c_dbg.Frontend):
     """Qdb web2py interface"""
 
-    def __init__(self, pipe, completekey='tab', stdin=None, stdout=None):
+    def __init__(self, pipe, completekey="tab", stdin=None, stdout=None):
         c_dbg.Frontend.__init__(self, pipe)
         self.clear_interaction()
 
@@ -143,9 +151,13 @@ class WebDebugger(c_dbg.Frontend):
             interact_lock.release()
 
     def exception(self, title, extype, exvalue, trace, request):
-        self.exception_info = {'title': title,
-                               'extype': extype, 'exvalue': exvalue,
-                               'trace': trace, 'request': request}
+        self.exception_info = {
+            "title": title,
+            "extype": extype,
+            "exvalue": exvalue,
+            "trace": trace,
+            "request": request,
+        }
 
     @check_interaction
     def do_continue(self):
@@ -179,18 +191,20 @@ class WebDebugger(c_dbg.Frontend):
         finally:
             interact_lock.release()
 
+
 # create the connection between threads:
 
 parent_queue, child_queue = Queue.Queue(), Queue.Queue()
 front_conn = c_dbg.QueuePipe("parent", parent_queue, child_queue)
 child_conn = c_dbg.QueuePipe("child", child_queue, parent_queue)
 
-web_debugger = WebDebugger(front_conn)                                     # frontend
-dbg_debugger = c_dbg.Qdb(pipe=child_conn, redirect_stdio=False, skip=None)   # backend
+web_debugger = WebDebugger(front_conn)  # frontend
+dbg_debugger = c_dbg.Qdb(pipe=child_conn, redirect_stdio=False, skip=None)  # backend
 dbg = dbg_debugger
 
 # enable getting context (stack, globals/locals) at interaction
 dbg_debugger.set_params(dict(call_stack=True, environment=True))
 
 import gluon.main
+
 gluon.main.global_settings.debugging = True

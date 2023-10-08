@@ -13,10 +13,18 @@ Provides:
 """
 
 from pydal.contrib import portalocker
-from gluon._compat import copyreg, pickle, PY2
 
-__all__ = ['List', 'Storage', 'Settings', 'Messages',
-           'StorageList', 'load_storage', 'save_storage']
+from gluon._compat import PY2, copyreg, pickle
+
+__all__ = [
+    "List",
+    "Storage",
+    "Settings",
+    "Messages",
+    "StorageList",
+    "load_storage",
+    "save_storage",
+]
 
 DEFAULT = lambda: 0
 
@@ -44,13 +52,14 @@ class Storage(dict):
         None
 
     """
+
     __slots__ = ()
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getitem__ = dict.get
     __getattr__ = dict.get
-    __getnewargs__ = lambda self: getattr(dict,self).__getnewargs__(self)
-    __repr__ = lambda self: '<Storage %s>' % dict.__repr__(self)
+    __getnewargs__ = lambda self: getattr(dict, self).__getnewargs__(self)
+    __repr__ = lambda self: "<Storage %s>" % dict.__repr__(self)
     # http://stackoverflow.com/questions/5247250/why-does-pickle-getstate-accept-as-a-return-value-the-very-instance-it-requi
     __getstate__ = lambda self: None
     __copy__ = lambda self: Storage(self)
@@ -135,16 +144,19 @@ class Storage(dict):
 def pickle_storage(s):
     return Storage, (dict(s),)
 
+
 copyreg.pickle(Storage, pickle_storage)
 if PY2:
     PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
 else:
     PICKABLE = (str, int, float, bool, list, dict, tuple, set)
 
+
 class StorageList(Storage):
     """
     Behaves like Storage but missing elements defaults to [] instead of None
     """
+
     def __getitem__(self, key):
         return self.__getattr__(key)
 
@@ -160,7 +172,7 @@ class StorageList(Storage):
 def load_storage(filename):
     fp = None
     try:
-        fp = portalocker.LockedFile(filename, 'rb')
+        fp = portalocker.LockedFile(filename, "rb")
         storage = pickle.load(fp)
     finally:
         if fp:
@@ -171,7 +183,7 @@ def load_storage(filename):
 def save_storage(storage, filename):
     fp = None
     try:
-        fp = portalocker.LockedFile(filename, 'wb')
+        fp = portalocker.LockedFile(filename, "wb")
         pickle.dump(dict(storage), fp)
     finally:
         if fp:
@@ -180,10 +192,10 @@ def save_storage(storage, filename):
 
 class Settings(Storage):
     def __setattr__(self, key, value):
-        if key != 'lock_keys' and self['lock_keys'] and key not in self:
-            raise SyntaxError('setting key \'%s\' does not exist' % key)
-        if key != 'lock_values' and self['lock_values']:
-            raise SyntaxError('setting value cannot be changed: %s' % key)
+        if key != "lock_keys" and self["lock_keys"] and key not in self:
+            raise SyntaxError("setting key '%s' does not exist" % key)
+        if key != "lock_values" and self["lock_values"]:
+            raise SyntaxError("setting value cannot be changed: %s" % key)
         self[key] = value
 
 
@@ -234,6 +246,7 @@ class FastStorage(dict):
         >>> s['b']
 
     """
+
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self.__dict__ = self
@@ -251,7 +264,7 @@ class FastStorage(dict):
         return s
 
     def __repr__(self):
-        return '<Storage %s>' % dict.__repr__(self)
+        return "<Storage %s>" % dict.__repr__(self)
 
     def __getstate__(self):
         return dict(self)
@@ -268,9 +281,9 @@ class FastStorage(dict):
 class List(list):
 
     """
-        Like a regular python list but callable.
-        When  a(i) is called if i is out of bounds returns None
-        instead of `IndexError`.
+    Like a regular python list but callable.
+    When  a(i) is called if i is out of bounds returns None
+    instead of `IndexError`.
     """
 
     def __call__(self, i, default=DEFAULT, cast=None, otherwise=None):
@@ -305,9 +318,10 @@ class List(list):
             if cast:
                 value = cast(value)
             if not value and otherwise:
-                raise ValueError('Otherwise will raised.')
+                raise ValueError("Otherwise will raised.")
         except (ValueError, TypeError):
             from gluon.http import HTTP, redirect
+
             if otherwise is None:
                 raise HTTP(404)
             elif isinstance(otherwise, str):
@@ -318,6 +332,8 @@ class List(list):
                 raise RuntimeError("invalid otherwise")
         return value
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

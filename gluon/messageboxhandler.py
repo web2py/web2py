@@ -1,6 +1,6 @@
 import logging
-import sys
 import subprocess
+import sys
 
 try:
     if sys.version_info[0] == 2:

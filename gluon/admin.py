@@ -14,17 +14,16 @@ from __future__ import print_function
 
 import os
 import traceback
-from shutil import rmtree, copyfileobj
 import zipfile
+from shutil import copyfileobj, rmtree
 
-from gluon.fileutils import (w2p_pack, create_app, w2p_unpack,
-                             w2p_pack_plugin, w2p_unpack_plugin,
-                             up, fix_newlines, abspath, recursive_unlink,
-                             write_file, parse_version)
+from gluon._compat import to_native, urlopen
+from gluon.cache import CacheOnDisk
+from gluon.fileutils import (abspath, create_app, fix_newlines, parse_version,
+                             recursive_unlink, up, w2p_pack, w2p_pack_plugin,
+                             w2p_unpack, w2p_unpack_plugin, write_file)
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
-from gluon.cache import CacheOnDisk
-from gluon._compat import urlopen, to_native
 
 # TODO: move into add_path_first
 if not global_settings.web2py_runtime_gae:
@@ -37,7 +36,7 @@ REGEX_INCLUDE = r"""(?P<all>\{\{\s*include\s+['"](?P<name>[^'"]+)['"]\s*\}\})"""
 
 
 # TODO: swap arguments, let first ('r' or whatever) be mandatory
-def apath(path='', r=None):
+def apath(path="", r=None):
     """Builds a path inside an application folder
 
     Args:
@@ -47,10 +46,10 @@ def apath(path='', r=None):
     """
 
     opath = up(r.folder)
-    while path.startswith('../'):
+    while path.startswith("../"):
         opath = up(opath)
         path = path[3:]
-    return os.path.join(opath, path).replace('\\', '/')
+    return os.path.join(opath, path).replace("\\", "/")
 
 
 def app_pack(app, request, raise_ex=False, filenames=None):
@@ -66,7 +65,7 @@ def app_pack(app, request, raise_ex=False, filenames=None):
     try:
         if filenames is None:
             app_cleanup(app, request)
-        filename = apath('../deposit/web2py.app.%s.w2p' % app, request)
+        filename = apath("../deposit/web2py.app.%s.w2p" % app, request)
         w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
     except Exception as e:
@@ -88,7 +87,7 @@ def app_pack_compiled(app, request, raise_ex=False):
     """
 
     try:
-        filename = apath('../deposit/%s.w2p' % app, request)
+        filename = apath("../deposit/%s.w2p" % app, request)
         w2p_pack(filename, apath(app, request), compiled=True)
         return filename
     except Exception:
@@ -111,32 +110,32 @@ def app_cleanup(app, request):
     r = True
 
     # Remove error files
-    path = apath('%s/errors/' % app, request)
+    path = apath("%s/errors/" % app, request)
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
-                if not f.startswith('.'):
+                if not f.startswith("."):
                     os.unlink(os.path.join(path, f))
             except IOError:
                 r = False
 
     # Remove session files
-    path = apath('%s/sessions/' % app, request)
+    path = apath("%s/sessions/" % app, request)
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
-                if not f.startswith('.'):
+                if not f.startswith("."):
                     recursive_unlink(os.path.join(path, f))
             except (OSError, IOError):
                 r = False
 
     # Remove cache files
-    path = apath('%s/cache/' % app, request)
+    path = apath("%s/cache/" % app, request)
     if os.path.exists(path):
         CacheOnDisk(folder=path).clear()
         for f in os.listdir(path):
             try:
-                if not f.startswith('.'):
+                if not f.startswith("."):
                     recursive_unlink(os.path.join(path, f))
             except (OSError, IOError):
                 r = False
@@ -154,7 +153,9 @@ def app_compile(app, request, skip_failed_views=False):
         None if everything went ok, traceback text if errors are found
 
     """
-    from gluon.compileapp import compile_application, remove_compiled_application
+    from gluon.compileapp import (compile_application,
+                                  remove_compiled_application)
+
     folder = apath(app, request)
     try:
         failed_views = compile_application(folder, skip_failed_views)
@@ -221,23 +222,23 @@ def app_install(app, fobj, request, filename, overwrite=None):
 
     """
     did_mkdir = False
-    if filename.endswith('.w2p'):
-        extension = 'w2p'
-    elif filename.endswith('.tar.gz'):
-        extension = 'tar.gz'
+    if filename.endswith(".w2p"):
+        extension = "w2p"
+    elif filename.endswith(".tar.gz"):
+        extension = "tar.gz"
     else:
-        extension = 'tar'
-    upname = apath('../deposit/%s.%s' % (app, extension), request)
+        extension = "tar"
+    upname = apath("../deposit/%s.%s" % (app, extension), request)
 
     try:
-        with open(upname, 'wb') as appfp:
-            copyfileobj(fobj, appfp, 4194304) # 4 MB buffer
+        with open(upname, "wb") as appfp:
+            copyfileobj(fobj, appfp, 4194304)  # 4 MB buffer
         path = apath(app, request)
         if not overwrite:
             os.mkdir(path)
             did_mkdir = True
         w2p_unpack(upname, path)
-        if extension != 'tar':
+        if extension != "tar":
             os.unlink(upname)
         fix_newlines(path)
         return upname
@@ -280,8 +281,7 @@ def plugin_pack(app, plugin_name, request):
 
     """
     try:
-        filename = apath(
-            '../deposit/web2py.plugin.%s.w2p' % plugin_name, request)
+        filename = apath("../deposit/web2py.plugin.%s.w2p" % plugin_name, request)
         w2p_pack_plugin(filename, apath(app, request), plugin_name)
         return filename
     except Exception:
@@ -307,11 +307,11 @@ def plugin_install(app, fobj, request, filename):
         or `False` on failure
 
     """
-    upname = apath('../deposit/%s' % filename, request)
+    upname = apath("../deposit/%s" % filename, request)
 
     try:
-        with open(upname, 'wb') as appfp:
-            copyfileobj(fobj, appfp, 4194304) # 4 MB buffer
+        with open(upname, "wb") as appfp:
+            copyfileobj(fobj, appfp, 4194304)  # 4 MB buffer
         path = apath(app, request)
         w2p_unpack_plugin(upname, path)
         fix_newlines(path)
@@ -345,25 +345,25 @@ def check_new_version(myversion, version_url):
         pmyversion = parse_version(myversion)
     except IOError as e:
         from socket import gaierror
-        if isinstance(getattr(e, 'reason', None), gaierror) and \
-            e.reason.errno == -2:
+
+        if isinstance(getattr(e, "reason", None), gaierror) and e.reason.errno == -2:
             # assuming the version_url is ok the socket.gaierror
             # (gaierror stands for getaddrinfo() error) that
             # originates the exception is probably due to a
             # missing internet link (i.e. the system is offline)
-            print('system is offline, cannot retrieve latest web2py version')
+            print("system is offline, cannot retrieve latest web2py version")
             return -2, myversion
         else:
             print(traceback.format_exc())
             return -1, myversion
 
-    if pversion[:3]+pversion[-6:] > pmyversion[:3]+pmyversion[-6:]:
+    if pversion[:3] + pversion[-6:] > pmyversion[:3] + pmyversion[-6:]:
         return True, version
     else:
         return False, version
 
 
-def unzip(filename, dir, subfolder=''):
+def unzip(filename, dir, subfolder=""):
     """Unzips filename into dir (.zip only, no .gz etc)
 
     Args:
@@ -374,24 +374,24 @@ def unzip(filename, dir, subfolder=''):
     """
     filename = abspath(filename)
     if not zipfile.is_zipfile(filename):
-        raise RuntimeError('Not a valid zipfile')
+        raise RuntimeError("Not a valid zipfile")
     zf = zipfile.ZipFile(filename)
-    if not subfolder.endswith('/'):
-        subfolder += '/'
+    if not subfolder.endswith("/"):
+        subfolder += "/"
     n = len(subfolder)
     for name in sorted(zf.namelist()):
         if not name.startswith(subfolder):
             continue
         # print(name[n:])
-        if name.endswith('/'):
+        if name.endswith("/"):
             folder = os.path.join(dir, name[n:])
             if not os.path.exists(folder):
                 os.mkdir(folder)
         else:
-            write_file(os.path.join(dir, name[n:]), zf.read(name), 'wb')
+            write_file(os.path.join(dir, name[n:]), zf.read(name), "wb")
 
 
-def upgrade(request, url='http://web2py.com'):
+def upgrade(request, url="http://web2py.com"):
     """Upgrades web2py (src, osx, win) if a new version is posted.
     It detects whether src, osx or win is running and downloads the right one
 
@@ -411,29 +411,30 @@ def upgrade(request, url='http://web2py.com'):
     """
     web2py_version = request.env.web2py_version
     gluon_parent = request.env.gluon_parent
-    if not gluon_parent.endswith('/'):
-        gluon_parent += '/'
-    (check, version) = check_new_version(web2py_version,
-                                         url + '/examples/default/version')
+    if not gluon_parent.endswith("/"):
+        gluon_parent += "/"
+    (check, version) = check_new_version(
+        web2py_version, url + "/examples/default/version"
+    )
     if not check:
-        return False, 'Already latest version'
-    if os.path.exists(os.path.join(gluon_parent, 'web2py.exe')):
-        version_type = 'win'
+        return False, "Already latest version"
+    if os.path.exists(os.path.join(gluon_parent, "web2py.exe")):
+        version_type = "win"
         destination = gluon_parent
-        subfolder = 'web2py/'
-    elif gluon_parent.endswith('/Contents/Resources/'):
-        version_type = 'osx'
-        destination = gluon_parent[:-len('/Contents/Resources/')]
-        subfolder = 'web2py/web2py.app/'
+        subfolder = "web2py/"
+    elif gluon_parent.endswith("/Contents/Resources/"):
+        version_type = "osx"
+        destination = gluon_parent[: -len("/Contents/Resources/")]
+        subfolder = "web2py/web2py.app/"
     else:
-        version_type = 'src'
+        version_type = "src"
         destination = gluon_parent
-        subfolder = 'web2py/'
+        subfolder = "web2py/"
 
-    full_url = url + '/examples/static/web2py_%s.zip' % version_type
-    filename = abspath('web2py_%s_downloaded.zip' % version_type)
+    full_url = url + "/examples/static/web2py_%s.zip" % version_type
+    filename = abspath("web2py_%s_downloaded.zip" % version_type)
     try:
-        write_file(filename, urlopen(full_url).read(), 'wb')
+        write_file(filename, urlopen(full_url).read(), "wb")
     except Exception as e:
         return False, e
     try:
