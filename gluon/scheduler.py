@@ -104,6 +104,15 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.MethodType, types.BuiltinMethodType)
 
 
+def try_rollback(db):
+    """rollback in try/except to deal with broken connections"""
+    try:
+        db.rollback()
+        return True
+    except Exception:
+        return False
+        
+
 class Task(object):
     """Defines a "task" object that gets passed from the main thread to the
     executor's one
@@ -194,7 +203,7 @@ class JobGraph(object):
             db.commit()
             return rtn
         except Exception:
-            db.rollback()
+            try_rollback(db)
             return None
 
 
@@ -988,7 +997,7 @@ class Scheduler(threading.Thread):
             except Exception:
                 logger.exception('    error popping tasks')
                 self.w_stats.errors += 1
-                db.rollback()
+                try_rollback(db)
                 time.sleep(0.5)
 
     def pop_task(self):
@@ -1047,7 +1056,7 @@ class Scheduler(threading.Thread):
                 break
             except Exception:
                 logger.exception('    error inserting scheduler_run')
-                db.rollback()
+                try_rollback(db)
                 time.sleep(0.5)
         logger.info('new task %(id)s "%(task_name)s"'
                     ' %(application_name)s.%(function_name)s' % task)
@@ -1077,12 +1086,13 @@ class Scheduler(threading.Thread):
         db = self.db
         while True:  # FIXME: forever?
             try:
+                db.get_connection_from_pool_or_new()
                 self.report_task(task, task_report)
                 db.commit()
                 break
             except Exception:
                 logger.exception('    error storing result')
-                db.rollback()
+                try_rollback(db)
                 time.sleep(0.5)
 
     def report_task(self, task, task_report):
@@ -1258,7 +1268,7 @@ class Scheduler(threading.Thread):
             db.commit()
         except:
             logger.exception('Error retrieving status')
-            db.rollback()
+            try_rollback(db)
         self.adj_hibernation()
         self.sleep()
 
@@ -1269,6 +1279,7 @@ class Scheduler(threading.Thread):
         to allow a proper distribution of tasks among all active workers ASAP
         """
         db = self.db_thread
+        db.get_connection_from_pool_or_new()
         sw = db.scheduler_worker
         my_name = self.worker_name
         all_active = db(
@@ -1316,7 +1327,7 @@ class Scheduler(threading.Thread):
             except Exception:
                 logger.exception('TICKER: error assigning tasks')
                 self.w_stats.errors += 1
-                db.rollback()
+                try_rollback(db)
                 time.sleep(0.5)
 
     def assign_tasks(self):
