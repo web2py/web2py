@@ -717,7 +717,6 @@ class Cache(object):
                         send_headers = True
                 if send_headers:
                     headers = {
-                        "Pragma": None,
                         "Expires": expires,
                         "Cache-Control": cache_control,
                     }

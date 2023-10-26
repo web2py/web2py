@@ -126,7 +126,7 @@ def stream_file_or_304_or_206(
                 raise HTTP(403)
             else:
                 raise HTTP(404)
-        headers["Content-Length"] = fsize
+        headers["Content-Length"] = str(fsize)
         bytes = None
     if request and request.env.web2py_use_wsgi_file_wrapper:
         wrapped = request.env.wsgi_file_wrapper(stream, chunk_size)
