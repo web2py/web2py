@@ -121,9 +121,9 @@ class HTTP(Exception):
         rheaders = []
         for k, v in iteritems(headers):
             if isinstance(v, list):
-                rheaders += [(k, item) for item in v]
+                rheaders += [(k, str(item)) for item in v]
             else:
-                rheaders.append((k, v))
+                rheaders.append((k, str(v)))
         responder(status, rheaders)
         if env.get("request_method", "") == "HEAD":
             return [to_bytes("")]
