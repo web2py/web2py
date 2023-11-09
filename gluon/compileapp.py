@@ -14,7 +14,7 @@ Note:
 
 import copy
 import fnmatch
-import imp
+from importlib import import_module
 import marshal
 import os
 import py_compile
@@ -345,7 +345,7 @@ def local_import_aux(name, reload_force=False, app="welcome"):
     """
     items = name.replace("/", ".")
     name = "applications.%s.modules.%s" % (app, items)
-    module = __import__(name)
+    module = import_module(name)
     for item in name.split(".")[1:]:
         module = getattr(module, item)
     if reload_force:
