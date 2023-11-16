@@ -13,67 +13,85 @@ except:
     from gluon.html import *
 
 
-
 def FormStyleDefault(table, vars, errors, readonly, deletable):
-
-    form = FORM(TABLE(),_method='POST',_action='#',_enctype='multipart/form-data')
+    form = FORM(TABLE(), _method="POST", _action="#", _enctype="multipart/form-data")
     for field in table:
-
-        input_id = '%s_%s' % (field.tablename, field.name)
+        input_id = "%s_%s" % (field.tablename, field.name)
         value = field.formatter(vars.get(field.name))
         error = errors.get(field.name)
-        field_class = field.type.split()[0].replace(':','-')
+        field_class = field.type.split()[0].replace(":", "-")
 
-        if field.type == 'blob': # never display blobs (mistake?)
+        if field.type == "blob":  # never display blobs (mistake?)
             continue
-        elif readonly or field.type=='id':
+        elif readonly or field.type == "id":
             if not field.readable:
                 continue
             else:
-                control = field.represent and field.represent(value) or value or ''
+                control = field.represent and field.represent(value) or value or ""
         elif not field.writable:
             continue
         elif field.widget:
             control = field.widget(table, value)
-        elif field.type == 'text':
-            control = TEXTAREA(value or '', _id=input_id,_name=field.name)
-        elif field.type == 'boolean':
-            control = INPUT(_type='checkbox', _id=input_id, _name=field.name,
-                            _value='ON', _checked = value)
-        elif field.type == 'upload':
-            control = DIV(INPUT(_type='file', _id=input_id, _name=field.name))
+        elif field.type == "text":
+            control = TEXTAREA(value or "", _id=input_id, _name=field.name)
+        elif field.type == "boolean":
+            control = INPUT(
+                _type="checkbox",
+                _id=input_id,
+                _name=field.name,
+                _value="ON",
+                _checked=value,
+            )
+        elif field.type == "upload":
+            control = DIV(INPUT(_type="file", _id=input_id, _name=field.name))
             if value:
-                control.append(A('download',
-                                 _href=URL('default','download',args=value)))
-                control.append(INPUT(_type='checkbox',_value='ON',
-                                     _name='_delete_'+field.name))
-                control.append('(check to remove)')
-        elif hasattr(field.requires, 'options'):
-            multiple = field.type.startswith('list:')
+                control.append(
+                    A("download", _href=URL("default", "download", args=value))
+                )
+                control.append(
+                    INPUT(_type="checkbox", _value="ON", _name="_delete_" + field.name)
+                )
+                control.append("(check to remove)")
+        elif hasattr(field.requires, "options"):
+            multiple = field.type.startswith("list:")
             value = value if isinstance(value, list) else [value]
-            options = [OPTION(v,_value=k,_selected=(k in value))
-                       for k,v in field.requires.options()]
-            control = SELECT(*options, _id=input_id, _name=field.name,
-                              _multiple=multiple)
+            options = [
+                OPTION(v, _value=k, _selected=(k in value))
+                for k, v in field.requires.options()
+            ]
+            control = SELECT(
+                *options, _id=input_id, _name=field.name, _multiple=multiple
+            )
         else:
-            field_type = 'password' if field.type == 'password' else 'text'
-            control = INPUT(_type=field_type, _id=input_id, _name=field.name,
-                            _value=value, _class=field_class)
+            field_type = "password" if field.type == "password" else "text"
+            control = INPUT(
+                _type=field_type,
+                _id=input_id,
+                _name=field.name,
+                _value=value,
+                _class=field_class,
+            )
 
-        form[0].append(TR(TD(LABEL(field.label,_for=input_id)),
-                          TD(control,DIV(error,_class='error') if error else ''),
-                          TD(field.comment or '')))
+        form[0].append(
+            TR(
+                TD(LABEL(field.label, _for=input_id)),
+                TD(control, DIV(error, _class="error") if error else ""),
+                TD(field.comment or ""),
+            )
+        )
 
-    td = TD(INPUT(_type='submit',_value='Submit'))
+    td = TD(INPUT(_type="submit", _value="Submit"))
     if deletable:
-        td.append(INPUT(_type='checkbox',_value='ON',_name='_delete'))
-        td.append('(check to delete)')
-    form[0].append(TR(TD(),td,TD()))
+        td.append(INPUT(_type="checkbox", _value="ON", _name="_delete"))
+        td.append("(check to delete)")
+    form[0].append(TR(TD(), td, TD()))
     return form
+
 
 # ################################################################
 # Form object (replaced SQLFORM)
 # ################################################################
+
 
 class Form(object):
     """
@@ -98,23 +116,25 @@ class Form(object):
     - csrf: set to False to disable CRSF protection
     """
 
-    def __init__(self,
-                 table,
-                 record=None,
-                 readonly=False,
-                 deletable=True,
-                 formstyle=FormStyleDefault,
-                 dbio=True,
-                 keepvalues=False,
-                 formname=False,
-                 hidden=None,
-                 csrf=True):
-
+    def __init__(
+        self,
+        table,
+        record=None,
+        readonly=False,
+        deletable=True,
+        formstyle=FormStyleDefault,
+        dbio=True,
+        keepvalues=False,
+        formname=False,
+        hidden=None,
+        csrf=True,
+    ):
         if isinstance(table, list):
             dbio = False
             # mimic a table from a list of fields without calling define_table
-            formname = formname or 'none'
-            for field in table: field.tablename = getattr(field,'tablename',formname)
+            formname = formname or "none"
+            for field in table:
+                field.tablename = getattr(field, "tablename", formname)
 
         if isinstance(record, (int, long, basestring)):
             record_id = int(str(record))
@@ -141,7 +161,7 @@ class Form(object):
 
         request = current.request
 
-        if readonly or request.method=='GET':
+        if readonly or request.method == "GET":
             if self.record:
                 self.vars = self.record
         else:
@@ -158,12 +178,12 @@ class Form(object):
                             value = post_vars.get(field.name)
                             # FIX THIS deal with set_self_id before validate
                             (value, error) = field.validate(value)
-                            if field.type == 'upload':
-                                delete = post_vars.get('_delete_'+field.name)
-                                if value is not None and hasattr(value,'file'):
-                                    value = field.store(value.file,
-                                                        value.filename,
-                                                        field.uploadfolder)
+                            if field.type == "upload":
+                                delete = post_vars.get("_delete_" + field.name)
+                                if value is not None and hasattr(value, "file"):
+                                    value = field.store(
+                                        value.file, value.filename, field.uploadfolder
+                                    )
                                 elif self.record and not delete:
                                     value = self.record.get(field.name)
                                 else:
@@ -204,17 +224,17 @@ class Form(object):
 
     def helper(self):
         if not self.cached_helper:
-            cached_helper = self.formstyle(self.table,
-                                           self.vars,
-                                           self.errors,
-                                           self.readonly,
-                                           self.deletable)
+            cached_helper = self.formstyle(
+                self.table, self.vars, self.errors, self.readonly, self.deletable
+            )
             if self.csrf:
-                cached_helper.append(INPUT(_type='hidden',_name='_formkey',
-                                           _value=self.formkey))
+                cached_helper.append(
+                    INPUT(_type="hidden", _name="_formkey", _value=self.formkey)
+                )
             for key in self.hidden or {}:
-                cached_helper.append(INPUT(_type='hidden',_name=key,
-                                           _value=self.hidden[key]))
+                cached_helper.append(
+                    INPUT(_type="hidden", _name=key, _value=self.hidden[key])
+                )
             self.cached_helper = cached_helper
         return cached_helper
 
@@ -225,4 +245,4 @@ class Form(object):
         return self.xml()
 
     def __str__(self):
-        return self.xml().encode('utf8')
+        return self.xml().encode("utf8")

@@ -82,7 +82,6 @@ class testRequest(unittest.TestCase):
 
 
 class testResponse(unittest.TestCase):
-
     # port from python 2.7, needed for 2.5 and 2.6 tests
     def assertRegexpMatches(self, text, expected_regexp, msg=None):
         """Fail the test unless the text matches the regular expression."""

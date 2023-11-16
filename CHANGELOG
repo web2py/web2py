@@ -1,3 +1,72 @@
+
+## 2.27
+
+- python 3.11 support
+- linted and formatted code
+
+## 2.26
+
+- fixed invalid headers and header serialization bug
+- fixed circular imports
+- fixed a header injection vulnerability
+
+## 2.25
+
+(never released)
+
+## 2.24
+
+- fixed vulnerability JVN#80476432
+- fixed issue #2468
+- fixed issue #2457
+- fixed issue #2457
+- initialize env with abspath
+- fixed application packaging
+- fixed hmac.new digestmod
+- fixed cache corruption issue
+
+## 2.23
+	
+- fixed internal error in map_static() on self.args=None
+- fixed corner cases in prevent_open_redirect
+- fixed #2451, invalid chars in german translation
+- prevent admin app from accessing files outside the applications folder
+- fixed migration and virtual fields
+- callable auth.settings.auth_two_factor_enabled
+- added DKIM support to emails
+
+## 2.22
+
+- pydal upgrade
+- yatl upgrade
+- improved open redirect prevention
+- fixed problem with gmail attachments
+- fixed #2432
+- made simplejsonrpc compatible with python3.8+
+- fixed reload from _compat so it works in py3
+- fixed bug with filenames and = in the url
+- fixed #2425
+- fixed copyreg import for python2
+- fixed #2330
+- fixed oauth2.0 to work with python 3
+- added Ubuntu 20.04+Apache+Python3 installation script
+- fixed #2400, in rocket fixed SSL DoS issue in accept loop
+- added python 3.9 support
+
+## 2.21	
+
+- fixed exception handling for packed file creation
+- fixed handling of filenames with non-ascii characters in attachments	
+- fixed issue #2312
+- added hash_extension functionality to URL
+- fixed order keyword value in Grid column sort
+- cleanup in strings and regex
+- fixed handling of smtplib.SMTPException
+- fixed SCRIPT(ASSIGNJS(foo=bar))
+- fixed issue #2326
+- fixed issue #2315
+- removed Python 3.5 support
+
 ## 2.20.1
 
 new makefile to update binaries from Nico Zanferrari

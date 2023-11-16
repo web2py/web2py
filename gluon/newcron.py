@@ -227,7 +227,7 @@ def parsecronline(line):
     if len(params) < 7:
         return None
     daysofweek = {"sun": 0, "mon": 1, "tue": 2, "wed": 3, "thu": 4, "fri": 5, "sat": 6}
-    for (s, id) in zip(params[:5], ["min", "hr", "dom", "mon", "dow"]):
+    for s, id in zip(params[:5], ["min", "hr", "dom", "mon", "dow"]):
         if not s in [None, "*"]:
             task[id] = []
             vals = s.split(",")

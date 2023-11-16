@@ -5,6 +5,7 @@
     Unit tests for gluon.cache
 """
 import os
+import tempfile
 import unittest
 
 from gluon import recfile
@@ -35,11 +36,9 @@ def tearDownModule():
 
 
 class TestCache(unittest.TestCase):
-
     # TODO: test_CacheAbstract(self):
 
     def test_CacheInRam(self):
-
         # defaults to mode='http'
         cache = CacheInRam()
         self.assertEqual(cache("a", lambda: 1, 0), 1)
@@ -66,7 +65,6 @@ class TestCache(unittest.TestCase):
         self.assertEqual(cache("b", lambda: "x", 100), 1)
 
     def test_CacheOnDisk(self):
-
         # defaults to mode='http'
         s = Storage({"application": "admin", "folder": "applications/admin"})
         cache = CacheOnDisk(s)
@@ -94,16 +92,18 @@ class TestCache(unittest.TestCase):
         self.assertEqual(cache("b", lambda: "x", 100), 1)
 
     def test_corrupt_CacheOnDsk(self):
-        s = Storage({"application": "admin", "folder": "applications/admin"})
-        cache = CacheOnDisk(s)
-        self.assertEqual(cache("a", lambda: 1, 100), 1)
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            s = Storage({"application": "admin", "folder": tmpdirname})
 
-        # empty cache file
-        folder = os.path.join(s.folder, "cache")
-        val_file = recfile.open("a", mode="r+b", path=folder)
-        val_file.truncate()
+            cache = CacheOnDisk(s)
+            self.assertEqual(cache("a", lambda: 1, 100), 1)
 
-        self.assertEqual(cache("a", lambda: 2, 0), 2)
+            # empty cache file
+            folder = os.path.join(s.folder, "cache")
+            val_file = recfile.open("a", mode="r+b", path=folder)
+            val_file.truncate()
+
+            self.assertEqual(cache("a", lambda: 2, 0), 2)
 
     # TODO: def test_CacheAction(self):
 

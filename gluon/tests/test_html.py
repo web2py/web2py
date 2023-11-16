@@ -24,7 +24,6 @@ from gluon.storage import Storage
 
 
 class TestBareHelpers(unittest.TestCase):
-
     # xmlescape() = covered by other tests
 
     # TODO: def test_call_as_list(self):

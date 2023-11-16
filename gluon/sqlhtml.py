@@ -748,7 +748,6 @@ class AutocompleteWidget(object):
         user_signature=True,
         hash_vars=False,
     ):
-
         self.help_fields = help_fields or []
         self.help_string = help_string
         if self.help_fields and not self.help_string:
@@ -1674,7 +1673,6 @@ class SQLFORM(FORM):
             inpval = default
 
             if cond:
-
                 if field.represent:
                     inp = represent(field, default, record)
                 elif field.type in ["blob"]:
@@ -1887,7 +1885,6 @@ class SQLFORM(FORM):
         detect_record_change=False,
         **kwargs
     ):
-
         """
         Similar to `FORM.accepts` but also does insert, update or delete in DAL.
         If detect_record_change is `True` then:
@@ -2012,7 +2009,6 @@ class SQLFORM(FORM):
             # delete_exception is true when user tries to delete a record
             # that does not pass validation, yet it should be deleted
             for fieldname in self.fields:
-
                 field = (
                     self.table[fieldname]
                     if fieldname in self.table.fields
@@ -2609,7 +2605,6 @@ class SQLFORM(FORM):
         represent_none=None,
         showblobs=False,
     ):
-
         dbset = None
         formstyle = formstyle or current.response.formstyle
         if isinstance(query, Set):
@@ -3074,7 +3069,7 @@ class SQLFORM(FORM):
                                     selectable_columns.append(str(field))
                     # look for virtual fields not displayed (and virtual method
                     # fields to be added here?)
-                    for (field_name, field) in iteritems(table):
+                    for field_name, field in iteritems(table):
                         if (
                             isinstance(field, Field.Virtual)
                             and not str(field) in expcolumns
@@ -4026,7 +4021,6 @@ class SQLTABLE(TABLE):
         colgroup=False,
         **attributes
     ):
-
         TABLE.__init__(self, **attributes)
 
         self.components = []
@@ -4117,7 +4111,7 @@ class SQLTABLE(TABLE):
 
         tbody = []
         repr_cache = {}
-        for (rc, record) in enumerate(sqlrows):
+        for rc, record in enumerate(sqlrows):
             row = []
             if rc % 2 == 1:
                 _class = "w2p_even even"
@@ -4258,7 +4252,6 @@ class SQLTABLE(TABLE):
         components.append(TBODY(*tbody))
 
     def style(self):
-
         css = """
         table tbody tr.w2p_odd {
             background-color: #DFD;

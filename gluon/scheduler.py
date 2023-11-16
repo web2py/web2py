@@ -315,7 +315,7 @@ class CronParser(object):
             "nov": 11,
             "dec": 12,
         }
-        for (s, i) in zip(params, ("min", "hr", "dom", "mon", "dow")):
+        for s, i in zip(params, ("min", "hr", "dom", "mon", "dow")):
             if s != "*":
                 task[i] = []
                 vals = s.split(",")
@@ -657,7 +657,6 @@ class Scheduler(threading.Thread):
         utc_time=False,
         use_spawn=False,
     ):
-
         threading.Thread.__init__(self)
         self.setDaemon(True)
         self.process = None  # the background process

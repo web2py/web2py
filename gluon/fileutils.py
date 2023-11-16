@@ -172,7 +172,7 @@ def listdir(
         n = 0
     regex = re.compile(expression)
     items = []
-    for (root, dirs, files) in os.walk(path, topdown=True, followlinks=followlinks):
+    for root, dirs, files in os.walk(path, topdown=True, followlinks=followlinks):
         for dir in dirs[:]:
             if dir.startswith("."):
                 dirs.remove(dir)

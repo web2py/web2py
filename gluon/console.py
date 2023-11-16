@@ -819,7 +819,6 @@ def load_config(config_file, opt_map):
 
 
 def parse_args(parser, cli_args, deprecated_opts, integer_log_level, namespace=None):
-
     # print('PARSING ARGS:', cli_args)
     del integer_log_level[:]
     options = parser.parse_args(cli_args, namespace)

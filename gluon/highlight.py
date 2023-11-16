@@ -149,7 +149,7 @@ class Highlighter(object):
         i = 0
         mode = self.mode
         while i < len(data):
-            for (token, o_re, style) in Highlighter.all_styles[mode][1]:
+            for token, o_re, style in Highlighter.all_styles[mode][1]:
                 if token not in self.suppress_tokens:
                     match = o_re.match(data, i)
                     if match:

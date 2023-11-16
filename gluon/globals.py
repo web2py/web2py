@@ -220,7 +220,7 @@ class Request(Storage):
         dget = urlparse.parse_qs(query_string, keep_blank_values=1)
         # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
         get_vars = self._get_vars = Storage(dget)
-        for (key, value) in iteritems(get_vars):
+        for key, value in iteritems(get_vars):
             if isinstance(value, list) and len(value) == 1:
                 get_vars[key] = value[0]
 
@@ -1125,7 +1125,6 @@ class Session(Storage):
             (response.flash, self.flash) = (self.flash, None)
 
     def renew(self, clear_session=False):
-
         if clear_session:
             self.clear()
 
