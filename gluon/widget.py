@@ -732,6 +732,7 @@ def start():
         # ``No handlers could be found for logger "..."``
         # emitted by logging module when no handler is found
         logging.Logger.manager.emittedNoHandlerWarning = 1
+
         # to prevent writes on stdout set a null stream
         class NullFile(object):
             def write(self, x):

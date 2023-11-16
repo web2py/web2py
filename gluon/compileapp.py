@@ -34,7 +34,6 @@ from gluon._compat import (PY2, basestring, builtin, integer_types, iteritems,
                            reload, to_bytes, to_native, unicodeT, xrange)
 from gluon.cache import Cache
 from gluon.cfs import getcfs
-from gluon.custom_import import custom_import_install
 from gluon.dal import DAL, Field
 from gluon.fileutils import (abspath, add_path_first, listdir, mktree,
                              read_file, write_file)
@@ -469,6 +468,7 @@ def build_environment(request, response, session, store_current=True):
         name, reload, app
     )
     BaseAdapter.set_folder(pjoin(request.folder, "databases"))
+    from gluon.custom_import import custom_import_install
     custom_import_install()
     return environment
 

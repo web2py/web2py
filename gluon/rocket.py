@@ -655,7 +655,6 @@ class Rocket(object):
         timeout=600,
         handle_signals=True,
     ):
-
         self.handle_signals = handle_signals
         self.startstop_lock = Lock()
         self.timeout = timeout
@@ -858,7 +857,6 @@ class Monitor(Thread):
     def __init__(
         self, monitor_queue, active_queue, timeout, threadpool, *args, **kwargs
     ):
-
         Thread.__init__(self, *args, **kwargs)
 
         self._threadpool = threadpool
@@ -888,7 +886,6 @@ class Monitor(Thread):
 
         # Enter thread main loop
         while self.active:
-
             # Move the queued connections to the selection pool
             while not self.monitor_queue.empty():
                 if __debug__:
@@ -1043,7 +1040,6 @@ class ThreadPool:
         min_threads=DEFAULTS["MIN_THREADS"],
         max_threads=DEFAULTS["MAX_THREADS"],
     ):
-
         if __debug__:
             log.debug("Initializing ThreadPool.")
 
@@ -1179,7 +1175,6 @@ class ThreadPool:
                 self.shrink()
 
             elif queueSize > self.grow_threshold:
-
                 self.grow(queueSize)
 
 
@@ -1246,7 +1241,6 @@ class Worker(Thread):
     and (a subclass) will run an application to process the the connection"""
 
     def __init__(self, app_info, active_queue, monitor_queue, *args, **kwargs):
-
         Thread.__init__(self, *args, **kwargs)
 
         # Instance Variables

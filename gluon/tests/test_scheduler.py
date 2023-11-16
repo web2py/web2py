@@ -229,7 +229,6 @@ class CronParserTest(unittest.TestCase):
         self.assertEqual(n2.day, 25)
 
     def testBug2(self):
-
         base = datetime.datetime(2012, 1, 1, 0, 0)
         itr = CronParser("0 * * 3 *", base)
         n1 = itr.next()
@@ -904,7 +903,7 @@ def demo8():
             ("task ran 2 times only", len(task_run) == 2),
             (
                 "scheduler_run records are FAILED",
-                (task_run[0].status == task_run[1].status == "FAILED"),
+                all(task_n.status == "FAILED" for task_n in task_run),
             ),
             (
                 "period is respected",

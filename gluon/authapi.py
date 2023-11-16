@@ -153,7 +153,6 @@ class AuthAPI(object):
         return (value, None)
 
     def _get_migrate(self, tablename, migrate=True):
-
         if type(migrate).__name__ == "str":
             return migrate + tablename + ".table"
         elif not migrate:

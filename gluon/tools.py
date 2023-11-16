@@ -307,7 +307,6 @@ class Mail(object):
             Encoders.encode_base64(self)
 
     def __init__(self, server=None, sender=None, login=None, tls=True):
-
         settings = self.settings = Settings()
         settings.server = server
         settings.sender = sender
@@ -529,7 +528,6 @@ class Mail(object):
             html = None
 
         if (text is not None or html is not None) and (not raw):
-
             if text is not None:
                 if not isinstance(text, basestring):
                     text = text.read()
@@ -954,7 +952,6 @@ class Mail(object):
 
 
 def dkim_sign(payload, dkim_key, dkim_selector):
-
     import dkim
 
     # sign all existing mail headers except those specified in
@@ -1577,7 +1574,6 @@ class AuthJWT(object):
 
 
 class Auth(AuthAPI):
-
     default_settings = dict(
         AuthAPI.default_settings,
         allow_basic_login=False,
@@ -1852,7 +1848,6 @@ class Auth(AuthAPI):
         jwt=None,
         host_names=None,
     ):
-
         # next two lines for backward compatibility
         if not db and environment and isinstance(environment, DAL):
             db = environment
@@ -2953,7 +2948,6 @@ class Auth(AuthAPI):
         # previous version of this file, other than for indentation inside
         # to put it inside the if-block
         if session.auth_two_factor_user is None:
-
             if settings.remember_me_form:
                 extra_fields = [
                     Field(
@@ -3004,7 +2998,6 @@ class Auth(AuthAPI):
                     onvalidation=onvalidation,
                     hideerror=settings.hideerror,
                 ):
-
                     accepted_form = True
                     # check for username in db
                     entered_username = form.vars[username]
@@ -3111,7 +3104,6 @@ class Auth(AuthAPI):
             if callable(self.settings.auth_two_factor_enabled)
             else self.settings.auth_two_factor_enabled is True
         ):
-
             session.auth_two_factor_enabled = True
         elif user and self.settings.two_factor_authentication_group:
             role = self.settings.two_factor_authentication_group
@@ -3219,7 +3211,6 @@ class Auth(AuthAPI):
 
                 """
                 if self.settings.two_factor_onvalidation:
-
                     for (
                         two_factor_onvalidation
                     ) in self.settings.two_factor_onvalidation:
@@ -4254,7 +4245,6 @@ class Auth(AuthAPI):
             onvalidation=onvalidation,
             hideerror=self.settings.hideerror,
         ):
-
             current_user = s.select(limitby=(0, 1), orderby_on_limitby=False).first()
             if not form.vars["old_password"] == current_user[passfield]:
                 form.errors["old_password"] = self.messages.invalid_password
@@ -4490,7 +4480,6 @@ class Auth(AuthAPI):
 
         def decorator(action):
             def f(*a, **b):
-
                 basic_allowed, basic_accepted, user = self.basic()
                 user = user or self.user
                 login_required = requires_login
@@ -4763,7 +4752,6 @@ class Auth(AuthAPI):
         force_render=False,
         groups=None,
     ):
-
         if controller and function:
             resolve = False
 
@@ -4813,7 +4801,6 @@ class Auth(AuthAPI):
 
 
 class Crud(object):  # pragma: no cover
-
     default_messages = dict(
         submit_button="Submit",
         delete_label="Check to delete",
@@ -5074,7 +5061,6 @@ class Crud(object):  # pragma: no cover
         formname=DEFAULT,
         **attributes
     ):
-
         if next is DEFAULT:
             next = self.settings.create_next
         if onvalidation is DEFAULT:
@@ -6673,7 +6659,6 @@ class Wiki(object):
         function=None,
         groups=None,
     ):
-
         settings = self.settings = auth.settings.wiki
 
         """

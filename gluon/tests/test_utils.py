@@ -111,7 +111,7 @@ class TestUtils(unittest.TestCase):
             (4, b"mydata"),  # verify multiblock behavior
             (2, b""),  # verify empty string behavior
         ]
-        for (testlen, teststr) in test_cases:
+        for testlen, teststr in test_cases:
             padded = gluon.utils.pad(teststr, testlen)
             unpadded = gluon.utils.unpad(padded, testlen)
             self.assertTrue(len(padded) > len(teststr))

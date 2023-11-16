@@ -10,7 +10,6 @@ import unittest
 
 
 def load_tests(loader, tests, ignore):
-
     tests.addTests(doctest.DocTestSuite("gluon.html"))
     tests.addTests(doctest.DocTestSuite("gluon.utf8"))
 

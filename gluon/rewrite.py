@@ -268,7 +268,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                 "*/*",
             )
         )
-        for (key, uri) in THREAD_LOCAL.routes.routes_onerror:
+        for key, uri in THREAD_LOCAL.routes.routes_onerror:
             if key in keys:
                 if uri == "!":
                     # do nothing!
@@ -314,7 +314,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                 "*/*",
             )
         )
-        for (key, redir) in THREAD_LOCAL.routes.routes_onerror:
+        for key, redir in THREAD_LOCAL.routes.routes_onerror:
             if key in keys:
                 if redir == "!":
                     break
@@ -589,7 +589,7 @@ def load_routers(all_apps):
     #
     domains = dict()
     if routers.BASE.domains:
-        for (d, a) in iteritems(routers.BASE.domains):
+        for d, a in iteritems(routers.BASE.domains):
             (domain, app) = (d.strip(":"), a.strip("/"))
             if ":" in domain:
                 (domain, port) = domain.split(":")
@@ -623,7 +623,7 @@ def regex_uri(e, regexes, tag, default=None):
         e.get("REQUEST_METHOD", "get").lower(),
         path,
     )
-    for (regex, value, custom_env) in regexes:
+    for regex, value, custom_env in regexes:
         if regex.match(key):
             e.update(custom_env)
             rewritten = regex.sub(value, key)
@@ -774,7 +774,7 @@ def regex_filter_out(url, e=None):
             )
         else:
             items[0] = ":http://localhost:get %s" % items[0]
-        for (regex, value, tmp) in routes.routes_out:
+        for regex, value, tmp in routes.routes_out:
             if regex.match(items[0]):
                 rewritten = "?".join([regex.sub(value, items[0])] + items[1:])
                 log_rewrite("routes_out: [%s] -> %s" % (url, rewritten))
@@ -897,7 +897,7 @@ def filter_err(status, application="app", ticket="tkt"):
                 "*/*",
             )
         )
-        for (key, redir) in routes.routes_onerror:
+        for key, redir in routes.routes_onerror:
             if key in keys:
                 if redir == "!":
                     break

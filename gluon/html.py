@@ -386,7 +386,7 @@ def URL(
         other += "/"  # add trailing slash to make last trailing empty arg explicit
 
     list_vars = []
-    for (key, vals) in sorted(vars.items()):
+    for key, vals in sorted(vars.items()):
         if key == "_signature":
             continue
         if not isinstance(vals, (list, tuple)):
@@ -544,7 +544,7 @@ def verifyURL(
     # forms or ajax)
 
     list_vars = []
-    for (key, vals) in sorted(vars.items()):
+    for key, vals in sorted(vars.items()):
         if not isinstance(vals, (list, tuple)):
             vals = [vals]
         for val in vals:
@@ -821,7 +821,7 @@ class DIV(XmlComponent):
         dictionary like updating of the tag attributes
         """
 
-        for (key, value) in iteritems(kargs):
+        for key, value in iteritems(kargs):
             self[key] = value
         return self
 
@@ -1231,7 +1231,7 @@ class DIV(XmlComponent):
         # value as provided
         tag = to_native(getattr(self, "tag")).replace("/", "")
         check = not (args and tag not in args)
-        for (key, value) in iteritems(kargs):
+        for key, value in iteritems(kargs):
             if key not in ["first_only", "replace", "find_text"]:
                 if isinstance(value, (str, int)):
                     if str(self[key]) != str(value):
@@ -1325,7 +1325,7 @@ class DIV(XmlComponent):
                 tag = getattr(c, "tag").replace("/", "")
                 if args and tag not in args:
                     check = False
-                for (key, value) in iteritems(kargs):
+                for key, value in iteritems(kargs):
                     if c[key] != value:
                         check = False
                 if check:
@@ -1349,7 +1349,6 @@ class DIV(XmlComponent):
 
 
 class CAT(DIV):
-
     tag = ""
 
 
@@ -1505,27 +1504,22 @@ class XHTML(DIV):
 
 
 class HEAD(DIV):
-
     tag = "head"
 
 
 class TITLE(DIV):
-
     tag = "title"
 
 
 class META(DIV):
-
     tag = "meta/"
 
 
 class LINK(DIV):
-
     tag = "link/"
 
 
 class SCRIPT(DIV):
-
     tag = b"script"
     tagname = to_bytes(tag)
 
@@ -1554,7 +1548,6 @@ class SCRIPT(DIV):
 
 
 class STYLE(DIV):
-
     tag = "style"
     tagname = to_bytes(tag)
 
@@ -1578,47 +1571,38 @@ class STYLE(DIV):
 
 
 class IMG(DIV):
-
     tag = "img/"
 
 
 class SPAN(DIV):
-
     tag = "span"
 
 
 class BODY(DIV):
-
     tag = "body"
 
 
 class H1(DIV):
-
     tag = "h1"
 
 
 class H2(DIV):
-
     tag = "h2"
 
 
 class H3(DIV):
-
     tag = "h3"
 
 
 class H4(DIV):
-
     tag = "h4"
 
 
 class H5(DIV):
-
     tag = "h5"
 
 
 class H6(DIV):
-
     tag = "h6"
 
 
@@ -1639,22 +1623,18 @@ class P(DIV):
 
 
 class STRONG(DIV):
-
     tag = "strong"
 
 
 class B(DIV):
-
     tag = "b"
 
 
 class BR(DIV):
-
     tag = "br/"
 
 
 class HR(DIV):
-
     tag = "hr/"
 
 
@@ -1715,32 +1695,26 @@ class A(DIV):
 
 
 class BUTTON(DIV):
-
     tag = "button"
 
 
 class EM(DIV):
-
     tag = "em"
 
 
 class EMBED(DIV):
-
     tag = "embed/"
 
 
 class TT(DIV):
-
     tag = "tt"
 
 
 class PRE(DIV):
-
     tag = "pre"
 
 
 class CENTER(DIV):
-
     tag = "center"
 
 
@@ -1794,12 +1768,10 @@ class CODE(DIV):
 
 
 class LABEL(DIV):
-
     tag = "label"
 
 
 class LI(DIV):
-
     tag = "li"
 
 
@@ -1818,17 +1790,14 @@ class UL(DIV):
 
 
 class OL(UL):
-
     tag = "ol"
 
 
 class TD(DIV):
-
     tag = "td"
 
 
 class TH(DIV):
-
     tag = "th"
 
 
@@ -1861,7 +1830,6 @@ class __TRHEAD__(DIV):
 
 
 class THEAD(DIV):
-
     tag = "thead"
 
     def _fixup(self):
@@ -1869,7 +1837,6 @@ class THEAD(DIV):
 
 
 class TBODY(DIV):
-
     tag = "tbody"
 
     def _fixup(self):
@@ -1877,7 +1844,6 @@ class TBODY(DIV):
 
 
 class TFOOT(DIV):
-
     tag = "tfoot"
 
     def _fixup(self):
@@ -1885,12 +1851,10 @@ class TFOOT(DIV):
 
 
 class COL(DIV):
-
     tag = "col/"
 
 
 class COLGROUP(DIV):
-
     tag = "colgroup"
 
 
@@ -1910,12 +1874,10 @@ class TABLE(DIV):
 
 
 class I(DIV):
-
     tag = "i"
 
 
 class IFRAME(DIV):
-
     tag = "iframe"
 
 
@@ -1957,7 +1919,6 @@ class INPUT(DIV):
     tag = "input/"
 
     def _validate(self):
-
         # # this only changes value, not _value
 
         name = self["_name"]
@@ -2089,7 +2050,6 @@ class TEXTAREA(INPUT):
 
 
 class OPTION(DIV):
-
     tag = "option"
 
     def _fixup(self):
@@ -2098,12 +2058,10 @@ class OPTION(DIV):
 
 
 class OBJECT(DIV):
-
     tag = "object"
 
 
 class OPTGROUP(DIV):
-
     tag = "optgroup"
 
     def _fixup(self):
@@ -2168,12 +2126,10 @@ class SELECT(INPUT):
 
 
 class FIELDSET(DIV):
-
     tag = "fieldset"
 
 
 class LEGEND(DIV):
-
     tag = "legend"
 
 

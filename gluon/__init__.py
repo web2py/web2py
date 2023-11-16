@@ -144,9 +144,9 @@ def import_packages():
 
 import_packages()
 
-from .globals import current
 from .compileapp import LOAD
 from .dal import DAL, Field
+from .globals import current
 from .html import *
 from .http import HTTP, redirect
 from .sqlhtml import SQLFORM, SQLTABLE

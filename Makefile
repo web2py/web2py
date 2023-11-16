@@ -45,7 +45,7 @@ rmfiles:
 	rm -rf applications/examples/uploads/* 
 src:
 	### Use semantic versioning
-	echo 'Version 2.26.1-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 2.27.1-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
 	make clean
 	# make rmfiles
@@ -162,7 +162,7 @@ binaries:
 	cp -r applications/examples ../web2py_osx_py37/web2py.app/Contents/MacOS/applications/
 	cd ../web2py_osx_py37; zip -r ../web2py/web2py_osx_py37.zip web2py.app
 run:
-	python2.7 web2py.py -a hello
+	python web2py.py -a hello
 commit:
 	python web2py.py --run_system_tests
 	make src
