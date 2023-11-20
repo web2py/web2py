@@ -393,17 +393,18 @@ class CacheOnDisk(CacheAbstract):
             Return the result of applying the function.
             """
             key = self.key_filter_in(key)
-            exists = True
+            val_file = None
+            exists = False
             try:
                 val_file = recfile.open(key, mode="r+b", path=self.folder)
-            except IOError:
-                exists = False
+                exists = True
+            except:
                 val_file = recfile.open(key, mode="wb", path=self.folder)
             self.wait_portalock(val_file)
             if exists:
                 timestamp, value = pickle.load(val_file)
             else:
-                value = default_value
+                value = default_value            
             new_value = function(value)
             val_file.seek(0)
             pickle.dump((time.time(), new_value), val_file, pickle.HIGHEST_PROTOCOL)

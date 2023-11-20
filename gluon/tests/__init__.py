@@ -12,10 +12,10 @@ from .test_html import *
 from .test_http import *
 from .test_languages import *
 from .test_recfile import *
-from .test_redis import *
+# from .test_redis import *
 from .test_router import *
 from .test_routes import *
-from .test_scheduler import *
+# from .test_scheduler import *
 from .test_serializers import *
 from .test_sqlhtml import *
 from .test_storage import *

@@ -12,26 +12,28 @@ Utilities and class for UTF8 strings managing
 """
 from __future__ import print_function
 
+from gluon._compat import PY2
 from gluon._compat import builtin as __builtin__
 from gluon._compat import iteritems, reload, to_native, to_unicode, unicodeT
 
 __all__ = ["Utf8"]
 
 repr_escape_tab = {}
-# FIXME PY3
 for i in range(1, 32):
-    repr_escape_tab[i] = to_unicode("\\" + "x%02x" % i)
-repr_escape_tab[7] = "\\a"
-repr_escape_tab[8] = "\\b"
-repr_escape_tab[9] = "\\t"
-repr_escape_tab[10] = "\\n"
-repr_escape_tab[11] = "\\v"
-repr_escape_tab[12] = "\\f"
-repr_escape_tab[13] = "\\r"
-repr_escape_tab[ord("\\")] = "\\\\"
+    repr_escape_tab[i] = r"\x%02x" % i
+repr_escape_tab[7] = r"\a"
+repr_escape_tab[8] = r"\b"
+repr_escape_tab[9] = r"\t"
+repr_escape_tab[10] = r"\n"
+repr_escape_tab[11] = r"\v"
+repr_escape_tab[12] = r"\f"
+repr_escape_tab[13] = r"\r"
+repr_escape_tab[ord("\\")] = r"\\"
 repr_escape_tab2 = repr_escape_tab.copy()
-repr_escape_tab2[ord("'")] = "\\'"
-
+repr_escape_tab2[ord("'")] = to_unicode(r"\'")
+if PY2:
+    for i in repr_escape_tab:
+        repr_escape_tab[i] = to_unicode(repr_escape_tab[i])
 
 def sort_key(s):
     """Unicode Collation Algorithm (UCA) (http://www.unicode.org/reports/tr10/)
@@ -164,21 +166,11 @@ class Utf8(str):
         if (
             str.find(self, "'") >= 0 and str.find(self, '"') < 0
         ):  # only single quote exists
-            return (
-                '"'
-                + to_native(
-                    to_unicode(self, "utf-8").translate(repr_escape_tab), "utf-8"
-                )
-                + '"'
-            )
+            u = to_unicode(self, "utf-8").translate(repr_escape_tab)
+            return '"%s"' % to_native(u)
         else:
-            return (
-                "'"
-                + to_native(
-                    to_unicode(self, "utf-8").translate(repr_escape_tab2), "utf-8"
-                )
-                + "'"
-            )
+            u = to_unicode(self, "utf-8").translate(repr_escape_tab)
+            return "'%s'"  % to_native(u)
 
     def __size__(self):
         """length of utf-8 string in bytes"""

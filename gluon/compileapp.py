@@ -14,7 +14,7 @@ Note:
 
 import copy
 import fnmatch
-from importlib import import_module
+import importlib
 import marshal
 import os
 import py_compile
@@ -46,6 +46,12 @@ from gluon.sqlhtml import SQLFORM, SQLTABLE
 from gluon.storage import List, Storage
 from gluon.template import parse_template
 from gluon.validators import Validator
+
+if PY2:
+    import imp
+    MAGIC = imp.get_magic()
+else:
+    MAGIC =  importlib.util.MAGIC_NUMBER
 
 CACHED_REGEXES = {}
 CACHED_REGEXES_MAX_SIZE = 1000
@@ -344,7 +350,7 @@ def local_import_aux(name, reload_force=False, app="welcome"):
     """
     items = name.replace("/", ".")
     name = "applications.%s.modules.%s" % (app, items)
-    module = import_module(name)
+    module = importlib.import_module(name)
     for item in name.split(".")[1:]:
         module = getattr(module, item)
     if reload_force:
@@ -496,7 +502,7 @@ def read_pyc(filename):
         a code object
     """
     data = read_file(filename, "rb")
-    if not global_settings.web2py_runtime_gae and not data.startswith(imp.get_magic()):
+    if not global_settings.web2py_runtime_gae and not data.startswith(MAGIC):
         raise SystemError("compiled code is incompatible")
     return marshal.loads(data[MARSHAL_HEADER_SIZE:])
 
