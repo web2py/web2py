@@ -168,7 +168,7 @@ if request.controller == "webservices":
     basic = request.env.http_authorization
     if not basic or not basic[:6].lower() == 'basic ':
         raise HTTP(401, "Wrong credentials")
-    (username, password) = base64.b64decode(basic[6:]).split(':')
+    (username, password) = base64.b64decode(basic[6:]).decode('utf-8').split(':')
     if not verify_password(password) or MULTI_USER_MODE:
         time.sleep(10)
         raise HTTP(403, "Not authorized")
