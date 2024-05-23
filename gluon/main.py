@@ -383,6 +383,7 @@ def wsgibase(environ, responder):
                     or env.https == "on",
                 )
                 request.url = environ["PATH_INFO"]
+                request.parse_content_type()
 
                 # ##################################################
                 # access the requested application
