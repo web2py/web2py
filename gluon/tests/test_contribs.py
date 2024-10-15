@@ -6,7 +6,6 @@
 import os
 import unittest
 
-from gluon._compat import to_bytes
 from gluon.contrib import fpdf as fpdf
 from gluon.contrib import pyfpdf as pyfpdf
 from gluon.contrib.appconfig import AppConfig
@@ -39,8 +38,8 @@ class TestContribs(unittest.TestCase):
         pdf.write(5, "hello world")
         pdf_out = pdf.output("", "S")
 
-        self.assertTrue(to_bytes(fpdf.FPDF_VERSION) in pdf_out, "version string")
-        self.assertTrue(to_bytes("hello world") in pdf_out, "sample message")
+        self.assertTrue(fpdf.FPDF_VERSION.encode("utf8") in pdf_out, "version string")
+        self.assertTrue(b"hello world" in pdf_out, "sample message")
 
     def test_appconfig(self):
         """

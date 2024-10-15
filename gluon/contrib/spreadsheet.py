@@ -5,10 +5,10 @@ Developed by Massimo Di Pierro, optional component of web2py, BSDv3 license.
 """
 from __future__ import print_function
 
-import re
-import pickle
 import copy
 import json
+import pickle
+import re
 
 
 def quote(text):

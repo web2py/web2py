@@ -21,7 +21,6 @@ import time
 from gzip import open as gzopen
 
 from gluon import storage
-from gluon._compat import PY2
 from gluon.http import HTTP
 from gluon.recfile import generate
 from gluon.settings import global_settings
@@ -111,7 +110,7 @@ def parse_version(version):
 
 
 def open_file(filename, mode):
-    if PY2 or "b" in mode:
+    if "b" in mode:
         f = open(filename, mode)
     else:
         f = open(filename, mode, encoding="utf8")

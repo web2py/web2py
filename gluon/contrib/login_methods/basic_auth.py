@@ -1,6 +1,6 @@
-from gluon._compat import urlopen
-from gluon._compat import urllib2
 import base64
+
+from gluon._compat import urllib2, urlopen
 
 
 def basic_auth(server="http://127.0.0.1"):

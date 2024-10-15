@@ -1,13 +1,13 @@
 import datetime
+import sys
 import time
 import warnings
-import sys
 
 import pymysql
+import unittest2
 from pymysql import cursors
 from pymysql._compat import text_type
 from pymysql.tests import base
-import unittest2
 
 try:
     import imp

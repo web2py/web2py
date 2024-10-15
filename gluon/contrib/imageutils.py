@@ -35,8 +35,9 @@ class RESIZE(object):
     def __call__(self, value):
         if isinstance(value, str) and len(value) == 0:
             return (value, None)
-        from PIL import Image
         from io import BytesIO
+
+        from PIL import Image
         try:
             img = Image.open(value.file)
             img.thumbnail((self.nx, self.ny), Image.ANTIALIAS)
@@ -61,8 +62,9 @@ def THUMB(image, nx=120, ny=120, gae=False, name='thumb'):
     if image:
         if not gae:
             request = current.request
-            from PIL import Image
             import os
+
+            from PIL import Image
             img = Image.open(os.path.join(request.folder, 'uploads', image))
             img.thumbnail((nx, ny), Image.ANTIALIAS)
             root, ext = os.path.splitext(image)

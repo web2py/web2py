@@ -4,12 +4,13 @@ License BSD
 """
 from __future__ import print_function
 
-import subprocess
 import os
 import os.path
 import re
+import subprocess
 import sys
-from tempfile import mkstemp, mkdtemp, NamedTemporaryFile
+from tempfile import NamedTemporaryFile, mkdtemp, mkstemp
+
 from gluon.contrib.markmin.markmin2latex import markmin2latex
 
 __all__ = ['markmin2pdf']
@@ -106,8 +107,9 @@ def markmin2pdf(text, image_mapper=lambda x: None, extra={}):
 
 
 if __name__ == '__main__':
-    import sys
     import doctest
+    import sys
+
     import markmin2html
 
     if sys.argv[1:2] == ['-h']:

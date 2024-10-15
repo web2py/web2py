@@ -11,6 +11,8 @@ Translation system
 --------------------------------------------
 """
 
+import builtins
+import copyreg
 import logging
 import os
 import pkgutil
@@ -18,8 +20,6 @@ import re
 import sys
 from threading import RLock
 
-from pydal._compat import (PY2, copyreg, iteritems, iterkeys, maketrans, pjoin,
-                           to_bytes, to_native, to_unicode, unicodeT)
 from pydal.contrib.portalocker import LockedFile, read_locked
 from yatl.sanitizer import xmlescape
 
@@ -28,7 +28,7 @@ from gluon.contrib.markmin.markmin2html import markmin_escape, render
 from gluon.fileutils import listdir
 from gluon.html import XML, xmlescape
 
-__all__ = ["translator", "findT", "update_all_languages"]
+__all__ = ["TranslatorFactory", "findT", "update_all_languages"]
 
 ostat = os.stat
 oslistdir = os.listdir
@@ -46,12 +46,8 @@ DEFAULT_GET_PLURAL_ID = lambda n: 0
 # word is unchangeable
 DEFAULT_CONSTRUCT_PLURAL_FORM = lambda word, plural_id: word
 
-if PY2:
-    NUMBERS = (int, long, float)
-    from gluon.utf8 import Utf8
-else:
-    NUMBERS = (int, float)
-    Utf8 = str
+NUMBERS = (int, float)
+Utf8 = str
 
 # pattern to find T(blah blah blah) expressions
 PY_STRING_LITERAL_RE = (
@@ -118,23 +114,8 @@ def markmin(s):
     )
 
 
-# UTF8 helper functions
-
-
-def upper_fun(s):
-    return to_bytes(to_unicode(s).upper())
-
-
-def title_fun(s):
-    return to_bytes(to_unicode(s).title())
-
-
-def cap_fun(s):
-    return to_bytes(to_unicode(s).capitalize())
-
-
-ttab_in = maketrans("\\%{}", "\x1c\x1d\x1e\x1f")
-ttab_out = maketrans("\x1c\x1d\x1e\x1f", "\\%{}")
+ttab_in = str.maketrans("\\%{}", "\x1c\x1d\x1e\x1f")
+ttab_out = str.maketrans("\x1c\x1d\x1e\x1f", "\\%{}")
 
 # cache of translated messages:
 # global_language_cache:
@@ -177,10 +158,10 @@ def clear_cache(filename):
 
 
 def read_dict_aux(filename):
-    lang_text = read_locked(filename).replace(b"\r\n", b"\n")
+    lang_text = read_locked(filename).decode("utf8").replace("\r\n", "\n")
     clear_cache(filename)
     try:
-        return safe_eval(to_native(lang_text)) or {}
+        return safe_eval(lang_text) or {}
     except Exception:
         e = sys.exc_info()[1]
         status = "Syntax error in %s (%s)" % (filename, e)
@@ -204,7 +185,7 @@ def read_possible_plural_rules():
 
         for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
             if len(modname) == 2:
-                module = __import__(
+                module = builtins.__import__(
                     package.__name__ + "." + modname, fromlist=[modname]
                 )
                 lang = modname
@@ -217,7 +198,7 @@ def read_possible_plural_rules():
                 plurals[lang] = (lang, nplurals, get_plural_id, construct_plural_form)
     except ImportError:
         e = sys.exc_info()[1]
-        logging.warn("Unable to import plural rules: %s" % e)
+        logging.warn("Unable to import plural rules: %s" % e)        
     return plurals
 
 
@@ -270,12 +251,12 @@ def read_possible_languages_aux(langdir):
     # scan languages directory for plural dict files:
     for pname in flist:
         if regex_plural_file.match(pname):
-            plurals[pname[7:-3]] = (pname, ostat(pjoin(langdir, pname)).st_mtime)
+            plurals[pname[7:-3]] = (pname, ostat(os.path.join(langdir, pname)).st_mtime)
     langs = {}
     # scan languages directory for langfiles:
     for fname in flist:
         if regex_langfile.match(fname) or fname == "default.py":
-            fname_with_path = pjoin(langdir, fname)
+            fname_with_path = os.path.join(langdir, fname)
             d = read_dict(fname_with_path)
             lang = fname[:-3]
             langcode = d.get(
@@ -306,7 +287,7 @@ def read_possible_languages(langpath):
 
 
 def read_plural_dict_aux(filename):
-    lang_text = read_locked(filename).replace(b"\r\n", b"\n")
+    lang_text = read_locked(filename).decode("utf8").replace("\r\n", "\n")
     try:
         return eval(lang_text) or {}
     except Exception:
@@ -331,7 +312,7 @@ def write_plural_dict(filename, contents):
         fp.write(
             '#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n{\n# "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],\n'
         )
-        for key in sorted(contents, key=sort_function):
+        for key in sorted(contents, key=lambda x: x.lower()):
             forms = "[" + ",".join([repr(Utf8(form)) for form in contents[key]]) + "]"
             fp.write("%s: %s,\n" % (repr(Utf8(key)), forms))
         fp.write("}\n")
@@ -344,10 +325,6 @@ def write_plural_dict(filename, contents):
             fp.close()
 
 
-def sort_function(x):
-    return to_unicode(x, "utf-8").lower()
-
-
 def write_dict(filename, contents):
     if "__corrupted__" in contents:
         return
@@ -355,7 +332,7 @@ def write_dict(filename, contents):
     try:
         fp = LockedFile(filename, "w")
         fp.write("# -*- coding: utf-8 -*-\n{\n")
-        for key in sorted(contents, key=lambda x: to_unicode(x, "utf-8").lower()):
+        for key in sorted(contents, key=lambda x: x.lower()):
             fp.write("%s: %s,\n" % (repr(Utf8(key)), repr(Utf8(contents[key]))))
         fp.write("}\n")
     except (IOError, OSError):
@@ -451,16 +428,10 @@ class lazyT(object):
         return str(self) if self.M else xmlescape(str(self), quote=False)
 
     def encode(self, *a, **b):
-        if PY2 and a[0] != "utf8":
-            return to_unicode(str(self)).encode(*a, **b)
-        else:
-            return str(self)
+        return str(self)
 
     def decode(self, *a, **b):
-        if PY2:
-            return str(self).decode(*a, **b)
-        else:
-            return str(self)
+        return str(self)
 
     def read(self):
         return str(self)
@@ -472,7 +443,7 @@ class lazyT(object):
 
 
 def pickle_lazyT(c):
-    return str, (to_native(c.xml()),)
+    return str, (c.xml(),)
 
 
 copyreg.pickle(lazyT, pickle_lazyT)
@@ -597,7 +568,7 @@ class TranslatorFactory(object):
                 self.default_t = {}
                 self.current_languages = [DEFAULT_LANGUAGE]
             else:
-                self.default_language_file = pjoin(self.langpath, "default.py")
+                self.default_language_file = os.path.join(self.langpath, "default.py")
                 self.default_t = read_dict(self.default_language_file)
                 self.current_languages = [pl_info[0]]  # !langcode!
         else:
@@ -674,7 +645,7 @@ class TranslatorFactory(object):
                 ) = lang_info[3:]
                 pdict = {}
                 if pname:
-                    pname = pjoin(self.langpath, pname)
+                    pname = os.path.join(self.langpath, pname)
                     if pmtime != 0:
                         pdict = read_plural_dict(pname)
                 self.plural_file = pname
@@ -715,7 +686,7 @@ class TranslatorFactory(object):
                 if language:
                     if language in self.current_languages:
                         break
-                    self.language_file = pjoin(self.langpath, language + ".py")
+                    self.language_file = os.path.join(self.langpath, language + ".py")
                     self.t = read_dict(self.language_file)
                     self.cache = global_language_cache.setdefault(
                         self.language_file, ({}, RLock())
@@ -793,7 +764,7 @@ class TranslatorFactory(object):
             if isinstance(symbols, dict):
                 symbols.update(
                     (key, xmlescape(value).translate(ttab_in))
-                    for key, value in iteritems(symbols)
+                    for key, value in symbols.items()
                     if not isinstance(value, NUMBERS)
                 )
             else:
@@ -802,11 +773,11 @@ class TranslatorFactory(object):
                 symbols = tuple(
                     value
                     if isinstance(value, NUMBERS)
-                    else to_native(xmlescape(value)).translate(ttab_in)
+                    else xmlescape(value).translate(ttab_in)
                     for value in symbols
                 )
             message = self.params_substitution(message, symbols)
-        return to_native(XML(message.translate(ttab_out)).xml())
+        return XML(message.translate(ttab_out)).xml()
 
     def M(
         self,
@@ -848,8 +819,6 @@ class TranslatorFactory(object):
         the ## notation is ignored in multiline strings and strings that
         start with ##. This is needed to allow markmin syntax to be translated
         """
-        message = to_native(message, "utf8")
-        prefix = to_native(prefix, "utf8")
         key = prefix + message
         mt = self.t.get(key, None)
         if mt is not None:
@@ -870,7 +839,7 @@ class TranslatorFactory(object):
         ):
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
-            lambda m: m.group(1).translate(ttab_in), to_native(mt)
+            lambda m: m.group(1).translate(ttab_in), mt
         )
 
     def params_substitution(self, message, symbols):
@@ -975,16 +944,16 @@ class TranslatorFactory(object):
                     return part1 if num == 1 else part3 if num == 0 else part2
                 elif w.startswith("!!!"):
                     word = w[3:]
-                    fun = upper_fun
+                    fun = lambda x: x.upper()
                 elif w.startswith("!!"):
                     word = w[2:]
-                    fun = title_fun
+                    fun = lambda x: x.title()
                 else:
                     word = w[1:]
-                    fun = cap_fun
+                    fun = lambda x: x.capitalize()
                 if i is not None:
-                    return to_native(fun(self.plural(word, symbols[int(i)])))
-                return to_native(fun(word))
+                    return fun(self.plural(word, symbols[int(i)]))
+                return fun(word)
 
             def sub_dict(m):
                 """word(key or num)
@@ -1013,15 +982,15 @@ class TranslatorFactory(object):
                     return part1 if num == 1 else part3 if num == 0 else part2
                 elif w.startswith("!!!"):
                     word = w[3:]
-                    fun = upper_fun
+                    fun = lambda x: x.upper()
                 elif w.startswith("!!"):
                     word = w[2:]
-                    fun = title_fun
+                    fun = lambda x: x.title()
                 else:
                     word = w[1:]
-                    fun = cap_fun
+                    fun = lambda x: x.capitalize()
                 s = fun(self.plural(word, n))
-                return s if PY2 else to_unicode(s)
+                return s
 
             s = m.group(1)
             part = regex_plural_tuple.sub(sub_tuple, s)
@@ -1038,13 +1007,13 @@ class TranslatorFactory(object):
     def translate(self, message, symbols):
         """
         Gets cached translated message with inserted parameters(symbols)
-        """
+        """        
         message = get_from_cache(self.cache, message, lambda: self.get_t(message))
         if symbols or symbols == 0 or symbols == "":
             if isinstance(symbols, dict):
                 symbols.update(
                     (key, str(value).translate(ttab_in))
-                    for key, value in iteritems(symbols)
+                    for key, value in symbols.items()
                     if not isinstance(value, NUMBERS)
                 )
             else:
@@ -1067,12 +1036,12 @@ def findT(path, language=DEFAULT_LANGUAGE):
     """
     from gluon.tools import Auth, Crud
 
-    lang_file = pjoin(path, "languages", language + ".py")
+    lang_file = os.path.join(path, "languages", language + ".py")
     sentences = read_dict(lang_file)
-    mp = pjoin(path, "models")
-    cp = pjoin(path, "controllers")
-    vp = pjoin(path, "views")
-    mop = pjoin(path, "modules")
+    mp = os.path.join(path, "models")
+    cp = os.path.join(path, "controllers")
+    vp = os.path.join(path, "views")
+    mop = os.path.join(path, "modules")
 
     def add_message(message):
         if not message.startswith("#") and not "\n" in message:
@@ -1091,7 +1060,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
         + listdir(vp, "^.+\.html$", 0)
         + listdir(mop, "^.+\.py$", 0)
     ):
-        data = to_native(read_locked(filename))
+        data = read_locked(filename).decode("utf8")
         items = regex_translate.findall(data)
         for x in regex_translate_m.findall(data):
             if x[0:3] in ["'''", '"""']:
@@ -1125,7 +1094,7 @@ def update_all_languages(application_path):
     Note:
         Must be run by the admin app
     """
-    path = pjoin(application_path, "languages/")
+    path = os.path.join(application_path, "languages/")
     for language in oslistdir(path):
         if regex_langfile.match(language):
             findT(application_path, language[:-3])

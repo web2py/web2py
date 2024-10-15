@@ -3,10 +3,10 @@
 
 """ Unit tests for redis """
 
+import pickle
 import unittest
 from datetime import datetime
 
-from gluon._compat import pickle, to_bytes
 from gluon.contrib.redis_cache import RedisCache
 from gluon.contrib.redis_session import RedisSession
 from gluon.contrib.redis_utils import RConn

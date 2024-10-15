@@ -10,20 +10,22 @@ License: LGPLv3
 
 __all__ = ['MEMDB', 'Field']
 
+import copy
+import csv
+import datetime
+import os
+import random
 import re
 import sys
-import os
 import types
-import datetime
-import thread
+
 import cStringIO
-import csv
-import copy
+import thread
+
 import gluon.validators as validators
-from gluon.utils import web2py_uuid
-from gluon.storage import Storage
 from gluon import SQLTABLE
-import random
+from gluon.storage import Storage
+from gluon.utils import web2py_uuid
 
 SQL_DIALECTS = {'memcache': {
     'boolean': bool,

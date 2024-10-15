@@ -40,12 +40,11 @@
     :copyright: (c) Copyright 2011 by Armin Ronacher.
     :license: BSD, see LICENSE for more details.
 """
-import hmac
 import hashlib
-from struct import Struct
-from operator import xor
+import hmac
 from itertools import izip, starmap
-
+from operator import xor
+from struct import Struct
 
 _pack_int = Struct('>I').pack
 

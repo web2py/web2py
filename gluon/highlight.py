@@ -9,7 +9,6 @@
 
 import re
 
-from pydal._compat import xrange
 from yatl.sanitizer import xmlescape
 
 __all__ = ["highlight"]
@@ -383,7 +382,7 @@ color: #A0A0A0;
     elif isinstance(counter, str):
         linenumbers = [xmlescape(counter, quote=False)] * len(lines)
     else:
-        linenumbers = [str(i + counter) + "." for i in xrange(len(lines))]
+        linenumbers = [str(i + counter) + "." for i in range(len(lines))]
 
     if highlight_line:
         if counter and not isinstance(counter, str):

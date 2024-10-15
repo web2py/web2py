@@ -48,7 +48,6 @@ import socket
 import sys
 from collections import OrderedDict
 
-from gluon._compat import PY2
 from gluon.settings import global_settings
 from gluon.shell import die
 from gluon.utils import is_valid_ip_address
@@ -795,11 +794,9 @@ def load_config(config_file, opt_map):
     config_encoding = get_pep263_encoding(config_file)
     # NOTE: assume 'ascii' encoding when not explicitly stated (Python 2),
     #       this is not correct for Python 3 where the default is 'utf-8'
-    open_kwargs = dict() if PY2 else dict(encoding=config_encoding or "ascii")
+    open_kwargs = dict(encoding=config_encoding or "ascii")
     with open(config_file, "r", **open_kwargs) as cfil:
         for linenum, clin in enumerate(cfil, start=1):
-            if PY2 and config_encoding:
-                clin = unicode(clin, config_encoding)
             clin = clin.strip()
             for opt, mapr in map_items:
                 if clin.startswith(opt):

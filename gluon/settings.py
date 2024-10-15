@@ -10,7 +10,6 @@ import os
 import platform
 import sys
 
-from gluon._compat import PY2
 from gluon.storage import Storage
 
 global_settings = Storage()
@@ -45,7 +44,7 @@ global_settings.is_source = os.path.exists(
     os.path.join(global_settings.gluon_parent, "web2py.py")
 )
 
-global_settings.is_py2 = PY2
+global_settings.is_py2 = False
 
 # allow admin app for clients on trusted LAN when over plain http,
 # default is to allow only from localhost or when serving https

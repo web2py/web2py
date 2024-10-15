@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-import warnings as _warnings
 import os as _os
-
+import warnings as _warnings
 from tempfile import mkdtemp
+
 
 class TemporaryDirectory(object):
     """Create and return a temporary directory.  This has the same
@@ -87,6 +87,7 @@ class TemporaryDirectory(object):
             pass
 
 import os
+
 with TemporaryDirectory() as tmp_dir:
     print("Temporary directory path: %s" % tmp_dir)
     print(os.path.isdir(tmp_dir))

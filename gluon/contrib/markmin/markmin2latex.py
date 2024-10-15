@@ -2,10 +2,11 @@
 # created my Massimo Di Pierro
 # license MIT/BSD/GPL
 from __future__ import print_function
-import re
+
 import cgi
-import sys
 import doctest
+import re
+import sys
 from optparse import OptionParser
 
 __all__ = ['render', 'markmin2latex']

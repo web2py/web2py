@@ -12,7 +12,6 @@ import tempfile
 import unittest
 
 from gluon import languages
-from gluon._compat import PY2, to_bytes, to_unicode
 from gluon.html import SPAN
 from gluon.storage import Messages
 
@@ -193,8 +192,9 @@ class TestTranslations(unittest.TestCase):
             str(T("%(key)i %%{??two_or_more?(key)}", dict(key=2))), "2 two_or_more"
         )
         T.force("it")
+        self.assertEqual(T.accepted_language, "it")
         self.assertEqual(str(T("Hello World")), "Salve Mondo")
-        self.assertEqual(to_unicode(T("Hello World")), "Salve Mondo")
+        self.assertEqual(str(T("Hello World")), "Salve Mondo")
 
 
 class TestDummyApp(unittest.TestCase):
@@ -290,7 +290,7 @@ class TestMessages(unittest.TestCase):
         T = languages.TranslatorFactory(self.langpath, self.http_accept_language)
         messages = Messages(T)
         messages.update({"email_sent": "Email sent", "test": "ä"})
-        self.assertEqual(to_unicode(messages.email_sent, "utf-8"), "Email sent")
+        self.assertEqual(messages.email_sent, "Email sent")
 
 
 class TestHTMLTag(unittest.TestCase):
@@ -310,6 +310,6 @@ class TestHTMLTag(unittest.TestCase):
         self.assertEqual(elem.flatten(), "Complete")
         elem = SPAN(T("Cannot be empty", language="ru"))
         self.assertEqual(
-            elem.xml(), to_bytes("<span>Пустое значение недопустимо</span>")
+            elem.xml(), "<span>Пустое значение недопустимо</span>"
         )
         self.assertEqual(elem.flatten(), "Пустое значение недопустимо")

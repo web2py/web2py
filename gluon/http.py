@@ -12,8 +12,6 @@ HTTP statuses helpers
 
 import re
 
-from gluon._compat import iteritems, to_bytes, unicodeT
-
 __all__ = ["HTTP", "redirect"]
 
 defined_status = {
@@ -82,7 +80,7 @@ class HTTP(Exception):
         self.status = status
         self.body = body
         self.headers = {}
-        for k, v in iteritems(headers):
+        for k, v in headers.items():
             if isinstance(v, list):
                 self.headers[k] = [
                     regex_header_newlines.sub("", str(item)) for item in v
@@ -115,28 +113,28 @@ class HTTP(Exception):
             if not body:
                 body = status
             if isinstance(body, (str, bytes, bytearray)):
-                if isinstance(body, unicodeT):
-                    body = to_bytes(body)  # This must be done before len
+                if isinstance(body, str):
+                    body = body.encode("utf8")
                 headers["Content-Length"] = len(body)
         rheaders = []
-        for k, v in iteritems(headers):
+        for k, v in headers.items():
             if isinstance(v, list):
                 rheaders += [(k, str(item)) for item in v]
             else:
                 rheaders.append((k, str(v)))
         responder(status, rheaders)
         if env.get("request_method", "") == "HEAD":
-            return [to_bytes("")]
+            return [b""]
         elif isinstance(body, (str, bytes, bytearray)):
-            if isinstance(body, unicodeT):
-                body = to_bytes(body)
+            if isinstance(body, str):
+                body = body.encode("utf8")
             return [body]
         elif hasattr(body, "__iter__"):
             return body
         else:
             body = str(body)
-            if isinstance(body, unicodeT):
-                body = to_bytes(body)
+            if isinstance(body, str):
+                body = body.encode("utf8")
             return [body]
 
     @property

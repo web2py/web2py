@@ -20,9 +20,8 @@ import os
 import re
 import threading
 import traceback
+from urllib.parse import quote, quote_plus, unquote
 
-from gluon._compat import (iteritems, urllib_quote, urllib_quote_plus,
-                           urllib_unquote, xrange)
 from gluon.fileutils import abspath, read_file
 from gluon.http import HTTP
 from gluon.settings import global_settings
@@ -281,7 +280,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                 query_string += "code=%s&ticket=%s&requested_uri=%s&request_url=%s" % (
                     status,
                     ticket,
-                    urllib_quote_plus(request.env.request_uri),
+                    quote_plus(request.env.request_uri),
                     request.url,
                 )
                 if uri.startswith("http://") or uri.startswith("https://"):
@@ -323,7 +322,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                         redir,
                         status,
                         ticket,
-                        urllib_quote_plus(request.env.request_uri),
+                        quote_plus(request.env.request_uri),
                         request.url,
                     )
                 else:
@@ -331,7 +330,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                         redir,
                         status,
                         ticket,
-                        urllib_quote_plus(request.env.request_uri),
+                        quote_plus(request.env.request_uri),
                         request.url,
                     )
                 return HTTP(
@@ -589,7 +588,7 @@ def load_routers(all_apps):
     #
     domains = dict()
     if routers.BASE.domains:
-        for d, a in iteritems(routers.BASE.domains):
+        for d, a in routers.BASE.domains.items():
             (domain, app) = (d.strip(":"), a.strip("/"))
             if ":" in domain:
                 (domain, port) = domain.split(":")
@@ -699,13 +698,13 @@ def regex_url_in(request, environ):
     routes = THREAD_LOCAL.routes
     if routes.routes_in:
         environ = regex_filter_in(environ)
-    request.env.update((k.lower().replace(".", "_"), v) for k, v in iteritems(environ))
+    request.env.update((k.lower().replace(".", "_"), v) for k, v in environ.items())
 
     # ##################################################
     # serve if a static file
     # ##################################################
 
-    path = urllib_unquote(request.env.path_info) or "/"
+    path = unquote(request.env.path_info) or "/"
     path = path.replace("\\", "/")
     if path.endswith("/") and len(path) > 1:
         path = path[:-1]
@@ -812,7 +811,7 @@ def filter_url(
     if isinstance(domain, str):
         domain = (domain, None)
     (path_info, query_string) = (uri[:k], uri[k + 1 :])
-    path_info = urllib_unquote(path_info)  # simulate server
+    path_info = unquote(path_info)  # simulate server
     e = {
         "REMOTE_ADDR": remote,
         "REQUEST_METHOD": method,
@@ -979,7 +978,7 @@ class MapUrlIn(object):
             prefixlen = len(prefix)
             if prefixlen > len(self.args):
                 return
-            for i in xrange(prefixlen):
+            for i in range(prefixlen):
                 if prefix[i] != self.args[i]:
                     return  # prefix didn't match
             self.args = List(self.args[prefixlen:])  # strip the prefix
@@ -1224,7 +1223,7 @@ class MapUrlIn(object):
 
     def sluggify(self):
         self.request.env.update(
-            (k.lower().replace(".", "_"), v) for k, v in iteritems(self.env)
+            (k.lower().replace(".", "_"), v) for k, v in self.env.items()
         )
 
     def update_request(self):
@@ -1252,7 +1251,7 @@ class MapUrlIn(object):
         uri = "/%s%s%s%s" % (
             app,
             uri,
-            urllib_quote("/" + "/".join(str(x) for x in self.args))
+            quote("/" + "/".join(str(x) for x in self.args))
             if self.args
             else "",
             ("?" + self.query) if self.query else "",

@@ -17,16 +17,15 @@ __version__ = "1.5.2"
 # based on idle, inspired by pythonwin implementation, taken many code from pdb
 
 import bdb
+import cmd
+import collections
 import inspect
 import linecache
 import os
-import sys
-import traceback
-import cmd
 import pydoc
+import sys
 import threading
-import collections
-
+import traceback
 
 # Speed Ups: global variables
 breaks = []
@@ -172,8 +171,9 @@ class Qdb(bdb.Bdb):
 
     def _runscript(self, filename):
         # The script has to run in __main__ namespace (clear it)
-        import __main__
         import imp
+
+        import __main__
         filename = os.path.abspath(filename)
         __main__.__dict__.clear()
         __main__.__dict__.update({"__name__"    : "__main__",
@@ -924,7 +924,7 @@ class Cli(Frontend, cmd.Cmd):
 # but python2 client using pickles's protocol version 2
 if sys.version_info[0] > 2:
 
-    import multiprocessing.reduction        # forking in py2
+    import multiprocessing.reduction  # forking in py2
 
     class ForkingPickler2(multiprocessing.reduction.ForkingPickler):
         def __init__(self, file, protocol=None, fix_imports=True):
@@ -952,12 +952,12 @@ def f(pipe):
 def test():
     "Create a backend/frontend and time it"
     if '--process' in sys.argv:
-        from multiprocessing import Process, Pipe
+        from multiprocessing import Pipe, Process
         front_conn, child_conn = Pipe()
         p = Process(target=f, args=(child_conn,))
     else:
-        from threading import Thread
         from queue import Queue
+        from threading import Thread
         parent_queue, child_queue = Queue(), Queue()
         front_conn = QueuePipe("parent", parent_queue, child_queue)
         child_conn = QueuePipe("child", child_queue, parent_queue)
@@ -1060,6 +1060,7 @@ def init(host='localhost', port=6000, authkey='secret password', redirect=True):
         qdb = None
         
     from multiprocessing.connection import Client
+
     # only create it if not currently instantiated
     if not qdb:
         address = (host, port)     # family is deduced to be 'AF_INET'

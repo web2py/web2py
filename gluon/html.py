@@ -13,18 +13,20 @@ Template helpers
 import base64
 import cgi
 import copy
+import copyreg
+import functools
 import itertools
 import marshal
 import os
+import pickle
 import re
 import types
 import urllib
+from html.entities import entitydefs, name2codepoint
+from html.parser import HTMLParser
+from urllib.parse import quote as urllib_quote
+from urllib.parse import urlencode
 
-from pydal._compat import (PY2, HTMLParser, basestring, copyreg,
-                           implements_bool, iteritems, long, name2codepoint,
-                           pickle, reduce, text_type, to_bytes, to_native,
-                           to_unicode, unichr, unicodeT, urlencode,
-                           urllib_quote)
 from yatl import sanitizer
 
 from gluon import decoder
@@ -42,23 +44,12 @@ def local_html_escape(data, quote=False):
     characters, both double quote (") and single quote (') characters are also
     translated.
     """
-    if PY2:
-        import cgi
-
-        data = cgi.escape(data, quote)
-        return data.replace("'", "&#x27;") if quote else data
-    else:
-        import html
-
-        if isinstance(data, str):
-            return html.escape(data, quote=quote)
-        data = data.replace(b"&", b"&amp;")  # Must be done first!
-        data = data.replace(b"<", b"&lt;")
-        data = data.replace(b">", b"&gt;")
-        if quote:
-            data = data.replace(b'"', b"&quot;")
-            data = data.replace(b"'", b"&#x27;")
-        return data
+    import html
+    if data is None:
+        return ""
+    if not isinstance(data, str):
+        data = str(data)
+    return html.escape(data, quote=quote)
 
 
 regex_crlf = re.compile("\r|\n")
@@ -67,9 +58,9 @@ join = "".join
 
 # name2codepoint is incomplete respect to xhtml (and xml): 'apos' is missing.
 entitydefs = dict(
-    [(k_v[0], to_bytes(unichr(k_v[1]))) for k_v in iteritems(name2codepoint)]
+    [(k_v[0], chr(k_v[1])) for k_v in name2codepoint.items()]
 )
-entitydefs.setdefault("apos", to_bytes("'"))
+entitydefs.setdefault("apos", "'")
 
 
 __all__ = [
@@ -155,12 +146,10 @@ def xmlescape(data, quote=True):
 
     # first try the xml function
     if hasattr(data, "xml") and callable(data.xml):
-        return to_bytes(data.xml())
+        return data.xml()
 
-    if not (isinstance(data, (text_type, bytes))):
-        # i.e., integers
+    if isinstance(data, str):
         data = str(data)
-    data = to_bytes(data, "utf8", "xmlcharrefreplace")
 
     # ... and do the escaping
     data = local_html_escape(data, quote)
@@ -175,17 +164,9 @@ def call_as_list(f, *a, **b):
 
 
 def truncate_string(text, length, dots="..."):
-    text = to_unicode(text)
     if len(text) > length:
-        text = to_native(text[: length - len(dots)]) + dots
+        text = text[: length - len(dots)] + dots
     return text
-
-
-class SafeString(str):
-    """A string know to be safe that does not need to be escaped"""
-
-    def xml(self):
-        return self
 
 
 def URL(
@@ -451,7 +432,7 @@ def URL(
         port,
         language=language,
     )
-    return SafeString(url)
+    return url
 
 
 def verifyURL(
@@ -688,23 +669,24 @@ class XML(XmlComponent):
                 for A, IMG and BlockQuote).
                 The key is the tag; the value is a list of allowed attributes.
         """
-        if isinstance(text, unicodeT):
-            text = to_native(text.encode("utf8", "xmlcharrefreplace"))
-        if sanitize:
-            text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
-        elif isinstance(text, bytes):
-            text = to_native(text)
+        if isinstance(text, bytes):
+            text = text.decode("utf8", "xmlcharrefreplace")
         elif not isinstance(text, str):
             text = str(text)
+        if sanitize:
+            text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
         self.text = text
 
     def xml(self):
-        return to_bytes(self.text)
+        return self.text
 
     def __str__(self):
         return self.text
 
     __repr__ = __str__
+
+    def __eq__(self, other):
+        return self.text == other.text
 
     def __add__(self, other):
         return "%s%s" % (self, other)
@@ -767,7 +749,6 @@ def XML_pickle(data):
 copyreg.pickle(XML, XML_pickle, XML_unpickle)
 
 
-@implements_bool
 class DIV(XmlComponent):
     """
     HTML helper, for easy generating and manipulating a DOM structure.
@@ -821,7 +802,7 @@ class DIV(XmlComponent):
         dictionary like updating of the tag attributes
         """
 
-        for key, value in iteritems(kargs):
+        for key, value in kargs.items():
             self[key] = value
         return self
 
@@ -888,7 +869,7 @@ class DIV(XmlComponent):
             value: the new value
         """
         self._setnode(value)
-        if isinstance(i, (str, unicodeT)):
+        if isinstance(i, str):
             self.attributes[i] = value
         else:
             self.components[i] = value
@@ -1020,7 +1001,7 @@ class DIV(XmlComponent):
         # get the attributes for this component
         # (they start with '_', others may have special meanings)
         attr = []
-        for key, value in iteritems(self.attributes):
+        for key, value in self.attributes.items():
             if key[:1] != "_":
                 continue
             name = key[1:]
@@ -1030,17 +1011,17 @@ class DIV(XmlComponent):
                 continue
             attr.append((name, value))
         data = self.attributes.get("data", {})
-        for key, value in iteritems(data):
+        for key, value in data.items():
             name = "data-" + key
             value = data[key]
             attr.append((name, value))
         attr.sort()
-        fa = b""
+        fa = ""
         for name, value in attr:
-            fa += (b' %s="%s"') % (to_bytes(name), xmlescape(value, True))
+            fa += f' {name}="{xmlescape(value, True)}"'
 
         # get the xml for the inner components
-        co = b"".join([xmlescape(component) for component in self.components])
+        co = "".join([xmlescape(component) for component in self.components])
         return (fa, co)
 
     def xml(self):
@@ -1053,13 +1034,13 @@ class DIV(XmlComponent):
         if not self.tag:
             return co
 
-        tagname = to_bytes(self.tag)
-        if tagname[-1:] == b"/":
+        tagname = self.tag
+        if tagname[-1:] == "/":
             # <tag [attributes] />
-            return b"<%s%s />" % (tagname[:-1], fa)
+            return "<%s%s />" % (tagname[:-1], fa)
 
         # else: <tag [attributes]>  inner components xml </tag>
-        xml_tag = b"<%s%s>%s</%s>" % (tagname, fa, co, tagname)
+        xml_tag = "<%s%s>%s</%s>" % (tagname, fa, co, tagname)
         return xml_tag
 
     def __str__(self):
@@ -1067,7 +1048,7 @@ class DIV(XmlComponent):
         str(COMPONENT) returns COMPONENT.xml()
         """
         # In PY3 __str__ cannot return bytes (TypeError: __str__ returned non-string (type bytes))
-        return to_native(self.xml())
+        return self.xml()
 
     def flatten(self, render=None):
         """
@@ -1091,9 +1072,9 @@ class DIV(XmlComponent):
             if isinstance(c, XmlComponent):
                 s = c.flatten(render)
             elif render:
-                s = render(to_native(c))
+                s = render(c)
             else:
-                s = to_native(c)
+                s = c
             text += s
         if render:
             text = render(text, self.tag, self.attributes)
@@ -1194,7 +1175,7 @@ class DIV(XmlComponent):
             args = [a.strip() for a in args[0].split(",")]
         if len(args) > 1:
             subset = [self.elements(a, **kargs) for a in args]
-            return reduce(lambda a, b: a + b, subset, [])
+            return functools.reduce(lambda a, b: a + b, subset, [])
         elif len(args) == 1:
             items = args[0].split()
             if len(items) > 1:
@@ -1202,7 +1183,7 @@ class DIV(XmlComponent):
                     a.elements(" ".join(items[1:]), **kargs)
                     for a in self.elements(items[0])
                 ]
-                return reduce(lambda a, b: a + b, subset, [])
+                return functools.reduce(lambda a, b: a + b, subset, [])
             else:
                 item = items[0]
                 if "#" in item or "." in item or "[" in item:
@@ -1229,9 +1210,9 @@ class DIV(XmlComponent):
         matches = []
         # check if the component has an attribute with the same
         # value as provided
-        tag = to_native(getattr(self, "tag")).replace("/", "")
+        tag = getattr(self, "tag").replace("/", "")
         check = not (args and tag not in args)
-        for key, value in iteritems(kargs):
+        for key, value in kargs.items():
             if key not in ["first_only", "replace", "find_text"]:
                 if isinstance(value, (str, int)):
                     if str(self[key]) != str(value):
@@ -1325,7 +1306,7 @@ class DIV(XmlComponent):
                 tag = getattr(c, "tag").replace("/", "")
                 if args and tag not in args:
                     check = False
-                for key, value in iteritems(kargs):
+                for key, value in kargs.items():
                     if c[key] != value:
                         check = False
                 if check:
@@ -1416,12 +1397,12 @@ class HTML(DIV):
     See also `DIV`
     """
 
-    tag = b"html"
+    tag = "html"
 
-    strict = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n'
-    transitional = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n'
-    frameset = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">\n'
-    html5 = b"<!DOCTYPE HTML>\n"
+    strict = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n'
+    transitional = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n'
+    frameset = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">\n'
+    html5 = "<!DOCTYPE HTML>\n"
 
     def xml(self):
         lang = self["lang"]
@@ -1440,12 +1421,12 @@ class HTML(DIV):
         elif doctype == "html5":
             doctype = self.html5
         elif doctype == "":
-            doctype = b""
+            doctype = ""
         else:
-            doctype = b"%s\n" % to_bytes(doctype)
+            doctype = doctype + "\n"
         (fa, co) = self._xml()
 
-        return b"%s<%s%s>%s</%s>" % (doctype, self.tag, fa, co, self.tag)
+        return "%s<%s%s>%s</%s>" % (doctype, self.tag, fa, co, self.tag)
 
 
 class XHTML(DIV):
@@ -1469,11 +1450,11 @@ class XHTML(DIV):
     See also `DIV`
     """
 
-    tag = b"html"
+    tag = "html"
 
-    strict = b'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n'
-    transitional = b'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n'
-    frameset = b'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">\n'
+    strict = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n'
+    transitional = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n'
+    frameset = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">\n'
     xmlns = "http://www.w3.org/1999/xhtml"
 
     def xml(self):
@@ -1496,11 +1477,11 @@ class XHTML(DIV):
             elif doctype == "frameset":
                 doctype = self.frameset
             else:
-                doctype = b"%s\n" % to_bytes(doctype)
+                doctype = doctype + "\n"
         else:
             doctype = self.transitional
         (fa, co) = self._xml()
-        return b"%s<%s%s>%s</%s>" % (doctype, self.tag, fa, co, self.tag)
+        return "%s<%s%s>%s</%s>" % (doctype, self.tag, fa, co, self.tag)
 
 
 class HEAD(DIV):
@@ -1520,47 +1501,42 @@ class LINK(DIV):
 
 
 class SCRIPT(DIV):
-    tag = b"script"
-    tagname = to_bytes(tag)
+    tag = "script"
+    tagname = tag
 
     def xml(self):
         (fa, co) = self._xml()
-        fa = to_bytes(fa)
         # no escaping of subcomponents
-        co = b"\n".join(
-            map(
-                to_bytes,
+        co = "\n".join(
                 # allow xml components (i.e. ASSIGNJS)
                 map(
                     lambda c: c.xml() if hasattr(c, "xml") and callable(c.xml) else c,
                     self.components,
-                ),
-            )
+                )
         )
         if co:
             # <script [attributes]><!--//--><![CDATA[//><!--
             # script body
             # //--><!]]></script>
             # return '<%s%s><!--//--><![CDATA[//><!--\n%s\n//--><!]]></%s>' % (self.tag, fa, co, self.tag)
-            return b"<%s%s><!--\n%s\n//--></%s>" % (self.tagname, fa, co, self.tagname)
+            return "<%s%s><!--\n%s\n//--></%s>" % (self.tagname, fa, co, self.tagname)
         else:
             return DIV.xml(self)
 
 
 class STYLE(DIV):
     tag = "style"
-    tagname = to_bytes(tag)
+    tagname = tag
 
     def xml(self):
         (fa, co) = self._xml()
-        fa = to_bytes(fa)
         # no escaping of subcomponents
-        co = b"\n".join([to_bytes(component) for component in self.components])
+        co = "\n".join(self.components)
         if co:
             # <style [attributes]><!--/*--><![CDATA[/*><!--*/
             # style body
             # /*]]>*/--></style>
-            return b"<%s%s><!--/*--><![CDATA[/*><!--*/\n%s\n/*]]>*/--></%s>" % (
+            return "<%s%s><!--/*--><![CDATA[/*><!--*/\n%s\n/*]]>*/--></%s>" % (
                 self.tagname,
                 fa,
                 co,
@@ -1618,7 +1594,7 @@ class P(DIV):
     def xml(self):
         text = DIV.xml(self)
         if self["cr2br"]:
-            text = text.replace(b"\n", b"<br />")
+            text = text.replace("\n", "<br />")
         return text
 
 
@@ -2266,7 +2242,7 @@ class FORM(DIV):
         if "hidden" in self.attributes:
             c = [
                 INPUT(_type="hidden", _name=key, _value=value)
-                for (key, value) in iteritems(attr)
+                for (key, value) in attr.items()
             ]
         if hasattr(self, "formkey") and self.formkey:
             c.append(INPUT(_type="hidden", _name="_formkey", _value=self.formkey))
@@ -2356,7 +2332,7 @@ class FORM(DIV):
                 onsuccess(self)
             if next:
                 if self.vars:
-                    for key, value in iteritems(self.vars):
+                    for key, value in self.vars.items():
                         next = next.replace("[%s]" % key, urllib_quote(str(value)))
                     if not next.startswith("/"):
                         next = URL(next)
@@ -2433,11 +2409,11 @@ class FORM(DIV):
             hidden = {}
         inputs = [
             INPUT(_type="button", _value=name, _onclick=FORM.REDIRECT_JS % link)
-            for name, link in iteritems(buttons)
+            for name, link in buttons.items()
         ]
         inputs += [
             INPUT(_type="hidden", _name=name, _value=value)
-            for name, value in iteritems(hidden)
+            for name, value in hidden.items()
         ]
         form = FORM(INPUT(_type="submit", _value=text), *inputs)
         form.process()
@@ -2453,8 +2429,7 @@ class FORM(DIV):
             int,
             float,
             bool,
-            basestring,
-            long,
+            str,           
             set,
             list,
             dict,
@@ -2576,7 +2551,7 @@ class BEAUTIFY(DIV):
                 try:
                     keys = (sorter and sorter(c)) or c
                     for key in keys:
-                        if isinstance(key, (str, unicodeT)) and keyfilter:
+                        if isinstance(key, str) and keyfilter:
                             filtered_key = keyfilter(key)
                         else:
                             filtered_key = str(key)
@@ -2600,9 +2575,9 @@ class BEAUTIFY(DIV):
                 except:
                     pass
             if isinstance(c, str):
-                components.append(str(c))
-            elif isinstance(c, unicodeT):
-                components.append(c.encode("utf8"))
+                components.append(c)
+            elif isinstance(c, bytes):
+                components.append(c.decode("utf8"))
             elif isinstance(c, (list, tuple)):
                 items = [TR(TD(BEAUTIFY(item, **attributes))) for item in c]
                 components.append(TABLE(*items, **attributes))
@@ -2789,7 +2764,7 @@ def test():
     True
     >>> "vars" in form.as_dict(flat=True)
     True
-    >>> isinstance(form.as_json(), basestring) and len(form.as_json(sanitize=False)) > 0
+    >>> isinstance(form.as_json(), str) and len(form.as_json(sanitize=False)) > 0
     True
     >>> if form.accepts({}, session,formname=None): print('passed')
     >>> if form.accepts({'var':'test ', '_formkey': session['_formkey[None]']}, session, formname=None): print('passed')
@@ -2824,18 +2799,13 @@ class web2pyHTMLParser(HTMLParser):
             self.last = tag.tag[:-1]
 
     def handle_data(self, data):
-        if not isinstance(data, unicodeT):
-            try:
-                data = data.decode("utf8")
-            except:
-                data = data.decode("latin1")
-        self.parent.append(data.encode("utf8", "xmlcharref"))
+        self.parent.append(data)
 
     def handle_charref(self, name):
         if name.startswith("x"):
-            self.parent.append(unichr(int(name[1:], 16)).encode("utf8"))
+            self.parent.append(chr(int(name[1:], 16)))
         else:
-            self.parent.append(unichr(int(name)).encode("utf8"))
+            self.parent.append(chr(int(name)))
 
     def handle_entityref(self, name):
         self.parent.append(entitydefs[name])
@@ -2941,7 +2911,7 @@ class MARKMIN(XmlComponent):
         id_prefix="markmin_",
         **kwargs
     ):
-        self.text = to_bytes(text)
+        self.text = text
         self.extra = extra or {}
         self.allowed = allowed or {}
         self.sep = sep
@@ -2974,14 +2944,14 @@ class MARKMIN(XmlComponent):
             id_prefix=self.id_prefix,
         )
         return (
-            to_bytes(html)
+            html
             if not self.kwargs
-            else to_bytes(DIV(XML(html), **self.kwargs).xml())
+            else DIV(XML(html), **self.kwargs).xml()
         )
 
     def __str__(self):
         # In PY3 __str__ cannot return bytes (TypeError: __str__ returned non-string (type bytes))
-        return to_native(self.xml())
+        return self.xml()
 
 
 def ASSIGNJS(**kargs):

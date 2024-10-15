@@ -18,7 +18,8 @@ from __future__ import print_function
 __all__ = ['AIM']
 
 from operator import itemgetter
-from gluon._compat import urlopen, urlencode, FancyURLopener
+
+from gluon._compat import FancyURLopener, urlencode, urlopen
 
 _known_tuple_types = {}
 

@@ -282,7 +282,7 @@ class TestSQLFORM(unittest.TestCase):
 
     def test_SQLFORM(self):
         form = SQLFORM(self.db.auth_user)
-        self.assertEqual(form.xml()[:5], b"<form")
+        self.assertEqual(form.xml()[:5], "<form")
 
     def test_represent_SQLFORM(self):
         id = self.db.t0.insert()
@@ -290,10 +290,10 @@ class TestSQLFORM(unittest.TestCase):
         self.db.t0.tt.writable = False
         self.db.t0.tt.readable = True
         form = SQLFORM(self.db.t0, id)
-        self.assertTrue(b"Web2py" in form.xml())
+        self.assertTrue("Web2py" in form.xml())
         self.db.t0.tt.represent = lambda value, row: value.capitalize()
         form = SQLFORM(self.db.t0, id)
-        self.assertTrue(b"Web2py" in form.xml())
+        self.assertTrue("Web2py" in form.xml())
 
     # def test_assert_status(self):
     #     pass
@@ -314,7 +314,7 @@ class TestSQLFORM(unittest.TestCase):
         factory_form = SQLFORM.factory(
             Field("field_one", "string", IS_NOT_EMPTY()), Field("field_two", "string")
         )
-        self.assertEqual(factory_form.xml()[:5], b"<form")
+        self.assertEqual(factory_form.xml()[:5], "<form")
 
     def test_factory_applies_default_validators(self):
         from gluon import current
@@ -344,11 +344,11 @@ class TestSQLFORM(unittest.TestCase):
 
     def test_grid(self):
         grid_form = SQLFORM.grid(self.db.auth_user)
-        self.assertEqual(grid_form.xml()[:4], b"<div")
+        self.assertEqual(grid_form.xml()[:4], "<div")
 
     def test_smartgrid(self):
         smartgrid_form = SQLFORM.smartgrid(self.db.auth_user)
-        self.assertEqual(smartgrid_form.xml()[:4], b"<div")
+        self.assertEqual(smartgrid_form.xml()[:4], "<div")
 
 
 class TestSQLTABLE(unittest.TestCase):
@@ -389,7 +389,7 @@ class TestSQLTABLE(unittest.TestCase):
     def test_SQLTABLE(self):
         rows = self.db(self.db.auth_user.id > 0).select(self.db.auth_user.ALL)
         sqltable = SQLTABLE(rows)
-        self.assertEqual(sqltable.xml()[:7], b"<table>")
+        self.assertEqual(sqltable.xml()[:7], "<table>")
 
 
 # class TestExportClass(unittest.TestCase):

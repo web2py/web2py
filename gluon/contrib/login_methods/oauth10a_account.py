@@ -12,12 +12,13 @@ Dependencies:
 
 """
 
-import oauth2 as oauth
 import cgi
-
 from urllib import urlencode
 
+import oauth2 as oauth
+
 from gluon import current
+
 
 class OAuthAccount(object):
     """

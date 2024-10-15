@@ -3,8 +3,7 @@
 # Copyright (c) 2007-2008 ActiveState Corp.
 # License: MIT (http://www.opensource.org/licenses/mit-license.php)
 
-from __future__ import generators
-from __future__ import print_function
+from __future__ import generators, print_function
 
 r"""A fast and complete Python implementation of Markdown.
 
@@ -93,17 +92,18 @@ __version_info__ = (2, 3, 1)
 __version__ = '.'.join(map(str, __version_info__))
 __author__ = "Trent Mick"
 
-import sys
-import re
 import logging
+import re
+import sys
+
 try:
     from hashlib import md5
 except ImportError:
     from md5 import md5
-import optparse
-from random import random, randint
-import codecs
 
+import codecs
+import optparse
+from random import randint, random
 
 #---- Python version compat
 
@@ -2404,7 +2404,7 @@ def main(argv=None):
     else:
         link_patterns = None
 
-    from os.path import join, dirname, abspath, exists
+    from os.path import abspath, dirname, exists, join
     markdown_pl = join(dirname(dirname(abspath(__file__))), "test",
                        "Markdown.pl")
     if not paths:
@@ -2417,7 +2417,7 @@ def main(argv=None):
             text = fp.read()
             fp.close()
         if opts.compare:
-            from subprocess import Popen, PIPE
+            from subprocess import PIPE, Popen
             print("==== Markdown.pl ====")
             p = Popen('perl %s' % markdown_pl, shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
             p.stdin.write(text.encode('utf-8'))

@@ -8,9 +8,13 @@ __author__ = "Mariano Reingart <reingart@gmail.com>"
 __copyright__ = "Copyright (C) 2010 Mariano Reingart"
 __license__ = "LGPL 3.0"
 
-import sys,os,csv
+import csv
+import os
+import sys
+
 from .fpdf import FPDF
 from .py3k import PY3K, basestring, unicode
+
 
 def rgb(col):
     return (col // 65536), (col // 256 % 256), (col% 256)

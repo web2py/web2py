@@ -14,17 +14,18 @@
 
 
 from __future__ import unicode_literals
+
 import sys
+
 if sys.version > '3':
     basestring = unicode = str
 
 import datetime
-from decimal import Decimal
-import os
-import logging
 import hashlib
+import logging
+import os
 import warnings
-
+from decimal import Decimal
 
 from . import __author__, __copyright__, __license__, __version__
 

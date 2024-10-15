@@ -16,6 +16,7 @@
 import logging
 import ssl
 import sys
+
 try:
     import urllib2
     from cookielib import CookieJar
@@ -23,8 +24,8 @@ except ImportError:
     from urllib import request as urllib2
     from http.cookiejar import CookieJar
 
-from . import __author__, __copyright__, __license__, __version__, TIMEOUT
-from .simplexml import SimpleXMLElement, TYPE_MAP, Struct
+from . import TIMEOUT, __author__, __copyright__, __license__, __version__
+from .simplexml import TYPE_MAP, SimpleXMLElement, Struct
 
 log = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ try:
     import httplib2
     if sys.version > '3' and httplib2.__version__ <= "0.7.7":
         import http.client
+
         # httplib2 workaround: check_hostname needs a SSL context with either 
         #                      CERT_OPTIONAL or CERT_REQUIRED
         # see https://code.google.com/p/httplib2/issues/detail?id=173

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import
-from functools import partial
+from __future__ import absolute_import, print_function
+
 import re
 import warnings
+from functools import partial
 
-from ._compat import range_type, text_type, PY2
 from . import err
-
+from ._compat import PY2, range_type, text_type
 
 #: Regular expression for :meth:`Cursor.executemany`.
 #: executemany only suports simple bulk insert.

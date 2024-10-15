@@ -38,7 +38,7 @@ frm_trs = form.elements('tr')
     form['_class'] = 'form-horizontal well well-small'
     import re
     if form.errors:
-        for key, value in form.errors.iteritems():
+        for key, value in form.errors.items():
             inpt = form.element(_name=key)
             inpt_wrapper = inpt.parent
             if inpt_wrapper['_class'] == None or \

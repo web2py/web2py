@@ -11,13 +11,14 @@
    services with web2py
 """
 
+import json
 import os
 import re
 import urllib
+
 from gluon import *
-from gluon.tools import fetch
 from gluon.storage import Storage
-import json
+from gluon.tools import fetch
 
 
 class RPXAccount(object):

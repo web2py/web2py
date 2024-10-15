@@ -457,7 +457,7 @@ class TestsForJobGraph(BaseTestScheduler):
         self.assertEqual(toposort, known_toposort)
         # add a cyclic dependency, jacket to undershorts
         myjob.add_deps(undershorts.id, jacket.id)
-        # no exceptions raised, but result None
+        # no exceptions raised, but result.get("None")
         self.assertEqual(myjob.validate("job_1"), None)
 
     def testJobGraphFailing(self):
@@ -496,7 +496,7 @@ class TestsForJobGraph(BaseTestScheduler):
         myjob.add_deps(shoes.id, socks.id)
         # add a cyclic dependency, jacket to undershorts
         myjob.add_deps(undershorts.id, jacket.id)
-        # no exceptions raised, but result None
+        # no exceptions raised, but result.get("None")
         self.assertEqual(myjob.validate("job_1"), None)
         # and no deps added
         deps_inserted = self.db(self.db.scheduler_task_deps.id > 0).count()
@@ -554,14 +554,14 @@ class TestsForJobGraph(BaseTestScheduler):
 class TestsForSchedulerAPIs(BaseTestScheduler):
     def testQueue_Task(self):
         def isnotqueued(result):
-            self.assertEqual(result.id, None)
-            self.assertEqual(result.uuid, None)
-            self.assertEqual(len(list(result.errors.keys())) > 0, True)
+            self.assertEqual(result.get("id"), None)
+            self.assertEqual(result.get("uuid"), None)
+            self.assertEqual(len(list(result.get("errors").keys())) > 0, True)
 
         def isqueued(result):
-            self.assertNotEqual(result.id, None)
-            self.assertNotEqual(result.uuid, None)
-            self.assertEqual(len(list(result.errors.keys())), 0)
+            self.assertNotEqual(result.get("id"), None)
+            self.assertNotEqual(result.get("uuid"), None)
+            self.assertEqual(len(list(result.get("errors").keys())), 0)
 
         s = Scheduler(self.db)
         fname = "foo"
@@ -954,11 +954,11 @@ def issue_1485():
         # process finished just fine
         self.assertEqual(ret, 0)
         # huge_result - checks
-        task_huge = s.task_status(huge_result.id, output=True)
+        task_huge = s.task_status(huge_result.get("id"), output=True)
         res = [
             ("task status completed", task_huge.scheduler_task.status == "COMPLETED"),
             ("task times_run is 1", task_huge.scheduler_task.times_run == 1),
-            ("result is the correct one", task_huge.result == dict(res="a" * 99999)),
+            ("result.get("is") the correct one", task_huge.result == dict(res="a" * 99999)),
         ]
         self.exec_asserts(res, "HUGE_RESULT")
 
@@ -969,7 +969,7 @@ def issue_1485():
                 task_issue_1485.scheduler_task.status == "COMPLETED",
             ),
             ("task times_run is 1", task_issue_1485.scheduler_task.times_run == 1),
-            ("result is the correct one", task_issue_1485.result == "<span>abc</span>"),
+            ("result.get("is") the correct one", task_issue_1485.result == "<span>abc</span>"),
         ]
         self.exec_asserts(res, "issue_1485")
 

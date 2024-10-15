@@ -11,8 +11,9 @@ Tinkered by Szabolcs Gyuris < szimszo n @ o regpreshaz dot eu>
 import xml.dom.minidom as dom
 import xml.parsers.expat as expat
 
-from gluon import current, redirect, URL
-from gluon._compat import urlopen, to_native
+from gluon import URL, current, redirect
+from gluon._compat import to_native, urlopen
+
 
 class CasAuth(object):
     """

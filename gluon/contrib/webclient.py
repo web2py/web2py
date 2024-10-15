@@ -16,10 +16,12 @@ mostly for testing purposes
 Some examples at the bottom.
 """
 from __future__ import print_function
-from gluon._compat import urllib2, cookielib, iteritems, to_native, urlencode, to_bytes
+
 import re
 import time
 
+from gluon._compat import (cookielib, iteritems, to_bytes, to_native,
+                           urlencode, urllib2)
 
 DEFAULT_HEADERS = {
     'user-agent': 'Mozilla/4.0',  # some servers are picky

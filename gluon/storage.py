@@ -12,9 +12,10 @@ Provides:
 - Storage; like dictionary allowing also for `obj.foo` for `obj['foo']`
 """
 
-from pydal.contrib import portalocker
+import copyreg
+import pickle
 
-from gluon._compat import PY2, copyreg, pickle
+from pydal.contrib import portalocker
 
 __all__ = [
     "List",
@@ -146,10 +147,7 @@ def pickle_storage(s):
 
 
 copyreg.pickle(Storage, pickle_storage)
-if PY2:
-    PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
-else:
-    PICKABLE = (str, int, float, bool, list, dict, tuple, set)
+PICKABLE = (str, int, float, bool, list, dict, tuple, set)
 
 
 class StorageList(Storage):

@@ -8,12 +8,13 @@ Created by: Ross Peoples <ross.peoples@gmail.com>
 Modified by: Massimo Di Pierro <massimo.dipierro@gmail.com>
 """
 
-from . import cssmin
-from . import jsmin
-import os
 import hashlib
+import os
 import re
 import sys
+
+from . import cssmin, jsmin
+
 PY2 = sys.version_info[0] == 2
 
 if PY2:

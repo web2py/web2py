@@ -1,12 +1,11 @@
-from ._compat import PY2, text_type, long_type, JYTHON, IRONPYTHON, unichr
-
 import datetime
-from decimal import Decimal
 import re
 import time
+from decimal import Decimal
 
-from .constants import FIELD_TYPE, FLAG
+from ._compat import IRONPYTHON, JYTHON, PY2, long_type, text_type, unichr
 from .charset import charset_by_id, charset_to_encoding
+from .constants import FIELD_TYPE, FLAG
 
 
 def escape_item(val, charset, mapping=None):

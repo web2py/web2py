@@ -42,14 +42,16 @@ revision3.com
 viddler.com
 """
 from __future__ import print_function
-from gluon._compat import FancyURLopener, urllib_quote
 
-import re
 import cgi
+import re
 import sys
-from json import loads
 import urllib
 import uuid
+from json import loads
+
+from gluon._compat import FancyURLopener, urllib_quote
+
 try:
     from BeautifulSoup import BeautifulSoup, Comment
     have_soup = True

@@ -4,13 +4,11 @@ import json
 import time
 import warnings
 
-from unittest2 import SkipTest
-
-from pymysql import util
 import pymysql.cursors
-from pymysql.tests import base
+from pymysql import util
 from pymysql.err import ProgrammingError
-
+from pymysql.tests import base
+from unittest2 import SkipTest
 
 __all__ = ["TestConversion", "TestCursor", "TestBulkInserts"]
 

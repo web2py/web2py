@@ -13,7 +13,9 @@
 """Pythonic simple SOAP Client implementation"""
 
 from __future__ import unicode_literals
+
 import sys
+
 if sys.version > '3':
     unicode = str
 
@@ -21,6 +23,7 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
 import copy
 import hashlib
 import logging
@@ -28,13 +31,13 @@ import os
 import tempfile
 import warnings
 
-from . import __author__, __copyright__, __license__, __version__, TIMEOUT
-from .simplexml import SimpleXMLElement, TYPE_MAP, REVERSE_TYPE_MAP, Struct
-from .transport import get_http_wrapper, set_http_wrapper, get_Http
+from . import TIMEOUT, __author__, __copyright__, __license__, __version__
 # Utility functions used throughout wsdl_parse, moved aside for readability
-from .helpers import Alias, fetch, sort_dict, make_key, process_element, \
-                     postprocess_element, get_message, preprocess_schema, \
-                     get_local_name, get_namespace_prefix, TYPE_MAP, urlsplit
+from .helpers import (TYPE_MAP, Alias, fetch, get_local_name, get_message,
+                      get_namespace_prefix, make_key, postprocess_element,
+                      preprocess_schema, process_element, sort_dict, urlsplit)
+from .simplexml import REVERSE_TYPE_MAP, TYPE_MAP, SimpleXMLElement, Struct
+from .transport import get_Http, get_http_wrapper, set_http_wrapper
 from .wsse import UsernameToken
 
 log = logging.getLogger(__name__)

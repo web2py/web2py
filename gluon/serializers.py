@@ -8,7 +8,6 @@ import decimal
 import json as json_parser
 
 import gluon.contrib.rss2 as rss2
-from gluon._compat import integer_types, long, to_native, unicodeT
 from gluon.html import TAG, XmlComponent, xmlescape
 from gluon.languages import lazyT
 from gluon.storage import Storage
@@ -44,15 +43,12 @@ def cast_keys(o, cast=str, encoding="utf-8"):
         else:
             newobj = Storage()
         for k, v in o.items():
-            if (cast == str) and isinstance(k, unicodeT):
-                key = k.encode(encoding)
-            else:
-                key = cast(k)
-            newobj[key] = cast_keys(v, cast=cast, encoding=encoding)
+            key = k.decode("utf8") if isinstance(k, bytes) else str(k)
+            newobj[key] = cast_keys(v)
     elif isinstance(o, (tuple, set, list)):
         newobj = []
         for item in o:
-            newobj.append(cast_keys(item, cast=cast, encoding=encoding))
+            newobj.append(cast_keys(item))
         if isinstance(o, tuple):
             newobj = tuple(newobj)
         elif isinstance(o, set):
@@ -77,7 +73,7 @@ def custom_json(o):
         return o.custom_json()
     if isinstance(o, (datetime.date, datetime.datetime, datetime.time)):
         return o.isoformat()[:19].replace("T", " ")
-    elif isinstance(o, integer_types):
+    elif isinstance(o, int):
         return int(o)
     elif isinstance(o, decimal.Decimal):
         return float(o)
@@ -86,7 +82,7 @@ def custom_json(o):
     elif isinstance(o, lazyT):
         return str(o)
     elif isinstance(o, XmlComponent):
-        return to_native(o.xml())
+        return o.xml()
     elif isinstance(o, set):
         return list(o)
     elif hasattr(o, "as_list") and callable(o.as_list):
@@ -193,40 +189,21 @@ def ics(events, title=None, link=None, timeshift=0, calname=True, **ignored):
     return s
 
 
-def safe_encode(text):
-    if not isinstance(text, (str, unicodeT)):
-        text = str(text)
-    try:
-        text = text.encode("utf8", "replace")
-    except ValueError:
-        new_text = ""
-        for c in text:
-            try:
-                new_text += c.encode("utf8")
-            except:
-                new_text += "?"
-        text = new_text
-    return text
-
-
 def rss(feed):
     if not "entries" in feed and "items" in feed:
         feed["entries"] = feed["items"]
 
-    def safestr(obj, key, default=""):
-        return safe_encode(obj.get(key, ""))
-
     now = datetime.datetime.now()
     rss = rss2.RSS2(
-        title=safestr(feed, "title"),
-        link=safestr(feed, "link"),
-        description=safestr(feed, "description"),
+        title=feed.get("title", ""),
+        link=feed.get("link", ""),
+        description=feed.get("description", ""),
         lastBuildDate=feed.get("created_on", now),
         items=[
             rss2.RSSItem(
-                title=safestr(entry, "title", "(notitle)"),
-                link=safestr(entry, "link"),
-                description=safestr(entry, "description"),
+                title=entry.get("title", "(notitle)"),
+                link=entry.get("link", ""),
+                description=entry.get("description",""),
                 pubDate=entry.get("created_on", now),
             )
             for entry in feed.get("entries", [])

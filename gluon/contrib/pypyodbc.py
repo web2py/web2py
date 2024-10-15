@@ -32,9 +32,12 @@ DEBUG = 0
 # Comment out all "if DEBUG:" statements like below for production
 #if DEBUG:print 'DEBUGGING'
 
-import sys, os, datetime, ctypes, threading
+import ctypes
+import datetime
+import os
+import sys
+import threading
 from decimal import Decimal
-
 
 py_ver = sys.version[:3]
 py_v3 = py_ver >= '3.0'
@@ -2797,7 +2800,9 @@ def dataSources():
 
 
 def monkey_patch_for_gevent():
-    import functools, gevent
+    import functools
+
+    import gevent
     apply_e = gevent.get_hub().threadpool.apply_e
     def monkey_patch(func):
         @functools.wraps(func)

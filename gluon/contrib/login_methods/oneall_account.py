@@ -10,12 +10,14 @@
    authentication services with web2py
 """
 
-import os
 import base64
+import json
+import os
+
 from gluon import *
 from gluon.storage import Storage
 from gluon.tools import fetch
-import json
+
 
 class OneallAccount(object):
 

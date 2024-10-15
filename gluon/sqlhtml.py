@@ -16,9 +16,13 @@ Holds:
 
 import copy
 import datetime
+import io
 import os
 import re
 from functools import reduce
+from urllib.parse import quote as urllib_quote
+from urllib.parse import unquote as urllib_unquote
+from urllib.parse import urlencode
 
 from pydal.adapters.base import CALLABLETYPES
 from pydal.base import DEFAULT
@@ -29,9 +33,6 @@ from pydal.helpers.methods import (_repr_ref, bar_encode, merge_tablemaps,
 from pydal.objects import Expression, Field, Row, Rows, Set, Table
 
 import gluon.serializers as serializers
-from gluon._compat import (StringIO, basestring, integer_types, iteritems,
-                           long, to_native, to_unicode, unichr, unicodeT,
-                           urlencode, urllib_quote)
 from gluon.globals import current
 from gluon.html import (BR, CAT, COL, COLGROUP, DEFAULT_PASSWORD_DISPLAY, DIV,
                         FIELDSET, FORM, IMG, INPUT, LABEL, LI, OPTION, SCRIPT,
@@ -303,7 +304,7 @@ class JSONWidget(FormWidget):
 
         see also: `FormWidget.widget`
         """
-        if not isinstance(value, basestring):
+        if not isinstance(value, str):
             if value is not None:
                 value = serializers.json(value)
         default = dict(value=value)
@@ -1549,7 +1550,7 @@ class SQLFORM(FORM):
 
         # try to retrieve the indicated record using its id
         # otherwise ignore it
-        if record and isinstance(record, (int, long, str, unicodeT)):
+        if record and isinstance(record, (int, str)):
             if not str(record).isdigit():
                 raise HTTP(404, "Object not found")
             record = table._db(table._id == record).select().first()
@@ -1833,14 +1834,14 @@ class SQLFORM(FORM):
                 self["hidden"]["id"] = record[table._id.name]
 
         (begin, end) = self._xml()
-        self.custom.begin = XML("<%s %s>" % (self.tag, to_native(begin)))
-        self.custom.end = XML("%s</%s>" % (to_native(end), self.tag))
+        self.custom.begin = XML("<%s %s>" % (self.tag, begin))
+        self.custom.end = XML("%s</%s>" % (end, self.tag))
         table = self.createform(xfields)
         self.components = [table]
 
     def createform(self, xfields):
         formstyle = self.formstyle
-        if isinstance(formstyle, basestring):
+        if isinstance(formstyle, str):
             if formstyle in SQLFORM.formstyles:
                 formstyle = SQLFORM.formstyles[formstyle]
             else:
@@ -2121,9 +2122,9 @@ class SQLFORM(FORM):
                         original_filename = os.path.split(f)[1]
                 elif hasattr(f, "file"):
                     (source_file, original_filename) = (f.file, f.filename)
-                elif isinstance(f, (str, unicodeT)):
+                elif isinstance(f, str):
                     # do not know why this happens, it should not
-                    (source_file, original_filename) = (StringIO(f), "file.txt")
+                    (source_file, original_filename) = (io.StringIO(f), "file.txt")
                 else:
                     # this should never happen, why does it happen?
                     # print 'f=', repr(f)
@@ -2701,7 +2702,7 @@ class SQLFORM(FORM):
                     nrows = dbset.db._adapter.count(dbset.query, limit=1000)
                 else:
                     nrows = dbset.count(cache=cache_count)
-            elif isinstance(cache_count, integer_types):
+            elif isinstance(cache_count, int):
                 nrows = cache_count
             elif callable(cache_count):
                 nrows = cache_count(dbset, request.vars)
@@ -2825,7 +2826,7 @@ class SQLFORM(FORM):
             for table in tables:
                 fields += list(filter(filter1, table))
                 columns += list(filter(filter2, table))
-                for k, f in iteritems(table):
+                for k, f in table.items():
                     if not k.startswith("_"):
                         if isinstance(f, Field.Virtual) and f.readable:
                             f.tablename = table._tablename
@@ -3069,7 +3070,7 @@ class SQLFORM(FORM):
                                     selectable_columns.append(str(field))
                     # look for virtual fields not displayed (and virtual method
                     # fields to be added here?)
-                    for field_name, field in iteritems(table):
+                    for field_name, field in table.items():
                         if (
                             isinstance(field, Field.Virtual)
                             and not str(field) in expcolumns
@@ -3672,7 +3673,7 @@ class SQLFORM(FORM):
         links_in_grid=True,
         args=None,
         user_signature=True,
-        divider=2 * unichr(160) + ">" + 2 * unichr(160),
+        divider=2 * chr(160) + ">" + 2 * chr(160),
         breadcrumbs_class="",
         **kwargs
     ):
@@ -4294,8 +4295,6 @@ class ExportClass(object):
             """
             if value is None:
                 return "<NULL>"
-            elif isinstance(value, unicodeT):
-                return value.encode("utf8")
             elif isinstance(value, Reference):
                 return int(value)
             elif hasattr(value, "isoformat"):
@@ -4353,7 +4352,7 @@ class ExporterTSV(ExportClass):
 
     def export(self):  # export TSV with field.represent
         if self.rows:
-            s = StringIO()
+            s = io.StringIO()
             self.rows.export_to_csv_file(
                 s, represent=True, delimiter="\t", newline="\n"
             )
@@ -4372,7 +4371,7 @@ class ExporterTSV_hidden(ExportClass):
 
     def export(self):
         if self.rows:
-            s = StringIO()
+            s = io.StringIO()
             self.rows.export_to_csv_file(s, delimiter="\t", newline="\n")
             return s.getvalue()
         else:
@@ -4390,7 +4389,7 @@ class ExporterCSV(ExportClass):
 
     def export(self):  # export CSV with field.represent
         if self.rows:
-            s = StringIO()
+            s = io.StringIO()
             self.rows.export_to_csv_file(s, represent=True)
             return s.getvalue()
         else:

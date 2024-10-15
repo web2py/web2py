@@ -45,7 +45,6 @@ __author__ = "Andrew Dalke <dalke@dalkescientific.com>"
 _generator_name = __name__ + "-" + ".".join(map(str, __version__))
 
 import datetime
-
 import sys
 
 if sys.version_info[0] == 3:

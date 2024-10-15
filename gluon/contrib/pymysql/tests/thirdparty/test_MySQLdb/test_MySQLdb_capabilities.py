@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 from . import capabilities
+
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
+
+import warnings
+
 import pymysql
 from pymysql.tests import base
-import warnings
 
 warnings.filterwarnings('error')
 

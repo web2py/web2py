@@ -1,7 +1,8 @@
 import warnings
 
-from pymysql.tests import base
 import pymysql.cursors
+from pymysql.tests import base
+
 
 class CursorTest(base.PyMySQLTestCase):
     def setUp(self):

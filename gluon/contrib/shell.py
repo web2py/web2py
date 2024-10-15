@@ -29,13 +29,17 @@
 An interactive, stateful AJAX shell that runs Python code on the server.
 """
 from __future__ import print_function
-from gluon._compat import ClassType, pickle, StringIO
+
 import logging
-import new
 import sys
+import threading
 import traceback
 import types
-import threading
+
+import new
+
+from gluon._compat import ClassType, StringIO, pickle
+
 locker = threading.RLock()
 
 # Set to True if stack traces should be shown in the browser, etc.

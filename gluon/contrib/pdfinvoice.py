@@ -2,13 +2,16 @@
 BSD license -  created by Massimo Di Pierro
 """
 from __future__ import print_function
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.platypus import Table
+
+import datetime
+from decimal import Decimal
+
+import cStringIO
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
-from decimal import Decimal
-import cStringIO
-import datetime
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.platypus import Table
+
 
 def listify(item):
     if isinstance(item,basestring):

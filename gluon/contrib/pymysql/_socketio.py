@@ -4,9 +4,9 @@ SocketIO imported from socket module in Python 3.
 Copyright (c) 2001-2013 Python Software Foundation; All Rights Reserved.
 """
 
-from socket import *
-import io
 import errno
+import io
+from socket import *
 
 __all__ = ['SocketIO']
 

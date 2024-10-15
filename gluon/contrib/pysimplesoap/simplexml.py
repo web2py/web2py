@@ -14,7 +14,9 @@
 
 
 from __future__ import unicode_literals
+
 import sys
+
 if sys.version > '3':
     basestring = str
     unicode = str
@@ -25,10 +27,9 @@ import time
 import xml.dom.minidom
 
 from . import __author__, __copyright__, __license__, __version__
-
 # Utility functions used for marshalling, moved aside for readability
-from .helpers import TYPE_MAP, TYPE_MARSHAL_FN, TYPE_UNMARSHAL_FN, \
-                     REVERSE_TYPE_MAP, Struct, Date, Decimal
+from .helpers import (REVERSE_TYPE_MAP, TYPE_MAP, TYPE_MARSHAL_FN,
+                      TYPE_UNMARSHAL_FN, Date, Decimal, Struct)
 
 log = logging.getLogger(__name__)
 

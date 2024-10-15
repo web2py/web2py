@@ -1,5 +1,5 @@
-import smtplib
 import logging
+import smtplib
 
 
 def email_auth(server="smtp.gmail.com:587",

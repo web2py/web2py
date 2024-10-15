@@ -7,13 +7,12 @@
 # Import System Modules
 
 import errno
+import io
 import logging
 import platform
 import socket
 import sys
-
-from gluon._compat import (PY2, StringIO, iteritems, to_bytes, to_native,
-                           to_unicode, urllib_unquote)
+from urllib.parse import unquote
 
 # Define Constants
 VERSION = "1.2.6"
@@ -40,7 +39,7 @@ DEFAULTS = dict(
     MAX_THREADS=DEFAULT_MAX_THREADS,
 )
 
-PY3K = not PY2
+PY3K = True
 
 
 class NullHandler(logging.Handler):
@@ -48,10 +47,6 @@ class NullHandler(logging.Handler):
 
     def emit(self, record):
         pass
-
-
-b = to_bytes
-u = to_unicode
 
 # Import Package Modules
 # package imports removed in monolithic build
@@ -188,7 +183,7 @@ class FileLikeSocket(object):
     def __init__(self, conn, buf_size=BUF_SIZE):
         self.conn = conn
         self.buf_size = buf_size
-        self.buffer = StringIO()
+        self.buffer = io.StringIO()
         self.content_length = None
 
         if self.conn.socket.gettimeout() == 0.0:
@@ -227,7 +222,7 @@ class FileLikeSocket(object):
                     break
                 bufr.write(data)
 
-            self.buffer = StringIO()
+            self.buffer = io.StringIO()
 
             return bufr.getvalue()
         else:
@@ -235,10 +230,10 @@ class FileLikeSocket(object):
             if buf_len >= size:
                 bufr.seek(0)
                 data = bufr.read(size)
-                self.buffer = StringIO(bufr.read())
+                self.buffer = io.StringIO(bufr.read())
                 return data
 
-            self.buffer = StringIO()
+            self.buffer = io.StringIO()
             while True:
                 remaining = size - buf_len
                 data = self.recv(remaining)
@@ -271,14 +266,14 @@ class FileLikeSocket(object):
         try:
             data = self.conn.recv(length)
         except:
-            data = b("")
+            data = b""
 
         return data
 
     def readline(self):
-        data = b("")
+        data = b""
         char = self.read(1)
-        while char != b("\n") and char is not b(""):
+        while char != b"\n" and char is not b"":
             line = repr(char)
             data += char
             char = self.read(1)
@@ -625,12 +620,8 @@ import socket
 import sys
 import time
 import traceback
+from queue import Queue
 from threading import Lock
-
-if PY3K:
-    from queue import Queue
-else:
-    from Queue import Queue
 
 # Import Package Modules
 # package imports removed in monolithic build
@@ -737,7 +728,7 @@ class Rocket(object):
             self._monitor = Monitor(
                 self.monitor_queue, self.active_queue, self.timeout, self._threadpool
             )
-            self._monitor.setDaemon(True)
+            self._monitordaemon = True
             self._monitor.start()
 
             # I know that EXPR and A or B is bad but I'm keeping it for Py2.4
@@ -1144,7 +1135,7 @@ class ThreadPool:
                 self.app_info, self.active_queue, self.monitor_queue
             )
 
-            worker.setDaemon(True)
+            workerdaemon = True
             self.threads.add(worker)
             worker.start()
 
@@ -1373,7 +1364,7 @@ class Worker(Thread):
         stat_msg = status.split(" ", 1)[1]
         msg = RESPONSE % (self.protocol, status, len(stat_msg), "text/plain", stat_msg)
         try:
-            self.conn.sendall(b(msg))
+            self.conn.sendall(msg.encode("utf8"))
         except socket.timeout:
             self.closeConnection = True
             msg = 'Tried to send "%s" to client but received timeout error'
@@ -1431,12 +1422,12 @@ class Worker(Thread):
             raise BadRequest
 
         req = match.groupdict()
-        for k, v in iteritems(req):
+        for k, v in req.items():
             if not v:
                 req[k] = ""
             if k == "path":
                 req["path"] = r"%2F".join(
-                    [urllib_unquote(x) for x in re_SLASH.split(v)]
+                    [unquote(x) for x in re_SLASH.split(v)]
                 )
 
         self.protocol = req["protocol"]
@@ -1474,7 +1465,7 @@ class Worker(Thread):
         if "?" in path:
             path, query_string = path.split("?", 1)
 
-        path = r"%2F".join([urllib_unquote(x) for x in re_SLASH.split(path)])
+        path = r"%2F".join([unquote(x) for x in re_SLASH.split(path)])
 
         req.update(
             path=path, query_string=query_string, scheme=scheme.lower(), host=host
@@ -1550,7 +1541,7 @@ class ChunkedReader(object):
             return 0
 
     def read(self, size):
-        data = b("")
+        data = b""
         chunk_size = self.chunk_size
         while size:
             if not chunk_size:
@@ -1571,9 +1562,9 @@ class ChunkedReader(object):
         return data
 
     def readline(self):
-        data = b("")
+        data = b""
         c = self.read(1)
-        while c and c != b("\n"):
+        while c and c != b"\n":
             data += c
             c = self.read(1)
         data += c
@@ -1610,7 +1601,7 @@ else:
     from email.Utils import formatdate
 
 # Define Constants
-NEWLINE = b("\r\n")
+NEWLINE = b"\r\n"
 HEADER_RESPONSE = """HTTP/1.1 %s\r\n%s"""
 BASE_ENV = {
     "SERVER_NAME": SERVER_NAME,
@@ -1666,7 +1657,7 @@ class WSGIWorker(Worker):
         environ = self.base_environ.copy()
 
         # Grab the headers
-        for k, v in iteritems(self.read_headers(sock_file)):
+        for k, v in self.read_headers(sock_file).items():
             environ[str("HTTP_" + k)] = v
 
         # Add CGI Variables
@@ -1763,7 +1754,7 @@ class WSGIWorker(Worker):
         # Send the headers
         if __debug__:
             self.err_log.debug("Sending Headers: %s" % repr(header_data))
-        self.conn.sendall(b(header_data))
+        self.conn.sendall(header_data.encode("utf8"))
         self.headers_sent = True
 
     def write_warning(self, data, sections=None):
@@ -1778,7 +1769,7 @@ class WSGIWorker(Worker):
 
         if self.error[0]:
             self.status = self.error[0]
-            data = b(self.error[1])
+            data = self.error[1].encode("utf8")
 
         if not self.headers_sent:
             self.send_headers(data, sections)
@@ -1787,10 +1778,10 @@ class WSGIWorker(Worker):
             try:
                 if self.chunked:
                     self.conn.sendall(
-                        b"%x\r\n%s\r\n" % (len(data), to_bytes(data, "ISO-8859-1"))
+                        b"%x\r\n%s\r\n" % (len(data), data.encode("ISO-8859-1"))
                     )
                 else:
-                    self.conn.sendall(to_bytes(data))
+                    self.conn.sendall(data if isinstance(data, bytes) else data.encode("utf8"))
             except socket.timeout:
                 self.closeConnection = True
             except socket.error:
@@ -1853,7 +1844,7 @@ class WSGIWorker(Worker):
             # Handle 100 Continue
             if environ.get("HTTP_EXPECT", "") == "100-continue":
                 res = environ["SERVER_PROTOCOL"] + " 100 Continue\r\n\r\n"
-                conn.sendall(b(res))
+                conn.sendall(res.encode("utf8"))
 
             # Send it to our WSGI application
             output = self.app(environ, self.start_response)
@@ -1878,7 +1869,7 @@ class WSGIWorker(Worker):
 
             if self.chunked and self.request_method != "HEAD":
                 # If chunked, send our final chunk length
-                self.conn.sendall(b("0\r\n\r\n"))
+                self.conn.sendall(b"0\r\n\r\n")
 
         # Don't capture exceptions here.  The Worker class handles
         # them appropriately.

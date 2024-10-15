@@ -10,6 +10,7 @@ Thanks to Hans Donner <hans.donner@pobox.com> for GaeGoogleAccount.
 """
 
 from gluon.http import HTTP
+
 try:
     import linkedin
 except ImportError:

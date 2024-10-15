@@ -13,6 +13,7 @@ This file is not strictly required by web2py. It is used for three purposes:
 
 """
 
+import builtins
 import os
 import sys
 
@@ -250,26 +251,12 @@ python_version = sys.version[:3]
 # Modules which we want to raise an Exception if they are missing
 alert_dependency = ["hashlib", "uuid"]
 
-# Now we remove the blacklisted modules if we are using the stated
-# python version.
-#
-# List of modules deprecated in Python 2.7 that are in the above list
-py27_deprecated = [
-    "mhlib",
-    "multifile",
-    "mimify",
-    "sets",
-    "MimeWriter",
-]  # And ['optparse'] but we need it for now
-
-if python_version >= "2.7":
-    base_modules += ["argparse", "json", "multiprocessing"]
-    base_modules = list(set(base_modules).difference(set(py27_deprecated)))
+base_modules += ["argparse", "json", "multiprocessing"]
 
 # Now iterate in the base_modules, trying to do the import
 for module in base_modules + contributed_modules:
     try:
-        __import__(module, globals(), locals(), [])
+        builtins.__import__(module, globals(), locals(), [])
     except:
         # Raise an exception if the current module is a dependency
         if module in alert_dependency:

@@ -12,10 +12,12 @@ Same License as Web2py License
 import os
 import re
 import urllib
+
 from dropbox import client, rest, session
+
 from gluon import *
-from gluon.tools import fetch
 from gluon.storage import Storage
+from gluon.tools import fetch
 
 
 class DropboxAccount(object):

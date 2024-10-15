@@ -1,7 +1,9 @@
 from __future__ import print_function
-import urllib
+
 import json
+import urllib
 from hashlib import sha1
+
 
 class Stripe:
     """
@@ -98,7 +100,7 @@ class StripeForm(object):
                  security_notice = True,
                  disclosure_notice = True,
                  template = None):
-        from gluon import current, redirect, URL
+        from gluon import URL, current, redirect
         if not (current.request.is_local or current.request.is_https):
             redirect(URL(args=current.request.args,scheme='https'))
         self.pk = pk

@@ -1,6 +1,7 @@
-from pymysql.optionfile import Parser
 from unittest import TestCase
+
 from pymysql._compat import PY2
+from pymysql.optionfile import Parser
 
 try:
     from cStringIO import StringIO

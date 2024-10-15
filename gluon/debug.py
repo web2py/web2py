@@ -13,17 +13,16 @@ Debugger support classes
 
 import logging
 import pdb
+import queue
 import sys
-
-from gluon._compat import Queue
 
 logger = logging.getLogger("web2py")
 
 
-class Pipe(Queue.Queue):
+class Pipe(queue.Queue):
     def __init__(self, name, mode="r", *args, **kwargs):
         self.__name = name
-        Queue.Queue.__init__(self, *args, **kwargs)
+        queue.Queue.__init__(self, *args, **kwargs)
 
     def write(self, data):
         logger.debug("debug %s writing %s" % (self.__name, data))
@@ -194,7 +193,7 @@ class WebDebugger(c_dbg.Frontend):
 
 # create the connection between threads:
 
-parent_queue, child_queue = Queue.Queue(), Queue.Queue()
+parent_queue, child_queue = queue.Queue(), queue.Queue()
 front_conn = c_dbg.QueuePipe("parent", parent_queue, child_queue)
 child_conn = c_dbg.QueuePipe("child", child_queue, parent_queue)
 

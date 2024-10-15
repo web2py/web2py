@@ -7,7 +7,6 @@ import shutil
 import tempfile
 import unittest
 
-from gluon._compat import to_bytes
 from gluon.html import URL
 from gluon.http import HTTP
 from gluon.rewrite import filter_err, filter_url, load, regex_filter_out
@@ -336,7 +335,7 @@ routes_out = [
         )
         self.assertEqual(URL(a="welcome", c="default", f="fünc"), "/fünc")
         self.assertEqual(
-            to_bytes(URL(a="welcome", c="default", f="fünc")), b"/f\xc3\xbcnc"
+            str(URL(a="welcome", c="default", f="fünc")), "/fünc"
         )
 
     def test_routes_anchor(self):

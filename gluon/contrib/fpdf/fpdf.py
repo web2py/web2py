@@ -15,16 +15,22 @@
 
 from __future__ import division, with_statement
 
+import errno
+import math
+import os
+import re
+import struct
+import sys
+import tempfile
+import zlib
 from datetime import datetime
 from functools import wraps
-import math
-import errno
-import os, sys, zlib, struct, re, tempfile, struct
 
-from .ttfonts import TTFontFile
 from .fonts import fpdf_charwidths
-from .php import substr, sprintf, print_r, UTF8ToUTF16BE, UTF8StringToArray
-from .py3k import PY3K, pickle, urlopen, BytesIO, Image, basestring, unicode, exception, b, hashpath
+from .php import UTF8StringToArray, UTF8ToUTF16BE, print_r, sprintf, substr
+from .py3k import (PY3K, BytesIO, Image, b, basestring, exception, hashpath,
+                   pickle, unicode, urlopen)
+from .ttfonts import TTFontFile
 
 # Global variables
 FPDF_VERSION = '1.7.2'

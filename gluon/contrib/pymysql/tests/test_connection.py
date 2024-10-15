@@ -1,10 +1,11 @@
 import datetime
 import sys
 import time
-import unittest2
+
 import pymysql
-from pymysql.tests import base
+import unittest2
 from pymysql._compat import text_type
+from pymysql.tests import base
 
 
 class TempUser:

@@ -15,6 +15,7 @@ if False:
 import copy
 import datetime
 import gc
+import http
 import os
 import random
 import re
@@ -23,8 +24,8 @@ import socket
 import string
 import sys
 import time
+from urllib.parse import quote
 
-from gluon._compat import Cookie, urllib_quote
 from gluon.fileutils import (abspath, add_path_first,
                              create_missing_app_folders,
                              create_missing_folders, read_file, write_file)
@@ -446,7 +447,7 @@ def wsgibase(environ, responder):
                         if single_cookie:
                             try:
                                 request.cookies.load(single_cookie)
-                            except Cookie.CookieError:
+                            except http.cookies.CookieError:
                                 pass  # single invalid cookie ignore
 
                 # ##################################################
@@ -511,13 +512,13 @@ def wsgibase(environ, responder):
                         if response.flash:
                             http_response.headers[
                                 "web2py-component-flash"
-                            ] = urllib_quote(
+                            ] = quote(
                                 xmlescape(response.flash).replace(b"\n", b"")
                             )
                         if response.js:
                             http_response.headers[
                                 "web2py-component-command"
-                            ] = urllib_quote(response.js.replace("\n", ""))
+                            ] = quote(response.js.replace("\n", ""))
 
                     # ##################################################
                     # store cookies in headers

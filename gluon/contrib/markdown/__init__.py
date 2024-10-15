@@ -1,6 +1,8 @@
-from .markdown2 import *
-from gluon.html import XML
 from gluon._compat import to_unicode
+from gluon.html import XML
+
+from .markdown2 import *
+
 
 def WIKI(text, encoding="utf8", safe_mode='escape', html4tags=False, **attributes):
     if not text:

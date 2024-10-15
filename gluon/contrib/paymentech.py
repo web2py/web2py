@@ -9,8 +9,12 @@
 #    License: BSD
 #
 
-import sys, httplib, urllib, urllib2
+import sys
+import urllib
 from xml.dom.minidom import parseString
+
+import httplib
+import urllib2
 
 # TODO: input validation, test, debugging output
 

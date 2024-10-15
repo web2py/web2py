@@ -1,9 +1,10 @@
 from __future__ import print_function
-from copy import  deepcopy
-from binascii import  hexlify
 
-from .Constants import  *
-from .Styles import  *
+from binascii import hexlify
+from copy import deepcopy
+
+from .Constants import *
+from .Styles import *
 
 if PY2:
     NumberTypes = (int, float, long)

@@ -6,9 +6,12 @@ db = get_db()
 
 """
 import os
-from gluon import *
-from pydal.adapters import adapters, PostgrePsyco
+
+from pydal.adapters import PostgrePsyco, adapters
 from pydal.helpers.classes import DatabaseStoredFile
+
+from gluon import *
+
 
 @adapters.register_for('postgres')
 class HerokuPostgresAdapter(DatabaseStoredFile, PostgrePsyco):

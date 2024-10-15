@@ -1,11 +1,13 @@
 # from web2py
 
 from __future__ import print_function
-from pydal._compat import pickle, unicodeT
-import sys
-import re
-import random
+
 import datetime
+import random
+import re
+import sys
+
+from pydal._compat import pickle, unicodeT
 
 IUP = {'ad': {'minim': 1}, 'irure': {'dolor': 1}, 'in': {'voluptate': 1, 'reprehenderit': 1, 'culpa': 1}, 'ea': {'commodo': 1}, 'excepteur': {'sint': 1}, 'sunt': {'in': 1}, 'elit': {'sed': 1}, 'duis': {'aute': 1}, 'sed': {'do': 1}, 'eiusmod': {'tempor': 1}, 'enim': {'ad': 1}, 'eu': {'fugiat': 1}, 'et': {'dolore': 1}, 'labore': {'et': 1}, 'incididunt': {'ut': 1}, 'reprehenderit': {'in': 1}, 'est': {'laborum': 1}, 'quis': {'nostrud': 1}, 'sit': {'amet': 1}, 'deserunt': {'mollit': 1}, 'nostrud': {'exercitation': 1}, 'qui': {'officia': 1}, '.': {'excepteur': 1, 'ut': 1, 'duis': 1}, 'consectetur': {'adipiscing': 1}, 'aute': {'irure': 1}, 'dolore': {'eu': 1, 'magna': 1}, 'mollit': {'anim': 1}, 'aliquip': {'ex': 1}, 'nulla': {'pariatur': 1}, 'laborum': {'': 1}, 'do': {'eiusmod': 1}, 'non': {'proident': 1}, 'commodo': {'consequat': 1}, 'aliqua': {'.': 1}, 'cillum': {'dolore': 1}, 'sint': {'occaecat': 1}, 'velit': {'esse': 1}, 'officia': {'deserunt': 1}, 'veniam': {'quis': 1}, 'consequat': {'.': 1}, 'magna': {'aliqua': 1}, 'cupidatat': {'non': 1}, 'ullamco': {'laboris': 1}, 'lorem': {'ipsum': 1}, 'amet': {'consectetur': 1}, 'ipsum': {'dolor': 1}, 'nisi': {'ut': 1}, 'fugiat': {'nulla': 1}, 'occaecat': {'cupidatat': 1}, 'proident': {'sunt': 1}, 'ut': {'aliquip': 1, 'labore': 1, 'enim': 1}, 'minim': {'veniam': 1}, 'culpa': {'qui': 1}, 'tempor': {'incididunt': 1}, 'pariatur': {'.': 1}, 'laboris': {'nisi': 1}, 'anim': {'id': 1}, 'adipiscing': {'elit': 1}, 'id': {'est': 1}, 'dolor': {'in': 1, 'sit': 1}, 'voluptate': {'velit': 1}, 'esse': {'cillum': 1}, 'exercitation': {'ullamco': 1}, 'ex': {'ea': 1}}
 

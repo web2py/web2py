@@ -3,10 +3,8 @@
 # Error codes:
 # http://dev.mysql.com/doc/refman/5.5/en/error-messages-client.html
 from __future__ import print_function
-from ._compat import PY2, range_type, text_type, str_type, JYTHON, IRONPYTHON
 
 import errno
-from functools import partial
 import hashlib
 import io
 import os
@@ -15,14 +13,17 @@ import struct
 import sys
 import traceback
 import warnings
+from functools import partial
 
-from .charset import MBLENGTH, charset_by_name, charset_by_id
+from . import err
+from ._compat import IRONPYTHON, JYTHON, PY2, range_type, str_type, text_type
+from .charset import MBLENGTH, charset_by_id, charset_by_name
 from .constants import CLIENT, COMMAND, FIELD_TYPE, SERVER_STATUS
-from .converters import escape_item, escape_string, through, conversions as _conv
+from .converters import conversions as _conv
+from .converters import escape_item, escape_string, through
 from .cursors import Cursor
 from .optionfile import Parser
 from .util import byte2int, int2byte
-from . import err
 
 try:
     import ssl

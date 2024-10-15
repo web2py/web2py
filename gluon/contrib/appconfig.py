@@ -27,9 +27,10 @@ Once the value has been fetched (and casted) it won't change until the process
 is restarted (or reload=True is passed).
 
 """
-import os
 import json
-from gluon._compat import thread, configparser
+import os
+
+from gluon._compat import configparser, thread
 from gluon.globals import current
 
 locker = thread.allocate_lock()

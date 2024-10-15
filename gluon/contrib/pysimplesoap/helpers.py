@@ -14,16 +14,18 @@
 
 
 from __future__ import unicode_literals
+
 import sys
+
 if sys.version > '3':
     basestring = unicode = str
 
 import datetime
-from decimal import Decimal
-import os
-import logging
 import hashlib
+import logging
+import os
 import warnings
+from decimal import Decimal
 
 try:
     import urllib2
@@ -33,7 +35,6 @@ except ImportError:
     from urllib.parse import urlsplit
 
 from . import __author__, __copyright__, __license__, __version__
-
 
 log = logging.getLogger(__name__)
 
@@ -373,7 +374,7 @@ def preprocess_schema(schema, imported_schemas, elements, xsd_uri, dialect,
                       global_namespaces=None, qualified=False):
     """Find schema elements and complex types"""
 
-    from .simplexml import SimpleXMLElement    # here to avoid recursive imports
+    from .simplexml import SimpleXMLElement  # here to avoid recursive imports
 
     # analyze the namespaces used in this schema
     local_namespaces = {}

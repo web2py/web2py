@@ -26,14 +26,11 @@ import sys
 from ._compat import PY2
 from .constants import FIELD_TYPE
 from .converters import escape_dict, escape_sequence, escape_string
-from .err import (
-    Warning, Error, InterfaceError, DataError,
-    DatabaseError, OperationalError, IntegrityError, InternalError,
-    NotSupportedError, ProgrammingError, MySQLError)
-from .times import (
-    Date, Time, Timestamp,
-    DateFromTicks, TimeFromTicks, TimestampFromTicks)
-
+from .err import (DatabaseError, DataError, Error, IntegrityError,
+                  InterfaceError, InternalError, MySQLError, NotSupportedError,
+                  OperationalError, ProgrammingError, Warning)
+from .times import (Date, DateFromTicks, Time, TimeFromTicks, Timestamp,
+                    TimestampFromTicks)
 
 VERSION = (0, 7, 9, None)
 threadsafety = 1
@@ -90,6 +87,7 @@ def Connect(*args, **kwargs):
     return Connection(*args, **kwargs)
 
 from . import connections as _orig_conn
+
 if _orig_conn.Connection.__init__.__doc__ is not None:
     Connect.__doc__ = _orig_conn.Connection.__init__.__doc__
 del _orig_conn

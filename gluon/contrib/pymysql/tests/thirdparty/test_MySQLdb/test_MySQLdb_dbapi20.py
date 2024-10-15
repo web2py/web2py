@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-from . import dbapi20
 import pymysql
 from pymysql.tests import base
+
+from . import dbapi20
 
 try:
     import unittest2 as unittest

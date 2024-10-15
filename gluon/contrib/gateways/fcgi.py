@@ -52,32 +52,35 @@ __author__ = 'Allan Saddi <allan@saddi.com>'
 __version__ = '$Revision$'
 
 import cgi
-import sys
-import os
-import signal
-import struct
-import select
-import socket
 import errno
+import os
+import select
+import signal
+import socket
+import struct
+import sys
 import traceback
 
 try:
-    import thread
     import threading
+
+    import thread
     thread_available = True
 except ImportError:
-    import dummy_thread as thread
     import dummy_threading as threading
+
+    import dummy_thread as thread
     thread_available = False
 
 is_py2 = sys.version_info[0] == 2
 
 if is_py2:
     from cgi import escape
+
     import cStringIO as StringIO
 else:
-    from io import StringIO
     from html import escape
+    from io import StringIO
 
 # Apparently 2.3 doesn't define SHUT_WR? Assume it is 1 in this case.
 if not hasattr(socket, 'SHUT_WR'):
@@ -963,6 +966,7 @@ class Server(object):
         if thread_available:
             try:
                 import resource
+
                 # Attempt to glean the maximum number of connections
                 # from the OS.
                 maxConns = resource.getrlimit(resource.RLIMIT_NOFILE)[0]

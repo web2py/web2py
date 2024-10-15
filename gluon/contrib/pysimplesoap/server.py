@@ -14,6 +14,7 @@
 
 
 from __future__ import unicode_literals
+
 import sys
 
 if sys.version_info[0] < 3:
@@ -24,18 +25,19 @@ else:
 
 
 import datetime
-import sys
 import logging
-import warnings
 import re
+import sys
 import traceback
+import warnings
+
 try:
     from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 except ImportError:
     from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from . import __author__, __copyright__, __license__, __version__
-from .simplexml import SimpleXMLElement, TYPE_MAP, Date, Decimal
+from .simplexml import TYPE_MAP, Date, Decimal, SimpleXMLElement
 
 log = logging.getLogger(__name__)
 

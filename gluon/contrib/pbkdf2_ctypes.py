@@ -19,12 +19,12 @@
 
 """
 
+import binascii
 import ctypes
 import ctypes.util
 import hashlib
-import platform
 import os.path
-import binascii
+import platform
 import sys
 
 __all__ = ['pkcs5_pbkdf2_hmac', 'pbkdf2_bin', 'pbkdf2_hex']

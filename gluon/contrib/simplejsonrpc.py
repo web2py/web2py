@@ -18,17 +18,21 @@ __license__ = "LGPL 3.0"
 __version__ = "0.05"
 
 import sys
+
 PY2 = sys.version_info[0] == 2
 
 if PY2:
-    from xmlrpclib import Transport, SafeTransport
     from cStringIO import StringIO
+    from xmlrpclib import SafeTransport, Transport
 else:
     from xmlrpc.client import Transport, SafeTransport
     from io import StringIO
-import random
+
 import json
+import random
+
 from gluon._compat import basestring, urlparse
+
 
 class JSONRPCError(RuntimeError):
     "Error object for remote procedure call fail"

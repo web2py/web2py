@@ -11,15 +11,13 @@ OAuth 2.0 spec: http://tools.ietf.org/html/rfc6749
 
 """
 
-import time
 import cgi
-
-from gluon._compat import urllib2
-from gluon._compat import urlencode
-
-from gluon import current, redirect, HTTP
-
 import json
+import time
+
+from gluon import HTTP, current, redirect
+from gluon._compat import urlencode, urllib2
+
 
 class OAuthAccount(object):
     """

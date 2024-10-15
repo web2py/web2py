@@ -14,23 +14,25 @@
 
 
 from __future__ import unicode_literals
+
 import sys
+
 if sys.version > '3':
     basestring = unicode = str
 
 import datetime
-from decimal import Decimal
-import os
-import logging
 import hashlib
+import logging
+import os
+import random
+import string
 import warnings
+from decimal import Decimal
+from hashlib import sha1
 
 from . import __author__, __copyright__, __license__, __version__
 from .simplexml import SimpleXMLElement
 
-import random
-import string
-from hashlib import sha1
 
 def randombytes(N):
     return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
@@ -161,6 +163,7 @@ class BinaryTokenSignature:
     def postprocess(self, client, response, method, args, kwargs, headers, soap_uri):
         "Verify the signature of the incoming response"
         from . import xmlsec
+
         # get xml elements:
         body = response('Body', ns=soap_uri, )
         header = response('Header', ns=soap_uri, )

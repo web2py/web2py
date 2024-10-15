@@ -1,8 +1,8 @@
-from pymysql import cursors, OperationalError, Warning
-from pymysql.tests import base
-
 import os
 import warnings
+
+from pymysql import OperationalError, Warning, cursors
+from pymysql.tests import base
 
 __all__ = ["TestLoadLocal"]
 

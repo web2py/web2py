@@ -117,6 +117,7 @@ __all__ = [
 ]
 
 #: add pydal to sys.modules
+import builtins
 import os
 import sys
 
@@ -137,7 +138,7 @@ def import_packages():
             )
             if path not in sys.path:
                 sys.path.insert(0, path)
-            sys.modules[package] = __import__(package)
+            sys.modules[package] = builtins.__import__(package)
         except ImportError:
             raise RuntimeError(MESSAGE % package)
 

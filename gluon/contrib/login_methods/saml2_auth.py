@@ -73,11 +73,15 @@ you must have private/sp_conf.py, the pysaml2 sp configuration file. For example
 
 """
 
-from saml2 import BINDING_HTTP_REDIRECT, BINDING_HTTP_POST
+import os
+import types
+
+from saml2 import BINDING_HTTP_POST, BINDING_HTTP_REDIRECT
 from saml2.client import Saml2Client
+
+from gluon import URL, current, redirect
 from gluon.utils import web2py_uuid
-from gluon import current, redirect, URL
-import os, types
+
 
 def obj2dict(obj, processed=None):
     """                                                                        

@@ -1,7 +1,8 @@
 from copy import deepcopy
 
-from .Elements import *
 from .Constants import PY2
+from .Elements import *
+
 if PY2:
     StringType = basestring
 else:

@@ -1,13 +1,13 @@
 import sys
 
 try:
-    from pymysql.tests import base
     import pymysql.cursors
+    from pymysql.tests import base
 except Exception:
     # For local testing from top-level directory, without installing
     sys.path.append('../pymysql')
-    from pymysql.tests import base
     import pymysql.cursors
+    from pymysql.tests import base
 
 class TestSSCursor(base.PyMySQLTestCase):
     def test_SSCursor(self):

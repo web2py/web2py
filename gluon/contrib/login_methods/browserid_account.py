@@ -19,11 +19,12 @@
     credits for the doPost jquery function - itsadok (http://stackoverflow.com/users/7581/itsadok)
 
 """
+import json
 import time
+
 from gluon import *
 from gluon.storage import Storage
 from gluon.tools import fetch
-import json
 
 
 class BrowserID(object):

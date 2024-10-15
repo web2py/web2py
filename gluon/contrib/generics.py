@@ -1,12 +1,13 @@
 # fix response
 
 import os
-from gluon import current, HTTP
-from gluon.html import markmin_serializer, TAG, HTML, BODY, UL, XML, H1
+
+from gluon import HTTP, current
 from gluon.contrib.fpdf import FPDF, HTMLMixin
-from gluon.sanitizer import sanitize
 from gluon.contrib.markmin.markmin2latex import markmin2latex
 from gluon.contrib.markmin.markmin2pdf import markmin2pdf
+from gluon.html import BODY, H1, HTML, TAG, UL, XML, markmin_serializer
+from gluon.sanitizer import sanitize
 
 
 def wrapper(f):

@@ -1,14 +1,16 @@
 import sys
+
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
 import pymysql
+
 _mysql = pymysql
+from pymysql._compat import PY2, long_type
 from pymysql.constants import FIELD_TYPE
 from pymysql.tests import base
-from pymysql._compat import PY2, long_type
 
 if not PY2:
     basestring = str

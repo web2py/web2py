@@ -9,9 +9,8 @@
 Generates names for cache and session files
 --------------------------------------------
 """
+import builtins
 import os
-
-from gluon._compat import builtin
 
 
 def generate(filename, depth=2, base=512):
@@ -66,4 +65,4 @@ def open(filename, mode="r", path=None):
         fullfilename = os.path.join(path, generate(filename))
         if mode.startswith("w") and not os.path.exists(os.path.dirname(fullfilename)):
             os.makedirs(os.path.dirname(fullfilename))
-    return builtin.open(fullfilename, mode)
+    return builtins.open(fullfilename, mode)

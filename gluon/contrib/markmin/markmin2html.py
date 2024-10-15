@@ -4,16 +4,17 @@
 # recreated by Vladyslav Kozlovskyy
 # license MIT/BSD/GPL
 from __future__ import print_function
+
+import ast
 import re
 import sys
 import urllib
-import ast
 
 PY2 = sys.version_info[0] == 2
 
 if PY2:
-    from urllib import quote as urllib_quote
     from string import maketrans
+    from urllib import quote as urllib_quote
 else:
     from urllib.parse import quote as urllib_quote
     maketrans = str.maketrans
@@ -1487,8 +1488,8 @@ def run_doctests():
 
 
 if __name__ == '__main__':
-    import sys
     import doctest
+    import sys
     from textwrap import dedent
 
     html = dedent("""

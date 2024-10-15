@@ -13,6 +13,7 @@ Cron-style interface
 
 import datetime
 import os
+import pickle
 import re
 import sched
 import shlex
@@ -25,7 +26,6 @@ from logging import getLogger
 from pydal.contrib import portalocker
 
 from gluon import fileutils
-from gluon._compat import pickle, to_bytes
 
 logger_name = "web2py.cron"
 
@@ -82,7 +82,7 @@ def extcron(applications_parent, apps=None):
 class hardcron(threading.Thread):
     def __init__(self, applications_parent, apps=None):
         threading.Thread.__init__(self)
-        self.setDaemon(True)
+        selfdaemon = True
         self.path = applications_parent
         self.apps = apps
         # processing of '@reboot' entries in crontab (startup=True)
@@ -117,7 +117,7 @@ class Token(object):
     def __init__(self, path):
         self.path = os.path.join(path, "cron.master")
         if not os.path.exists(self.path):
-            fileutils.write_file(self.path, to_bytes(""), "wb")
+            fileutils.write_file(self.path, b"", "wb")
         self.master = None
         self.now = time.time()
         self.logger = getLogger(logger_name)
@@ -248,7 +248,7 @@ def parsecronline(line):
 class Worker(threading.Thread):
     def __init__(self, pool):
         threading.Thread.__init__(self)
-        self.setDaemon(True)
+        selfdaemon = True
         self.pool = pool
         self.run_lock = threading.Lock()
         self.run_lock.acquire()
@@ -302,7 +302,7 @@ class Worker(threading.Thread):
 class SoftWorker(threading.Thread):
     def __init__(self, pool):
         threading.Thread.__init__(self)
-        self.setDaemon(True)
+        selfdaemon = True
         self.pool = pool
         self.run_lock = threading.Lock()
         self.run_lock.acquire()

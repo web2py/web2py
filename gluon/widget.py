@@ -21,10 +21,10 @@ import socket
 import sys
 import threading
 import time
+import urllib.request as urllib
 from collections import OrderedDict
 
 from gluon import main, newcron
-from gluon._compat import PY2, xrange
 from gluon.console import console, is_appdir
 from gluon.fileutils import create_welcome_w2p, read_file
 from gluon.settings import global_settings
@@ -67,11 +67,9 @@ def run_system_tests(options):
             import coverage
         except:
             die("Coverage not installed")
-    if not PY2:
-        sys.stderr.write("Experimental ")
     sys.stderr.write("Python %s\n" % sys.version)
     if options.with_coverage:
-        coverage_exec = "coverage2" if PY2 else "coverage3"
+        coverage_exec = "coverage3"
         coverage_config_file = os.path.join("gluon", "tests", "coverage.ini")
         coverage_config = os.environ.setdefault(
             "COVERAGE_PROCESS_START", coverage_config_file
@@ -120,12 +118,8 @@ class web2pyDialog(object):
     def __init__(self, root, options):
         """web2pyDialog constructor"""
 
-        if PY2:
-            import Tkinter as tkinter
-            import tkMessageBox as messagebox
-        else:
-            import tkinter
-            from tkinter import messagebox
+        import tkinter
+        from tkinter import messagebox
 
         root.withdraw()
 
@@ -472,10 +466,7 @@ class web2pyDialog(object):
 
     def error(self, message):
         """Shows error message"""
-        if PY2:
-            import tkMessageBox as messagebox
-        else:
-            from tkinter import messagebox
+        from tkinter import messagebox
         messagebox.showerror("web2py start server", message)
 
     def start(self):
@@ -550,7 +541,7 @@ class web2pyDialog(object):
             cpt = threading.Thread(
                 target=start_browser, args=(get_url(ip, proto=proto, port=port), True)
             )
-            cpt.setDaemon(True)
+            cptdaemon = True
             cpt.start()
 
         self.password.configure(state="readonly")
@@ -598,7 +589,7 @@ class web2pyDialog(object):
                 data = fp.read(t1 - self.t0)
             self.p0 = pvalues + [10 + 90.0 / math.sqrt(1 + data.count("\n"))]
 
-            for i in xrange(points - 1):
+            for i in range(points - 1):
                 c = canvas.coords(self.q0[i])
                 canvas.coords(self.q0[i], (c[0], self.p0[i], c[2], self.p0[i + 1]))
             self.t0 = t1
@@ -608,7 +599,7 @@ class web2pyDialog(object):
             self.p0 = [100] * points
             self.q0 = [
                 canvas.create_line(i, 100, i + 1, 100, fill="green")
-                for i in xrange(points - 1)
+                for i in range(points - 1)
             ]
 
         canvas.after(1000, self.update_canvas)
@@ -639,10 +630,6 @@ def start_schedulers(options):
         return
 
     # Work around OS X problem: http://bugs.python.org/issue9405
-    if PY2:
-        import urllib
-    else:
-        import urllib.request as urllib
     urllib.getproxies()
 
     processes = []
@@ -687,8 +674,6 @@ def start():
             name = options.gae
             # for backward compatibility
             if name == "configure":
-                if PY2:
-                    input = raw_input
                 name = input("Your GAE app name: ")
             content = open(os.path.join("examples", "app.example.yaml"), "rb").read()
             open("app.yaml", "wb").write(content.replace("yourappname", name))
@@ -806,10 +791,7 @@ def start():
 
     if (not options.no_gui and options.password == "<ask>") or options.taskbar:
         try:
-            if PY2:
-                import Tkinter as tkinter
-            else:
-                import tkinter
+            import tkinter
             root = tkinter.Tk()
         except (ImportError, OSError):
             logger.warn("GUI not available because Tk library is not installed")

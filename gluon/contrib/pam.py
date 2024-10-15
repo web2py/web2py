@@ -10,10 +10,11 @@ a user against the Pluggable Authentication Modules (PAM) on the system.
 Implemented using ctypes, so no compilation is necessary.
 """
 from __future__ import print_function
+
 __all__ = ['authenticate']
 
-from ctypes import CDLL, POINTER, Structure, CFUNCTYPE, cast, pointer, sizeof
-from ctypes import c_void_p, c_uint, c_char_p, c_char, c_int
+from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, c_char, c_char_p,
+                    c_int, c_uint, c_void_p, cast, pointer, sizeof)
 from ctypes.util import find_library
 
 LIBPAM = CDLL(find_library("pam"))

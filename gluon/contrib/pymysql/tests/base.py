@@ -4,9 +4,9 @@ import os
 import re
 import warnings
 
+import pymysql
 import unittest2
 
-import pymysql
 from .._compat import CPYTHON
 
 

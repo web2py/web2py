@@ -49,6 +49,7 @@ or
 
 import string
 from xml.dom import Node
+
 try:
     from xml.ns import XMLNS
 except:

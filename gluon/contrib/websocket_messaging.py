@@ -84,18 +84,20 @@ Tornado code inspired by http://thomas.pelletier.im/2010/08/websocket-tornado-re
 
 """
 from __future__ import print_function
+
+import hashlib
+import hmac
+import optparse
+import sys
+import time
+
 import tornado.httpserver
-import tornado.websocket
 import tornado.ioloop
 import tornado.web
-import hmac
-import sys
-import optparse
-import time
-import sys
+import tornado.websocket
+
 import gluon.utils
-import hashlib
-from gluon._compat import to_native, to_bytes, urlencode, urlopen
+from gluon._compat import to_bytes, to_native, urlencode, urlopen
 
 listeners, names, tokens = {}, {}, {}
 

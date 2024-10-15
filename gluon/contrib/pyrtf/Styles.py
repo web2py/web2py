@@ -8,6 +8,7 @@ At present there are only two, Text and Paragraph but ListStyles will be added s
 
 from .PropertySets import *
 
+
 class TextStyle :
     def __init__( self, text_props, name=None, shading_props=None ) :
         self.SetTextPropertySet   ( text_props    )

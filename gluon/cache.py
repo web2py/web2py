@@ -19,11 +19,14 @@ When web2py is running on Google App Engine,
 caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
+import _thread as thread
+import copyreg
 import datetime
 import gc
 import hashlib
 import logging
 import os
+import pickle
 import random
 import re
 import sys
@@ -42,8 +45,6 @@ except ImportError:
 
 from pydal.contrib import portalocker
 
-from gluon._compat import hashlib_md5, pickle, thread, to_bytes, to_native
-
 try:
     import psutil
 
@@ -51,8 +52,6 @@ try:
 except ImportError:
     HAVE_PSUTIL = False
 
-
-from pydal._compat import copyreg
 # TODO: REMOVE ME ONCE THIS IS FIXED IN DAL https://github.com/web2py/pydal/issues/668
 from pydal.objects import Row
 
@@ -322,13 +321,13 @@ class CacheOnDisk(CacheAbstract):
                     Windows doesn't allow \ / : * ? "< > | in filenames.
                     To go around this encode the keys with base32.
                     """
-                    return to_native(base64.b32encode(to_bytes(key)))
+                    return base64.b32encode(key)
 
                 def key_filter_out_windows(key):
                     """
                     We need to decode the keys so regex based removal works.
                     """
-                    return to_native(base64.b32decode(to_bytes(key)))
+                    return base64.b32decode(key)
 
                 self.key_filter_in = key_filter_in_windows
                 self.key_filter_out = key_filter_out_windows
@@ -678,7 +677,7 @@ class Cache(object):
                         cache_key.append(current.request.env.query_string)
                     if lang_:
                         cache_key.append(current.T.accepted_language)
-                    cache_key = hashlib_md5("__".join(cache_key)).hexdigest()
+                    cache_key = hashlib.md5("__".join(cache_key).encode("utf8")).hexdigest()
                     if prefix:
                         cache_key = prefix + cache_key
                     try:

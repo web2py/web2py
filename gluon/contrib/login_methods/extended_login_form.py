@@ -6,7 +6,7 @@ ExtendedLoginForm is used to extend normal login form in web2py with one more lo
 So user can choose the built-in login or extended login methods.
 """
 
-from gluon import current, DIV
+from gluon import DIV, current
 
 
 class ExtendedLoginForm(object):

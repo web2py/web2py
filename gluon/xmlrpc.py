@@ -7,12 +7,7 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
-from gluon._compat import PY2
-
-if PY2:
-    from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
-else:
-    from xmlrpc.server import SimpleXMLRPCDispatcher
+from xmlrpc.server import SimpleXMLRPCDispatcher
 
 
 def handler(request, response, methods):

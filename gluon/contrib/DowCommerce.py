@@ -14,7 +14,8 @@ from __future__ import print_function
 __all__ = ['DowCommerce']
 
 from operator import itemgetter
-from gluon._compat import urlopen, urlencode, FancyURLopene
+
+from gluon._compat import FancyURLopene, urlencode, urlopen
 
 
 class DowCommerce:

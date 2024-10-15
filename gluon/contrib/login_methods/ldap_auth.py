@@ -3,8 +3,9 @@
 # last tinkered with by korylprince at gmail.com on 2012-07-12
 #
 
-import sys
 import logging
+import sys
+
 try:
     import ldap
     import ldap.filter

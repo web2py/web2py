@@ -1,6 +1,7 @@
-from gluon.contrib.memcache.memcache import Client
-from gluon.cache import CacheAbstract
 import time
+
+from gluon.cache import CacheAbstract
+from gluon.contrib.memcache.memcache import Client
 
 """
 examle of usage:
@@ -10,6 +11,7 @@ cache.memcache = MemcacheClient(request,[127.0.0.1:11211],debug=true)
 
 import cPickle as pickle
 import thread
+
 from gluon import current
 
 DEFAULT_TIME_EXPIRE = 300 # seconds (must be the same as cache.ram)

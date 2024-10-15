@@ -9,7 +9,7 @@ __license__ = "LGPL 3.0"
 # Inspired by tuto5.py and several examples from fpdf.org, html2fpdf, etc.
 
 from .fpdf import FPDF
-from .py3k import PY3K, basestring, unicode, HTMLParser
+from .py3k import PY3K, HTMLParser, basestring, unicode
 
 DEBUG = False
 

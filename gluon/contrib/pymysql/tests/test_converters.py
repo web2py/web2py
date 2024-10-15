@@ -1,9 +1,8 @@
 import datetime
 from unittest import TestCase
 
-from pymysql._compat import PY2
 from pymysql import converters
-
+from pymysql._compat import PY2
 
 __all__ = ["TestConverter"]
 

@@ -7,15 +7,17 @@ try:
     import cPickle as pickle
 except:
     import pickle
-import time
-import re
+
 import logging
-from threading import Lock
 import random
+import re
+import time
+from threading import Lock
+
 from gluon import current
 from gluon.cache import CacheAbstract
-from gluon.contrib.redis_utils import acquire_lock, release_lock
-from gluon.contrib.redis_utils import register_release_lock, RConnectionError
+from gluon.contrib.redis_utils import (RConnectionError, acquire_lock,
+                                       register_release_lock, release_lock)
 
 logger = logging.getLogger("web2py.cache.redis")
 

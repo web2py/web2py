@@ -18,12 +18,12 @@
 
 from __future__ import with_statement
 
-from struct import pack, unpack, unpack_from
 import re
 import warnings
-from .php import die, substr, str_repeat, str_pad, strlen, count
-from .py3k import b, ord
+from struct import pack, unpack, unpack_from
 
+from .php import count, die, str_pad, str_repeat, strlen, substr
+from .py3k import b, ord
 
 # Define the value used in the "head" table of a created TTF file
 # 0x74727565 "true" for Mac

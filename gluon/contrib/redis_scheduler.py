@@ -10,17 +10,18 @@ Scheduler with redis backend
 """
 from __future__ import print_function
 
-import os
-import time
-import socket
 import datetime
 import logging
-from json import loads, dumps
-from gluon.utils import web2py_uuid
-from gluon.storage import Storage
+import os
+import socket
+import time
+from json import dumps, loads
+
+from gluon.contrib.redis_utils import RWatchError
 from gluon.scheduler import *
 from gluon.scheduler import _decode_dict
-from gluon.contrib.redis_utils import RWatchError
+from gluon.storage import Storage
+from gluon.utils import web2py_uuid
 
 USAGE = """
 ## Example

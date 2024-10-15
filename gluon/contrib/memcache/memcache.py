@@ -85,6 +85,7 @@ except ImportError:
             "compression (import error)")
 
 from io import BytesIO
+
 try:
     unicode
 except NameError:
@@ -1369,6 +1370,7 @@ class _Host(object):
 
 def _doctest():
     import doctest
+
     import memcache
     servers = ["127.0.0.1:11211"]
     mc = Client(servers, debug=1)

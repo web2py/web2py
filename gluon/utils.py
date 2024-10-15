@@ -17,6 +17,7 @@ import hmac
 import inspect
 import logging
 import os
+import pickle
 import random
 import re
 import socket
@@ -26,8 +27,6 @@ import threading
 import time
 import uuid
 import zlib
-
-from gluon._compat import PY2, basestring, pickle, to_bytes, to_native, xrange
 
 _struct_2_long_long = struct.Struct("=QQ")
 
@@ -86,7 +85,7 @@ def compare(a, b):
         if HAVE_COMPARE_DIGEST:
             return hmac.compare_digest(a, b)
         result = len(a) ^ len(b)
-        for i in xrange(len(b)):
+        for i in range(len(b)):
             result |= ord(a[i % len(a)]) ^ ord(b[i])
         return result == 0
     except:
@@ -95,7 +94,7 @@ def compare(a, b):
 
 def md5_hash(text):
     """Generate an md5 hash with the given text."""
-    return hashlib.md5(to_bytes(text)).hexdigest()
+    return hashlib.md5(text.encode("utf8")).hexdigest()
 
 
 def get_callable_argspec(fn):
@@ -132,20 +131,19 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
-    encryption_key = to_bytes(encryption_key)
+    encryption_key = encryption_key.encode("utf8")
     if not hash_key:
         hash_key = hashlib.sha256(encryption_key).digest()
+    elif isinstance(hash_key, str):
+        hash_key = hash_key.encode("utf8")
     cipher, IV = AES_new(pad(encryption_key)[:32])
     encrypted_data = base64.urlsafe_b64encode(IV + AES_enc(cipher, pad(dump)))
-    signature = to_bytes(
-        hmac.new(to_bytes(hash_key), encrypted_data, hashlib.sha256).hexdigest()
-    )
+    signature = hmac.new(hash_key, encrypted_data, hashlib.sha256).hexdigest().encode("utf8")
     return b"hmac256:" + signature + b":" + encrypted_data
 
 
 def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     """loads a signed data dump"""
-    data = to_bytes(data)
     components = data.count(b":")
     if components == 1:
         return secure_loads_deprecated(
@@ -156,13 +154,15 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     version, signature, encrypted_data = data.split(b":", 2)
     if version != b"hmac256":
         return None
-    encryption_key = to_bytes(encryption_key)
+    encryption_key = encryption_key.encode("utf8")
     if not hash_key:
         hash_key = hashlib.sha256(encryption_key).digest()
+    elif isinstance(hash_key, str):
+        hash_key = hash_key.encode("utf8")
     actual_signature = hmac.new(
-        to_bytes(hash_key), encrypted_data, hashlib.sha256
+        hash_key, encrypted_data, hashlib.sha256
     ).hexdigest()
-    if not compare(to_native(signature), actual_signature):
+    if not compare(signature.decode("utf8"), actual_signature):
         return None
     encrypted_data = base64.urlsafe_b64decode(encrypted_data)
     IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
@@ -185,18 +185,18 @@ def secure_dumps_deprecated(
     data, encryption_key, hash_key=None, compression_level=None
 ):
     """dumps data with a signature (deprecated because of incorrect padding)"""
-    encryption_key = to_bytes(encryption_key)
+    encryption_key = encryption_key.encode("utf8")
     if not hash_key:
         hash_key = hashlib.sha1(encryption_key).hexdigest()
+    elif isinstance(hash_key, str):
+        hash_key = hash_key.encode("utf8")
     dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
     key = __pad_deprecated(encryption_key)[:32]
     cipher, IV = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(IV + AES_enc(cipher, pad(dump)))
-    signature = to_bytes(
-        hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest()
-    )
+    signature = hmac.new(hash_key.encode("utf8"), encrypted_data, hashlib.md5).hexdigest().encode("utf8")
     return signature + b":" + encrypted_data
 
 
@@ -204,16 +204,17 @@ def secure_loads_deprecated(
     data, encryption_key, hash_key=None, compression_level=None
 ):
     """loads signed data (deprecated because of incorrect padding)"""
-    encryption_key = to_bytes(encryption_key)
-    data = to_native(data)
+    encryption_key = encryption_key.encode("utf8")
+    if isinstance(data, bytes):
+        data = data.decode("utf8")
     if ":" not in data:
         return None
     if not hash_key:
         hash_key = hashlib.sha1(encryption_key).hexdigest()
     signature, encrypted_data = data.split(":", 1)
-    encrypted_data = to_bytes(encrypted_data)
+    encrypted_data = encrypted_data.encode("utf8")
     actual_signature = hmac.new(
-        to_bytes(hash_key), encrypted_data, hashlib.md5
+        hash_key.encode("utf8"), encrypted_data, hashlib.md5
     ).hexdigest()
     if not compare(signature, actual_signature):
         return None
@@ -259,10 +260,7 @@ def initialize_urandom():
                 # try to add process-specific entropy
                 frandom = open("/dev/urandom", "wb")
                 try:
-                    if PY2:
-                        frandom.write("".join(chr(t) for t in ctokens))
-                    else:
-                        frandom.write(bytes([]).join(bytes([t]) for t in ctokens))
+                    frandom.write(bytes([]).join(bytes([t]) for t in ctokens))
                 finally:
                     frandom.close()
             except IOError:
@@ -275,10 +273,7 @@ def initialize_urandom():
 your system does not provide a cryptographically secure entropy source.
 This is not specific to web2py; consider deploying on a different operating system."""
         )
-    if PY2:
-        packed = "".join(chr(x) for x in ctokens)
-    else:
-        packed = bytes([]).join(bytes([x]) for x in ctokens)
+    packed = bytes([]).join(bytes([x]) for x in ctokens)
     unpacked_ctokens = _struct_2_long_long.unpack(packed)
     return unpacked_ctokens, have_urandom
 
@@ -297,7 +292,7 @@ def fast_urandom16(urandom=[], locker=threading.RLock()):
         try:
             locker.acquire()
             ur = os.urandom(16 * 1024)
-            urandom += [ur[i : i + 16] for i in xrange(16, 1024 * 16, 16)]
+            urandom += [ur[i : i + 16] for i in range(16, 1024 * 16, 16)]
             return ur[0:16]
         finally:
             locker.release()
@@ -377,7 +372,7 @@ def is_loopback_ip_address(ip=None, addrinfo=None):
     if addrinfo:  # see socket.getaddrinfo() for layout of addrinfo tuple
         if addrinfo[0] == socket.AF_INET or addrinfo[0] == socket.AF_INET6:
             ip = addrinfo[4]
-    if not isinstance(ip, basestring):
+    if not isinstance(ip, str):
         return False
     # IPv4 or IPv6-embedded IPv4 or IPv4-compatible IPv6
     if ip.count(".") == 3:
@@ -396,7 +391,7 @@ def getipaddrinfo(host):
             addrinfo
             for addrinfo in socket.getaddrinfo(host, None)
             if (addrinfo[0] == socket.AF_INET or addrinfo[0] == socket.AF_INET6)
-            and isinstance(addrinfo[4][0], basestring)
+            and isinstance(addrinfo[4][0], str)
         ]
     except socket.error:
         return []

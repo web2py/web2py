@@ -11,16 +11,17 @@ to ensure compatibility with another - similar - library
 """
 
 import logging
-from threading import Lock
 import time
+from threading import Lock
+
 from gluon import current
 
 logger = logging.getLogger("web2py.redis_utils")
 
 try:
     import redis
-    from redis.exceptions import WatchError as RWatchError
     from redis.exceptions import ConnectionError as RConnectionError
+    from redis.exceptions import WatchError as RWatchError
 except ImportError:
     logger.error("Needs redis library to work")
     raise RuntimeError('Needs redis library to work')

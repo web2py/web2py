@@ -9,7 +9,7 @@ The TextPropertySet can be used for text or in a Paragraph Style.
 
 """
 
-from copy import  deepcopy
+from copy import deepcopy
 
 from .Constants import PY2
 

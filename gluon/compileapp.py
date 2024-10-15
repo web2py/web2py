@@ -30,8 +30,6 @@ from os.path import join as pjoin
 from pydal.base import BaseAdapter
 
 from gluon import html, rewrite, validators
-from gluon._compat import (PY2, basestring, builtin, integer_types, iteritems,
-                           reload, to_bytes, to_native, unicodeT, xrange)
 from gluon.cache import Cache
 from gluon.cfs import getcfs
 from gluon.dal import DAL, Field
@@ -47,11 +45,7 @@ from gluon.storage import List, Storage
 from gluon.template import parse_template
 from gluon.validators import Validator
 
-if PY2:
-    import imp
-    MAGIC = imp.get_magic()
-else:
-    MAGIC =  importlib.util.MAGIC_NUMBER
+MAGIC =  importlib.util.MAGIC_NUMBER
 
 CACHED_REGEXES = {}
 CACHED_REGEXES_MAX_SIZE = 1000
@@ -126,7 +120,7 @@ def LOAD(
             user_signature=user_signature,
         )
         # timing options
-        if isinstance(times, basestring):
+        if isinstance(times, str):
             if times.upper() in ("INFINITY", "CONTINUOUS"):
                 times = "Infinity"
             else:
@@ -141,7 +135,7 @@ def LOAD(
             # NOTE: why do not use ValueError only?
             raise TypeError("Unsupported times argument type %s" % type(times))
         if timeout is not None:
-            if not isinstance(timeout, integer_types):
+            if not isinstance(timeout, int):
                 raise ValueError("Timeout argument must be an integer or None")
             elif timeout <= 0:
                 raise ValueError("Timeout argument must be greater than zero or None")
@@ -354,7 +348,7 @@ def local_import_aux(name, reload_force=False, app="welcome"):
     for item in name.split(".")[1:]:
         module = getattr(module, item)
     if reload_force:
-        reload(module)
+        importlib.reload(module)
     return module
 
 
@@ -400,13 +394,6 @@ _base_environment_["SQLField"] = Field  # for backward compatibility
 _base_environment_["SQLFORM"] = SQLFORM
 _base_environment_["SQLTABLE"] = SQLTABLE
 _base_environment_["LOAD"] = LOAD
-# For an easier PY3 migration
-_base_environment_["PY2"] = PY2
-_base_environment_["to_native"] = to_native
-_base_environment_["to_bytes"] = to_bytes
-_base_environment_["iteritems"] = iteritems
-_base_environment_["reduce"] = reduce
-_base_environment_["xrange"] = xrange
 
 
 def build_environment(request, response, session, store_current=True):
@@ -487,10 +474,7 @@ def save_pyc(filename):
     py_compile.compile(filename, cfile=cfile)
 
 
-if PY2:
-    MARSHAL_HEADER_SIZE = 8
-else:
-    MARSHAL_HEADER_SIZE = 16 if sys.version_info[1] >= 7 else 12
+MARSHAL_HEADER_SIZE = 16 if sys.version_info[1] >= 7 else 12
 
 
 def read_pyc(filename):
@@ -583,15 +567,6 @@ def compile_controllers(folder):
             os.unlink(filename)
 
 
-if PY2:
-
-    def model_cmp(a, b, sep="."):
-        return cmp(a.count(sep), b.count(sep)) or cmp(a, b)
-
-    def model_cmp_sep(a, b, sep=os.sep):
-        return model_cmp(a, b, sep)
-
-
 REGEX_COMPILED_MODEL = r"models[_.][\w.-]+\.pyc$"
 REGEX_MODEL = r"[\w-]+\.py$"
 
@@ -610,22 +585,16 @@ def run_models_in(environment):
     path = pjoin(folder, "models")
     cpath = pjoin(folder, "compiled")
     compiled = exists(cpath)
-    if PY2:
-        if compiled:
-            models = sorted(listdir(cpath, REGEX_COMPILED_MODEL, 0), model_cmp)
-        else:
-            models = sorted(listdir(path, REGEX_MODEL, 0, sort=False), model_cmp_sep)
+    if compiled:
+        models = sorted(
+            listdir(cpath, REGEX_COMPILED_MODEL, 0),
+            key=lambda f: "{0:03d}".format(f.count(".")) + f,
+        )
     else:
-        if compiled:
-            models = sorted(
-                listdir(cpath, REGEX_COMPILED_MODEL, 0),
-                key=lambda f: "{0:03d}".format(f.count(".")) + f,
-            )
-        else:
-            models = sorted(
-                listdir(path, REGEX_MODEL, 0, sort=False),
-                key=lambda f: "{0:03d}".format(f.count(os.sep)) + f,
-            )
+        models = sorted(
+            listdir(path, REGEX_MODEL, 0, sort=False),
+            key=lambda f: "{0:03d}".format(f.count(os.sep)) + f,
+        )
 
     models_to_run = None
     for model in models:
@@ -750,9 +719,7 @@ def run_controller_in(controller, function, environment):
     vars = response._vars
     if response.postprocessing:
         vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
-    if isinstance(vars, unicodeT):
-        vars = to_native(vars)
-    elif hasattr(vars, "xml") and callable(vars.xml):
+    if hasattr(vars, "xml") and callable(vars.xml):
         vars = vars.xml()
     return vars
 

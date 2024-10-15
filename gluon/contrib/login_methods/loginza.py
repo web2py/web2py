@@ -7,11 +7,12 @@
    Email <dronnikov@gmail.com>
 """
 
-import urllib
-from gluon.html import *
-from gluon.tools import fetch
-from gluon.storage import Storage
 import json
+import urllib
+
+from gluon.html import *
+from gluon.storage import Storage
+from gluon.tools import fetch
 
 
 class Loginza(object):

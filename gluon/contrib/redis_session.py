@@ -8,13 +8,14 @@ Redis-backed sessions
 """
 
 import logging
-from threading import Lock
-from gluon import current
-from gluon.storage import Storage
-from gluon.contrib.redis_utils import acquire_lock, release_lock
-from gluon.contrib.redis_utils import register_release_lock
-from gluon._compat import to_native, to_bytes
 from datetime import datetime
+from threading import Lock
+
+from gluon import current
+from gluon._compat import to_bytes, to_native
+from gluon.contrib.redis_utils import (acquire_lock, register_release_lock,
+                                       release_lock)
+from gluon.storage import Storage
 
 logger = logging.getLogger("web2py.session.redis")
 

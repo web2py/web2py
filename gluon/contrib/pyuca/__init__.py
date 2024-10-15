@@ -1,4 +1,5 @@
 import os
+
 import pyuca
 
 unicode_collator = None

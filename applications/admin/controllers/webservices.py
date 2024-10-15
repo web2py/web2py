@@ -7,8 +7,7 @@ import platform
 import time
 import base64
 import os
-from gluon._compat import StringIO
-
+import io
 
 service = Service(globals())
 
@@ -72,7 +71,7 @@ def hash_file(filename):
 
 @service.jsonrpc
 def install(app_name, filename, data, overwrite=True):
-    f = StringIO(base64.b64decode(data))
+    f = io.StringIO(base64.b64decode(data))
     installed = app_install(app_name, f, request, filename,
                             overwrite=overwrite)
 

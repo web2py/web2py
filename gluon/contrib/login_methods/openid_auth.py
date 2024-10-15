@@ -35,15 +35,15 @@ import time
 from datetime import datetime, timedelta
 
 from gluon import *
-from gluon.storage import Storage, Messages
+from gluon.storage import Messages, Storage
 
 try:
     import openid.consumer.consumer
     from openid.association import Association
-    from openid.store.interface import OpenIDStore
+    from openid.consumer.discover import DiscoveryFailure
     from openid.extensions.sreg import SRegRequest, SRegResponse
     from openid.store import nonce
-    from openid.consumer.discover import DiscoveryFailure
+    from openid.store.interface import OpenIDStore
 except ImportError as err:
     raise ImportError("OpenIDAuth requires python-openid package")
 
