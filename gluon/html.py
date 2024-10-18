@@ -45,6 +45,7 @@ def local_html_escape(data, quote=False):
     translated.
     """
     import html
+
     if data is None:
         return ""
     if not isinstance(data, str):
@@ -57,9 +58,7 @@ regex_crlf = re.compile("\r|\n")
 join = "".join
 
 # name2codepoint is incomplete respect to xhtml (and xml): 'apos' is missing.
-entitydefs = dict(
-    [(k_v[0], chr(k_v[1])) for k_v in name2codepoint.items()]
-)
+entitydefs = dict([(k_v[0], chr(k_v[1])) for k_v in name2codepoint.items()])
 entitydefs.setdefault("apos", "'")
 
 
@@ -1508,11 +1507,11 @@ class SCRIPT(DIV):
         (fa, co) = self._xml()
         # no escaping of subcomponents
         co = "\n".join(
-                # allow xml components (i.e. ASSIGNJS)
-                map(
-                    lambda c: c.xml() if hasattr(c, "xml") and callable(c.xml) else c,
-                    self.components,
-                )
+            # allow xml components (i.e. ASSIGNJS)
+            map(
+                lambda c: c.xml() if hasattr(c, "xml") and callable(c.xml) else c,
+                self.components,
+            )
         )
         if co:
             # <script [attributes]><!--//--><![CDATA[//><!--
@@ -2151,7 +2150,7 @@ class FORM(DIV):
         keepvalues=False,
         onvalidation=None,
         hideerror=False,
-        **kwargs
+        **kwargs,
     ):
         """
         kwargs is not used but allows to specify the same interface for FORM and SQLFORM
@@ -2429,7 +2428,7 @@ class FORM(DIV):
             int,
             float,
             bool,
-            str,           
+            str,
             set,
             list,
             dict,
@@ -2909,7 +2908,7 @@ class MARKMIN(XmlComponent):
         protolinks="default",
         class_prefix="",
         id_prefix="markmin_",
-        **kwargs
+        **kwargs,
     ):
         self.text = text
         self.extra = extra or {}
@@ -2943,11 +2942,7 @@ class MARKMIN(XmlComponent):
             class_prefix=self.class_prefix,
             id_prefix=self.id_prefix,
         )
-        return (
-            html
-            if not self.kwargs
-            else DIV(XML(html), **self.kwargs).xml()
-        )
+        return html if not self.kwargs else DIV(XML(html), **self.kwargs).xml()
 
     def __str__(self):
         # In PY3 __str__ cannot return bytes (TypeError: __str__ returned non-string (type bytes))

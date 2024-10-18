@@ -29,8 +29,7 @@ from gluon.console import console, is_appdir
 from gluon.fileutils import create_welcome_w2p, read_file
 from gluon.settings import global_settings
 from gluon.shell import die, run, test
-from gluon.utils import (getipaddrinfo, is_loopback_ip_address,
-                         is_valid_ip_address)
+from gluon.utils import getipaddrinfo, is_loopback_ip_address, is_valid_ip_address
 
 ProgramName = "web2py Web Framework"
 ProgramAuthor = "Created by Massimo Di Pierro, Copyright 2007-" + str(
@@ -467,6 +466,7 @@ class web2pyDialog(object):
     def error(self, message):
         """Shows error message"""
         from tkinter import messagebox
+
         messagebox.showerror("web2py start server", message)
 
     def start(self):
@@ -792,6 +792,7 @@ def start():
     if (not options.no_gui and options.password == "<ask>") or options.taskbar:
         try:
             import tkinter
+
             root = tkinter.Tk()
         except (ImportError, OSError):
             logger.warn("GUI not available because Tk library is not installed")

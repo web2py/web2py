@@ -34,7 +34,9 @@ def simple_hash(text, key="", salt="", digest_alg="md5"):
         h = digest_alg(text + key + salt)
     elif digest_alg.startswith("pbkdf2"):  # latest and coolest!
         iterations, keylen, alg = digest_alg[7:-1].split(",")
-        return pbkdf2_hex(text, salt, int(iterations), int(keylen), get_digest(alg)).decode("utf8")
+        return pbkdf2_hex(
+            text, salt, int(iterations), int(keylen), get_digest(alg)
+        ).decode("utf8")
     elif key:  # use hmac
         digest_alg = get_digest(digest_alg)
         h = hmac.new(key + salt, text, digest_alg)

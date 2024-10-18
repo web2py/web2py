@@ -28,23 +28,58 @@ from pydal.adapters.base import CALLABLETYPES
 from pydal.base import DEFAULT
 from pydal.default_validators import default_validators
 from pydal.helpers.classes import Reference, SQLCustomType
-from pydal.helpers.methods import (_repr_ref, bar_encode, merge_tablemaps,
-                                   smart_query)
+from pydal.helpers.methods import _repr_ref, bar_encode, merge_tablemaps, smart_query
 from pydal.objects import Expression, Field, Row, Rows, Set, Table
 
 import gluon.serializers as serializers
 from gluon.globals import current
-from gluon.html import (BR, CAT, COL, COLGROUP, DEFAULT_PASSWORD_DISPLAY, DIV,
-                        FIELDSET, FORM, IMG, INPUT, LABEL, LI, OPTION, SCRIPT,
-                        SELECT, SPAN, STYLE, TABLE, TAG, TBODY, TD, TEXTAREA,
-                        TH, THEAD, TR, UL, URL, XML, A, P, XmlComponent,
-                        truncate_string)
+from gluon.html import (
+    BR,
+    CAT,
+    COL,
+    COLGROUP,
+    DEFAULT_PASSWORD_DISPLAY,
+    DIV,
+    FIELDSET,
+    FORM,
+    IMG,
+    INPUT,
+    LABEL,
+    LI,
+    OPTION,
+    SCRIPT,
+    SELECT,
+    SPAN,
+    STYLE,
+    TABLE,
+    TAG,
+    TBODY,
+    TD,
+    TEXTAREA,
+    TH,
+    THEAD,
+    TR,
+    UL,
+    URL,
+    XML,
+    A,
+    P,
+    XmlComponent,
+    truncate_string,
+)
 from gluon.http import HTTP, redirect
 from gluon.storage import Storage
 from gluon.utils import md5_hash
-from gluon.validators import (IS_DATE, IS_DATETIME, IS_EMPTY_OR,
-                              IS_FLOAT_IN_RANGE, IS_INT_IN_RANGE, IS_LIST_OF,
-                              IS_NOT_EMPTY, IS_STRONG)
+from gluon.validators import (
+    IS_DATE,
+    IS_DATETIME,
+    IS_EMPTY_OR,
+    IS_FLOAT_IN_RANGE,
+    IS_INT_IN_RANGE,
+    IS_LIST_OF,
+    IS_NOT_EMPTY,
+    IS_STRONG,
+)
 
 try:
     import gluon.settings as settings

@@ -309,7 +309,5 @@ class TestHTMLTag(unittest.TestCase):
         elem = SPAN(T("Complete"))
         self.assertEqual(elem.flatten(), "Complete")
         elem = SPAN(T("Cannot be empty", language="ru"))
-        self.assertEqual(
-            elem.xml(), "<span>Пустое значение недопустимо</span>"
-        )
+        self.assertEqual(elem.xml(), "<span>Пустое значение недопустимо</span>")
         self.assertEqual(elem.flatten(), "Пустое значение недопустимо")

@@ -48,6 +48,7 @@ class NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
+
 # Import Package Modules
 # package imports removed in monolithic build
 
@@ -72,6 +73,7 @@ __all__ = [
 # Monolithic build...start of module: rocket/connection.py
 
 import socket
+
 # Import System Modules
 import sys
 import time
@@ -411,6 +413,7 @@ class FuturesMiddleware(object):
 # Monolithic build...start of module: rocket/listener.py
 
 import logging
+
 # Import System Modules
 import os
 import socket
@@ -616,6 +619,7 @@ class Listener(Thread):
 
 import logging
 import socket
+
 # Import System Modules
 import sys
 import time
@@ -834,6 +838,7 @@ def CherryPyWSGIServer(
 
 import logging
 import select
+
 # Import System Modules
 import time
 from threading import Thread
@@ -1173,6 +1178,7 @@ class ThreadPool:
 # Monolithic build...start of module: rocket/worker.py
 
 import logging
+
 # Import System Modules
 import re
 import socket
@@ -1426,9 +1432,7 @@ class Worker(Thread):
             if not v:
                 req[k] = ""
             if k == "path":
-                req["path"] = r"%2F".join(
-                    [unquote(x) for x in re_SLASH.split(v)]
-                )
+                req["path"] = r"%2F".join([unquote(x) for x in re_SLASH.split(v)])
 
         self.protocol = req["protocol"]
         return req
@@ -1586,6 +1590,7 @@ def get_method(method):
 # Monolithic build...start of module: rocket/methods/wsgi.py
 
 import socket
+
 # Import System Modules
 import sys
 from wsgiref.headers import Headers
@@ -1781,7 +1786,9 @@ class WSGIWorker(Worker):
                         b"%x\r\n%s\r\n" % (len(data), data.encode("ISO-8859-1"))
                     )
                 else:
-                    self.conn.sendall(data if isinstance(data, bytes) else data.encode("utf8"))
+                    self.conn.sendall(
+                        data if isinstance(data, bytes) else data.encode("utf8")
+                    )
             except socket.timeout:
                 self.closeConnection = True
             except socket.error:

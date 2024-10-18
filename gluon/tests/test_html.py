@@ -10,16 +10,78 @@ import unittest
 
 from gluon._compat import PY2, to_native, xrange
 from gluon.decoder import decoder
-from gluon.html import (ASSIGNJS, BEAUTIFY, BODY, BR, BUTTON, CAT, CENTER,
-                        CODE, COL, COLGROUP, DIV, EM, EMBED, FIELDSET, FORM,
-                        H1, H2, H3, H4, H5, H6, HEAD, HR, HTML, IFRAME, IMG,
-                        INPUT, LABEL, LEGEND, LI, LINK, MARKMIN, MENU, META,
-                        OBJECT, OL, OPTGROUP, OPTION, PRE, SCRIPT, SELECT,
-                        SPAN, STRONG, STYLE, TABLE, TAG, TBODY, TD, TEXTAREA,
-                        TFOOT, TH, THEAD, TITLE, TR, TT, UL, URL, XHTML, XML,
-                        A, B, I, P, TAG_pickler, TAG_unpickler, XML_pickle,
-                        XML_unpickle, truncate_string, verifyURL,
-                        web2pyHTMLParser)
+from gluon.html import (
+    ASSIGNJS,
+    BEAUTIFY,
+    BODY,
+    BR,
+    BUTTON,
+    CAT,
+    CENTER,
+    CODE,
+    COL,
+    COLGROUP,
+    DIV,
+    EM,
+    EMBED,
+    FIELDSET,
+    FORM,
+    H1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
+    HEAD,
+    HR,
+    HTML,
+    IFRAME,
+    IMG,
+    INPUT,
+    LABEL,
+    LEGEND,
+    LI,
+    LINK,
+    MARKMIN,
+    MENU,
+    META,
+    OBJECT,
+    OL,
+    OPTGROUP,
+    OPTION,
+    PRE,
+    SCRIPT,
+    SELECT,
+    SPAN,
+    STRONG,
+    STYLE,
+    TABLE,
+    TAG,
+    TBODY,
+    TD,
+    TEXTAREA,
+    TFOOT,
+    TH,
+    THEAD,
+    TITLE,
+    TR,
+    TT,
+    UL,
+    URL,
+    XHTML,
+    XML,
+    A,
+    B,
+    I,
+    P,
+    TAG_pickler,
+    TAG_unpickler,
+    XML_pickle,
+    XML_unpickle,
+    truncate_string,
+    verifyURL,
+    web2pyHTMLParser,
+)
 from gluon.storage import Storage
 
 
@@ -289,19 +351,17 @@ class TestBareHelpers(unittest.TestCase):
         ##self.assertEqual(XML('1.3'), '1.3')
         self.assertEqual(XML("<div>è</div>").xml(), "<div>è</div>")
         # make sure unicode works with sanitize
-        self.assertEqual(
-            XML("<div>è</div>", sanitize=True).xml(), "<div>è</div>"
-        )
+        self.assertEqual(XML("<div>è</div>", sanitize=True).xml(), "<div>è</div>")
         # you can calc len on the class, that equals the xml() and the str()
-        self.assertEqual(len(XML('1.3')), len('1.3'))
+        self.assertEqual(len(XML("1.3")), len("1.3"))
         self.assertEqual(len(XML("1.3").xml()), len("1.3"))
-        self.assertEqual(len(str(XML('1.3'))), len('1.3'))
+        self.assertEqual(len(str(XML("1.3"))), len("1.3"))
         # you can concatenate them to strings (check for __add__ and __radd__ methods)
-        self.assertEqual(XML('a') + 'b', 'ab')
-        self.assertEqual(XML('a') + XML('b'), 'ab')
-        self.assertEqual('a' + XML('b'), 'ab')
+        self.assertEqual(XML("a") + "b", "ab")
+        self.assertEqual(XML("a") + XML("b"), "ab")
+        self.assertEqual("a" + XML("b"), "ab")
         # you can compare them
-        self.assertEqual(XML('a'), XML('a'))
+        self.assertEqual(XML("a"), XML("a"))
         # beware that the comparison is made on the XML repr
 
         self.assertEqual(

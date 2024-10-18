@@ -16,9 +16,11 @@ oldcwd = None
 
 try:
     import tempfile
+
     TemporaryDirectory = tempfile.TemporaryDirectory
 except:
     from temporary_directory import TemporaryDirectory
+
 
 def setUpModule():
     global oldcwd

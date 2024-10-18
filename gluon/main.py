@@ -26,9 +26,14 @@ import sys
 import time
 from urllib.parse import quote
 
-from gluon.fileutils import (abspath, add_path_first,
-                             create_missing_app_folders,
-                             create_missing_folders, read_file, write_file)
+from gluon.fileutils import (
+    abspath,
+    add_path_first,
+    create_missing_app_folders,
+    create_missing_folders,
+    read_file,
+    write_file,
+)
 from gluon.globals import current
 from gluon.settings import global_settings
 from gluon.utils import unlocalised_http_header_date, web2py_uuid
@@ -86,8 +91,12 @@ pjoin = os.path.join
 from pydal.base import BaseAdapter
 
 from gluon import newcron
-from gluon.compileapp import (build_environment, run_controller_in,
-                              run_models_in, run_view_in)
+from gluon.compileapp import (
+    build_environment,
+    run_controller_in,
+    run_models_in,
+    run_view_in,
+)
 from gluon.contenttype import contenttype
 from gluon.globals import Request, Response, Session
 from gluon.html import URL, xmlescape
@@ -510,15 +519,13 @@ def wsgibase(environ, responder):
 
                     if request.ajax:
                         if response.flash:
-                            http_response.headers[
-                                "web2py-component-flash"
-                            ] = quote(
+                            http_response.headers["web2py-component-flash"] = quote(
                                 xmlescape(response.flash).replace(b"\n", b"")
                             )
                         if response.js:
-                            http_response.headers[
-                                "web2py-component-command"
-                            ] = quote(response.js.replace("\n", ""))
+                            http_response.headers["web2py-component-command"] = quote(
+                                response.js.replace("\n", "")
+                            )
 
                     # ##################################################
                     # store cookies in headers

@@ -52,9 +52,11 @@ from gluon import *
 from gluon.authapi import AuthAPI
 from gluon.contenttype import contenttype
 from gluon.contrib.autolinks import expand_one
-from gluon.contrib.markmin.markmin2html import (replace_at_urls,
-                                                replace_autolinks,
-                                                replace_components)
+from gluon.contrib.markmin.markmin2html import (
+    replace_at_urls,
+    replace_autolinks,
+    replace_components,
+)
 from gluon.fileutils import check_credentials, read_file
 from gluon.storage import Messages, Settings, Storage, StorageList
 from gluon.utils import compare, web2py_uuid
@@ -287,13 +289,7 @@ class Mail(object):
                 SOMEOTHERBASE64CONTENT=
         """
 
-        def __init__(
-            self,
-            payload,
-            filename=None,
-            content_id=None,
-            content_type=None
-        ):
+        def __init__(self, payload, filename=None, content_id=None, content_type=None):
             if isinstance(payload, str):
                 if filename is None:
                     filename = os.path.basename(payload)
@@ -1358,7 +1354,7 @@ class AuthJWT(object):
             # header not the same
             raise HTTP(400, "Invalid JWT Header")
         secret = self.secret_key
-        tokend = serializers.loads_json(self.jwt_b64d(b64b).decode('utf8'))
+        tokend = serializers.loads_json(self.jwt_b64d(b64b).decode("utf8"))
         if self.salt:
             if callable(self.salt):
                 secret = "%s$%s" % (secret, self.salt(tokend))
@@ -2761,8 +2757,8 @@ class Auth(AuthAPI):
 
         def build_response(body):
             xml_body = TAG["cas:serviceResponse"](
-                    body, **{"_xmlns:cas": "http://www.yale.edu/tp/cas"}
-                ).xml()
+                body, **{"_xmlns:cas": "http://www.yale.edu/tp/cas"}
+            ).xml()
             return '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_body
 
         if success:
@@ -6052,7 +6048,13 @@ class Service(object):
             documentation=documentation,
             ns=True,
         )
-        for method, (function, returns, args, doc, resp_elem_name) in procedures.items():
+        for method, (
+            function,
+            returns,
+            args,
+            doc,
+            resp_elem_name,
+        ) in procedures.items():
             dispatcher.register_function(
                 method, function, returns, args, doc, resp_elem_name
             )

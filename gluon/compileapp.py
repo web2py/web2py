@@ -33,8 +33,14 @@ from gluon import html, rewrite, validators
 from gluon.cache import Cache
 from gluon.cfs import getcfs
 from gluon.dal import DAL, Field
-from gluon.fileutils import (abspath, add_path_first, listdir, mktree,
-                             read_file, write_file)
+from gluon.fileutils import (
+    abspath,
+    add_path_first,
+    listdir,
+    mktree,
+    read_file,
+    write_file,
+)
 from gluon.globals import Response, current
 from gluon.http import HTTP, redirect
 from gluon.languages import TranslatorFactory
@@ -45,7 +51,7 @@ from gluon.storage import List, Storage
 from gluon.template import parse_template
 from gluon.validators import Validator
 
-MAGIC =  importlib.util.MAGIC_NUMBER
+MAGIC = importlib.util.MAGIC_NUMBER
 
 CACHED_REGEXES = {}
 CACHED_REGEXES_MAX_SIZE = 1000
@@ -462,6 +468,7 @@ def build_environment(request, response, session, store_current=True):
     )
     BaseAdapter.set_folder(pjoin(request.folder, "databases"))
     from gluon.custom_import import custom_import_install
+
     custom_import_install()
     return environment
 

@@ -10,8 +10,13 @@ import unittest
 
 from gluon.html import URL
 from gluon.http import HTTP
-from gluon.rewrite import (filter_err, filter_url, get_effective_router, load,
-                           map_url_out)
+from gluon.rewrite import (
+    filter_err,
+    filter_url,
+    get_effective_router,
+    load,
+    map_url_out,
+)
 from gluon.settings import global_settings
 from gluon.storage import Storage
 
@@ -2078,9 +2083,7 @@ class TestRouter(unittest.TestCase):
             str(URL(a="init", c="default", f="f", args=["årg"])), "/f/%C3%A5rg"
         )
         self.assertEqual(URL(a="init", c="default", f="fünc"), "/fünc")
-        self.assertEqual(
-            str(URL(a="init", c="default", f="fünc")), "/fünc"
-        )
+        self.assertEqual(str(URL(a="init", c="default", f="fünc")), "/fünc")
 
     def test_routes_anchor(self):
         """

@@ -7,8 +7,13 @@ import shutil
 import tempfile
 import unittest
 
-from gluon.admin import (app_cleanup, app_compile, app_create, app_uninstall,
-                         check_new_version)
+from gluon.admin import (
+    app_cleanup,
+    app_compile,
+    app_create,
+    app_uninstall,
+    check_new_version,
+)
 from gluon.compileapp import compile_application, remove_compiled_application
 from gluon.fileutils import create_app, w2p_pack, w2p_unpack
 from gluon.globals import Request

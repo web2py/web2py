@@ -11,8 +11,14 @@ import time
 import unittest
 
 from gluon.fileutils import create_app, write_file
-from gluon.newcron import (SimplePool, Token, crondance, reset, stopcron,
-                           subprocess_count)
+from gluon.newcron import (
+    SimplePool,
+    Token,
+    crondance,
+    reset,
+    stopcron,
+    subprocess_count,
+)
 
 test_app_name = "_test_cron"
 appdir = os.path.join("applications", test_app_name)

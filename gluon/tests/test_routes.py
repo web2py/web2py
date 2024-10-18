@@ -334,9 +334,7 @@ routes_out = [
             str(URL(a="welcome", c="default", f="f", args=["årg"])), "/f/%C3%A5rg"
         )
         self.assertEqual(URL(a="welcome", c="default", f="fünc"), "/fünc")
-        self.assertEqual(
-            str(URL(a="welcome", c="default", f="fünc")), "/fünc"
-        )
+        self.assertEqual(str(URL(a="welcome", c="default", f="fünc")), "/fünc")
 
     def test_routes_anchor(self):
         """

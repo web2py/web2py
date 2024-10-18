@@ -12,8 +12,16 @@ from gluon import current
 from gluon.settings import global_settings
 from gluon.storage import Messages, Settings, Storage
 from gluon.utils import web2py_uuid
-from gluon.validators import (CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE,
-                              IS_LOWER, IS_MATCH, IS_NOT_EMPTY, IS_NOT_IN_DB)
+from gluon.validators import (
+    CRYPT,
+    IS_EMAIL,
+    IS_EQUAL_TO,
+    IS_INT_IN_RANGE,
+    IS_LOWER,
+    IS_MATCH,
+    IS_NOT_EMPTY,
+    IS_NOT_IN_DB,
+)
 
 DEFAULT = lambda: None
 
@@ -994,9 +1002,8 @@ class AuthAPI(object):
         if userfield_value is None:
             raise KeyError("%s not found in kwargs" % userfield)
 
-        
         validated, error = self.__validate(userfield_value, userfield_validator)
-        
+
         if error:
             return {
                 "errors": {userfield: error},

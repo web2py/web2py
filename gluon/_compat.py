@@ -57,6 +57,7 @@ ClassType = type
 implements_iterator = _identity
 implements_bool = _identity
 
+
 def to_bytes(obj, charset="utf-8", errors="strict"):
     if obj is None:
         return None
@@ -65,6 +66,7 @@ def to_bytes(obj, charset="utf-8", errors="strict"):
     if isinstance(obj, str):
         return obj.encode(charset, errors)
     raise TypeError("Expected bytes")
+
 
 def to_native(obj, charset="utf8", errors="strict"):
     if obj is None or isinstance(obj, str):
@@ -101,4 +103,3 @@ def to_unicode(obj, charset="utf-8", errors="strict"):
 # shortcuts
 pjoin = os.path.join
 exists = os.path.exists
-

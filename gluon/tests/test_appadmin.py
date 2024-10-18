@@ -11,8 +11,12 @@ import unittest
 
 from gluon import fileutils
 from gluon.cache import CacheInRam
-from gluon.compileapp import (compile_application, remove_compiled_application,
-                              run_controller_in, run_view_in)
+from gluon.compileapp import (
+    compile_application,
+    remove_compiled_application,
+    run_controller_in,
+    run_view_in,
+)
 from gluon.dal import DAL, Field, Table
 from gluon.fileutils import open_file
 from gluon.http import HTTP
@@ -30,8 +34,7 @@ class TestAppAdmin(unittest.TestCase):
     def setUp(self):
         from gluon.compileapp import LOAD
         from gluon.globals import Request, Response, Session, current
-        from gluon.html import (ASSIGNJS, DIV, FORM, INPUT, MENU, TABLE, TR,
-                                URL, XML, A)
+        from gluon.html import ASSIGNJS, DIV, FORM, INPUT, MENU, TABLE, TR, URL, XML, A
         from gluon.http import HTTP, redirect
         from gluon.sql import SQLDB
         from gluon.sqlhtml import SQLFORM, SQLTABLE

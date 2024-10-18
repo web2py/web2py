@@ -203,7 +203,7 @@ def rss(feed):
             rss2.RSSItem(
                 title=entry.get("title", "(notitle)"),
                 link=entry.get("link", ""),
-                description=entry.get("description",""),
+                description=entry.get("description", ""),
                 pubDate=entry.get("created_on", now),
             )
             for entry in feed.get("entries", [])

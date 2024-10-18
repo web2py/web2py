@@ -958,7 +958,10 @@ def issue_1485():
         res = [
             ("task status completed", task_huge.scheduler_task.status == "COMPLETED"),
             ("task times_run is 1", task_huge.scheduler_task.times_run == 1),
-            ("result.get("is") the correct one", task_huge.result == dict(res="a" * 99999)),
+            (
+                "result.get(" is ") the correct one",
+                task_huge.result == dict(res="a" * 99999),
+            ),
         ]
         self.exec_asserts(res, "HUGE_RESULT")
 
@@ -969,7 +972,10 @@ def issue_1485():
                 task_issue_1485.scheduler_task.status == "COMPLETED",
             ),
             ("task times_run is 1", task_issue_1485.scheduler_task.times_run == 1),
-            ("result.get("is") the correct one", task_issue_1485.result == "<span>abc</span>"),
+            (
+                "result.get(" is ") the correct one",
+                task_issue_1485.result == "<span>abc</span>",
+            ),
         ]
         self.exec_asserts(res, "issue_1485")
 

@@ -190,7 +190,11 @@ class RestrictedError(Exception):
 
     def __str__(self):
         # safely show an useful message to the user
-        return self.output.decode("utf8") if isinstance(self.output, bytes) else str(self.output)
+        return (
+            self.output.decode("utf8")
+            if isinstance(self.output, bytes)
+            else str(self.output)
+        )
 
 
 def compile2(code, layer):

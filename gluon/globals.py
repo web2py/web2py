@@ -15,6 +15,7 @@ Contains the classes for the global used variables:
 import cgi
 import copy
 import copyreg
+
 # from types import DictionaryType
 import datetime
 import hashlib
@@ -45,8 +46,7 @@ from gluon.http import HTTP, redirect
 from gluon.serializers import custom_json, json
 from gluon.settings import global_settings
 from gluon.storage import List, Storage
-from gluon.streamer import (DEFAULT_CHUNK_SIZE, stream_file_or_304_or_206,
-                            streamer)
+from gluon.streamer import DEFAULT_CHUNK_SIZE, stream_file_or_304_or_206, streamer
 from gluon.utils import secure_dumps, secure_loads, web2py_uuid
 
 FMT = "%a, %d-%b-%Y %H:%M:%S PST"
@@ -510,14 +510,14 @@ class Response(Storage):
             if isinstance(v, dict):
                 s += (
                     "<meta"
-                    + "".join(
-                        f' {xmlescape(key)}="{xmlescape(v[key])}"'                        
-                        for key in v
-                    )
+                    + "".join(f' {xmlescape(key)}="{xmlescape(v[key])}"' for key in v)
                     + " />\n"
                 )
             else:
-                s += '<meta name="%s" content="%s" />\n' % (k, xmlescape(str(v)))  # FIXME
+                s += '<meta name="%s" content="%s" />\n' % (
+                    k,
+                    xmlescape(str(v)),
+                )  # FIXME
         self.write(s, escape=False)
 
     def include_files(self, extensions=None):

@@ -138,7 +138,9 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
         hash_key = hash_key.encode("utf8")
     cipher, IV = AES_new(pad(encryption_key)[:32])
     encrypted_data = base64.urlsafe_b64encode(IV + AES_enc(cipher, pad(dump)))
-    signature = hmac.new(hash_key, encrypted_data, hashlib.sha256).hexdigest().encode("utf8")
+    signature = (
+        hmac.new(hash_key, encrypted_data, hashlib.sha256).hexdigest().encode("utf8")
+    )
     return b"hmac256:" + signature + b":" + encrypted_data
 
 
@@ -159,9 +161,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         hash_key = hashlib.sha256(encryption_key).digest()
     elif isinstance(hash_key, str):
         hash_key = hash_key.encode("utf8")
-    actual_signature = hmac.new(
-        hash_key, encrypted_data, hashlib.sha256
-    ).hexdigest()
+    actual_signature = hmac.new(hash_key, encrypted_data, hashlib.sha256).hexdigest()
     if not compare(signature.decode("utf8"), actual_signature):
         return None
     encrypted_data = base64.urlsafe_b64decode(encrypted_data)
@@ -196,7 +196,11 @@ def secure_dumps_deprecated(
     key = __pad_deprecated(encryption_key)[:32]
     cipher, IV = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(IV + AES_enc(cipher, pad(dump)))
-    signature = hmac.new(hash_key.encode("utf8"), encrypted_data, hashlib.md5).hexdigest().encode("utf8")
+    signature = (
+        hmac.new(hash_key.encode("utf8"), encrypted_data, hashlib.md5)
+        .hexdigest()
+        .encode("utf8")
+    )
     return signature + b":" + encrypted_data
 
 

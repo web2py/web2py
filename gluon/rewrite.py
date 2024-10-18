@@ -1251,9 +1251,7 @@ class MapUrlIn(object):
         uri = "/%s%s%s%s" % (
             app,
             uri,
-            quote("/" + "/".join(str(x) for x in self.args))
-            if self.args
-            else "",
+            quote("/" + "/".join(str(x) for x in self.args)) if self.args else "",
             ("?" + self.query) if self.query else "",
         )
         self.env["REQUEST_URI"] = uri

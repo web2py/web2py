@@ -30,8 +30,17 @@ import types
 from functools import reduce
 from json import dumps, loads
 
-from gluon import (DAL, IS_DATETIME, IS_EMPTY_OR, IS_IN_DB, IS_IN_SET,
-                   IS_INT_IN_RANGE, IS_NOT_EMPTY, IS_NOT_IN_DB, Field)
+from gluon import (
+    DAL,
+    IS_DATETIME,
+    IS_EMPTY_OR,
+    IS_IN_DB,
+    IS_IN_SET,
+    IS_INT_IN_RANGE,
+    IS_NOT_EMPTY,
+    IS_NOT_IN_DB,
+    Field,
+)
 from gluon.storage import Storage
 from gluon.utils import web2py_uuid
 
@@ -453,7 +462,6 @@ class CronParser(object):
 # esp for the dict decode and subsequent usage as function Keyword arguments
 # unicode variable names won't work!
 # borrowed from http://stackoverflow.com/questions/956867/
-
 
 
 def executor(retq, task, outq):

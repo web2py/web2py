@@ -34,10 +34,12 @@ from gluon.storage import List, Storage
 
 logger = logging.getLogger("web2py")
 
+
 def execfile(filename, global_vars=None, local_vars=None):
     with open(filename, "rb") as f:
         code = compile(f.read(), filename, "exec")
         exec(code, global_vars, local_vars)
+
 
 raw_input = input
 
@@ -163,9 +165,7 @@ def env(
     if request.args:
         path_info = "%s/%s" % (path_info, "/".join(request.args))
     if request.vars:
-        vars = [
-            "%s=%s" % (k, v) if v else "%s" % k for (k, v) in request.vars.items()
-        ]
+        vars = ["%s=%s" % (k, v) if v else "%s" % k for (k, v) in request.vars.items()]
         path_info = "%s?%s" % (path_info, "&".join(vars))
     request.env.path_info = path_info
 
@@ -375,15 +375,15 @@ def run(
                         IPython.start_ipython(user_ns=_env)
                         return
                     elif IPython.__version__ == "1.0.0":
-                        from IPython.terminal.embed import \
-                            InteractiveShellEmbed
+                        from IPython.terminal.embed import InteractiveShellEmbed
 
                         shell = InteractiveShellEmbed(user_ns=_env)
                         shell()
                         return
                     elif IPython.__version__ >= "0.11":
-                        from IPython.frontend.terminal.embed import \
-                            InteractiveShellEmbed
+                        from IPython.frontend.terminal.embed import (
+                            InteractiveShellEmbed,
+                        )
 
                         shell = InteractiveShellEmbed(user_ns=_env)
                         shell()

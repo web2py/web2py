@@ -403,7 +403,7 @@ class CacheOnDisk(CacheAbstract):
             if exists:
                 timestamp, value = pickle.load(val_file)
             else:
-                value = default_value            
+                value = default_value
             new_value = function(value)
             val_file.seek(0)
             pickle.dump((time.time(), new_value), val_file, pickle.HIGHEST_PROTOCOL)
@@ -677,7 +677,9 @@ class Cache(object):
                         cache_key.append(current.request.env.query_string)
                     if lang_:
                         cache_key.append(current.T.accepted_language)
-                    cache_key = hashlib.md5("__".join(cache_key).encode("utf8")).hexdigest()
+                    cache_key = hashlib.md5(
+                        "__".join(cache_key).encode("utf8")
+                    ).hexdigest()
                     if prefix:
                         cache_key = prefix + cache_key
                     try:

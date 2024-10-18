@@ -198,7 +198,7 @@ def read_possible_plural_rules():
                 plurals[lang] = (lang, nplurals, get_plural_id, construct_plural_form)
     except ImportError:
         e = sys.exc_info()[1]
-        logging.warn("Unable to import plural rules: %s" % e)        
+        logging.warn("Unable to import plural rules: %s" % e)
     return plurals
 
 
@@ -838,9 +838,7 @@ class TranslatorFactory(object):
             and self.language_file != self.default_language_file
         ):
             write_dict(self.language_file, self.t)
-        return regex_backslash.sub(
-            lambda m: m.group(1).translate(ttab_in), mt
-        )
+        return regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), mt)
 
     def params_substitution(self, message, symbols):
         """
@@ -1007,7 +1005,7 @@ class TranslatorFactory(object):
     def translate(self, message, symbols):
         """
         Gets cached translated message with inserted parameters(symbols)
-        """        
+        """
         message = get_from_cache(self.cache, message, lambda: self.get_t(message))
         if symbols or symbols == 0 or symbols == "":
             if isinstance(symbols, dict):
