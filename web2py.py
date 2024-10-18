@@ -6,11 +6,12 @@ from multiprocessing import freeze_support
 def get_script_path():
     """Determine the script's directory."""
     if hasattr(sys, 'frozen'):
-        return os.path.dirname(os.path.abspath(sys.executable))  # For frozen applications
+        # For frozen applications (like those created with PyInstaller)
+        return os.path.dirname(os.path.abspath(sys.executable))
     elif '__file__' in globals():
-        return os.path.dirname(os.path.abspath(__file__))  # For normal scripts
-    else:
-        return os.getcwd()  # Fallback to current working directory
+        # For normal scripts
+        return os.path.dirname(os.path.abspath(__file__))
+    return os.getcwd()  # Fallback to current working directory
 
 def parse_folder_argument():
     """Parse the folder argument from command line."""
@@ -26,17 +27,17 @@ def parse_folder_argument():
 
 def validate_folder(folder):
     """Validate the existence of the 'gluon' directory within the specified folder."""
-    if not os.path.isdir(os.path.join(folder, 'gluon')):
-        print(f"{sys.argv[0]}: error: bad folder {folder}", file=sys.stderr)
+    gluon_path = os.path.join(folder, 'gluon')
+    if not os.path.isdir(gluon_path):
+        print(f"{sys.argv[0]}: error: bad folder {folder}. Expected 'gluon' directory not found.", file=sys.stderr)
         sys.exit(1)
 
 def update_feature():
     """Simulate the update feature for the Web2py application."""
-    # Here you would implement the logic for updating the application
     print("Updating Web2py...")
     
-    # Display a flash message
-    print("\033[41mUpdate Complete!\033[0m")  # Red background for flash message
+    # Display a flash message with a red background
+    print("\033[41mUpdate Complete!\033[0m")  # ANSI escape code for red background
 
     # Change button text to "Restart"
     print("Button text changed to: Restart")
@@ -70,12 +71,12 @@ def main():
         path = folder
 
     os.chdir(path)
-    sys.path = [path] + [p for p in sys.path if p != path]
+    sys.path.insert(0, path)  # Add the path at the start of sys.path
 
-    # Import after changing directory
+    # Import after changing directory to ensure correct imports
     import gluon.widget
 
-    # Coverage support
+    # Coverage support if applicable
     if 'COVERAGE_PROCESS_START' in os.environ:
         try:
             import coverage
