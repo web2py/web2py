@@ -30,6 +30,32 @@ def validate_folder(folder):
         print(f"{sys.argv[0]}: error: bad folder {folder}", file=sys.stderr)
         sys.exit(1)
 
+def update_feature():
+    """Simulate the update feature for the Web2py application."""
+    # Here you would implement the logic for updating the application
+    print("Updating Web2py...")
+    
+    # Display a flash message
+    print("\033[41mUpdate Complete!\033[0m")  # Red background for flash message
+
+    # Change button text to "Restart"
+    print("Button text changed to: Restart")
+
+    # Display checklist for server restart
+    display_checklist()
+
+def display_checklist():
+    """Display a checklist of tasks to perform between server shutdown and restart."""
+    print("Checklist for Restart:")
+    checklist = [
+        "1. Clear sessions (required for 2.8.1+)",
+        "2. Backup your database",
+        "3. Check for any pending migrations",
+        "4. Review the release notes for breaking changes"
+    ]
+    for item in checklist:
+        print(item)
+
 def main():
     """Main execution flow."""
     freeze_support()
@@ -59,6 +85,9 @@ def main():
 
     # Start services
     gluon.widget.start()
+
+    # Simulate the update feature when the script runs
+    update_feature()
 
 if __name__ == '__main__':
     main()
