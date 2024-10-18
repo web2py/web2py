@@ -1,49 +1,55 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
-
 import os
 import sys
 from multiprocessing import freeze_support
 
-if hasattr(sys, 'frozen'):
-    # py2exe
-    path = os.path.dirname(os.path.abspath(sys.executable))
-elif '__file__' in globals():
-    path = os.path.dirname(os.path.abspath(__file__))
-else:
-    # should never happen
-    path = os.getcwd()
+def get_path():
+    """Get the path of the executable or script."""
+    if hasattr(sys, 'frozen'):
+        # py2exe
+        return os.path.dirname(os.path.abspath(sys.executable))
+    elif '__file__' in globals():
+        return os.path.dirname(os.path.abspath(__file__))
+    else:
+        # should never happen
+        return os.getcwd()
 
-# process -f (--folder) option
-if '-f' in sys.argv:
-    fi = sys.argv.index('-f')
-    # maybe session2trash arg
-    if '-A' in sys.argv and  fi > sys.argv.index('-A'):
-        fi = None
-elif '--folder' in sys.argv:
-    fi = sys.argv.index('--folder')
-else:
-    fi = None
-if fi and fi < len(sys.argv):
-    fi += 1
-    folder = sys.argv[fi]
-    if not os.path.isdir(os.path.join(folder, 'gluon')):
-        print("%s: error: bad folder %s" % (sys.argv[0], folder), file=sys.stderr)
-        sys.exit(1)
-    path = sys.argv[fi] = os.path.abspath(folder)
+def process_folder_option():
+    """Process the -f (--folder) option."""
+    if '-f' in sys.argv:
+        fi = sys.argv.index('-f')
+        # maybe session2trash arg
+        if '-A' in sys.argv and fi > sys.argv.index('-A'):
+            return None
+    elif '--folder' in sys.argv:
+        fi = sys.argv.index('--folder')
+    else:
+        return None
 
-os.chdir(path)
+    if fi is not None and fi < len(sys.argv):
+        fi += 1
+        folder = sys.argv[fi]
+        if not os.path.isdir(os.path.join(folder, 'gluon')):
+            print("%s: error: bad folder %s" % (sys.argv[0], folder), file=sys.stderr)
+            sys.exit(1)
+        return os.path.abspath(folder)
+    return None
 
-sys.path = [path] + [p for p in sys.path if not p == path]
+def main():
+    path = get_path()
+    folder = process_folder_option()
+    if folder is not None:
+        path = folder
 
-# important that this import is after the os.chdir
+    os.chdir(path)
 
-# import gluon.import_all # NOTE: should this be uncommented for py2exe.py ?
-import gluon.widget
+    sys.path = [path] + [p for p in sys.path if p != path]
 
-if __name__ == '__main__':
+    # important that this import is after the os.chdir
+    import gluon.widget
+
     freeze_support()
     # support for sub-process coverage,
     # see https://coverage.readthedocs.io/en/coverage-4.3.4/subprocess.html
@@ -56,3 +62,6 @@ if __name__ == '__main__':
             pass
     # start services
     gluon.widget.start()
+
+if __name__ == '__main__':
+    main()
