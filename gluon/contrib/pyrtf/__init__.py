@@ -9,9 +9,9 @@ if PY2:
 else:
     from io import BytesIO
 
+
 def dumps(doc):
     s = BytesIO()
     r = Renderer()
     r.Write(doc, s)
     return s.getvalue()
-

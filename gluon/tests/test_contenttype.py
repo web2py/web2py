@@ -7,7 +7,6 @@
 
 import unittest
 
-from gluon._compat import iteritems
 from gluon.contenttype import contenttype
 
 
@@ -28,7 +27,7 @@ class TestContentType(unittest.TestCase):
             ".w2p": "application/w2p",
             ".md": "text/x-markdown; charset=utf-8",
         }
-        for k, v in iteritems(mapping):
+        for k, v in mapping.items():
             self.assertEqual(contenttype(k), v)
 
         # test without dot extension

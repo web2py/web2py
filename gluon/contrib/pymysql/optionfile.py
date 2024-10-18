@@ -7,9 +7,8 @@ else:
 
 
 class Parser(configparser.RawConfigParser):
-
     def __remove_quotes(self, value):
-        quotes = ["'", "\""]
+        quotes = ["'", '"']
         for quote in quotes:
             if len(value) >= 2 and value[0] == value[-1] == quote:
                 return value[1:-1]

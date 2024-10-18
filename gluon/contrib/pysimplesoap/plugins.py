@@ -17,7 +17,7 @@ from __future__ import unicode_literals
 
 import sys
 
-if sys.version > '3':
+if sys.version > "3":
     basestring = unicode = str
 
 import datetime
@@ -31,10 +31,8 @@ from . import __author__, __copyright__, __license__, __version__
 
 
 class WSSE:
-
     def preprocess(self, request):
-        header = request('Header')
-        
-    
+        header = request("Header")
+
     def postprocess(response):
         return response

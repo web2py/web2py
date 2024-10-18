@@ -6,6 +6,7 @@
 
 import os
 import sys
+import pickle
 import unittest
 
 from gluon.dal import DAL, Field
@@ -31,8 +32,6 @@ class TestDALSubclass(unittest.TestCase):
         db.close()
 
     def testSerialization(self):
-        from gluon._compat import pickle
-
         db = DAL("sqlite:memory", check_reserved=["all"])
         db.define_table("t_a", Field("f_a"))
         db.t_a.insert(f_a="test")

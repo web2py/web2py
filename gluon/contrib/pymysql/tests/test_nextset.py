@@ -4,7 +4,6 @@ from pymysql.tests import base
 
 
 class TestNextset(base.PyMySQLTestCase):
-
     def setUp(self):
         super(TestNextset, self).setUp()
         self.con = self.connections[0]
@@ -58,10 +57,9 @@ class TestNextset(base.PyMySQLTestCase):
         cursor = self.con.cursor()
 
         try:
-            cursor.execute('DROP TABLE IF EXISTS a; '
-                           'DROP TABLE IF EXISTS b;')
+            cursor.execute("DROP TABLE IF EXISTS a; " "DROP TABLE IF EXISTS b;")
         except TypeError:
             self.fail()
 
-    #TODO: How about SSCursor and nextset?
+    # TODO: How about SSCursor and nextset?
     # It's very hard to implement correctly...

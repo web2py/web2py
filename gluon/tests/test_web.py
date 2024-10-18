@@ -11,8 +11,8 @@ import subprocess
 import sys
 import time
 import unittest
+from urllib import request as urllib2
 
-from gluon._compat import PY2, urllib2
 from gluon.contrib.webclient import WebClient
 from gluon.fileutils import create_app
 
@@ -136,7 +136,7 @@ class TestWeb(LiveTest):
         self.assertIn("expires", s.headers)
         self.assertTrue(s.headers["cache-control"].startswith("max-age"))
 
-    @unittest.skipIf(not (PY2), "skip PY3 testSoap")
+    """
     def testSoap(self):
         # test soap server implementation
         from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
@@ -168,3 +168,4 @@ class TestWeb(LiveTest):
         # check internal server error returned (issue 153)
         self.assertEqual(s.status, 500)
         self.assertEqual(s.text, xml_response)
+    """

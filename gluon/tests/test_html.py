@@ -8,7 +8,6 @@
 import re
 import unittest
 
-from gluon._compat import PY2, to_native, xrange
 from gluon.decoder import decoder
 from gluon.html import (
     ASSIGNJS,
@@ -275,18 +274,6 @@ class TestBareHelpers(unittest.TestCase):
             url_encode=True,
         )
         self.assertEqual(rtn, "/a/c/f/x/y/z?li%C3%A9=2&ma%C3%AF=1&ma%C3%AF=3")
-
-    @unittest.skipIf(not PY2, "Skipping Python 3.x tests for test_URL_encode")
-    def test_URL_encode(self):
-        rtn = URL(
-            "a",
-            "c",
-            "f",
-            args=["x", "y", "z"],
-            vars={"maï": (1, 3), "lié": 2},
-            url_encode=False,
-        )
-        self.assertEqual(rtn, "/a/c/f/x/y/z?li\xc3\xa9=2&ma\xc3\xaf=1&ma\xc3\xaf=3")
 
     def test_verifyURL(self):
         r = Storage()

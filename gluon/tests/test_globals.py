@@ -10,7 +10,6 @@ import re
 import unittest
 
 from gluon import URL
-from gluon._compat import basestring
 from gluon.globals import Request, Response, Session
 from gluon.rewrite import regex_url_in
 
@@ -85,7 +84,7 @@ class testResponse(unittest.TestCase):
     # port from python 2.7, needed for 2.5 and 2.6 tests
     def assertRegexpMatches(self, text, expected_regexp, msg=None):
         """Fail the test unless the text matches the regular expression."""
-        if isinstance(expected_regexp, basestring):
+        if isinstance(expected_regexp, str):
             expected_regexp = re.compile(expected_regexp)
         if not expected_regexp.search(text):
             msg = msg or "Regexp didn't match"

@@ -4,8 +4,8 @@
 """ Unit tests for storage.py """
 
 import unittest
+import pickle
 
-from gluon._compat import pickle
 from gluon.http import HTTP
 from gluon.storage import List, Storage, StorageList
 
