@@ -1,58 +1,64 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from __future__ import print_function
-
 import os
 import sys
 from multiprocessing import freeze_support
 
-if hasattr(sys, 'frozen'):
-    # py2exe
-    path = os.path.dirname(os.path.abspath(sys.executable))
-elif '__file__' in globals():
-    path = os.path.dirname(os.path.abspath(__file__))
-else:
-    # should never happen
-    path = os.getcwd()
+def get_script_path():
+    """Determine the script's directory."""
+    if hasattr(sys, 'frozen'):
+        return os.path.dirname(os.path.abspath(sys.executable))  # For frozen applications
+    elif '__file__' in globals():
+        return os.path.dirname(os.path.abspath(__file__))  # For normal scripts
+    else:
+        return os.getcwd()  # Fallback to current working directory
 
-# process -f (--folder) option
-if '-f' in sys.argv:
-    fi = sys.argv.index('-f')
-    # maybe session2trash arg
-    if '-A' in sys.argv and  fi > sys.argv.index('-A'):
-        fi = None
-elif '--folder' in sys.argv:
-    fi = sys.argv.index('--folder')
-else:
-    fi = None
-if fi and fi < len(sys.argv):
-    fi += 1
-    folder = sys.argv[fi]
+def parse_folder_argument():
+    """Parse the folder argument from command line."""
+    folder_index = None
+    if '-f' in sys.argv:
+        folder_index = sys.argv.index('-f')
+    elif '--folder' in sys.argv:
+        folder_index = sys.argv.index('--folder')
+
+    if folder_index is not None and folder_index + 1 < len(sys.argv):
+        return sys.argv[folder_index + 1]
+    return None
+
+def validate_folder(folder):
+    """Validate the existence of the 'gluon' directory within the specified folder."""
     if not os.path.isdir(os.path.join(folder, 'gluon')):
-        print("%s: error: bad folder %s" % (sys.argv[0], folder), file=sys.stderr)
+        print(f"{sys.argv[0]}: error: bad folder {folder}", file=sys.stderr)
         sys.exit(1)
-    path = sys.argv[fi] = os.path.abspath(folder)
 
-os.chdir(path)
-
-sys.path = [path] + [p for p in sys.path if not p == path]
-
-# important that this import is after the os.chdir
-
-# import gluon.import_all # NOTE: should this be uncommented for py2exe.py ?
-import gluon.widget
-
-if __name__ == '__main__':
+def main():
+    """Main execution flow."""
     freeze_support()
-    # support for sub-process coverage,
-    # see https://coverage.readthedocs.io/en/coverage-4.3.4/subprocess.html
+
+    # Set the working directory
+    path = get_script_path()
+    folder = parse_folder_argument()
+
+    if folder:
+        folder = os.path.abspath(folder)
+        validate_folder(folder)
+        path = folder
+
+    os.chdir(path)
+    sys.path = [path] + [p for p in sys.path if p != path]
+
+    # Import after changing directory
+    import gluon.widget
+
+    # Coverage support
     if 'COVERAGE_PROCESS_START' in os.environ:
         try:
             import coverage
             coverage.process_startup()
-        except:
-            print('Coverage is not available')
-            pass
-    # start services
+        except ImportError:
+            print('Coverage is not available', file=sys.stderr)
+
+    # Start services
     gluon.widget.start()
+
+if __name__ == '__main__':
+    main()
