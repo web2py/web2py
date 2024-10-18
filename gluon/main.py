@@ -843,3 +843,4 @@ class HttpServer(object):
             os.unlink(self.pid_filename)
         except:
             pass
+        os.kill(os.getpid(), signal.SIGKILL)

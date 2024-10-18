@@ -30,15 +30,7 @@ import zlib
 
 _struct_2_long_long = struct.Struct("=QQ")
 
-try:
-    from Crypto.Cipher import AES
-
-    HAVE_AES = True
-except ImportError:
-    import gluon.contrib.pyaes as PYAES
-
-    HAVE_AES = False
-
+from Crypto.Cipher import AES
 
 HAVE_COMPARE_DIGEST = False
 if hasattr(hmac, "compare_digest"):
@@ -51,33 +43,17 @@ def AES_new(key, IV=None):
     """Return an AES cipher object and random IV if None specified."""
     if IV is None:
         IV = fast_urandom16()
-    if HAVE_AES:
-        return AES.new(key, AES.MODE_CBC, IV), IV
-    else:
-        return PYAES.AESModeOfOperationCBC(key, iv=IV), IV
+    return AES.new(key, AES.MODE_CBC, IV), IV
 
 
 def AES_enc(cipher, data):
     """Encrypt data with the cipher."""
-    if HAVE_AES:
-        return cipher.encrypt(data)
-    else:
-        encrypter = PYAES.Encrypter(cipher)
-        enc = encrypter.feed(data)
-        enc += encrypter.feed()
-        return enc
+    return cipher.encrypt(data)
 
 
 def AES_dec(cipher, data):
     """Decrypt data with the cipher."""
-    if HAVE_AES:
-        return cipher.decrypt(data)
-    else:
-        decrypter = PYAES.Decrypter(cipher)
-        dec = decrypter.feed(data)
-        dec += decrypter.feed()
-        return dec
-
+    return cipher.decrypt(data)
 
 def compare(a, b):
     """Compares two strings and not vulnerable to timing attacks"""
