@@ -125,7 +125,7 @@ except:
 # do not need rocket nor HttpServer when served by handler
 # (e.g. apache + mod_wsgi), speed up execution and save memory
 if not global_settings.web2py_runtime_handler:
-    from gluon import rocket
+    from gluon.packages.rocket3 import rocket3
 
 load_routes()
 
@@ -787,12 +787,12 @@ class HttpServer(object):
         if not server_name:
             server_name = socket.gethostname()
         logger.info("starting web server...")
-        rocket.SERVER_NAME = server_name
-        rocket.SOCKET_TIMEOUT = socket_timeout
+        rocket3.SERVER_NAME = server_name
+        rocket3.SOCKET_TIMEOUT = socket_timeout
         sock_list = [ip, port]
         if not ssl_certificate or not ssl_private_key:
             logger.info("SSL is off")
-        elif not rocket.has_ssl:
+        elif not rocket3.has_ssl:
             logger.warning('Python "ssl" module unavailable. SSL is OFF')
         elif not exists(ssl_certificate):
             logger.warning("unable to open SSL certificate. SSL is OFF")
@@ -806,7 +806,7 @@ class HttpServer(object):
             logger.info("SSL is ON")
         app_info = {"wsgi_app": appfactory(wsgibase, log_filename, profiler_dir)}
 
-        self.server = rocket.Rocket(
+        self.server = rocket3.Rocket3(
             interfaces or tuple(sock_list),
             method="wsgi",
             app_info=app_info,
