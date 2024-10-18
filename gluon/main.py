@@ -838,7 +838,6 @@ class HttpServer(object):
                 newcron.stopcron()
             except:
                 pass
-        self.server.stop(stoplogging)
         try:
             os.unlink(self.pid_filename)
         except:
