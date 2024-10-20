@@ -29,7 +29,8 @@ import traceback
 import types
 from functools import reduce
 from json import dumps, loads
-
+from pydal.base import DEFAULT
+from pydal.objects import Query
 from gluon import (
     DAL,
     IS_DATETIME,
@@ -526,13 +527,13 @@ def executor(retq, task, outq):
             current.W2P_TASK = W2P_TASK
             globals().update(_env)
             args = loads(task.args)
-            vars = loads(task.vars, object_hook=lambda x: x)
+            vars = loads(task.vars)
             result = dumps(_function(*args, **vars))
         else:
             # for testing purpose only
             result = eval(task.function)(
-                *loads(task.args, object_hook=lambda x: x),
-                **loads(task.vars, object_hook=lambda x: x)
+                *loads(task.args),
+                **loads(task.vars)
             )
         if len(result) >= 1024:
             fd, temp_path = tempfile.mkstemp(suffix=".w2p_sched")
@@ -860,8 +861,7 @@ class Scheduler(threading.Thread):
             )
 
     def define_tables(self, db, migrate):
-        """Define Scheduler tables structure."""
-        from pydal.base import DEFAULT
+        """Define Scheduler tables structure."""        
 
         logger.debug("defining tables (migrate=%s)", migrate)
         now = self.now
@@ -1691,7 +1691,7 @@ class Scheduler(threading.Thread):
             kwargs.update(next_run_time=kwargs["start_time"])
         db = self.db
         rtn = db.scheduler_task.validate_and_insert(**kwargs)
-        if "errors" not in rtn:
+        if not rtn.get("errors"):
             rtn["uuid"] = tuuid
             if immediate:
                 db((db.scheduler_worker.is_ticker == True)).update(status=PICK)
@@ -1720,8 +1720,7 @@ class Scheduler(threading.Thread):
             The scheduler_run record is fetched by a left join, so it can
             have all fields == None
 
-        """
-        from pydal.objects import Query
+        """        
 
         db = self.db
         sr = db.scheduler_run
@@ -1730,7 +1729,7 @@ class Scheduler(threading.Thread):
             q = st.id == ref
         elif isinstance(ref, str):
             q = st.uuid == ref
-        elif isinstance(ref, queue.Query):
+        elif isinstance(ref, Query):
             q = ref
         else:
             raise SyntaxError("You can retrieve results only by id, uuid or Query")

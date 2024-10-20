@@ -423,23 +423,23 @@ class TestsForJobGraph(BaseTestScheduler):
         shoes = s.queue_task(fname, task_name="shoes")
         socks = s.queue_task(fname, task_name="socks")
         # before the tie, comes the shirt
-        myjob.add_deps(tie.id, shirt.id)
+        myjob.add_deps(tie.get("id"), shirt.get("id"))
         # before the belt too comes the shirt
-        myjob.add_deps(belt.id, shirt.id)
+        myjob.add_deps(belt.get("id"), shirt.get("id"))
         # before the jacket, comes the tie
-        myjob.add_deps(jacket.id, tie.id)
+        myjob.add_deps(jacket.get("id"), tie.get("id"))
         # before the belt, come the pants
-        myjob.add_deps(belt.id, pants.id)
+        myjob.add_deps(belt.get("id"), pants.get("id"))
         # before the shoes, comes the pants
-        myjob.add_deps(shoes.id, pants.id)
+        myjob.add_deps(shoes.get("id"), pants.get("id"))
         # before the pants, comes the undershorts
-        myjob.add_deps(pants.id, undershorts.id)
+        myjob.add_deps(pants.get("id"), undershorts.get("id"))
         # before the shoes, comes the undershorts
-        myjob.add_deps(shoes.id, undershorts.id)
+        myjob.add_deps(shoes.get("id"), undershorts.get("id"))
         # before the jacket, comes the belt
-        myjob.add_deps(jacket.id, belt.id)
+        myjob.add_deps(jacket.get("id"), belt.get("id"))
         # before the shoes, comes the socks
-        myjob.add_deps(shoes.id, socks.id)
+        myjob.add_deps(shoes.get("id"), socks.get("id"))
 
         ## results in the following topological sort
         # 9,3,6 --> 4,5 --> 8,7 --> 2
@@ -448,15 +448,15 @@ class TestsForJobGraph(BaseTestScheduler):
         # shoes, belt
         # jacket
         known_toposort = [
-            set([socks.id, shirt.id, undershorts.id]),
-            set([tie.id, pants.id]),
-            set([shoes.id, belt.id]),
-            set([jacket.id]),
+            set([socks.get("id"), shirt.get("id"), undershorts.get("id")]),
+            set([tie.get("id"), pants.get("id")]),
+            set([shoes.get("id"), belt.get("id")]),
+            set([jacket.get("id")]),
         ]
         toposort = myjob.validate("job_1")
         self.assertEqual(toposort, known_toposort)
         # add a cyclic dependency, jacket to undershorts
-        myjob.add_deps(undershorts.id, jacket.id)
+        myjob.add_deps(undershorts.get("id"), jacket.get("id"))
         # no exceptions raised, but result.get("None")
         self.assertEqual(myjob.validate("job_1"), None)
 
@@ -477,29 +477,29 @@ class TestsForJobGraph(BaseTestScheduler):
         shoes = s.queue_task(fname, task_name="shoes")
         socks = s.queue_task(fname, task_name="socks")
         # before the tie, comes the shirt
-        myjob.add_deps(tie.id, shirt.id)
+        myjob.add_deps(tie.get("id"), shirt.get("id"))
         # before the belt too comes the shirt
-        myjob.add_deps(belt.id, shirt.id)
+        myjob.add_deps(belt.get("id"), shirt.get("id"))
         # before the jacket, comes the tie
-        myjob.add_deps(jacket.id, tie.id)
+        myjob.add_deps(jacket.get("id"), tie.get("id"))
         # before the belt, come the pants
-        myjob.add_deps(belt.id, pants.id)
+        myjob.add_deps(belt.get("id"), pants.get("id"))
         # before the shoes, comes the pants
-        myjob.add_deps(shoes.id, pants.id)
+        myjob.add_deps(shoes.get("id"), pants.get("id"))
         # before the pants, comes the undershorts
-        myjob.add_deps(pants.id, undershorts.id)
+        myjob.add_deps(pants.get("id"), undershorts.get("id"))
         # before the shoes, comes the undershorts
-        myjob.add_deps(shoes.id, undershorts.id)
+        myjob.add_deps(shoes.get("id"), undershorts.get("id"))
         # before the jacket, comes the belt
-        myjob.add_deps(jacket.id, belt.id)
+        myjob.add_deps(jacket.get("id"), belt.get("id"))
         # before the shoes, comes the socks
-        myjob.add_deps(shoes.id, socks.id)
+        myjob.add_deps(shoes.get("id"), socks.get("id"))
         # add a cyclic dependency, jacket to undershorts
-        myjob.add_deps(undershorts.id, jacket.id)
+        myjob.add_deps(undershorts.get("id"), jacket.get("id"))
         # no exceptions raised, but result.get("None")
         self.assertEqual(myjob.validate("job_1"), None)
         # and no deps added
-        deps_inserted = self.db(self.db.scheduler_task_deps.id > 0).count()
+        deps_inserted = self.db(self.db.scheduler_task_deps.get("id") > 0).count()
         self.assertEqual(deps_inserted, 0)
 
     def testJobGraphDifferentJobs(self):
@@ -520,30 +520,30 @@ class TestsForJobGraph(BaseTestScheduler):
         shoes = s.queue_task(fname, task_name="shoes")
         socks = s.queue_task(fname, task_name="socks")
         # before the tie, comes the shirt
-        myjob1.add_deps(tie.id, shirt.id)
+        myjob1.add_deps(tie.get("id"), shirt.get("id"))
         # before the belt too comes the shirt
-        myjob1.add_deps(belt.id, shirt.id)
+        myjob1.add_deps(belt.get("id"), shirt.get("id"))
         # before the jacket, comes the tie
-        myjob1.add_deps(jacket.id, tie.id)
+        myjob1.add_deps(jacket.get("id"), tie.get("id"))
         # before the belt, come the pants
-        myjob1.add_deps(belt.id, pants.id)
+        myjob1.add_deps(belt.get("id"), pants.get("id"))
         # before the shoes, comes the pants
-        myjob2.add_deps(shoes.id, pants.id)
+        myjob2.add_deps(shoes.get("id"), pants.get("id"))
         # before the pants, comes the undershorts
-        myjob2.add_deps(pants.id, undershorts.id)
+        myjob2.add_deps(pants.get("id"), undershorts.get("id"))
         # before the shoes, comes the undershorts
-        myjob2.add_deps(shoes.id, undershorts.id)
+        myjob2.add_deps(shoes.get("id"), undershorts.get("id"))
         # before the jacket, comes the belt
-        myjob2.add_deps(jacket.id, belt.id)
+        myjob2.add_deps(jacket.get("id"), belt.get("id"))
         # before the shoes, comes the socks
-        myjob2.add_deps(shoes.id, socks.id)
+        myjob2.add_deps(shoes.get("id"), socks.get("id"))
         # every job by itself can be completed
         self.assertNotEqual(myjob1.validate("job_1"), None)
         self.assertNotEqual(myjob1.validate("job_2"), None)
         # and, implicitly, every queued task can be too
         self.assertNotEqual(myjob1.validate(), None)
         # add a cyclic dependency, jacket to undershorts
-        myjob2.add_deps(undershorts.id, jacket.id)
+        myjob2.add_deps(undershorts.get("id"), jacket.get("id"))
         # every job can still be completed by itself
         self.assertNotEqual(myjob1.validate("job_1"), None)
         self.assertNotEqual(myjob1.validate("job_2"), None)
@@ -585,9 +585,9 @@ class TestsForSchedulerAPIs(BaseTestScheduler):
         fname = "foo"
         watch = s.queue_task(fname, task_name="watch")
         # fetch status by id
-        by_id = s.task_status(watch.id)
+        by_id = s.task_status(watch.get("id"))
         # fetch status by uuid
-        by_uuid = s.task_status(watch.uuid)
+        by_uuid = s.task_status(watch.get("uuid"))
         # fetch status by query
         by_query = s.task_status(self.db.scheduler_task.function_name == "foo")
         self.assertEqual(by_id, by_uuid)
@@ -595,7 +595,7 @@ class TestsForSchedulerAPIs(BaseTestScheduler):
         # fetch status by anything else throws
         self.assertRaises(SyntaxError, s.task_status, *[[1, 2]])
         # adding output returns the joined set, plus "result"
-        rtn = s.task_status(watch.id, output=True)
+        rtn = s.task_status(watch.get("id"), output=True)
         self.assertEqual(
             set(rtn.keys()), set(["scheduler_run", "scheduler_task", "result"])
         )
@@ -659,8 +659,8 @@ def termination():
         return ret
 
     def fetch_results(self, sched, task):
-        info = sched.task_status(task.id)
-        task_runs = self.db(self.db.scheduler_run.task_id == task.id).select()
+        info = sched.task_status(task.get("id"))
+        task_runs = self.db(self.db.scheduler_run.task_id == task.get("id")).select()
         return info, task_runs
 
     def exec_asserts(self, stmts, tag):
@@ -721,8 +721,8 @@ def demo4():
         self.exec_asserts(res, "EXPIRATION")
 
         # prio check
-        task1 = s.task_status(prio1.id, output=True)
-        task2 = s.task_status(prio2.id, output=True)
+        task1 = s.task_status(prio1.get("id"), output=True)
+        task2 = s.task_status(prio2.get("id"), output=True)
         res = [
             (
                 "tasks status completed",
@@ -732,7 +732,7 @@ def demo4():
             ),
             (
                 "priority2 was executed before priority1",
-                task1.scheduler_run.id > task2.scheduler_run.id,
+                task1.scheduler_run.get("id") > task2.scheduler_run.get("id"),
             ),
         ]
         self.exec_asserts(res, "PRIORITY")
@@ -788,8 +788,8 @@ def demo6():
         self.exec_asserts(res, "NO_RETURN")
 
         # timeout check
-        task1 = s.task_status(timeout1.id, output=True)
-        task2 = s.task_status(timeout2.id, output=True)
+        task1 = s.task_status(timeout1.get("id"), output=True)
+        task2 = s.task_status(timeout2.get("id"), output=True)
         res = [
             ("tasks timeouts1 timeoutted", task1.scheduler_task.status == "TIMEOUT"),
             ("tasks timeouts2 completed", task2.scheduler_task.status == "COMPLETED"),
@@ -797,7 +797,7 @@ def demo6():
         self.exec_asserts(res, "TIMEOUT")
 
         # progress check
-        task1 = s.task_status(progress.id, output=True)
+        task1 = s.task_status(progress.get("id"), output=True)
         res = [
             ("tasks percentages completed", task1.scheduler_task.status == "COMPLETED"),
             (
@@ -825,13 +825,13 @@ import random
 def demo7():
     time.sleep(random.randint(1,5))
     print(W2P_TASK, request.now)
-    return W2P_TASK.id, W2P_TASK.uuid, W2P_TASK.run_id
+    return W2P_TASK.get("id"), W2P_TASK.uuid, W2P_TASK.run_id
 """
         )
         ret = self.exec_sched()
         self.assertEqual(ret, 0)
         # immediate check, can only check that nothing breaks
-        task1 = s.task_status(immediate.id)
+        task1 = s.task_status(immediate.get("id"))
         res = [
             ("tasks status completed", task1.status == "COMPLETED"),
         ]
@@ -852,15 +852,15 @@ def demo7():
         self.exec_asserts(res, "DRIFT")
 
         # env check
-        task1 = s.task_status(env.id, output=True)
+        task1 = s.task_status(env.get("id"), output=True)
         res = [
             (
-                "task %s returned W2P_TASK correctly" % (task1.scheduler_task.id),
+                "task %s returned W2P_TASK correctly" % (task1.scheduler_task.get("id")),
                 task1.result
                 == [
-                    task1.scheduler_task.id,
+                    task1.scheduler_task.get("id"),
                     task1.scheduler_task.uuid,
-                    task1.scheduler_run.id,
+                    task1.scheduler_run.get("id"),
                 ],
             ),
         ]
@@ -965,7 +965,7 @@ def issue_1485():
         ]
         self.exec_asserts(res, "HUGE_RESULT")
 
-        task_issue_1485 = s.task_status(issue_1485.id, output=True)
+        task_issue_1485 = s.task_status(issue_1485.get("id"), output=True)
         res = [
             (
                 "task status completed",
