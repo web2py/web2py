@@ -82,7 +82,7 @@ def extcron(applications_parent, apps=None):
 class hardcron(threading.Thread):
     def __init__(self, applications_parent, apps=None):
         threading.Thread.__init__(self)
-        selfdaemon = True
+        self.daemon = True
         self.path = applications_parent
         self.apps = apps
         # processing of '@reboot' entries in crontab (startup=True)
@@ -248,7 +248,7 @@ def parsecronline(line):
 class Worker(threading.Thread):
     def __init__(self, pool):
         threading.Thread.__init__(self)
-        selfdaemon = True
+        self.daemon = True
         self.pool = pool
         self.run_lock = threading.Lock()
         self.run_lock.acquire()
@@ -302,7 +302,7 @@ class Worker(threading.Thread):
 class SoftWorker(threading.Thread):
     def __init__(self, pool):
         threading.Thread.__init__(self)
-        selfdaemon = True
+        self.daemon = True
         self.pool = pool
         self.run_lock = threading.Lock()
         self.run_lock.acquire()

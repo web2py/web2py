@@ -541,7 +541,7 @@ class web2pyDialog(object):
             cpt = threading.Thread(
                 target=start_browser, args=(get_url(ip, proto=proto, port=port), True)
             )
-            cptdaemon = True
+            cpt.daemon = True
             cpt.start()
 
         self.password.configure(state="readonly")
