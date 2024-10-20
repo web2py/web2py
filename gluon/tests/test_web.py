@@ -49,7 +49,7 @@ def startwebserver():
 def stopwebserver():
     global webserverprocess
     print("Killing webserver")
-    webserverprocess.terminate()
+    webserverprocess.kill()
 
 
 class Cookie(unittest.TestCase):

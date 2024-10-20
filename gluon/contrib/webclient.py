@@ -15,7 +15,6 @@ mostly for testing purposes
 
 Some examples at the bottom.
 """
-from __future__ import print_function
 
 import re
 import time
@@ -82,7 +81,7 @@ class WebClient(object):
         # if this POST form requires a postback do it
         if (
             data
-            and b"_formname" in data
+            and "_formname" in data
             and self.postbacks
             and self.history
             and self.history[-1][1] != self.url
@@ -151,12 +150,13 @@ class WebClient(object):
                     data["_formkey"] = self.forms[data["_formname"]]
 
                 # time the POST request
-                data = urlencode(data, doseq=True).encode()
+                data = urlencode(data, doseq=True)
             else:
                 self.method = "GET" if method == "auto" else method
                 data = None
             t0 = time.time()
-            self.response = opener.open(self.url, data)
+            encoded = data.encode("utf8") if isinstance(data, str) else data
+            self.response = opener.open(self.url, encoded)
             self.time = time.time() - t0
         except urllib2.HTTPError as er:
             error = er
@@ -164,14 +164,16 @@ class WebClient(object):
             self.time = time.time() - t0
             self.response = er
 
-        self.status = self.response.getcode()
+        if hasattr(self.response, "getcode"):
+            self.status = self.response.getcode()
+        else:  # python2.5
+            self.status = None
 
         self.text = self.response.read()
         if charset:
             if charset == "auto":
                 charset = self.response.headers.getparam("charset")
-            if isinstance(self.text, bytes):
-                self.text = self.text.decode(charset)
+            self.text = self.text.decode(charset)
         # In PY3 self.response.headers are case sensitive
         self.headers = dict()
         for h in self.response.headers:
