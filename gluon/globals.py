@@ -727,6 +727,7 @@ class Response(Storage):
         """
         from pydal.exceptions import NotAuthorizedException, NotFoundException
         from pydal.helpers.regex import REGEX_UPLOAD_PATTERN
+        from gluon._compat import unicodeT
 
         current.session.forget(current.response)
 
