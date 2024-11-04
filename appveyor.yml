@@ -10,10 +10,6 @@ environment:
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
 
-    - PYTHON: "C:/Python35"
-      COVERAGE_PROCESS_START: gluon/tests/coverage.ini
-      PYTHON_ARCH: "64"
-
     - PYTHON: "C:/Python36"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"

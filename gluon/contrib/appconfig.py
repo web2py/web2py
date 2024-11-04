@@ -27,19 +27,21 @@ Once the value has been fetched (and casted) it won't change until the process
 is restarted (or reload=True is passed).
 
 """
-import os
+import _thread as thread
+import configparser
 import json
-from gluon._compat import thread, configparser
+import os
+
 from gluon.globals import current
 
 locker = thread.allocate_lock()
 
-def AppConfig(*args, **vars):
 
+def AppConfig(*args, **vars):
     locker.acquire()
-    reload_ = vars.pop('reload', False)
+    reload_ = vars.pop("reload", False)
     try:
-        instance_name = 'AppConfig_' + current.request.application
+        instance_name = "AppConfig_" + current.request.application
         if reload_ or not hasattr(AppConfig, instance_name):
             setattr(AppConfig, instance_name, AppConfigLoader(*args, **vars))
         return getattr(AppConfig, instance_name).settings
@@ -60,16 +62,16 @@ class AppConfigDict(dict):
     def get(self, path, default=None):
         try:
             value = self.take(path).strip()
-            if value.lower() in ('none','null',''):
+            if value.lower() in ("none", "null", ""):
                 return None
-            elif value.lower() == 'true':
+            elif value.lower() == "true":
                 return True
-            elif value.lower() == 'false':
+            elif value.lower() == "false":
                 return False
-            elif value.isdigit() or (value[0]=='-' and value[1:].isdigit()):
+            elif value.isdigit() or (value[0] == "-" and value[1:].isdigit()):
                 return int(value)
-            elif ',' in value:
-                return map(lambda x:x.strip(),value.split(','))
+            elif "," in value:
+                return map(lambda x: x.strip(), value.split(","))
             else:
                 try:
                     return float(value)
@@ -79,15 +81,16 @@ class AppConfigDict(dict):
             return default
 
     def take(self, path, cast=None):
-        parts = path.split('.')
+        parts = path.split(".")
         if path in self.int_cache:
             return self.int_cache[path]
         value = self
         walking = []
         for part in parts:
             if part not in value:
-                raise BaseException("%s not in config [%s]" %
-                    (part, '-->'.join(walking)))
+                raise BaseException(
+                    "%s not in config [%s]" % (part, "-->".join(walking))
+                )
             value = value[part]
             walking.append(part)
         if cast is None:
@@ -97,19 +100,17 @@ class AppConfigDict(dict):
                 value = cast(value)
                 self.int_cache[path] = value
             except (ValueError, TypeError):
-                raise BaseException("%s can't be converted to %s" %
-                 (value, cast))
+                raise BaseException("%s can't be converted to %s" % (value, cast))
         return value
 
 
 class AppConfigLoader(object):
-
     def __init__(self, configfile=None):
         if not configfile:
-            priv_folder = os.path.join(current.request.folder, 'private')
-            configfile = os.path.join(priv_folder, 'appconfig.ini')
+            priv_folder = os.path.join(current.request.folder, "private")
+            configfile = os.path.join(priv_folder, "appconfig.ini")
             if not os.path.isfile(configfile):
-                configfile = os.path.join(priv_folder, 'appconfig.json')
+                configfile = os.path.join(priv_folder, "appconfig.json")
                 if not os.path.isfile(configfile):
                     configfile = None
         if not configfile or not os.path.isfile(configfile):
@@ -120,7 +121,7 @@ class AppConfigLoader(object):
         self.read_config()
 
     def read_config_ini(self):
-        config = configparser.SafeConfigParser()
+        config = configparser.RawConfigParser()
         config.read(self.file)
         settings = {}
         for section in config.sections():
@@ -130,13 +131,13 @@ class AppConfigLoader(object):
         self.settings = AppConfigDict(settings)
 
     def read_config_json(self):
-        with open(self.file, 'r') as c:
+        with open(self.file, "r") as c:
             self.settings = AppConfigDict(json.load(c))
 
     def read_config(self):
         if self.settings is None:
             try:
-                getattr(self, 'read_config_' + self.ctype)()
+                getattr(self, "read_config_" + self.ctype)()
             except AttributeError:
                 raise BaseException("Unsupported config file format")
         return self.settings

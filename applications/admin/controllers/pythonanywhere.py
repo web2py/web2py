@@ -4,8 +4,11 @@ import os
 import re
 import gzip
 import tarfile
+import io
+from urllib.parse import urlencode
+from urllib import request as urllib2
+from xmlrpc.client import ProtocolError
 from gluon.contrib.simplejsonrpc import ServerProxy
-from gluon._compat import StringIO, ProtocolError, urlencode, urllib2
 
 def deploy():
     response.title = T('Deploy to pythonanywhere')
@@ -65,7 +68,7 @@ def bulk_install():
         Given an app's name, return the base64 representation of its packed version.
         """
         folder = apath(app, r=request)
-        tmpfile = StringIO()
+        tmpfile = io.StringIO()
         tar = tarfile.TarFile(fileobj=tmpfile, mode='w')
         try:
             filenames = listdir(folder, '^[\w\.\-]+$', add_dirs=True, 
@@ -75,7 +78,7 @@ def bulk_install():
         finally:
             tar.close()
         tmpfile.seek(0)
-        gzfile = StringIO()
+        gzfile = io.StringIO()
         w2pfp = gzip.GzipFile(fileobj=gzfile, mode='wb')
         w2pfp.write(tmpfile.read())
         w2pfp.close()

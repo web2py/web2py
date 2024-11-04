@@ -13,6 +13,8 @@ def __ExtensionFactory__():
     if not os.path.isdir('applications'):
         raise RuntimeError('Running from the wrong folder')
     sys.path = [path] + [p for p in sys.path if not p == path]
+    from gluon.settings import global_settings
+    global_settings.web2py_runtime_handler = True
     import gluon.main
     import isapi_wsgi
     application = gluon.main.wsgibase

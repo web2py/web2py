@@ -5,7 +5,7 @@ import gluon.html
 import gluon.validators
 import code
 from gluon.debug import communicate, web_debugger, dbg_debugger
-from gluon._compat import thread
+import _thread as thread
 from gluon.fileutils import open_file
 import pydoc
 

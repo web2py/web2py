@@ -7,11 +7,12 @@
    Email <dronnikov@gmail.com>
 """
 
-import urllib
-from gluon.html import *
-from gluon.tools import fetch
-from gluon.storage import Storage
 import json
+import urllib
+
+from gluon.html import *
+from gluon.storage import Storage
+from gluon.tools import fetch
 
 
 class Loginza(object):
@@ -22,16 +23,16 @@ class Loginza(object):
         url = "http://localhost:8000/%s/default/user/login" % request.application)
     """
 
-    def __init__(self,
-                 request,
-                 url="",
-                 embed=True,
-                 auth_url="http://loginza.ru/api/authinfo",
-                 language="en",
-                 prompt="loginza",
-                 on_login_failure=None,
-                 ):
-
+    def __init__(
+        self,
+        request,
+        url="",
+        embed=True,
+        auth_url="http://loginza.ru/api/authinfo",
+        language="en",
+        prompt="loginza",
+        on_login_failure=None,
+    ):
         self.request = request
         self.token_url = url
         self.embed = embed
@@ -46,51 +47,50 @@ class Loginza(object):
         # Howto download and store it locally?
         # FIXME: what if email is unique=True
 
-        self.mappings["http://twitter.com/"] = lambda profile:\
-            dict(registration_id=profile.get("identity", ""),
-                 username=profile.get("nickname", ""),
-                 email=profile.get("email", ""),
-                 last_name=profile.get("name", "").get("full_name", ""),
-                 #avatar = profile.get("photo",""),
-                 )
-        self.mappings["https://www.google.com/accounts/o8/ud"] = lambda profile:\
-            dict(registration_id=profile.get("identity", ""),
-                 username=profile.get("name", "").get("full_name", ""),
-                 email=profile.get("email", ""),
-                 first_name=profile.get("name", "").get("first_name", ""),
-                 last_name=profile.get("name", "").get("last_name", ""),
-                 #avatar = profile.get("photo",""),
-                 )
-        self.mappings["http://vkontakte.ru/"] = lambda profile:\
-            dict(registration_id=profile.get("identity", ""),
-                 username=profile.get("name", "").get("full_name", ""),
-                 email=profile.get("email", ""),
-                 first_name=profile.get("name", "").get("first_name", ""),
-                 last_name=profile.get("name", "").get("last_name", ""),
-                 #avatar = profile.get("photo",""),
-                 )
-        self.mappings.default = lambda profile:\
-            dict(registration_id=profile.get("identity", ""),
-                 username=profile.get("name", "").get("full_name"),
-                 email=profile.get("email", ""),
-                 first_name=profile.get("name", "").get("first_name", ""),
-                 last_name=profile.get("name", "").get("last_name", ""),
-                 #avatar = profile.get("photo",""),
-                 )
+        self.mappings["http://twitter.com/"] = lambda profile: dict(
+            registration_id=profile.get("identity", ""),
+            username=profile.get("nickname", ""),
+            email=profile.get("email", ""),
+            last_name=profile.get("name", "").get("full_name", ""),
+            # avatar = profile.get("photo",""),
+        )
+        self.mappings["https://www.google.com/accounts/o8/ud"] = lambda profile: dict(
+            registration_id=profile.get("identity", ""),
+            username=profile.get("name", "").get("full_name", ""),
+            email=profile.get("email", ""),
+            first_name=profile.get("name", "").get("first_name", ""),
+            last_name=profile.get("name", "").get("last_name", ""),
+            # avatar = profile.get("photo",""),
+        )
+        self.mappings["http://vkontakte.ru/"] = lambda profile: dict(
+            registration_id=profile.get("identity", ""),
+            username=profile.get("name", "").get("full_name", ""),
+            email=profile.get("email", ""),
+            first_name=profile.get("name", "").get("first_name", ""),
+            last_name=profile.get("name", "").get("last_name", ""),
+            # avatar = profile.get("photo",""),
+        )
+        self.mappings.default = lambda profile: dict(
+            registration_id=profile.get("identity", ""),
+            username=profile.get("name", "").get("full_name"),
+            email=profile.get("email", ""),
+            first_name=profile.get("name", "").get("first_name", ""),
+            last_name=profile.get("name", "").get("last_name", ""),
+            # avatar = profile.get("photo",""),
+        )
 
     def get_user(self):
         request = self.request
         if request.vars.token:
             user = Storage()
             data = urllib.urlencode(dict(token=request.vars.token))
-            auth_info_json = fetch(self.auth_url + '?' + data)
+            auth_info_json = fetch(self.auth_url + "?" + data)
             # print auth_info_json
             auth_info = json.loads(auth_info_json)
             if auth_info["identity"] is not None:
                 self.profile = auth_info
                 provider = self.profile["provider"]
-                user = self.mappings.get(
-                    provider, self.mappings.default)(self.profile)
+                user = self.mappings.get(provider, self.mappings.default)(self.profile)
                 # user["password"] = ???
                 # user["avatar"] = ???
                 return user
@@ -101,15 +101,26 @@ class Loginza(object):
     def login_form(self):
         request = self.request
         args = request.args
-        LOGINZA_URL = "https://loginza.ru/api/widget?lang=%s&token_url=%s&overlay=loginza"
+        LOGINZA_URL = (
+            "https://loginza.ru/api/widget?lang=%s&token_url=%s&overlay=loginza"
+        )
         if self.embed:
-            form = IFRAME(_src=LOGINZA_URL % (self.language, self.token_url),
-                          _scrolling="no",
-                          _frameborder="no",
-                          _style="width:359px;height:300px;")
+            form = IFRAME(
+                _src=LOGINZA_URL % (self.language, self.token_url),
+                _scrolling="no",
+                _frameborder="no",
+                _style="width:359px;height:300px;",
+            )
         else:
             form = DIV(
-                A(self.prompt, _href=LOGINZA_URL % (
-                    self.language, self.token_url), _class="loginza"),
-                SCRIPT(_src="https://s3-eu-west-1.amazonaws.com/s1.loginza.ru/js/widget.js", _type="text/javascript"))
+                A(
+                    self.prompt,
+                    _href=LOGINZA_URL % (self.language, self.token_url),
+                    _class="loginza",
+                ),
+                SCRIPT(
+                    _src="https://s3-eu-west-1.amazonaws.com/s1.loginza.ru/js/widget.js",
+                    _type="text/javascript",
+                ),
+            )
         return form

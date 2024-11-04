@@ -11,19 +11,20 @@ to ensure compatibility with another - similar - library
 """
 
 import logging
-from threading import Lock
 import time
+from threading import Lock
+
 from gluon import current
 
 logger = logging.getLogger("web2py.redis_utils")
 
 try:
     import redis
-    from redis.exceptions import WatchError as RWatchError
     from redis.exceptions import ConnectionError as RConnectionError
+    from redis.exceptions import WatchError as RWatchError
 except ImportError:
     logger.error("Needs redis library to work")
-    raise RuntimeError('Needs redis library to work')
+    raise RuntimeError("Needs redis library to work")
 
 
 locker = Lock()
@@ -38,18 +39,19 @@ def RConn(application=None, *args, **vars):
     try:
         if application is None:
             application = current.request.application
-        instance_name = 'redis_conn_' + application
+        instance_name = "redis_conn_" + application
         if not hasattr(RConn, instance_name):
             setattr(RConn, instance_name, redis.StrictRedis(*args, **vars))
         return getattr(RConn, instance_name)
     finally:
         locker.release()
 
+
 def acquire_lock(conn, lockname, identifier, ltime=10):
     while True:
         if conn.set(lockname, identifier, ex=ltime, nx=True):
             return identifier
-        time.sleep(.01)
+        time.sleep(0.01)
 
 
 _LUA_RELEASE_LOCK = """
@@ -63,8 +65,7 @@ end
 
 
 def release_lock(instance, lockname, identifier):
-    return instance._release_script(
-        keys=[lockname], args=[identifier])
+    return instance._release_script(keys=[lockname], args=[identifier])
 
 
 def register_release_lock(conn):

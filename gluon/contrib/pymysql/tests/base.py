@@ -4,9 +4,9 @@ import os
 import re
 import warnings
 
+import pymysql
 import unittest2
 
-import pymysql
 from .._compat import CPYTHON
 
 
@@ -19,9 +19,16 @@ class PyMySQLTestCase(unittest2.TestCase):
             databases = json.load(f)
     else:
         databases = [
-            {"host":"localhost","user":"root",
-             "passwd":"","db":"test_pymysql", "use_unicode": True, 'local_infile': True},
-            {"host":"localhost","user":"root","passwd":"","db":"test_pymysql2"}]
+            {
+                "host": "localhost",
+                "user": "root",
+                "passwd": "",
+                "db": "test_pymysql",
+                "use_unicode": True,
+                "local_infile": True,
+            },
+            {"host": "localhost", "user": "root", "passwd": "", "db": "test_pymysql2"},
+        ]
 
     def mysql_server_is(self, conn, version_tuple):
         """Return True if the given connection is on the version given or
@@ -35,8 +42,7 @@ class PyMySQLTestCase(unittest2.TestCase):
         server_version = conn.get_server_info()
         server_version_tuple = tuple(
             (int(dig) if dig is not None else 0)
-            for dig in
-            re.match(r'(\d+)\.(\d+)\.(\d+)', server_version).group(1, 2, 3)
+            for dig in re.match(r"(\d+)\.(\d+)\.(\d+)", server_version).group(1, 2, 3)
         )
         return server_version_tuple >= version_tuple
 

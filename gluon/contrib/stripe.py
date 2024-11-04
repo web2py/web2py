@@ -1,77 +1,85 @@
 from __future__ import print_function
-import urllib
+
 import json
+import urllib
 from hashlib import sha1
+
 
 class Stripe:
     """
-    Use in WEB2PY (guaranteed PCI compliant)
+        Use in WEB2PY (guaranteed PCI compliant)
 
-def pay():
-    from gluon.contrib.stripe import StripeForm
-    form = StripeForm(
-        pk=STRIPE_PUBLISHABLE_KEY,
-        sk=STRIPE_SECRET_KEY,
-        amount=150, # $1.5 (amount is in cents)
-        description="Nothing").process()
-    if form.accepted:
-        payment_id = form.response['id']
-        redirect(URL('thank_you'))
-    elif form.errors:
-        redirect(URL('pay_error'))
-    return dict(form=form)
+    def pay():
+        from gluon.contrib.stripe import StripeForm
+        form = StripeForm(
+            pk=STRIPE_PUBLISHABLE_KEY,
+            sk=STRIPE_SECRET_KEY,
+            amount=150, # $1.5 (amount is in cents)
+            description="Nothing").process()
+        if form.accepted:
+            payment_id = form.response['id']
+            redirect(URL('thank_you'))
+        elif form.errors:
+            redirect(URL('pay_error'))
+        return dict(form=form)
 
-Low level API:
+    Low level API:
 
-    key='<api key>'
-    d = Stripe(key).charge(
-               amount=100, # 1 dollar!!!!
-               currency='usd',
-               card_number='4242424242424242',
-               card_exp_month='5',
-               card_exp_year='2012',
-               card_cvc_check='123',
-               description='test charge')
-    print d
-    print Stripe(key).check(d['id'])
-    print Stripe(key).refund(d['id'])
+        key='<api key>'
+        d = Stripe(key).charge(
+                   amount=100, # 1 dollar!!!!
+                   currency='usd',
+                   card_number='4242424242424242',
+                   card_exp_month='5',
+                   card_exp_year='2012',
+                   card_cvc_check='123',
+                   description='test charge')
+        print d
+        print Stripe(key).check(d['id'])
+        print Stripe(key).refund(d['id'])
 
-    Sample output (python dict):
-    {u'fee': 0, u'description': u'test charge', u'created': 1321242072, u'refunded': False, u'livemode': False, u'object': u'charge', u'currency': u'usd', u'amount': 100, u'paid': True, u'id': u'ch_sdjasgfga83asf', u'card': {u'exp_month': 5, u'country': u'US', u'object': u'card', u'last4': u'4242', u'exp_year': 2012, u'type': u'Visa'}}
-    if paid is True than transaction was processed
+        Sample output (python dict):
+        {u'fee': 0, u'description': u'test charge', u'created': 1321242072, u'refunded': False, u'livemode': False, u'object': u'charge', u'currency': u'usd', u'amount': 100, u'paid': True, u'id': u'ch_sdjasgfga83asf', u'card': {u'exp_month': 5, u'country': u'US', u'object': u'card', u'last4': u'4242', u'exp_year': 2012, u'type': u'Visa'}}
+        if paid is True than transaction was processed
 
     """
 
-    URL_CHARGE = 'https://%s:@api.stripe.com/v1/charges'
-    URL_CHECK = 'https://%s:@api.stripe.com/v1/charges/%s'
-    URL_REFUND = 'https://%s:@api.stripe.com/v1/charges/%s/refund'
+    URL_CHARGE = "https://%s:@api.stripe.com/v1/charges"
+    URL_CHECK = "https://%s:@api.stripe.com/v1/charges/%s"
+    URL_REFUND = "https://%s:@api.stripe.com/v1/charges/%s/refund"
 
     def __init__(self, key):
         self.key = key
 
-    def charge(self,
-               amount, # in cents
-               currency='usd',
-               card_number='4242424242424242',
-               card_exp_month='5',
-               card_exp_year='2012',
-               card_cvc_check='123',
-               token=None,
-               description='test charge',
-               more=None):
+    def charge(
+        self,
+        amount,  # in cents
+        currency="usd",
+        card_number="4242424242424242",
+        card_exp_month="5",
+        card_exp_year="2012",
+        card_cvc_check="123",
+        token=None,
+        description="test charge",
+        more=None,
+    ):
         if token:
-            d = {'amount': amount,
-                 'currency': currency,
-                 'card': token,
-                 'description': description}
+            d = {
+                "amount": amount,
+                "currency": currency,
+                "card": token,
+                "description": description,
+            }
         else:
-            d = {'amount': amount,
-                 'currency': currency,
-                 'card[number]': card_number,
-                 'card[exp_month]': card_exp_month,
-                 'card[exp_year]': card_exp_year,
-                 'card[cvc_check]': card_cvc_check,
-                 'description': description}
+            d = {
+                "amount": amount,
+                "currency": currency,
+                "card[number]": card_number,
+                "card[exp_month]": card_exp_month,
+                "card[exp_year]": card_exp_year,
+                "card[cvc_check]": card_cvc_check,
+                "description": description,
+            }
         if more:
             d.update(mode)
         params = urllib.urlencode(d)
@@ -84,23 +92,27 @@ Low level API:
 
     def refund(self, charge_id):
         params = urllib.urlencode({})
-        u = urllib.urlopen(self.URL_REFUND % (self.key, charge_id),
-                           params)
+        u = urllib.urlopen(self.URL_REFUND % (self.key, charge_id), params)
         return json.loads(u.read())
 
+
 class StripeForm(object):
-    def __init__(self,
-                 pk, sk,
-                 amount, # in cents
-                 description,
-                 currency = 'usd',
-                 currency_symbol = '$',
-                 security_notice = True,
-                 disclosure_notice = True,
-                 template = None):
-        from gluon import current, redirect, URL
+    def __init__(
+        self,
+        pk,
+        sk,
+        amount,  # in cents
+        description,
+        currency="usd",
+        currency_symbol="$",
+        security_notice=True,
+        disclosure_notice=True,
+        template=None,
+    ):
+        from gluon import URL, current, redirect
+
         if not (current.request.is_local or current.request.is_https):
-            redirect(URL(args=current.request.args,scheme='https'))
+            redirect(URL(args=current.request.args, scheme="https"))
         self.pk = pk
         self.sk = sk
         self.amount = amount
@@ -112,10 +124,11 @@ class StripeForm(object):
         self.template = template or TEMPLATE
         self.accepted = None
         self.errors = None
-        self.signature = sha1(repr((self.amount,self.description))).hexdigest()
+        self.signature = sha1(repr((self.amount, self.description))).hexdigest()
 
     def process(self):
         from gluon import current
+
         request = current.request
         if request.post_vars:
             if self.signature == request.post_vars.signature:
@@ -123,8 +136,9 @@ class StripeForm(object):
                     token=request.post_vars.stripeToken,
                     amount=self.amount,
                     description=self.description,
-                    currency=self.currency)
-                if self.response.get('paid',False):
+                    currency=self.currency,
+                )
+                if self.response.get("paid", False):
                     self.accepted = True
                     return self
             self.errors = True
@@ -132,16 +146,20 @@ class StripeForm(object):
 
     def xml(self):
         from gluon.template import render
+
         if self.accepted:
             return "Your payment was processed successfully"
         elif self.errors:
             return "There was an processing error"
         else:
-            context = dict(amount=self.amount,
-                           signature=self.signature, pk=self.pk,
-                           currency_symbol=self.currency_symbol,
-                           security_notice=self.security_notice,
-                           disclosure_notice=self.disclosure_notice)
+            context = dict(
+                amount=self.amount,
+                signature=self.signature,
+                pk=self.pk,
+                currency_symbol=self.currency_symbol,
+                security_notice=self.security_notice,
+                disclosure_notice=self.disclosure_notice,
+            )
             return render(content=self.template, context=context)
 
 
@@ -242,11 +260,11 @@ jQuery(function(){
 {{pass}}
 """
 
-if __name__ == '__main__':
-    key = raw_input('user>')
+if __name__ == "__main__":
+    key = raw_input("user>")
     d = Stripe(key).charge(100)
-    print('charged', d['paid'])
-    s = Stripe(key).check(d[u'id'])
-    print('paid', s['paid'], s['amount'], s['currency'])
-    s = Stripe(key).refund(d[u'id'])
-    print('refunded', s['refunded'])
+    print("charged", d["paid"])
+    s = Stripe(key).check(d["id"])
+    print("paid", s["paid"], s["amount"], s["currency"])
+    s = Stripe(key).refund(d["id"])
+    print("refunded", s["refunded"])

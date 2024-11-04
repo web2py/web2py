@@ -45,7 +45,6 @@ __author__ = "Andrew Dalke <dalke@dalkescientific.com>"
 _generator_name = __name__ + "-" + ".".join(map(str, __version__))
 
 import datetime
-
 import sys
 
 if sys.version_info[0] == 3:
@@ -69,6 +68,7 @@ else:
 class WriteXmlMixin:
     def write_xml(self, outfile, encoding="iso-8859-1"):
         from xml.sax import saxutils
+
         handler = saxutils.XMLGenerator(outfile, encoding)
         handler.startDocument()
         self.publish(handler)
@@ -114,9 +114,25 @@ def _format_date(dt):
     return "%s, %02d %s %04d %02d:%02d:%02d GMT" % (
         ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][dt.weekday()],
         dt.day,
-        ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dt.month - 1],
-        dt.year, dt.hour, dt.minute, dt.second)
+        [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ][dt.month - 1],
+        dt.year,
+        dt.hour,
+        dt.minute,
+        dt.second,
+    )
 
 
 ##
@@ -130,6 +146,7 @@ class IntElement:
     (Could be used for anything which uses str() to be published
     to text for XML.)
     """
+
     element_attrs = {}
 
     def __init__(self, name, val):
@@ -149,17 +166,21 @@ class DateElement:
 
     Converts the datetime to RFC 2822 timestamp (4-digit year).
     """
+
     def __init__(self, name, dt):
         self.name = name
         self.dt = dt
 
     def publish(self, handler):
         _element(handler, self.name, _format_date(self.dt))
+
+
 ####
 
 
 class Category:
     """Publish a category element"""
+
     def __init__(self, category, domain=None):
         self.category = category
         self.domain = domain
@@ -173,8 +194,8 @@ class Category:
 
 class Cloud:
     """Publish a cloud"""
-    def __init__(self, domain, port, path,
-                 registerProcedure, protocol):
+
+    def __init__(self, domain, port, path, registerProcedure, protocol):
         self.domain = domain
         self.port = port
         self.path = path
@@ -182,20 +203,26 @@ class Cloud:
         self.protocol = protocol
 
     def publish(self, handler):
-        _element(handler, "cloud", None, {
-            "domain": self.domain,
-            "port": str(self.port),
-            "path": self.path,
-            "registerProcedure": self.registerProcedure,
-            "protocol": self.protocol})
+        _element(
+            handler,
+            "cloud",
+            None,
+            {
+                "domain": self.domain,
+                "port": str(self.port),
+                "path": self.path,
+                "registerProcedure": self.registerProcedure,
+                "protocol": self.protocol,
+            },
+        )
 
 
 class Image:
     """Publish a channel Image"""
+
     element_attrs = {}
 
-    def __init__(self, url, title, link,
-                 width=None, height=None, description=None):
+    def __init__(self, url, title, link, width=None, height=None, description=None):
         self.url = url
         self.title = title
         self.link = link
@@ -231,6 +258,7 @@ class Guid:
     Defaults to being a permalink, which is the assumption if it's
     omitted.  Hence strings are always permalinks.
     """
+
     def __init__(self, guid, isPermaLink=1):
         self.guid = guid
         self.isPermaLink = isPermaLink
@@ -249,6 +277,7 @@ class TextInput:
 
     Apparently this is rarely used.
     """
+
     element_attrs = {}
 
     def __init__(self, title, description, name, link):
@@ -268,21 +297,28 @@ class TextInput:
 
 class Enclosure:
     """Publish an enclosure"""
+
     def __init__(self, url, length, type):
         self.url = url
         self.length = length
         self.type = type
 
     def publish(self, handler):
-        _element(handler, "enclosure", None,
-                 {"url": self.url,
-                  "length": str(self.length),
-                  "type": self.type,
-                  })
+        _element(
+            handler,
+            "enclosure",
+            None,
+            {
+                "url": self.url,
+                "length": str(self.length),
+                "type": self.type,
+            },
+        )
 
 
 class Source:
     """Publish the item's original source, used by aggregators"""
+
     def __init__(self, name, url):
         self.name = name
         self.url = url
@@ -296,6 +332,7 @@ class SkipHours:
 
     This takes a list of hours, as integers.
     """
+
     element_attrs = {}
 
     def __init__(self, hours):
@@ -314,6 +351,7 @@ class SkipDays:
 
     This takes a list of days as strings.
     """
+
     element_attrs = {}
 
     def __init__(self, days):
@@ -337,32 +375,29 @@ class RSS2(WriteXmlMixin):
     rss_attrs = {"version": "2.0"}
     element_attrs = {}
 
-    def __init__(self,
-                 title,
-                 link,
-                 description,
-
-                 language=None,
-                 copyright=None,
-                 managingEditor=None,
-                 webMaster=None,
-                 pubDate=None,  # a datetime, *in* *GMT*
-                 lastBuildDate=None,  # a datetime
-
-                 categories=None,  # list of strings or Category
-                 generator=_generator_name,
-                 docs="http://blogs.law.harvard.edu/tech/rss",
-                 cloud=None,    # a Cloud
-                 ttl=None,      # integer number of minutes
-
-                 image=None,     # an Image
-                 rating=None,    # a string; I don't know how it's used
-                 textInput=None,  # a TextInput
-                 skipHours=None,  # a SkipHours with a list of integers
-                 skipDays=None,  # a SkipDays with a list of strings
-
-                 items=None,     # list of RSSItems
-                 ):
+    def __init__(
+        self,
+        title,
+        link,
+        description,
+        language=None,
+        copyright=None,
+        managingEditor=None,
+        webMaster=None,
+        pubDate=None,  # a datetime, *in* *GMT*
+        lastBuildDate=None,  # a datetime
+        categories=None,  # list of strings or Category
+        generator=_generator_name,
+        docs="http://blogs.law.harvard.edu/tech/rss",
+        cloud=None,  # a Cloud
+        ttl=None,  # integer number of minutes
+        image=None,  # an Image
+        rating=None,  # a string; I don't know how it's used
+        textInput=None,  # a TextInput
+        skipHours=None,  # a SkipHours with a list of integers
+        skipDays=None,  # a SkipDays with a list of strings
+        items=None,  # list of RSSItems
+    ):
         self.title = title
         self.link = link
         self.description = description
@@ -456,24 +491,24 @@ class RSS2(WriteXmlMixin):
 
 class RSSItem(WriteXmlMixin):
     """Publish an RSS Item"""
+
     element_attrs = {}
 
-    def __init__(self,
-                 title=None,  # string
-                 link=None,   # url as string
-                 description=None,  # string
-                 author=None,      # email address as string
-                 categories=None,  # list of string or Category
-                 comments=None,  # url as string
-                 enclosure=None,  # an Enclosure
-                 guid=None,    # a unique string
-                 pubDate=None,  # a datetime
-                 source=None,  # a Source
-                 ):
-
+    def __init__(
+        self,
+        title=None,  # string
+        link=None,  # url as string
+        description=None,  # string
+        author=None,  # email address as string
+        categories=None,  # list of string or Category
+        comments=None,  # url as string
+        enclosure=None,  # an Enclosure
+        guid=None,  # a unique string
+        pubDate=None,  # a datetime
+        source=None,  # a Source
+    ):
         if title is None and description is None:
-            raise TypeError(
-                "must define at least one of 'title' or 'description'")
+            raise TypeError("must define at least one of 'title' or 'description'")
         self.title = title
         self.link = link
         self.description = description

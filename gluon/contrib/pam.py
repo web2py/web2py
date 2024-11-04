@@ -10,10 +10,23 @@ a user against the Pluggable Authentication Modules (PAM) on the system.
 Implemented using ctypes, so no compilation is necessary.
 """
 from __future__ import print_function
-__all__ = ['authenticate']
 
-from ctypes import CDLL, POINTER, Structure, CFUNCTYPE, cast, pointer, sizeof
-from ctypes import c_void_p, c_uint, c_char_p, c_char, c_int
+__all__ = ["authenticate"]
+
+from ctypes import (
+    CDLL,
+    CFUNCTYPE,
+    POINTER,
+    Structure,
+    c_char,
+    c_char_p,
+    c_int,
+    c_uint,
+    c_void_p,
+    cast,
+    pointer,
+    sizeof,
+)
 from ctypes.util import find_library
 
 LIBPAM = CDLL(find_library("pam"))
@@ -36,9 +49,8 @@ PAM_TEXT_INFO = 4
 
 class PamHandle(Structure):
     """wrapper class for pam_handle_t"""
-    _fields_ = [
-        ("handle", c_void_p)
-    ]
+
+    _fields_ = [("handle", c_void_p)]
 
     def __init__(self):
         Structure.__init__(self)
@@ -47,6 +59,7 @@ class PamHandle(Structure):
 
 class PamMessage(Structure):
     """wrapper class for pam_message structure"""
+
     _fields_ = [
         ("msg_style", c_int),
         ("msg", c_char_p),
@@ -58,6 +71,7 @@ class PamMessage(Structure):
 
 class PamResponse(Structure):
     """wrapper class for pam_response structure"""
+
     _fields_ = [
         ("resp", c_char_p),
         ("resp_retcode", c_int),
@@ -66,29 +80,28 @@ class PamResponse(Structure):
     def __repr__(self):
         return "<PamResponse %i '%s'>" % (self.resp_retcode, self.resp)
 
-CONV_FUNC = CFUNCTYPE(c_int,
-                      c_int, POINTER(POINTER(PamMessage)),
-                      POINTER(POINTER(PamResponse)), c_void_p)
+
+CONV_FUNC = CFUNCTYPE(
+    c_int, c_int, POINTER(POINTER(PamMessage)), POINTER(POINTER(PamResponse)), c_void_p
+)
 
 
 class PamConv(Structure):
     """wrapper class for pam_conv structure"""
-    _fields_ = [
-        ("conv", CONV_FUNC),
-        ("appdata_ptr", c_void_p)
-    ]
+
+    _fields_ = [("conv", CONV_FUNC), ("appdata_ptr", c_void_p)]
+
 
 PAM_START = LIBPAM.pam_start
 PAM_START.restype = c_int
-PAM_START.argtypes = [c_char_p, c_char_p, POINTER(PamConv),
-                      POINTER(PamHandle)]
+PAM_START.argtypes = [c_char_p, c_char_p, POINTER(PamConv), POINTER(PamHandle)]
 
 PAM_AUTHENTICATE = LIBPAM.pam_authenticate
 PAM_AUTHENTICATE.restype = c_int
 PAM_AUTHENTICATE.argtypes = [PamHandle, c_int]
 
 
-def authenticate(username, password, service='login'):
+def authenticate(username, password, service="login"):
     """Returns True if the given username and password authenticate for the
     given service.  Returns False otherwise
 
@@ -98,6 +111,7 @@ def authenticate(username, password, service='login'):
 
     ``service``: the PAM service to authenticate against.
                  Defaults to 'login'"""
+
     @CONV_FUNC
     def my_conv(n_messages, messages, p_response, app_data):
         """Simple conversation function that responds to any
@@ -124,6 +138,8 @@ def authenticate(username, password, service='login'):
     retval = PAM_AUTHENTICATE(handle, 0)
     return retval == 0
 
+
 if __name__ == "__main__":
     import getpass
+
     print(authenticate(getpass.getuser(), getpass.getpass()))

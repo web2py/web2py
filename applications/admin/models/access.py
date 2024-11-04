@@ -6,7 +6,10 @@ from gluon.fileutils import read_file
 from gluon.utils import web2py_uuid
 from pydal.contrib import portalocker
 # ###########################################################
-# ## make sure administrator is on localhost or https
+# ## make sure administrator is on localhost or https,
+# ## or from
+# ## gluon.settings.global_settings.trusted_lan_prefix
+# ## subnet
 # ###########################################################
 
 
@@ -22,6 +25,9 @@ else:
 
 if request.is_https:
     session.secure()
+elif request.env.trusted_lan_prefix and \
+     request.client.startswith(request.env.trusted_lan_prefix):
+    request.is_local = True
 elif not request.is_local and not DEMO_MODE:
     raise HTTP(200, T('Admin is disabled because insecure channel'))
 
@@ -162,7 +168,7 @@ if request.controller == "webservices":
     basic = request.env.http_authorization
     if not basic or not basic[:6].lower() == 'basic ':
         raise HTTP(401, "Wrong credentials")
-    (username, password) = base64.b64decode(basic[6:]).split(':')
+    (username, password) = base64.b64decode(basic[6:]).decode('utf-8').split(':')
     if not verify_password(password) or MULTI_USER_MODE:
         time.sleep(10)
         raise HTTP(403, "Not authorized")

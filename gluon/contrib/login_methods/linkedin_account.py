@@ -10,6 +10,7 @@ Thanks to Hans Donner <hans.donner@pobox.com> for GaeGoogleAccount.
 """
 
 from gluon.http import HTTP
+
 try:
     import linkedin
 except ImportError:
@@ -37,15 +38,19 @@ class LinkedInAccount(object):
         return self.api.getAuthorizeURL(self.token)
 
     def logout_url(self, next="/"):
-        return ''
+        return ""
 
     def get_user(self):
         result = self.request.vars.verifier and self.api.accessToken(
-            verifier=self.request.vars.verifier)
+            verifier=self.request.vars.verifier
+        )
         if result:
             profile = self.api.GetProfile()
             profile = self.api.GetProfile(
-                profile).public_url = "http://www.linkedin.com/in/ozgurv"
-            return dict(first_name=profile.first_name,
-                        last_name=profile.last_name,
-                        username=profile.id)
+                profile
+            ).public_url = "http://www.linkedin.com/in/ozgurv"
+            return dict(
+                first_name=profile.first_name,
+                last_name=profile.last_name,
+                username=profile.id,
+            )

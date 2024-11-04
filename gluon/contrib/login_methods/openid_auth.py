@@ -35,15 +35,15 @@ import time
 from datetime import datetime, timedelta
 
 from gluon import *
-from gluon.storage import Storage, Messages
+from gluon.storage import Messages, Storage
 
 try:
     import openid.consumer.consumer
     from openid.association import Association
-    from openid.store.interface import OpenIDStore
+    from openid.consumer.discover import DiscoveryFailure
     from openid.extensions.sreg import SRegRequest, SRegResponse
     from openid.store import nonce
-    from openid.consumer.discover import DiscoveryFailure
+    from openid.store.interface import OpenIDStore
 except ImportError as err:
     raise ImportError("OpenIDAuth requires python-openid package")
 
@@ -86,9 +86,9 @@ class OpenIDAuth(object):
         self.db = auth.db
 
         request = current.request
-        self.nextvar = '_next'
-        self.realm = 'http://%s' % request.env.http_host
-        self.login_url = URL(r=request, f='user', args=['login'])
+        self.nextvar = "_next"
+        self.realm = "http://%s" % request.env.http_host
+        self.login_url = URL(r=request, f="user", args=["login"])
         self.return_to_url = self.realm + self.login_url
 
         self.table_alt_logins_name = "alt_logins"
@@ -104,26 +104,34 @@ class OpenIDAuth(object):
 
     def _define_messages(self):
         messages = Messages(current.T)
-        messages.label_alt_login_username = 'Sign-in with OpenID: '
-        messages.label_add_alt_login_username = 'Add a new OpenID: '
-        messages.submit_button = 'Sign in'
-        messages.submit_button_add = 'Add'
-        messages.a_delete = 'Delete'
-        messages.comment_openid_signin = 'What is OpenID?'
-        messages.comment_openid_help_title = 'Start using your OpenID'
-        messages.comment_openid_help_url = 'http://openid.net/get-an-openid/start-using-your-openid/'
+        messages.label_alt_login_username = "Sign-in with OpenID: "
+        messages.label_add_alt_login_username = "Add a new OpenID: "
+        messages.submit_button = "Sign in"
+        messages.submit_button_add = "Add"
+        messages.a_delete = "Delete"
+        messages.comment_openid_signin = "What is OpenID?"
+        messages.comment_openid_help_title = "Start using your OpenID"
+        messages.comment_openid_help_url = (
+            "http://openid.net/get-an-openid/start-using-your-openid/"
+        )
         messages.openid_fail_discover = 'Failed to discover OpenID service. Check your OpenID or "More about OpenID"?'
-        messages.flash_openid_expired = 'OpenID expired. Please login or authenticate OpenID again. Sorry for the inconvenient.'
-        messages.flash_openid_associated = 'OpenID associated'
-        messages.flash_associate_openid = 'Please login or register an account for this OpenID.'
-        messages.p_openid_not_registered = "This Open ID haven't be registered. " \
+        messages.flash_openid_expired = "OpenID expired. Please login or authenticate OpenID again. Sorry for the inconvenient."
+        messages.flash_openid_associated = "OpenID associated"
+        messages.flash_associate_openid = (
+            "Please login or register an account for this OpenID."
+        )
+        messages.p_openid_not_registered = (
+            "This Open ID haven't be registered. "
             + "Please login to associate with it or register an account for it."
-        messages.flash_openid_authenticated = 'OpenID authenticated successfully.'
-        messages.flash_openid_fail_authentication = 'OpenID authentication failed. (Error message: %s)'
-        messages.flash_openid_canceled = 'OpenID authentication canceled by user.'
-        messages.flash_openid_need_setup = 'OpenID authentication needs to be setup by the user with the provider first.'
-        messages.h_openid_login = 'OpenID Login'
-        messages.h_openid_list = 'OpenID List'
+        )
+        messages.flash_openid_authenticated = "OpenID authenticated successfully."
+        messages.flash_openid_fail_authentication = (
+            "OpenID authentication failed. (Error message: %s)"
+        )
+        messages.flash_openid_canceled = "OpenID authentication canceled by user."
+        messages.flash_openid_need_setup = "OpenID authentication needs to be setup by the user with the provider first."
+        messages.h_openid_login = "OpenID Login"
+        messages.h_openid_list = "OpenID List"
         return messages
 
     def _define_alt_login_table(self):
@@ -141,9 +149,9 @@ class OpenIDAuth(object):
         db = self.db
         table = db.define_table(
             self.table_alt_logins_name,
-            Field('username', length=512, default=''),
-            Field('oidtype', length=128, default='openid', readable=False),
-            Field('oiduser', self.table_user, readable=False),
+            Field("username", length=512, default=""),
+            Field("oidtype", length=128, default="openid", readable=False),
+            Field("oiduser", self.table_user, readable=False),
         )
         table.username.requires = IS_NOT_IN_DB(db, table.username)
         self.table_alt_logins = table
@@ -153,7 +161,7 @@ class OpenIDAuth(object):
         Delete the w2popenid record in session as logout
         """
         if current.session.w2popenid:
-            del(current.session.w2popenid)
+            del current.session.w2popenid
         return next
 
     def login_form(self):
@@ -162,7 +170,7 @@ class OpenIDAuth(object):
         and not processed yet. Else return the OpenID form for login.
         """
         request = current.request
-        if 'janrain_nonce' in request.vars and not self._processed():
+        if "janrain_nonce" in request.vars and not self._processed():
             self._process_response()
             return self.auth()
         return self._form()
@@ -175,15 +183,15 @@ class OpenIDAuth(object):
         request = current.request
         args = request.args
 
-        if args[0] == 'logout':
+        if args[0] == "logout":
             return True  # Let logout_url got called
 
         if current.session.w2popenid:
             w2popenid = current.session.w2popenid
             db = self.db
-            if (w2popenid.ok is True and w2popenid.oid):  # OpenID authenticated
+            if w2popenid.ok is True and w2popenid.oid:  # OpenID authenticated
                 if self._w2popenid_expired(w2popenid):
-                    del(current.session.w2popenid)
+                    del current.session.w2popenid
                     flash = self.messages.flash_openid_expired
                     current.session.warning = flash
                     redirect(self.auth.settings.login_url)
@@ -198,7 +206,7 @@ class OpenIDAuth(object):
                         # TODO: ask first maybe
                         self._associate_user_openid(self.auth.user, oid)
                         if current.session.w2popenid:
-                            del(current.session.w2popenid)
+                            del current.session.w2popenid
                         current.session.flash = self.messages.flash_openid_associated
                         if nextvar in request.vars:
                             redirect(request.vars[nextvar])
@@ -207,33 +215,37 @@ class OpenIDAuth(object):
                     if nextvar not in request.vars:
                         # no next var, add it and do login again
                         # so if user login or register can go back here to associate the OpenID
-                        redirect(URL(r=request,
-                                     args=['login'],
-                                     vars={nextvar: self.login_url}))
+                        redirect(
+                            URL(
+                                r=request,
+                                args=["login"],
+                                vars={nextvar: self.login_url},
+                            )
+                        )
                     self.login_form = self._form_with_notification()
                     current.session.flash = self.messages.flash_associate_openid
                     return None  # need to login or register to associate this openid
 
                 # Get existed OpenID user
-                user = db(
-                    self.table_user.id == alt_login.oiduser).select().first()
+                user = db(self.table_user.id == alt_login.oiduser).select().first()
                 if user:
                     if current.session.w2popenid:
-                        del(current.session.w2popenid)
-                if 'username' in self.table_user.fields():
-                    username = 'username'
-                elif 'email' in self.table_user.fields():
-                    username = 'email'
-                return {username: user[username]} if user else None  # login success (almost)
+                        del current.session.w2popenid
+                if "username" in self.table_user.fields():
+                    username = "username"
+                elif "email" in self.table_user.fields():
+                    username = "email"
+                return (
+                    {username: user[username]} if user else None
+                )  # login success (almost)
 
         return None  # just start to login
 
-    def _find_matched_openid(self, db, oid, type_='openid'):
+    def _find_matched_openid(self, db, oid, type_="openid"):
         """
         Get the matched OpenID for given
         """
-        query = (
-            (db.alt_logins.username == oid) & (db.alt_logins.oidtype == type_))
+        query = (db.alt_logins.username == oid) & (db.alt_logins.oidtype == type_)
         alt_login = db(query).select().first()  # Get the OpenID record
         return alt_login
 
@@ -262,13 +274,13 @@ class OpenIDAuth(object):
         """
         Remove https:// or http:// from oid url
         """
-        protocol = 'https://'
+        protocol = "https://"
         if oid.startswith(protocol):
-            oid = oid[len(protocol):]
+            oid = oid[len(protocol) :]
             return oid
-        protocol = 'http://'
+        protocol = "http://"
         if oid.startswith(protocol):
-            oid = oid[len(protocol):]
+            oid = oid[len(protocol) :]
             return oid
         return oid
 
@@ -277,26 +289,26 @@ class OpenIDAuth(object):
         Initialize the ConsumerHelper
         """
         if not hasattr(self, "consumerhelper"):
-            self.consumerhelper = ConsumerHelper(current.session,
-                                                 self.db)
+            self.consumerhelper = ConsumerHelper(current.session, self.db)
         return self.consumerhelper
 
     def _form(self, style=None):
         form = DIV(H3(self.messages.h_openid_login), self._login_form(style))
         return form
 
-    def _login_form(self,
-                    openid_field_label=None,
-                    submit_button=None,
-                    _next=None,
-                    style=None):
+    def _login_form(
+        self, openid_field_label=None, submit_button=None, _next=None, style=None
+    ):
         """
         Render the form for OpenID login
         """
+
         def warning_openid_fail(session):
             session.warning = messages.openid_fail_discover
 
-        style = style or """
+        style = (
+            style
+            or """
 background-attachment: scroll;
 background-repeat: no-repeat;
 background-image: url("http://wiki.openid.net/f/openid-16x16.gif");
@@ -305,32 +317,35 @@ background-color: transparent;
 padding-left: 18px;
 width: 400px;
 """
+        )
         style = style.replace("\n", "")
 
         request = current.request
         session = current.session
         messages = self.messages
         hidden_next_input = ""
-        if _next == 'profile':
-            profile_url = URL(r=request, f='user', args=['profile'])
-            hidden_next_input = INPUT(
-                _type="hidden", _name="_next", _value=profile_url)
+        if _next == "profile":
+            profile_url = URL(r=request, f="user", args=["profile"])
+            hidden_next_input = INPUT(_type="hidden", _name="_next", _value=profile_url)
         form = FORM(
             openid_field_label or self.messages.label_alt_login_username,
-            INPUT(_type="input", _name="oid",
-                  requires=IS_NOT_EMPTY(
-                  error_message=messages.openid_fail_discover),
-                  _style=style),
+            INPUT(
+                _type="input",
+                _name="oid",
+                requires=IS_NOT_EMPTY(error_message=messages.openid_fail_discover),
+                _style=style,
+            ),
             hidden_next_input,
-            INPUT(_type="submit",
-                  _value=submit_button or messages.submit_button),
+            INPUT(_type="submit", _value=submit_button or messages.submit_button),
             " ",
-            A(messages.comment_openid_signin,
-              _href=messages.comment_openid_help_url,
-              _title=messages.comment_openid_help_title,
-              _class='openid-identifier',
-              _target="_blank"),
-            _action=self.login_url
+            A(
+                messages.comment_openid_signin,
+                _href=messages.comment_openid_help_url,
+                _title=messages.comment_openid_help_title,
+                _class="openid-identifier",
+                _target="_blank",
+            ),
+            _action=self.login_url,
         )
         if form.accepts(request.vars, session):
             oid = request.vars.oid
@@ -341,9 +356,8 @@ width: 400px;
                 warning_openid_fail(session)
                 redirect(url)
             try:
-                if '_next' in request.vars:
-                    return_to_url = self.return_to_url + \
-                        '?_next=' + request.vars._next
+                if "_next" in request.vars:
+                    return_to_url = self.return_to_url + "?_next=" + request.vars._next
                 url = consumerhelper.begin(oid, self.realm, return_to_url)
             except DiscoveryFailure:
                 warning_openid_fail(session)
@@ -355,16 +369,19 @@ width: 400px;
         Check if w2popenid authentication is processed.
         Return True if processed else False.
         """
-        processed = (hasattr(current.session, 'w2popenid') and
-                     current.session.w2popenid.ok is True)
+        processed = (
+            hasattr(current.session, "w2popenid")
+            and current.session.w2popenid.ok is True
+        )
         return processed
 
     def _set_w2popenid_expiration(self, w2popenid):
         """
         Set expiration for OpenID authentication.
         """
-        w2popenid.expiration = datetime.now(
-        ) + timedelta(minutes=self.openid_expiration)
+        w2popenid.expiration = datetime.now() + timedelta(
+            minutes=self.openid_expiration
+        )
 
     def _w2popenid_expired(self, w2popenid):
         """
@@ -381,7 +398,8 @@ width: 400px;
         request_vars = request.vars
         consumerhelper = self._init_consumerhelper()
         process_status = consumerhelper.process_response(
-            request_vars, self.return_to_url)
+            request_vars, self.return_to_url
+        )
         if process_status == "success":
             w2popenid = current.session.w2popenid
             user_data = self.consumerhelper.sreg()
@@ -390,7 +408,10 @@ width: 400px;
             w2popenid.user_data = user_data
             current.session.flash = self.messages.flash_openid_authenticated
         elif process_status == "failure":
-            flash = self.messages.flash_openid_fail_authentication % consumerhelper.error_message
+            flash = (
+                self.messages.flash_openid_fail_authentication
+                % consumerhelper.error_message
+            )
             current.session.warning = flash
         elif process_status == "cancel":
             current.session.warning = self.messages.flash_openid_canceled
@@ -400,7 +421,7 @@ width: 400px;
     def list_user_openids(self):
         messages = self.messages
         request = current.request
-        if 'delete_openid' in request.vars:
+        if "delete_openid" in request.vars:
             self.remove_openid(request.vars.delete_openid)
 
         query = self.db.alt_logins.oiduser == self.auth.user.id
@@ -408,20 +429,23 @@ width: 400px;
         l = []
         for alt_login in alt_logins:
             username = alt_login.username
-            delete_href = URL(r=request, f='user',
-                              args=['profile'],
-                              vars={'delete_openid': username})
+            delete_href = URL(
+                r=request, f="user", args=["profile"], vars={"delete_openid": username}
+            )
             delete_link = A(messages.a_delete, _href=delete_href)
             l.append(LI(username, " ", delete_link))
 
-        profile_url = URL(r=request, f='user', args=['profile'])
-        #return_to_url = self.return_to_url + '?' + self.nextvar + '=' + profile_url
-        openid_list = DIV(H3(messages.h_openid_list), UL(l),
-                          self._login_form(
-                              _next='profile',
-                              submit_button=messages.submit_button_add,
-                              openid_field_label=messages.label_add_alt_login_username)
-                          )
+        profile_url = URL(r=request, f="user", args=["profile"])
+        # return_to_url = self.return_to_url + '?' + self.nextvar + '=' + profile_url
+        openid_list = DIV(
+            H3(messages.h_openid_list),
+            UL(l),
+            self._login_form(
+                _next="profile",
+                submit_button=messages.submit_button_add,
+                openid_field_label=messages.label_add_alt_login_username,
+            ),
+        )
         return openid_list
 
     def remove_openid(self, openid):
@@ -446,7 +470,7 @@ class ConsumerHelper(object):
         if not hasattr(self, "store"):
             store = Web2pyStore(db)
             session = self.session
-            if 'w2popenid' not in session:
+            if "w2popenid" not in session:
                 session.w2popenid = Storage()
             self.store = store
         return self.store
@@ -458,7 +482,7 @@ class ConsumerHelper(object):
         w2popenid = self.session.w2popenid
         w2popenid.oid = oid
         auth_req = self.consumer.begin(oid)
-        auth_req.addExtension(SRegRequest(required=['email', 'nickname']))
+        auth_req.addExtension(SRegRequest(required=["email", "nickname"]))
         url = auth_req.redirectURL(return_to=return_to_url, realm=realm)
         return url
 
@@ -508,35 +532,28 @@ class Web2pyStore(OpenIDStore):
 
     def __init__(self, database):
         self.database = database
-        self.table_oid_associations_name = 'oid_associations'
-        self.table_oid_nonces_name = 'oid_nonces'
+        self.table_oid_associations_name = "oid_associations"
+        self.table_oid_nonces_name = "oid_nonces"
         self._initDB()
 
     def _initDB(self):
-
         if self.table_oid_associations_name not in self.database:
-            self.database.define_table(self.table_oid_associations_name,
-                                       Field('server_url',
-                                             'string', length=2047, required=True),
-                                       Field('handle',
-                                             'string', length=255, required=True),
-                                       Field('secret', 'blob', required=True),
-                                       Field('issued',
-                                             'integer', required=True),
-                                       Field('lifetime',
-                                             'integer', required=True),
-                                       Field('assoc_type',
-                                             'string', length=64, required=True)
-                                       )
+            self.database.define_table(
+                self.table_oid_associations_name,
+                Field("server_url", "string", length=2047, required=True),
+                Field("handle", "string", length=255, required=True),
+                Field("secret", "blob", required=True),
+                Field("issued", "integer", required=True),
+                Field("lifetime", "integer", required=True),
+                Field("assoc_type", "string", length=64, required=True),
+            )
         if self.table_oid_nonces_name not in self.database:
-            self.database.define_table(self.table_oid_nonces_name,
-                                       Field('server_url',
-                                             'string', length=2047, required=True),
-                                       Field('itimestamp',
-                                             'integer', required=True),
-                                       Field('salt', 'string',
-                                             length=40, required=True)
-                                       )
+            self.database.define_table(
+                self.table_oid_nonces_name,
+                Field("server_url", "string", length=2047, required=True),
+                Field("itimestamp", "integer", required=True),
+                Field("salt", "string", length=40, required=True),
+            )
 
     def storeAssociation(self, server_url, association):
         """
@@ -546,14 +563,17 @@ class Web2pyStore(OpenIDStore):
 
         db = self.database
         query = (db.oid_associations.server_url == server_url) & (
-            db.oid_associations.handle == association.handle)
+            db.oid_associations.handle == association.handle
+        )
         db(query).delete()
-        db.oid_associations.insert(server_url=server_url,
-                                   handle=association.handle,
-                                   secret=association.secret,
-                                   issued=association.issued,
-                                   lifetime=association.lifetime,
-                                   assoc_type=association.assoc_type), 'insert ' * 10
+        db.oid_associations.insert(
+            server_url=server_url,
+            handle=association.handle,
+            secret=association.secret,
+            issued=association.issued,
+            lifetime=association.lifetime,
+            assoc_type=association.assoc_type,
+        ), "insert " * 10
 
     def getAssociation(self, server_url, handle=None):
         """
@@ -563,26 +583,28 @@ class Web2pyStore(OpenIDStore):
         """
 
         db = self.database
-        query = (db.oid_associations.server_url == server_url)
+        query = db.oid_associations.server_url == server_url
         if handle:
-            query &= (db.oid_associations.handle == handle)
+            query &= db.oid_associations.handle == handle
         rows = db(query).select(orderby=db.oid_associations.issued)
         keep_assoc, _ = self._removeExpiredAssocations(rows)
         if len(keep_assoc) == 0:
             return None
         else:
-            assoc = keep_assoc.pop(
-            )  # pop the last one as it should be the latest one
-            return Association(assoc['handle'],
-                               assoc['secret'],
-                               assoc['issued'],
-                               assoc['lifetime'],
-                               assoc['assoc_type'])
+            assoc = keep_assoc.pop()  # pop the last one as it should be the latest one
+            return Association(
+                assoc["handle"],
+                assoc["secret"],
+                assoc["issued"],
+                assoc["lifetime"],
+                assoc["assoc_type"],
+            )
 
     def removeAssociation(self, server_url, handle):
         db = self.database
         query = (db.oid_associations.server_url == server_url) & (
-            db.oid_associations.handle == handle)
+            db.oid_associations.handle == handle
+        )
         return db(query).delete() is not None
 
     def useNonce(self, server_url, timestamp, salt):
@@ -594,13 +616,15 @@ class Web2pyStore(OpenIDStore):
         db = self.database
         if abs(timestamp - time.time()) > nonce.SKEW:
             return False
-        query = (db.oid_nonces.server_url == server_url) & (db.oid_nonces.itimestamp == timestamp) & (db.oid_nonces.salt == salt)
+        query = (
+            (db.oid_nonces.server_url == server_url)
+            & (db.oid_nonces.itimestamp == timestamp)
+            & (db.oid_nonces.salt == salt)
+        )
         if db(query).count() > 0:
             return False
         else:
-            db.oid_nonces.insert(server_url=server_url,
-                                 itimestamp=timestamp,
-                                 salt=salt)
+            db.oid_nonces.insert(server_url=server_url, itimestamp=timestamp, salt=salt)
             return True
 
     def _removeExpiredAssocations(self, rows):
@@ -616,13 +640,16 @@ class Web2pyStore(OpenIDStore):
         remove_assoc = []
         t1970 = time.time()
         for r in rows:
-            if r['issued'] + r['lifetime'] < t1970:
+            if r["issued"] + r["lifetime"] < t1970:
                 remove_assoc.append(r)
             else:
                 keep_assoc.append(r)
         for r in remove_assoc:
-            del db.oid_associations[r['id']]
-        return (keep_assoc, len(remove_assoc))  # return tuple (list of valid associations, number of deleted associations)
+            del db.oid_associations[r["id"]]
+        return (
+            keep_assoc,
+            len(remove_assoc),
+        )  # return tuple (list of valid associations, number of deleted associations)
 
     def cleanupNonces(self):
         """
@@ -631,7 +658,7 @@ class Web2pyStore(OpenIDStore):
         """
 
         db = self.database
-        query = (db.oid_nonces.itimestamp < time.time() - nonce.SKEW)
+        query = db.oid_nonces.itimestamp < time.time() - nonce.SKEW
         return db(query).delete()
 
     def cleanupAssociations(self):
@@ -641,8 +668,10 @@ class Web2pyStore(OpenIDStore):
         """
 
         db = self.database
-        query = (db.oid_associations.id > 0)
-        return self._removeExpiredAssocations(db(query).select())[1]  # return number of assoc removed
+        query = db.oid_associations.id > 0
+        return self._removeExpiredAssocations(db(query).select())[
+            1
+        ]  # return number of assoc removed
 
     def cleanup(self):
         """

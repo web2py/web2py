@@ -1,10 +1,8 @@
-import smtplib
 import logging
+import smtplib
 
 
-def email_auth(server="smtp.gmail.com:587",
-               domain="@gmail.com",
-               tls_mode=None):
+def email_auth(server="smtp.gmail.com:587", domain="@gmail.com", tls_mode=None):
     """
     to use email_login:
     from gluon.contrib.login_methods.email_auth import email_auth
@@ -12,19 +10,17 @@ def email_auth(server="smtp.gmail.com:587",
                                                   "@gmail.com"))
     """
 
-    def email_auth_aux(email,
-                       password,
-                       server=server,
-                       domain=domain,
-                       tls_mode=tls_mode):
+    def email_auth_aux(
+        email, password, server=server, domain=domain, tls_mode=tls_mode
+    ):
         if domain:
             if not isinstance(domain, (list, tuple)):
                 domain = [str(domain)]
-            if not [d for d in domain if email[-len(d):] == d]:
+            if not [d for d in domain if email[-len(d) :] == d]:
                 return False
-        (host, port) = server.split(':')
+        (host, port) = server.split(":")
         if tls_mode is None:  # then auto detect
-            tls_mode = port == '587'
+            tls_mode = port == "587"
         try:
             server = None
             server = smtplib.SMTP(host, port)
@@ -36,11 +32,12 @@ def email_auth(server="smtp.gmail.com:587",
             server.quit()
             return True
         except:
-            logging.exception('email_auth() failed')
+            logging.exception("email_auth() failed")
             if server:
                 try:
                     server.quit()
                 except:  # server might already close connection after error
                     pass
             return False
+
     return email_auth_aux

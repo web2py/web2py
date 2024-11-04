@@ -11,13 +11,15 @@
    services with web2py
 """
 
+import json
 import os
 import re
+
 from gluon import *
-from gluon.tools import fetch
-from gluon.storage import Storage
-import json
 from gluon._compat import urlencode
+from gluon.storage import Storage
+from gluon.tools import fetch
+
 
 class RPXAccount(object):
 
@@ -31,18 +33,18 @@ class RPXAccount(object):
               url = "http://localhost:8000/%s/default/user/login" % request.application)
     """
 
-    def __init__(self,
-                 request,
-                 api_key="",
-                 domain="",
-                 url="",
-                 embed=True,
-                 auth_url="https://rpxnow.com/api/v2/auth_info",
-                 language="en",
-                 prompt='rpx',
-                 on_login_failure=None,
-                 ):
-
+    def __init__(
+        self,
+        request,
+        api_key="",
+        domain="",
+        url="",
+        embed=True,
+        auth_url="https://rpxnow.com/api/v2/auth_info",
+        language="en",
+        prompt="rpx",
+        on_login_failure=None,
+    ):
         self.request = request
         self.api_key = api_key
         self.embed = embed
@@ -55,25 +57,28 @@ class RPXAccount(object):
         self.on_login_failure = on_login_failure
         self.mappings = Storage()
 
-        dn = {'givenName': '', 'familyName': ''}
-        self.mappings.Facebook = lambda profile, dn=dn:\
-            dict(registration_id=profile.get("identifier", ""),
-                 username=profile.get("preferredUsername", ""),
-                 email=profile.get("email", ""),
-                 first_name=profile.get("name", dn).get("givenName", ""),
-                 last_name=profile.get("name", dn).get("familyName", ""))
-        self.mappings.Google = lambda profile, dn=dn:\
-            dict(registration_id=profile.get("identifier", ""),
-                 username=profile.get("preferredUsername", ""),
-                 email=profile.get("email", ""),
-                 first_name=profile.get("name", dn).get("givenName", ""),
-                 last_name=profile.get("name", dn).get("familyName", ""))
-        self.mappings.default = lambda profile:\
-            dict(registration_id=profile.get("identifier", ""),
-                 username=profile.get("preferredUsername", ""),
-                 email=profile.get("email", ""),
-                 first_name=profile.get("preferredUsername", ""),
-                 last_name='')
+        dn = {"givenName": "", "familyName": ""}
+        self.mappings.Facebook = lambda profile, dn=dn: dict(
+            registration_id=profile.get("identifier", ""),
+            username=profile.get("preferredUsername", ""),
+            email=profile.get("email", ""),
+            first_name=profile.get("name", dn).get("givenName", ""),
+            last_name=profile.get("name", dn).get("familyName", ""),
+        )
+        self.mappings.Google = lambda profile, dn=dn: dict(
+            registration_id=profile.get("identifier", ""),
+            username=profile.get("preferredUsername", ""),
+            email=profile.get("email", ""),
+            first_name=profile.get("name", dn).get("givenName", ""),
+            last_name=profile.get("name", dn).get("familyName", ""),
+        )
+        self.mappings.default = lambda profile: dict(
+            registration_id=profile.get("identifier", ""),
+            username=profile.get("preferredUsername", ""),
+            email=profile.get("email", ""),
+            first_name=profile.get("preferredUsername", ""),
+            last_name="",
+        )
 
     def get_user(self):
         request = self.request
@@ -82,16 +87,14 @@ class RPXAccount(object):
         token = request.post_vars.token or request.get_vars.token
         if token:
             user = Storage()
-            data = urlencode(
-                dict(apiKey=self.api_key, token=token))
-            auth_info_json = fetch(self.auth_url + '?' + data)
+            data = urlencode(dict(apiKey=self.api_key, token=token))
+            auth_info_json = fetch(self.auth_url + "?" + data)
             auth_info = json.loads(auth_info_json)
 
-            if auth_info['stat'] == 'ok':
-                self.profile = auth_info['profile']
-                provider = re.sub('[^\w\-]', '', self.profile['providerName'])
-                user = self.mappings.get(
-                    provider, self.mappings.default)(self.profile)
+            if auth_info["stat"] == "ok":
+                self.profile = auth_info["profile"]
+                provider = re.sub("[^\w\-]", "", self.profile["providerName"])
+                user = self.mappings.get(provider, self.mappings.default)(self.profile)
                 return user
             elif self.on_login_failure:
                 redirect(self.on_login_failure)
@@ -101,36 +104,45 @@ class RPXAccount(object):
         request = self.request
         args = request.args
         if self.embed:
-            JANRAIN_URL = \
+            JANRAIN_URL = (
                 "https://%s.rpxnow.com/openid/embed?token_url=%s&language_preference=%s"
+            )
             rpxform = IFRAME(
-                _src=JANRAIN_URL % (
-                    self.domain, self.token_url, self.language),
+                _src=JANRAIN_URL % (self.domain, self.token_url, self.language),
                 _scrolling="no",
                 _frameborder="no",
-                _style="width:400px;height:240px;")
+                _style="width:400px;height:240px;",
+            )
         else:
-            JANRAIN_URL = \
-                "https://%s.rpxnow.com/openid/v2/signin?token_url=%s"
-            rpxform = DIV(SCRIPT(_src="https://rpxnow.com/openid/v2/widget",
-                                 _type="text/javascript"),
-                          SCRIPT("RPXNOW.overlay = true;",
-                                 "RPXNOW.language_preference = '%s';" % self.language,
-                                 "RPXNOW.realm = '%s';" % self.domain,
-                                 "RPXNOW.token_url = '%s';" % self.token_url,
-                                 "RPXNOW.show();",
-                                 _type="text/javascript"))
+            JANRAIN_URL = "https://%s.rpxnow.com/openid/v2/signin?token_url=%s"
+            rpxform = DIV(
+                SCRIPT(
+                    _src="https://rpxnow.com/openid/v2/widget", _type="text/javascript"
+                ),
+                SCRIPT(
+                    "RPXNOW.overlay = true;",
+                    "RPXNOW.language_preference = '%s';" % self.language,
+                    "RPXNOW.realm = '%s';" % self.domain,
+                    "RPXNOW.token_url = '%s';" % self.token_url,
+                    "RPXNOW.show();",
+                    _type="text/javascript",
+                ),
+            )
         return rpxform
 
 
-def use_janrain(auth, filename='private/janrain.key', **kwargs):
+def use_janrain(auth, filename="private/janrain.key", **kwargs):
     path = os.path.join(current.request.folder, filename)
     if os.path.exists(path):
         request = current.request
-        domain, key = open(path, 'r').read().strip().split(':')
+        domain, key = open(path, "r").read().strip().split(":")
         host = current.request.env.http_host
-        url = URL('default', 'user', args='login', scheme=True)
-        auth.settings.actions_disabled = \
-            ['register', 'change_password', 'request_reset_password']
+        url = URL("default", "user", args="login", scheme=True)
+        auth.settings.actions_disabled = [
+            "register",
+            "change_password",
+            "request_reset_password",
+        ]
         auth.settings.login_form = RPXAccount(
-            request, api_key=key, domain=domain, url=url, **kwargs)
+            request, api_key=key, domain=domain, url=url, **kwargs
+        )

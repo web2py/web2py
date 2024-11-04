@@ -55,11 +55,11 @@ Home page: http://opensource.perlig.de/rjsmin/
 Modified by Ross Peoples <ross.peoples@gmail.com> for inclusion into web2py.
 """
 __author__ = "Andr\xe9 Malo"
-__author__ = getattr(__author__, 'decode', lambda x: __author__)('latin-1')
+__author__ = getattr(__author__, "decode", lambda x: __author__)("latin-1")
 __docformat__ = "restructuredtext en"
 __license__ = "Apache License, Version 2.0"
-__version__ = '1.0.2'
-__all__ = ['jsmin', 'jsmin_for_posers']
+__version__ = "1.0.2"
+__all__ = ["jsmin", "jsmin_for_posers"]
 
 import re as _re
 
@@ -98,35 +98,34 @@ def _make_jsmin(extended=True, python_only=True):
     except NameError:
         xrange = range  # pylint: disable = W0622
 
-    space_chars = r'[\000-\011\013\014\016-\040]'
+    space_chars = r"[\000-\011\013\014\016-\040]"
 
-    line_comment = r'(?://[^\r\n]*)'
-    space_comment = r'(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/)'
-    string1 = \
-        r'(?:\047[^\047\\\r\n]*(?:\\(?:[^\r\n]|\r?\n|\r)[^\047\\\r\n]*)*\047)'
+    line_comment = r"(?://[^\r\n]*)"
+    space_comment = r"(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/)"
+    string1 = r"(?:\047[^\047\\\r\n]*(?:\\(?:[^\r\n]|\r?\n|\r)[^\047\\\r\n]*)*\047)"
     string2 = r'(?:"[^"\\\r\n]*(?:\\(?:[^\r\n]|\r?\n|\r)[^"\\\r\n]*)*")'
-    strings = r'(?:%s|%s)' % (string1, string2)
+    strings = r"(?:%s|%s)" % (string1, string2)
 
-    charclass = r'(?:\[[^\\\]\r\n]*(?:\\[^\r\n][^\\\]\r\n]*)*\])'
-    nospecial = r'[^/\\\[\r\n]'
+    charclass = r"(?:\[[^\\\]\r\n]*(?:\\[^\r\n][^\\\]\r\n]*)*\])"
+    nospecial = r"[^/\\\[\r\n]"
     if extended:
-        regex = r'(?:/(?![\r\n/*])%s*(?:(?:\\[^\r\n]|%s)%s*)*/)' % (
-            nospecial, charclass, nospecial
+        regex = r"(?:/(?![\r\n/*])%s*(?:(?:\\[^\r\n]|%s)%s*)*/)" % (
+            nospecial,
+            charclass,
+            nospecial,
         )
     else:
-        regex = (
-            r'(?:/(?:[^*/\\\r\n\[]|%s|\\[^\r\n])%s*(?:(?:\\[^\r\n]|%s)%s*)*/)'
-        )
+        regex = r"(?:/(?:[^*/\\\r\n\[]|%s|\\[^\r\n])%s*(?:(?:\\[^\r\n]|%s)%s*)*/)"
         regex = regex % (charclass, nospecial, charclass, nospecial)
 
-    space = r'(?:%s|%s)' % (space_chars, space_comment)
-    newline = r'(?:%s?[\r\n])' % line_comment
+    space = r"(?:%s|%s)" % (space_chars, space_comment)
+    newline = r"(?:%s?[\r\n])" % line_comment
 
     def fix_charclass(result):
-        """ Fixup string of chars to fit into a regex char class """
-        pos = result.find('-')
+        """Fixup string of chars to fit into a regex char class"""
+        pos = result.find("-")
         if pos >= 0:
-            result = r'%s%s-' % (result[:pos], result[pos + 1:])
+            result = r"%s%s-" % (result[:pos], result[pos + 1 :])
 
         def sequentize(string):
             """
@@ -145,60 +144,68 @@ def _make_jsmin(extended=True, python_only=True):
                     first = last = char
             if last is not None:
                 result.append((first, last))
-            return ''.join(['%s%s%s' % (
-                chr(first),
-                last > first + 1 and '-' or '',
-                last != first and chr(last) or ''
-            ) for first, last in result])
+            return "".join(
+                [
+                    "%s%s%s"
+                    % (
+                        chr(first),
+                        last > first + 1 and "-" or "",
+                        last != first and chr(last) or "",
+                    )
+                    for first, last in result
+                ]
+            )
 
-        return _re.sub(r'([\000-\040\047])',  # for better portability
-                       lambda m: '\\%03o' % ord(m.group(1)), (sequentize(result)
-                                                              .replace('\\', '\\\\')
-                                                              .replace('[', '\\[')
-                                                              .replace(']', '\\]')
-                                                              )
-                       )
+        return _re.sub(
+            r"([\000-\040\047])",  # for better portability
+            lambda m: "\\%03o" % ord(m.group(1)),
+            (
+                sequentize(result)
+                .replace("\\", "\\\\")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+            ),
+        )
 
     def id_literal_(what):
-        """ Make id_literal like char class """
+        """Make id_literal like char class"""
         match = _re.compile(what).match
-        result = ''.join([
-            chr(c) for c in xrange(127) if not match(chr(c))
-        ])
-        return '[^%s]' % fix_charclass(result)
+        result = "".join([chr(c) for c in xrange(127) if not match(chr(c))])
+        return "[^%s]" % fix_charclass(result)
 
     def not_id_literal_(keep):
-        """ Make negated id_literal like char class """
+        """Make negated id_literal like char class"""
         match = _re.compile(id_literal_(keep)).match
-        result = ''.join([
-            chr(c) for c in xrange(127) if not match(chr(c))
-        ])
-        return r'[%s]' % fix_charclass(result)
+        result = "".join([chr(c) for c in xrange(127) if not match(chr(c))])
+        return r"[%s]" % fix_charclass(result)
 
-    not_id_literal = not_id_literal_(r'[a-zA-Z0-9_$]')
-    preregex1 = r'[(,=:\[!&|?{};\r\n]'
-    preregex2 = r'%(not_id_literal)sreturn' % locals()
+    not_id_literal = not_id_literal_(r"[a-zA-Z0-9_$]")
+    preregex1 = r"[(,=:\[!&|?{};\r\n]"
+    preregex2 = r"%(not_id_literal)sreturn" % locals()
 
     if extended:
-        id_literal = id_literal_(r'[a-zA-Z0-9_$]')
-        id_literal_open = id_literal_(r'[a-zA-Z0-9_${\[(+-]')
+        id_literal = id_literal_(r"[a-zA-Z0-9_$]")
+        id_literal_open = id_literal_(r"[a-zA-Z0-9_${\[(+-]")
         id_literal_close = id_literal_(r'[a-zA-Z0-9_$}\])"\047+-]')
 
-        space_sub = _re.compile((
-            r'([^\047"/\000-\040]+)'
-            r'|(%(strings)s[^\047"/\000-\040]*)'
-            r'|(?:(?<=%(preregex1)s)%(space)s*(%(regex)s[^\047"/\000-\040]*))'
-            r'|(?:(?<=%(preregex2)s)%(space)s*(%(regex)s[^\047"/\000-\040]*))'
-            r'|(?<=%(id_literal_close)s)'
-            r'%(space)s*(?:(%(newline)s)%(space)s*)+'
-            r'(?=%(id_literal_open)s)'
-            r'|(?<=%(id_literal)s)(%(space)s)+(?=%(id_literal)s)'
-            r'|%(space)s+'
-            r'|(?:%(newline)s%(space)s*)+'
-        ) % locals()).sub
+        space_sub = _re.compile(
+            (
+                r'([^\047"/\000-\040]+)'
+                r'|(%(strings)s[^\047"/\000-\040]*)'
+                r'|(?:(?<=%(preregex1)s)%(space)s*(%(regex)s[^\047"/\000-\040]*))'
+                r'|(?:(?<=%(preregex2)s)%(space)s*(%(regex)s[^\047"/\000-\040]*))'
+                r"|(?<=%(id_literal_close)s)"
+                r"%(space)s*(?:(%(newline)s)%(space)s*)+"
+                r"(?=%(id_literal_open)s)"
+                r"|(?<=%(id_literal)s)(%(space)s)+(?=%(id_literal)s)"
+                r"|%(space)s+"
+                r"|(?:%(newline)s%(space)s*)+"
+            )
+            % locals()
+        ).sub
 
         def space_subber(match):
-            """ Substitution callback """
+            """Substitution callback"""
             # pylint: disable = C0321, R0911
             groups = match.groups()
             if groups[0]:
@@ -210,11 +217,11 @@ def _make_jsmin(extended=True, python_only=True):
             elif groups[3]:
                 return groups[3]
             elif groups[4]:
-                return '\n'
+                return "\n"
             elif groups[5]:
-                return ' '
+                return " "
             else:
-                return ''
+                return ""
 
         def jsmin(script):  # pylint: disable = W0621
             r"""
@@ -234,53 +241,62 @@ def _make_jsmin(extended=True, python_only=True):
             :Return: Minified script
             :Rtype: ``str``
             """
-            return space_sub(space_subber, '\n%s\n' % script).strip()
+            return space_sub(space_subber, "\n%s\n" % script).strip()
 
     else:
-        pre_regex = r'(?:%(preregex1)s|%(preregex2)s)' % locals()
-        not_id_literal_open = not_id_literal_(r'[a-zA-Z0-9_${\[(+-]')
+        pre_regex = r"(?:%(preregex1)s|%(preregex2)s)" % locals()
+        not_id_literal_open = not_id_literal_(r"[a-zA-Z0-9_${\[(+-]")
         not_id_literal_close = not_id_literal_(r'[a-zA-Z0-9_$}\])"\047+-]')
 
-        space_norm_sub = _re.compile((
-            r'(%(strings)s)'
-            r'|(?:(%(pre_regex)s)%(space)s*(%(regex)s))'
-            r'|(%(space)s)+'
-            r'|(?:(%(newline)s)%(space)s*)+'
-        ) % locals()).sub
+        space_norm_sub = _re.compile(
+            (
+                r"(%(strings)s)"
+                r"|(?:(%(pre_regex)s)%(space)s*(%(regex)s))"
+                r"|(%(space)s)+"
+                r"|(?:(%(newline)s)%(space)s*)+"
+            )
+            % locals()
+        ).sub
 
         def space_norm_subber(match):
-            """ Substitution callback """
+            """Substitution callback"""
             # pylint: disable = C0321
             groups = match.groups()
             if groups[0]:
                 return groups[0]
             elif groups[1]:
-                return groups[1].replace('\r', '\n') + groups[2]
+                return groups[1].replace("\r", "\n") + groups[2]
             elif groups[3]:
-                return ' '
+                return " "
             elif groups[4]:
-                return '\n'
+                return "\n"
 
-        space_sub1 = _re.compile((
-            r'[\040\n]?(%(strings)s|%(pre_regex)s%(regex)s)'
-            r'|\040(%(not_id_literal)s)'
-            r'|\n(%(not_id_literal_open)s)'
-        ) % locals()).sub
+        space_sub1 = _re.compile(
+            (
+                r"[\040\n]?(%(strings)s|%(pre_regex)s%(regex)s)"
+                r"|\040(%(not_id_literal)s)"
+                r"|\n(%(not_id_literal_open)s)"
+            )
+            % locals()
+        ).sub
 
         def space_subber1(match):
-            """ Substitution callback """
+            """Substitution callback"""
             groups = match.groups()
             return groups[0] or groups[1] or groups[2]
 
-        space_sub2 = _re.compile((
-            r'(%(strings)s)\040?'
-            r'|(%(pre_regex)s%(regex)s)[\040\n]?'
-            r'|(%(not_id_literal)s)\040'
-            r'|(%(not_id_literal_close)s)\n'
-        ) % locals()).sub
+        space_sub2 = _re.compile(
+            (
+                r"(%(strings)s)\040?"
+                r"|(%(pre_regex)s%(regex)s)[\040\n]?"
+                r"|(%(not_id_literal)s)\040"
+                r"|(%(not_id_literal_close)s)\n"
+            )
+            % locals()
+        ).sub
 
         def space_subber2(match):
-            """ Substitution callback """
+            """Substitution callback"""
             groups = match.groups()
             return groups[0] or groups[1] or groups[2] or groups[3]
 
@@ -309,13 +325,15 @@ def _make_jsmin(extended=True, python_only=True):
             :Return: Minified script
             :Rtype: ``str``
             """
-            return space_sub2(space_subber2,
-                              space_sub1(space_subber1,
-                                         space_norm_sub(space_norm_subber,
-                                                        '\n%s\n' % script)
-                                         )
-                              ).strip()
+            return space_sub2(
+                space_subber2,
+                space_sub1(
+                    space_subber1, space_norm_sub(space_norm_subber, "\n%s\n" % script)
+                ),
+            ).strip()
+
     return jsmin
+
 
 jsmin = _make_jsmin()
 
@@ -350,42 +368,45 @@ def jsmin_for_posers(script):
     :Return: Minified script
     :Rtype: ``str``
     """
+
     def subber(match):
-        """ Substitution callback """
+        """Substitution callback"""
         groups = match.groups()
         return (
-            groups[0] or
-            groups[1] or
-            groups[2] or
-            groups[3] or
-            (groups[4] and '\n') or
-            (groups[5] and ' ') or
-            ''
+            groups[0]
+            or groups[1]
+            or groups[2]
+            or groups[3]
+            or (groups[4] and "\n")
+            or (groups[5] and " ")
+            or ""
         )
 
     return _re.sub(
         r'([^\047"/\000-\040]+)|((?:(?:\047[^\047\\\r\n]*(?:\\(?:[^\r\n]|\r?'
         r'\n|\r)[^\047\\\r\n]*)*\047)|(?:"[^"\\\r\n]*(?:\\(?:[^\r\n]|\r?\n|'
         r'\r)[^"\\\r\n]*)*"))[^\047"/\000-\040]*)|(?:(?<=[(,=:\[!&|?{};\r\n]'
-        r')(?:[\000-\011\013\014\016-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/'
-        r'))*((?:/(?![\r\n/*])[^/\\\[\r\n]*(?:(?:\\[^\r\n]|(?:\[[^\\\]\r\n]*'
+        r")(?:[\000-\011\013\014\016-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/"
+        r"))*((?:/(?![\r\n/*])[^/\\\[\r\n]*(?:(?:\\[^\r\n]|(?:\[[^\\\]\r\n]*"
         r'(?:\\[^\r\n][^\\\]\r\n]*)*\]))[^/\\\[\r\n]*)*/)[^\047"/\000-\040]*'
-        r'))|(?:(?<=[\000-#%-,./:-@\[-^`{-~-]return)(?:[\000-\011\013\014\01'
-        r'6-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/))*((?:/(?![\r\n/*])[^/'
-        r'\\\[\r\n]*(?:(?:\\[^\r\n]|(?:\[[^\\\]\r\n]*(?:\\[^\r\n][^\\\]\r\n]'
+        r"))|(?:(?<=[\000-#%-,./:-@\[-^`{-~-]return)(?:[\000-\011\013\014\01"
+        r"6-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/))*((?:/(?![\r\n/*])[^/"
+        r"\\\[\r\n]*(?:(?:\\[^\r\n]|(?:\[[^\\\]\r\n]*(?:\\[^\r\n][^\\\]\r\n]"
         r'*)*\]))[^/\\\[\r\n]*)*/)[^\047"/\000-\040]*))|(?<=[^\000-!#%&(*,./'
-        r':-@\[\\^`{|~])(?:[\000-\011\013\014\016-\040]|(?:/\*[^*]*\*+(?:[^/'
-        r'*][^*]*\*+)*/))*(?:((?:(?://[^\r\n]*)?[\r\n]))(?:[\000-\011\013\01'
-        r'4\016-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/))*)+(?=[^\000-#%-\04'
-        r'7)*,./:-@\\-^`|-~])|(?<=[^\000-#%-,./:-@\[-^`{-~-])((?:[\000-\011'
-        r'\013\014\016-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/)))+(?=[^\000-'
-        r'#%-,./:-@\[-^`{-~-])|(?:[\000-\011\013\014\016-\040]|(?:/\*[^*]*\*'
-        r'+(?:[^/*][^*]*\*+)*/))+|(?:(?:(?://[^\r\n]*)?[\r\n])(?:[\000-\011'
-        r'\013\014\016-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/))*)+',
-        subber, '\n%s\n' % script
+        r":-@\[\\^`{|~])(?:[\000-\011\013\014\016-\040]|(?:/\*[^*]*\*+(?:[^/"
+        r"*][^*]*\*+)*/))*(?:((?:(?://[^\r\n]*)?[\r\n]))(?:[\000-\011\013\01"
+        r"4\016-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/))*)+(?=[^\000-#%-\04"
+        r"7)*,./:-@\\-^`|-~])|(?<=[^\000-#%-,./:-@\[-^`{-~-])((?:[\000-\011"
+        r"\013\014\016-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/)))+(?=[^\000-"
+        r"#%-,./:-@\[-^`{-~-])|(?:[\000-\011\013\014\016-\040]|(?:/\*[^*]*\*"
+        r"+(?:[^/*][^*]*\*+)*/))+|(?:(?:(?://[^\r\n]*)?[\r\n])(?:[\000-\011"
+        r"\013\014\016-\040]|(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/))*)+",
+        subber,
+        "\n%s\n" % script,
     ).strip()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys as _sys
+
     _sys.stdout.write(jsmin(_sys.stdin.read()))

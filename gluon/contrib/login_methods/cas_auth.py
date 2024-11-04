@@ -11,8 +11,9 @@ Tinkered by Szabolcs Gyuris < szimszo n @ o regpreshaz dot eu>
 import xml.dom.minidom as dom
 import xml.parsers.expat as expat
 
-from gluon import current, redirect, URL
-from gluon._compat import urlopen, to_native
+from gluon import URL, current, redirect
+from gluon._compat import to_native, urlopen
+
 
 class CasAuth(object):
     """
@@ -42,16 +43,21 @@ class CasAuth(object):
     user's username.
 
     """
-    def __init__(self, g=None,  # g for backward compatibility ###
-                 urlbase="https://web2py.com/cas/cas",
-                 actions=['login', 'validate', 'logout'],
-                 maps=dict(username=lambda v: v.get('username', v['user']),
-                           email=lambda v: v.get('email', None),
-                           user_id=lambda v: v['user']),
-                 casversion=1,
-                 casusername='cas:user',
-		 change_password_url=None
-                 ):
+
+    def __init__(
+        self,
+        g=None,  # g for backward compatibility ###
+        urlbase="https://web2py.com/cas/cas",
+        actions=["login", "validate", "logout"],
+        maps=dict(
+            username=lambda v: v.get("username", v["user"]),
+            email=lambda v: v.get("email", None),
+            user_id=lambda v: v["user"],
+        ),
+        casversion=1,
+        casusername="cas:user",
+        change_password_url=None,
+    ):
         self.urlbase = urlbase
         self.cas_login_url = "%s/%s" % (self.urlbase, actions[0])
         self.cas_check_url = "%s/%s" % (self.urlbase, actions[1])
@@ -61,11 +67,13 @@ class CasAuth(object):
         self.casusername = casusername
         # vars commented because of
         # https://code.google.com/p/web2py/issues/detail?id=1774
-        self.cas_my_url = URL(args=current.request.args,
-                              #vars=current.request.vars,
-                              scheme=True)
+        self.cas_my_url = URL(
+            args=current.request.args,
+            # vars=current.request.vars,
+            scheme=True,
+        )
 
-	# URL to let users change their password in the IDP system
+        # URL to let users change their password in the IDP system
         self.cas_change_password_url = change_password_url
 
     def login_url(self, next="/"):
@@ -85,7 +93,7 @@ class CasAuth(object):
     def get_user(self):
         user = current.session.token
         if user:
-            d = {'source': 'web2py cas'}
+            d = {"source": "web2py cas"}
             for key in self.maps:
                 d[key] = self.maps[key](user)
             return d
@@ -98,18 +106,19 @@ class CasAuth(object):
         """
         self.ticket = current.request.vars.ticket
         if not current.request.vars.ticket:
-            redirect("%s?service=%s" % (self.cas_login_url,
-                                        self.cas_my_url))
+            redirect("%s?service=%s" % (self.cas_login_url, self.cas_my_url))
         else:
-            url = "%s?service=%s&ticket=%s" % (self.cas_check_url,
-                                               self.cas_my_url,
-                                               self.ticket)
+            url = "%s?service=%s&ticket=%s" % (
+                self.cas_check_url,
+                self.cas_my_url,
+                self.ticket,
+            )
             data = to_native(urlopen(url).read())
-            if data.startswith('yes') or data.startswith('no'):
-                data = data.split('\n')
-                if data[0] == 'yes':
-                    if ':' in data[1]:  # for Compatibility with Custom CAS
-                        items = data[1].split(':')
+            if data.startswith("yes") or data.startswith("no"):
+                data = data.split("\n")
+                if data[0] == "yes":
+                    if ":" in data[1]:  # for Compatibility with Custom CAS
+                        items = data[1].split(":")
                         a = items[0]
                         b = len(items) > 1 and items[1] or a
                         c = len(items) > 2 and items[2] or b
@@ -123,7 +132,7 @@ class CasAuth(object):
                 if len(envelop) > 0:
                     res = dict()
                     for x in envelop[0].childNodes:
-                        if x.nodeName.startswith('cas:') and len(x.childNodes):
+                        if x.nodeName.startswith("cas:") and len(x.childNodes):
                             key = to_native(x.nodeName[4:])
                             value = to_native(x.childNodes[0].nodeValue)
                             if key not in res:

@@ -61,9 +61,9 @@ import six
 
 
 def cmemcache_hash(key):
-    return (
-        (((binascii.crc32(key.encode('ascii')) & 0xffffffff)
-          >> 16) & 0x7fff) or 1)
+    return (((binascii.crc32(key.encode("ascii")) & 0xFFFFFFFF) >> 16) & 0x7FFF) or 1
+
+
 serverHashFunction = cmemcache_hash
 
 
@@ -72,8 +72,10 @@ def useOldServerHashFunction():
     global serverHashFunction
     serverHashFunction = binascii.crc32
 
+
 try:
     from zlib import compress, decompress
+
     _supports_compress = True
 except ImportError:
     _supports_compress = False
@@ -81,10 +83,12 @@ except ImportError:
 
     def decompress(val):
         raise _Error(
-            "Received compressed data but I don't support "
-            "compression (import error)")
+            "Received compressed data but I don't support " "compression (import error)"
+        )
+
 
 from io import BytesIO
+
 try:
     unicode
 except NameError:
@@ -97,7 +101,7 @@ try:
 except NameError:
     _str_cls = str
 
-valid_key_chars_re = re.compile('[\x21-\x7e\x80-\xff]+$')
+valid_key_chars_re = re.compile("[\x21-\x7e\x80-\xff]+$")
 
 
 #  Original author: Evan Martin of Danga Interactive
@@ -150,6 +154,7 @@ class Client(threading.local):
            debuglog,\ set, set_multi, add, replace, get, get_multi,
            incr, decr, delete, delete_multi
     """
+
     _FLAG_PICKLE = 1 << 0
     _FLAG_INTEGER = 1 << 1
     _FLAG_LONG = 1 << 2
@@ -176,12 +181,23 @@ class Client(threading.local):
     class MemcachedStringEncodingError(Exception):
         pass
 
-    def __init__(self, servers, debug=0, pickleProtocol=0,
-                 pickler=pickle.Pickler, unpickler=pickle.Unpickler,
-                 pload=None, pid=None,
-                 server_max_key_length=None, server_max_value_length=None,
-                 dead_retry=_DEAD_RETRY, socket_timeout=_SOCKET_TIMEOUT,
-                 cache_cas=False, flush_on_reconnect=0, check_keys=True):
+    def __init__(
+        self,
+        servers,
+        debug=0,
+        pickleProtocol=0,
+        pickler=pickle.Pickler,
+        unpickler=pickle.Unpickler,
+        pload=None,
+        pid=None,
+        server_max_key_length=None,
+        server_max_value_length=None,
+        dead_retry=_DEAD_RETRY,
+        socket_timeout=_SOCKET_TIMEOUT,
+        cache_cas=False,
+        flush_on_reconnect=0,
+        check_keys=True,
+    ):
         """Create a new Client object with the given list of servers.
 
         @param servers: C{servers} is passed to L{set_servers}.
@@ -278,10 +294,16 @@ class Client(threading.local):
             C{weight} is an integer weight value.
 
         """
-        self.servers = [_Host(s, self.debug, dead_retry=self.dead_retry,
-                              socket_timeout=self.socket_timeout,
-                              flush_on_reconnect=self.flush_on_reconnect)
-                        for s in servers]
+        self.servers = [
+            _Host(
+                s,
+                self.debug,
+                dead_retry=self.dead_retry,
+                socket_timeout=self.socket_timeout,
+                flush_on_reconnect=self.flush_on_reconnect,
+            )
+            for s in servers
+        ]
         self._init_buckets()
 
     def get_stats(self, stat_args=None):
@@ -301,26 +323,26 @@ class Client(threading.local):
             if not s.connect():
                 continue
             if s.family == socket.AF_INET:
-                name = '%s:%s (%s)' % (s.ip, s.port, s.weight)
+                name = "%s:%s (%s)" % (s.ip, s.port, s.weight)
             elif s.family == socket.AF_INET6:
-                name = '[%s]:%s (%s)' % (s.ip, s.port, s.weight)
+                name = "[%s]:%s (%s)" % (s.ip, s.port, s.weight)
             else:
-                name = 'unix:%s (%s)' % (s.address, s.weight)
+                name = "unix:%s (%s)" % (s.address, s.weight)
             if not stat_args:
-                s.send_cmd('stats')
+                s.send_cmd("stats")
             else:
-                s.send_cmd('stats ' + stat_args)
+                s.send_cmd("stats " + stat_args)
             serverData = {}
             data.append((name, serverData))
             readline = s.readline
             while 1:
                 line = readline()
-                if not line or line.strip() == 'END':
+                if not line or line.strip() == "END":
                     break
-                stats = line.split(' ', 2)
+                stats = line.split(" ", 2)
                 serverData[stats[1]] = stats[2]
 
-        return(data)
+        return data
 
     def get_slabs(self):
         data = []
@@ -328,22 +350,22 @@ class Client(threading.local):
             if not s.connect():
                 continue
             if s.family == socket.AF_INET:
-                name = '%s:%s (%s)' % (s.ip, s.port, s.weight)
+                name = "%s:%s (%s)" % (s.ip, s.port, s.weight)
             elif s.family == socket.AF_INET6:
-                name = '[%s]:%s (%s)' % (s.ip, s.port, s.weight)
+                name = "[%s]:%s (%s)" % (s.ip, s.port, s.weight)
             else:
-                name = 'unix:%s (%s)' % (s.address, s.weight)
+                name = "unix:%s (%s)" % (s.address, s.weight)
             serverData = {}
             data.append((name, serverData))
-            s.send_cmd('stats items')
+            s.send_cmd("stats items")
             readline = s.readline
             while 1:
                 line = readline()
-                if not line or line.strip() == 'END':
+                if not line or line.strip() == "END":
                     break
-                item = line.split(' ', 2)
+                item = line.split(" ", 2)
                 # 0 = STAT, 1 = ITEM, 2 = Value
-                slab = item[1].split(':', 2)
+                slab = item[1].split(":", 2)
                 # 0 = items, 1 = Slab #, 2 = Name
                 if slab[1] not in serverData:
                     serverData[slab[1]] = {}
@@ -399,7 +421,7 @@ class Client(threading.local):
         for s in self.servers:
             s.close_socket()
 
-    def delete_multi(self, keys, time=0, key_prefix=''):
+    def delete_multi(self, keys, time=0, key_prefix=""):
         """Delete multiple keys in the memcache doing just one query.
 
         >>> notset_keys = mc.set_multi({'a1' : 'val1', 'a2' : 'val2'})
@@ -424,10 +446,9 @@ class Client(threading.local):
         @rtype: int
         """
 
-        self._statlog('delete_multi')
+        self._statlog("delete_multi")
 
-        server_keys, prefixed_to_orig_key = self._map_and_prefix_keys(
-            keys, key_prefix)
+        server_keys, prefixed_to_orig_key = self._map_and_prefix_keys(keys, key_prefix)
 
         # send out all requests on each server before reading anything
         dead_servers = []
@@ -443,7 +464,7 @@ class Client(threading.local):
                 for key in server_keys[server]:  # These are mangled keys
                     write("delete %s\r\n" % key)
             try:
-                server.send_cmds(''.join(bigcmd))
+                server.send_cmds("".join(bigcmd))
             except socket.error as msg:
                 rc = 0
                 if isinstance(msg, tuple):
@@ -467,17 +488,17 @@ class Client(threading.local):
         return rc
 
     def delete(self, key, time=0):
-        '''Deletes a key from the memcache.
+        """Deletes a key from the memcache.
 
         @return: Nonzero on success.
         @param time: number of seconds any subsequent set / update commands
         should fail. Defaults to None for no delay.
         @rtype: int
-        '''
-        return self._deletetouch(['DELETED', 'NOT_FOUND'], "delete", key, time)
+        """
+        return self._deletetouch(["DELETED", "NOT_FOUND"], "delete", key, time)
 
     def touch(self, key, time=0):
-        '''Updates the expiration time of a key in memcache.
+        """Updates the expiration time of a key in memcache.
 
         @return: Nonzero on success.
         @param time: Tells memcached the time which this value should
@@ -486,8 +507,8 @@ class Client(threading.local):
             docs section "Storage Commands" for more info on <exptime>. We
             default to 0 == cache forever.
         @rtype: int
-        '''
-        return self._deletetouch(['TOUCHED'], "touch", key, time)
+        """
+        return self._deletetouch(["TOUCHED"], "touch", key, time)
 
     def _deletetouch(self, expected, cmd, key, time=0):
         if self.do_check_key:
@@ -506,8 +527,9 @@ class Client(threading.local):
             line = server.readline()
             if line and line.strip() in expected:
                 return 1
-            self.debuglog('%s expected %s, got: %r'
-                          % (cmd, ' or '.join(expected), line))
+            self.debuglog(
+                "%s expected %s, got: %r" % (cmd, " or ".join(expected), line)
+            )
         except socket.error as msg:
             if isinstance(msg, tuple):
                 msg = msg[1]
@@ -570,7 +592,7 @@ class Client(threading.local):
         try:
             server.send_cmd(cmd)
             line = server.readline()
-            if line is None or line.strip() == 'NOT_FOUND':
+            if line is None or line.strip() == "NOT_FOUND":
                 return None
             return int(line)
         except socket.error as msg:
@@ -580,51 +602,51 @@ class Client(threading.local):
             return None
 
     def add(self, key, val, time=0, min_compress_len=0):
-        '''Add new key with value.
+        """Add new key with value.
 
         Like L{set}, but only stores in memcache if the key doesn't
         already exist.
 
         @return: Nonzero on success.
         @rtype: int
-        '''
+        """
         return self._set("add", key, val, time, min_compress_len)
 
     def append(self, key, val, time=0, min_compress_len=0):
-        '''Append the value to the end of the existing key's value.
+        """Append the value to the end of the existing key's value.
 
         Only stores in memcache if key already exists.
         Also see L{prepend}.
 
         @return: Nonzero on success.
         @rtype: int
-        '''
+        """
         return self._set("append", key, val, time, min_compress_len)
 
     def prepend(self, key, val, time=0, min_compress_len=0):
-        '''Prepend the value to the beginning of the existing key's value.
+        """Prepend the value to the beginning of the existing key's value.
 
         Only stores in memcache if key already exists.
         Also see L{append}.
 
         @return: Nonzero on success.
         @rtype: int
-        '''
+        """
         return self._set("prepend", key, val, time, min_compress_len)
 
     def replace(self, key, val, time=0, min_compress_len=0):
-        '''Replace existing key with value.
+        """Replace existing key with value.
 
         Like L{set}, but only stores in memcache if the key already exists.
         The opposite of L{add}.
 
         @return: Nonzero on success.
         @rtype: int
-        '''
+        """
         return self._set("replace", key, val, time, min_compress_len)
 
     def set(self, key, val, time=0, min_compress_len=0):
-        '''Unconditionally sets a key to a given value in the memcache.
+        """Unconditionally sets a key to a given value in the memcache.
 
         The C{key} can optionally be an tuple, with the first element
         being the server hash value and the second being the key.  If
@@ -652,11 +674,11 @@ class Client(threading.local):
         compatability, this parameter defaults to 0, indicating don't
         ever try to compress.
 
-        '''
+        """
         return self._set("set", key, val, time, min_compress_len)
 
     def cas(self, key, val, time=0, min_compress_len=0):
-        '''Check and set (CAS)
+        """Check and set (CAS)
 
         Sets a key to a given value in the memcache if it hasn't been
         altered since last fetched. (See L{gets}).
@@ -686,7 +708,7 @@ class Client(threading.local):
         than the input, then it is discarded. For backwards
         compatability, this parameter defaults to 0, indicating don't
         ever try to compress.
-        '''
+        """
         return self._set("cas", key, val, time, min_compress_len)
 
     def _map_and_prefix_keys(self, key_iterable, key_prefix):
@@ -713,8 +735,7 @@ class Client(threading.local):
 
                 # Gotta pre-mangle key before hashing to a
                 # server. Returns the mangled key.
-                server, key = self._get_server(
-                    (orig_key[0], key_prefix + str_orig_key))
+                server, key = self._get_server((orig_key[0], key_prefix + str_orig_key))
             else:
                 # set_multi supports int / long keys.
                 str_orig_key = str(orig_key)
@@ -734,8 +755,8 @@ class Client(threading.local):
 
         return (server_keys, prefixed_to_orig_key)
 
-    def set_multi(self, mapping, time=0, key_prefix='', min_compress_len=0):
-        '''Sets multiple keys in the memcache doing just one query.
+    def set_multi(self, mapping, time=0, key_prefix="", min_compress_len=0):
+        """Sets multiple keys in the memcache doing just one query.
 
         >>> notset_keys = mc.set_multi({'key1' : 'val1', 'key2' : 'val2'})
         >>> mc.get_multi(['key1', 'key2']) == {'key1' : 'val1',
@@ -790,11 +811,12 @@ class Client(threading.local):
            of memory, etc. ].
 
         @rtype: list
-        '''
-        self._statlog('set_multi')
+        """
+        self._statlog("set_multi")
 
         server_keys, prefixed_to_orig_key = self._map_and_prefix_keys(
-            six.iterkeys(mapping), key_prefix)
+            six.iterkeys(mapping), key_prefix
+        )
 
         # send out all requests on each server before reading anything
         dead_servers = []
@@ -806,18 +828,17 @@ class Client(threading.local):
             try:
                 for key in server_keys[server]:  # These are mangled keys
                     store_info = self._val_to_store_info(
-                        mapping[prefixed_to_orig_key[key]],
-                        min_compress_len)
+                        mapping[prefixed_to_orig_key[key]], min_compress_len
+                    )
                     if store_info:
                         msg = "set %s %d %d %d\r\n%s\r\n"
-                        write(msg % (key,
-                                     store_info[0],
-                                     time,
-                                     store_info[1],
-                                     store_info[2]))
+                        write(
+                            msg
+                            % (key, store_info[0], time, store_info[1], store_info[2])
+                        )
                     else:
                         notstored.append(prefixed_to_orig_key[key])
-                server.send_cmds(''.join(bigcmd))
+                server.send_cmds("".join(bigcmd))
             except socket.error as msg:
                 if isinstance(msg, tuple):
                     msg = msg[1]
@@ -830,12 +851,12 @@ class Client(threading.local):
 
         #  short-circuit if there are no servers, just return all keys
         if not server_keys:
-            return(mapping.keys())
+            return mapping.keys()
 
         for server, keys in six.iteritems(server_keys):
             try:
                 for key in keys:
-                    if server.readline() == 'STORED':
+                    if server.readline() == "STORED":
                         continue
                     else:
                         # un-mangle.
@@ -890,9 +911,11 @@ class Client(threading.local):
                 val = comp_val
 
         #  silently do not store if value length exceeds maximum
-        if (self.server_max_value_length != 0 and
-                len(val) > self.server_max_value_length):
-            return(0)
+        if (
+            self.server_max_value_length != 0
+            and len(val) > self.server_max_value_length
+        ):
+            return 0
 
         return (flags, len(val), val)
 
@@ -908,24 +931,33 @@ class Client(threading.local):
 
             store_info = self._val_to_store_info(val, min_compress_len)
             if not store_info:
-                return(0)
+                return 0
 
-            if cmd == 'cas':
+            if cmd == "cas":
                 if key not in self.cas_ids:
-                    return self._set('set', key, val, time, min_compress_len)
+                    return self._set("set", key, val, time, min_compress_len)
                 fullcmd = "%s %s %d %d %d %d\r\n%s" % (
-                    cmd, key, store_info[0], time, store_info[1],
-                    self.cas_ids[key], store_info[2])
+                    cmd,
+                    key,
+                    store_info[0],
+                    time,
+                    store_info[1],
+                    self.cas_ids[key],
+                    store_info[2],
+                )
             else:
                 fullcmd = "%s %s %d %d %d\r\n%s" % (
-                    cmd, key, store_info[0],
-                    time, store_info[1], store_info[2]
+                    cmd,
+                    key,
+                    store_info[0],
+                    time,
+                    store_info[1],
+                    store_info[2],
                 )
 
             try:
                 server.send_cmd(fullcmd)
-                return(server.expect("STORED", raise_exception=True)
-                       == "STORED")
+                return server.expect("STORED", raise_exception=True) == "STORED"
             except socket.error as msg:
                 if isinstance(msg, tuple):
                     msg = msg[1]
@@ -957,16 +989,21 @@ class Client(threading.local):
                 server.send_cmd("%s %s" % (cmd, key))
                 rkey = flags = rlen = cas_id = None
 
-                if cmd == 'gets':
-                    rkey, flags, rlen, cas_id, = self._expect_cas_value(
-                        server, raise_exception=True
-                    )
+                if cmd == "gets":
+                    (
+                        rkey,
+                        flags,
+                        rlen,
+                        cas_id,
+                    ) = self._expect_cas_value(server, raise_exception=True)
                     if rkey and self.cache_cas:
                         self.cas_ids[rkey] = cas_id
                 else:
-                    rkey, flags, rlen, = self._expectvalue(
-                        server, raise_exception=True
-                    )
+                    (
+                        rkey,
+                        flags,
+                        rlen,
+                    ) = self._expectvalue(server, raise_exception=True)
 
                 if not rkey:
                     return None
@@ -995,21 +1032,21 @@ class Client(threading.local):
             return None
 
     def get(self, key):
-        '''Retrieves a key from the memcache.
+        """Retrieves a key from the memcache.
 
         @return: The value or None.
-        '''
-        return self._get('get', key)
+        """
+        return self._get("get", key)
 
     def gets(self, key):
-        '''Retrieves a key from the memcache. Used in conjunction with 'cas'.
+        """Retrieves a key from the memcache. Used in conjunction with 'cas'.
 
         @return: The value or None.
-        '''
-        return self._get('gets', key)
+        """
+        return self._get("gets", key)
 
-    def get_multi(self, keys, key_prefix=''):
-        '''Retrieves multiple keys from the memcache doing just one query.
+    def get_multi(self, keys, key_prefix=""):
+        """Retrieves multiple keys from the memcache doing just one query.
 
         >>> success = mc.set("foo", "bar")
         >>> success = mc.set("baz", 42)
@@ -1061,12 +1098,11 @@ class Client(threading.local):
         @return: A dictionary of key/value pairs that were
         available. If key_prefix was provided, the keys in the retured
         dictionary will not have it present.
-        '''
+        """
 
-        self._statlog('get_multi')
+        self._statlog("get_multi")
 
-        server_keys, prefixed_to_orig_key = self._map_and_prefix_keys(
-            keys, key_prefix)
+        server_keys, prefixed_to_orig_key = self._map_and_prefix_keys(keys, key_prefix)
 
         # send out all requests on each server before reading anything
         dead_servers = []
@@ -1087,7 +1123,7 @@ class Client(threading.local):
         for server in six.iterkeys(server_keys):
             try:
                 line = server.readline()
-                while line and line != 'END':
+                while line and line != "END":
                     rkey, flags, rlen = self._expectvalue(server, line)
                     #  Bo Yang reports that this can sometimes be None
                     if rkey is not None:
@@ -1105,7 +1141,7 @@ class Client(threading.local):
         if not line:
             line = server.readline(raise_exception)
 
-        if line and line[:5] == 'VALUE':
+        if line and line[:5] == "VALUE":
             resp, rkey, flags, len, cas_id = line.split()
             return (rkey, int(flags), int(len), int(cas_id))
         else:
@@ -1115,7 +1151,7 @@ class Client(threading.local):
         if not line:
             line = server.readline(raise_exception)
 
-        if line and line[:5] == 'VALUE':
+        if line and line[:5] == "VALUE":
             resp, rkey, flags, len = line.split()
             flags = int(flags)
             rlen = int(len)
@@ -1127,8 +1163,7 @@ class Client(threading.local):
         rlen += 2  # include \r\n
         buf = server.recv(rlen)
         if len(buf) != rlen:
-            raise _Error("received %d bytes when expecting %d"
-                         % (len(buf), rlen))
+            raise _Error("received %d bytes when expecting %d" % (len(buf), rlen))
 
         if len(buf) == rlen:
             buf = buf[:-2]  # strip \r\n
@@ -1151,25 +1186,25 @@ class Client(threading.local):
                     unpickler.persistent_load = self.persistent_load
                 val = unpickler.load()
             except Exception as e:
-                self.debuglog('Pickle error: %s\n' % e)
+                self.debuglog("Pickle error: %s\n" % e)
                 return None
         else:
             self.debuglog("unknown flags on get: %x\n" % flags)
-            raise ValueError('Unknown flags on get: %x' % flags)
+            raise ValueError("Unknown flags on get: %x" % flags)
 
         return val
 
     def check_key(self, key, key_extra_len=0):
         """Checks sanity of key.
 
-            Fails if:
+        Fails if:
 
-            Key length is > SERVER_MAX_KEY_LENGTH (Raises MemcachedKeyLength).
-            Contains control characters  (Raises MemcachedKeyCharacterError).
-            Is not a string (Raises MemcachedStringEncodingError)
-            Is an unicode string (Raises MemcachedStringEncodingError)
-            Is not a string (Raises MemcachedKeyError)
-            Is None (Raises MemcachedKeyError)
+        Key length is > SERVER_MAX_KEY_LENGTH (Raises MemcachedKeyLength).
+        Contains control characters  (Raises MemcachedKeyCharacterError).
+        Is not a string (Raises MemcachedStringEncodingError)
+        Is an unicode string (Raises MemcachedStringEncodingError)
+        Is not a string (Raises MemcachedKeyError)
+        Is None (Raises MemcachedKeyError)
         """
         if isinstance(key, tuple):
             key = key[1]
@@ -1181,25 +1216,34 @@ class Client(threading.local):
         if _has_unicode is True and isinstance(key, unicode):
             raise Client.MemcachedStringEncodingError(
                 "Keys must be str()'s, not unicode.  Convert your unicode "
-                "strings using mystring.encode(charset)!")
+                "strings using mystring.encode(charset)!"
+            )
         if not isinstance(key, str):
             raise Client.MemcachedKeyTypeError("Key must be str()'s")
 
         if isinstance(key, _str_cls):
-            if (self.server_max_key_length != 0 and
-                    len(key) + key_extra_len > self.server_max_key_length):
+            if (
+                self.server_max_key_length != 0
+                and len(key) + key_extra_len > self.server_max_key_length
+            ):
                 raise Client.MemcachedKeyLengthError(
                     "Key length is > %s" % self.server_max_key_length
                 )
             if not valid_key_chars_re.match(key):
                 raise Client.MemcachedKeyCharacterError(
-                    "Control characters not allowed")
+                    "Control characters not allowed"
+                )
 
 
 class _Host(object):
-
-    def __init__(self, host, debug=0, dead_retry=_DEAD_RETRY,
-                 socket_timeout=_SOCKET_TIMEOUT, flush_on_reconnect=0):
+    def __init__(
+        self,
+        host,
+        debug=0,
+        dead_retry=_DEAD_RETRY,
+        socket_timeout=_SOCKET_TIMEOUT,
+        flush_on_reconnect=0,
+    ):
         self.dead_retry = dead_retry
         self.socket_timeout = socket_timeout
         self.debug = debug
@@ -1210,38 +1254,41 @@ class _Host(object):
             self.weight = 1
 
         #  parse the connection string
-        m = re.match(r'^(?P<proto>unix):(?P<path>.*)$', host)
+        m = re.match(r"^(?P<proto>unix):(?P<path>.*)$", host)
         if not m:
-            m = re.match(r'^(?P<proto>inet6):'
-                         r'\[(?P<host>[^\[\]]+)\](:(?P<port>[0-9]+))?$', host)
+            m = re.match(
+                r"^(?P<proto>inet6):" r"\[(?P<host>[^\[\]]+)\](:(?P<port>[0-9]+))?$",
+                host,
+            )
         if not m:
-            m = re.match(r'^(?P<proto>inet):'
-                         r'(?P<host>[^:]+)(:(?P<port>[0-9]+))?$', host)
+            m = re.match(
+                r"^(?P<proto>inet):" r"(?P<host>[^:]+)(:(?P<port>[0-9]+))?$", host
+            )
         if not m:
-            m = re.match(r'^(?P<host>[^:]+)(:(?P<port>[0-9]+))?$', host)
+            m = re.match(r"^(?P<host>[^:]+)(:(?P<port>[0-9]+))?$", host)
         if not m:
             raise ValueError('Unable to parse connection string: "%s"' % host)
 
         hostData = m.groupdict()
-        if hostData.get('proto') == 'unix':
+        if hostData.get("proto") == "unix":
             self.family = socket.AF_UNIX
-            self.address = hostData['path']
-        elif hostData.get('proto') == 'inet6':
+            self.address = hostData["path"]
+        elif hostData.get("proto") == "inet6":
             self.family = socket.AF_INET6
-            self.ip = hostData['host']
-            self.port = int(hostData.get('port') or 11211)
+            self.ip = hostData["host"]
+            self.port = int(hostData.get("port") or 11211)
             self.address = (self.ip, self.port)
         else:
             self.family = socket.AF_INET
-            self.ip = hostData['host']
-            self.port = int(hostData.get('port') or 11211)
+            self.ip = hostData["host"]
+            self.port = int(hostData.get("port") or 11211)
             self.address = (self.ip, self.port)
 
         self.deaduntil = 0
         self.socket = None
         self.flush_on_next_connect = 0
 
-        self.buffer = ''
+        self.buffer = ""
 
     def debuglog(self, str):
         if self.debug:
@@ -1271,7 +1318,7 @@ class _Host(object):
         if self.socket:
             return self.socket
         s = socket.socket(self.family, socket.SOCK_STREAM)
-        if hasattr(s, 'settimeout'):
+        if hasattr(s, "settimeout"):
             s.settimeout(self.socket_timeout)
         try:
             s.connect(self.address)
@@ -1284,7 +1331,7 @@ class _Host(object):
             self.mark_dead("connect: %s" % msg)
             return None
         self.socket = s
-        self.buffer = ''
+        self.buffer = ""
         if self.flush_on_next_connect:
             self.flush()
             self.flush_on_next_connect = 0
@@ -1296,7 +1343,7 @@ class _Host(object):
             self.socket = None
 
     def send_cmd(self, cmd):
-        self.socket.sendall(cmd + '\r\n')
+        self.socket.sendall(cmd + "\r\n")
 
     def send_cmds(self, cmds):
         """cmds already has trailing \r\n's applied."""
@@ -1312,30 +1359,31 @@ class _Host(object):
         if self.socket:
             recv = self.socket.recv
         else:
-            recv = lambda bufsize: ''
+            recv = lambda bufsize: ""
 
         while True:
-            index = buf.find('\r\n')
+            index = buf.find("\r\n")
             if index >= 0:
                 break
             data = recv(4096)
             if not data:
                 # connection close, let's kill it and raise
-                self.mark_dead('connection closed in readline()')
+                self.mark_dead("connection closed in readline()")
                 if raise_exception:
                     raise _ConnectionDeadError()
                 else:
-                    return ''
+                    return ""
 
             buf += data
-        self.buffer = buf[index + 2:]
+        self.buffer = buf[index + 2 :]
         return buf[:index]
 
     def expect(self, text, raise_exception=False):
         line = self.readline(raise_exception)
         if line != text:
-            self.debuglog("while expecting '%s', got unexpected response '%s'"
-                          % (text, line))
+            self.debuglog(
+                "while expecting '%s', got unexpected response '%s'" % (text, line)
+            )
         return line
 
     def recv(self, rlen):
@@ -1345,17 +1393,19 @@ class _Host(object):
             foo = self_socket_recv(max(rlen - len(buf), 4096))
             buf += foo
             if not foo:
-                raise _Error('Read %d bytes, expecting %d, '
-                             'read returned 0 length bytes' % (len(buf), rlen))
+                raise _Error(
+                    "Read %d bytes, expecting %d, "
+                    "read returned 0 length bytes" % (len(buf), rlen)
+                )
         self.buffer = buf[rlen:]
         return buf[:rlen]
 
     def flush(self):
-        self.send_cmd('flush_all')
-        self.expect('OK')
+        self.send_cmd("flush_all")
+        self.expect("OK")
 
     def __str__(self):
-        d = ''
+        d = ""
         if self.deaduntil:
             d = " (dead until %d)" % self.deaduntil
 
@@ -1369,11 +1419,14 @@ class _Host(object):
 
 def _doctest():
     import doctest
+
     import memcache
+
     servers = ["127.0.0.1:11211"]
     mc = Client(servers, debug=1)
     globs = {"mc": mc}
     return doctest.testmod(memcache, globs=globs)
+
 
 if __name__ == "__main__":
     failures = 0
@@ -1382,8 +1435,8 @@ if __name__ == "__main__":
     print("Running tests:")
     print()
     serverList = [["127.0.0.1:11211"]]
-    if '--do-unix' in sys.argv:
-        serverList.append([os.path.join(os.getcwd(), 'memcached.socket')])
+    if "--do-unix" in sys.argv:
+        serverList.append([os.path.join(os.getcwd(), "memcached.socket")])
 
     for servers in serverList:
         mc = Client(servers, debug=1)
@@ -1395,8 +1448,7 @@ if __name__ == "__main__":
 
         def test_setget(key, val):
             global failures
-            print("Testing set/get {'%s': %s} ..."
-                  % (to_s(key), to_s(val)), end=" ")
+            print("Testing set/get {'%s': %s} ..." % (to_s(key), to_s(val)), end=" ")
             mc.set(key, val)
             newval = mc.get(key)
             if newval == val:
@@ -1408,7 +1460,6 @@ if __name__ == "__main__":
                 return 0
 
         class FooStruct(object):
-
             def __init__(self):
                 self.bar = "baz"
 
@@ -1435,7 +1486,9 @@ if __name__ == "__main__":
             else:
                 print("FAIL")
                 failures += 1
-        print("Testing get_multi ...",)
+        print(
+            "Testing get_multi ...",
+        )
         print(mc.get_multi(["a_string", "an_integer"]))
 
         #  removed from the protocol
@@ -1498,14 +1551,14 @@ if __name__ == "__main__":
 
         print("Testing using insanely long key...", end=" ")
         try:
-            x = mc.set('a'*SERVER_MAX_KEY_LENGTH, 1)
+            x = mc.set("a" * SERVER_MAX_KEY_LENGTH, 1)
         except Client.MemcachedKeyLengthError as msg:
             print("FAIL")
             failures += 1
         else:
             print("OK")
         try:
-            x = mc.set('a'*SERVER_MAX_KEY_LENGTH + 'a', 1)
+            x = mc.set("a" * SERVER_MAX_KEY_LENGTH + "a", 1)
         except Client.MemcachedKeyLengthError as msg:
             print("OK")
         else:
@@ -1514,22 +1567,22 @@ if __name__ == "__main__":
 
         print("Testing sending a unicode-string key...", end=" ")
         try:
-            x = mc.set(unicode('keyhere'), 1)
+            x = mc.set(unicode("keyhere"), 1)
         except Client.MemcachedStringEncodingError as msg:
             print("OK", end=" ")
         else:
             print("FAIL", end=" ")
             failures += 1
         try:
-            x = mc.set((unicode('a')*SERVER_MAX_KEY_LENGTH).encode('utf-8'), 1)
+            x = mc.set((unicode("a") * SERVER_MAX_KEY_LENGTH).encode("utf-8"), 1)
         except Client.MemcachedKeyError:
             print("FAIL", end=" ")
             failures += 1
         else:
             print("OK", end=" ")
-        s = pickle.loads('V\\u4f1a\np0\n.')
+        s = pickle.loads("V\\u4f1a\np0\n.")
         try:
-            x = mc.set((s * SERVER_MAX_KEY_LENGTH).encode('utf-8'), 1)
+            x = mc.set((s * SERVER_MAX_KEY_LENGTH).encode("utf-8"), 1)
         except Client.MemcachedKeyLengthError:
             print("OK")
         else:
@@ -1538,14 +1591,14 @@ if __name__ == "__main__":
 
         print("Testing using a value larger than the memcached value limit...")
         print('NOTE: "MemCached: while expecting[...]" is normal...')
-        x = mc.set('keyhere', 'a'*SERVER_MAX_VALUE_LENGTH)
-        if mc.get('keyhere') is None:
+        x = mc.set("keyhere", "a" * SERVER_MAX_VALUE_LENGTH)
+        if mc.get("keyhere") is None:
             print("OK", end=" ")
         else:
             print("FAIL", end=" ")
             failures += 1
-        x = mc.set('keyhere', 'a'*SERVER_MAX_VALUE_LENGTH + 'aaa')
-        if mc.get('keyhere') is None:
+        x = mc.set("keyhere", "a" * SERVER_MAX_VALUE_LENGTH + "aaa")
+        if mc.get("keyhere") is None:
             print("OK")
         else:
             print("FAIL")
@@ -1553,7 +1606,7 @@ if __name__ == "__main__":
 
         print("Testing set_multi() with no memcacheds running", end=" ")
         mc.disconnect_all()
-        errors = mc.set_multi({'keyhere': 'a', 'keythere': 'b'})
+        errors = mc.set_multi({"keyhere": "a", "keythere": "b"})
         if errors != []:
             print("FAIL")
             failures += 1
@@ -1562,7 +1615,7 @@ if __name__ == "__main__":
 
         print("Testing delete_multi() with no memcacheds running", end=" ")
         mc.disconnect_all()
-        ret = mc.delete_multi({'keyhere': 'a', 'keythere': 'b'})
+        ret = mc.delete_multi({"keyhere": "a", "keythere": "b"})
         if ret != 1:
             print("FAIL")
             failures += 1
@@ -1570,7 +1623,7 @@ if __name__ == "__main__":
             print("OK")
 
     if failures > 0:
-        print('*** THERE WERE FAILED TESTS')
+        print("*** THERE WERE FAILED TESTS")
         sys.exit(1)
     sys.exit(0)
 

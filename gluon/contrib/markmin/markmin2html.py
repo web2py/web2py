@@ -4,18 +4,20 @@
 # recreated by Vladyslav Kozlovskyy
 # license MIT/BSD/GPL
 from __future__ import print_function
+
+import ast
 import re
 import sys
 import urllib
-import ast
 
 PY2 = sys.version_info[0] == 2
 
 if PY2:
-    from urllib import quote as urllib_quote
     from string import maketrans
+    from urllib import quote as urllib_quote
 else:
     from urllib.parse import quote as urllib_quote
+
     maketrans = str.maketrans
 
 
@@ -35,7 +37,7 @@ MathJax.Hub.Config({
 </script>
 """
 
-__all__ = ['render', 'markmin2html', 'markmin_escape']
+__all__ = ["render", "markmin2html", "markmin_escape"]
 
 __doc__ = """
 # Markmin markup language
@@ -535,41 +537,80 @@ As shown in Ref.!`!`mdipierro`!`!:cite
 ``<ul/>``, ``<ol/>``, ``<code/>``, ``<table/>``, ``<blockquote/>``, ``<h1/>``, ..., ``<h6/>`` do not have ``<p>...</p>`` around them.
 
 """
-html_colors = ['aqua', 'black', 'blue', 'fuchsia', 'gray', 'green',
-               'lime', 'maroon', 'navy', 'olive', 'purple', 'red',
-               'silver', 'teal', 'white', 'yellow']
+html_colors = [
+    "aqua",
+    "black",
+    "blue",
+    "fuchsia",
+    "gray",
+    "green",
+    "lime",
+    "maroon",
+    "navy",
+    "olive",
+    "purple",
+    "red",
+    "silver",
+    "teal",
+    "white",
+    "yellow",
+]
 
-META = '\x06'
-LINK = '\x07'
-DISABLED_META = '\x08'
+META = "\x06"
+LINK = "\x07"
+DISABLED_META = "\x08"
 LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
-regex_URL = re.compile(r'@/(?P<a>\w*)/(?P<c>\w*)/(?P<f>\w*(\.\w+)?)(/(?P<args>[\w\.\-/]+))?')
-regex_env2 = re.compile(r'@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}')
-regex_expand_meta = re.compile('(' + META + '|' + DISABLED_META + '|````)')
-regex_dd = re.compile(r'\$\$(?P<latex>.*?)\$\$')
+regex_URL = re.compile(
+    r"@/(?P<a>\w*)/(?P<c>\w*)/(?P<f>\w*(\.\w+)?)(/(?P<args>[\w\.\-/]+))?"
+)
+regex_env2 = re.compile(r"@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}")
+regex_expand_meta = re.compile("(" + META + "|" + DISABLED_META + "|````)")
+regex_dd = re.compile(r"\$\$(?P<latex>.*?)\$\$")
 regex_code = re.compile(
-    '(' + META + '|' + DISABLED_META + r'|````)|(``(?P<t>.+?)``(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[^\]]*)\])?)?)',
-    re.S)
-regex_strong = re.compile(r'\*\*(?P<t>[^\s*]+( +[^\s*]+)*)\*\*')
-regex_del = re.compile(r'~~(?P<t>[^\s~]+( +[^\s~]+)*)~~')
+    "("
+    + META
+    + "|"
+    + DISABLED_META
+    + r"|````)|(``(?P<t>.+?)``(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[^\]]*)\])?)?)",
+    re.S,
+)
+regex_strong = re.compile(r"\*\*(?P<t>[^\s*]+( +[^\s*]+)*)\*\*")
+regex_del = re.compile(r"~~(?P<t>[^\s~]+( +[^\s~]+)*)~~")
 regex_em = re.compile(r"''(?P<t>([^\s']| |'(?!'))+)''")
 regex_num = re.compile(r"^\s*[+-]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?[0-9]+)?\s*$")
-regex_list = re.compile('^(?:(?:(#{1,6})|(?:(\.+|\++|\-+)(\.)?))\s*)?(.*)$')
-regex_bq_headline = re.compile('^(?:(\.+|\++|\-+)(\.)?\s+)?(-{3}-*)$')
-regex_tq = re.compile('^(-{3}-*)(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[a-zA-Z][_a-zA-Z\-\d]*)\])?)?$')
-regex_proto = re.compile(r'(?<!["\w>/=])(?P<p>\w+):(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M)
-regex_auto = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=?%&/:.,;#]+\w|[\w\-.]+@[\w\-.]+)', re.M)
-regex_link = re.compile(r'(' + LINK + r')|\[\[(?P<s>.+?)\]\]', re.S)
-regex_link_level2 = re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?(?:\s+(?P<p>popup))?\s*$', re.S)
+regex_list = re.compile("^(?:(?:(#{1,6})|(?:(\.+|\++|\-+)(\.)?))\s*)?(.*)$")
+regex_bq_headline = re.compile("^(?:(\.+|\++|\-+)(\.)?\s+)?(-{3}-*)$")
+regex_tq = re.compile(
+    "^(-{3}-*)(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[a-zA-Z][_a-zA-Z\-\d]*)\])?)?$"
+)
+regex_proto = re.compile(
+    r'(?<!["\w>/=])(?P<p>\w+):(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M
+)
+regex_auto = re.compile(
+    r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=?%&/:.,;#]+\w|[\w\-.]+@[\w\-.]+)', re.M
+)
+regex_link = re.compile(r"(" + LINK + r")|\[\[(?P<s>.+?)\]\]", re.S)
+regex_link_level2 = re.compile(
+    r"^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?(?:\s+(?P<p>popup))?\s*$",
+    re.S,
+)
 regex_media_level2 = re.compile(
-    r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?\s+(?P<p>img|IMG|left|right|center|video|audio|blockleft|blockright)(?:\s+(?P<w>\d+px))?\s*$',
-    re.S)
+    r"^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?\s+(?P<p>img|IMG|left|right|center|video|audio|blockleft|blockright)(?:\s+(?P<w>\d+px))?\s*$",
+    re.S,
+)
 
 regex_markmin_escape = re.compile(r"(\\*)(['`:*~\\[\]{}@\$+\-.#\n])")
 regex_backslash = re.compile(r"\\(['`:*~\\[\]{}@\$+\-.#\n])")
-ttab_in = maketrans("'`:*~\\[]{}@$+-.#\n", '\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05')
-ttab_out = maketrans('\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05', "'`:*~\\[]{}@$+-.#\n")
-regex_quote = re.compile('(?P<name>\w+?)\s*\=\s*')
+ttab_in = maketrans(
+    "'`:*~\\[]{}@$+-.#\n",
+    "\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05",
+)
+ttab_out = maketrans(
+    "\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05",
+    "'`:*~\\[]{}@$+-.#\n",
+)
+regex_quote = re.compile("(?P<name>\w+?)\s*\=\s*")
+
 
 def local_html_escape(data, quote=False):
     """
@@ -581,22 +622,25 @@ def local_html_escape(data, quote=False):
     """
     if PY2:
         import cgi
+
         data = cgi.escape(data, quote)
         return data.replace("'", "&#x27;") if quote else data
     else:
         import html
+
         if isinstance(data, str):
             return html.escape(data, quote=quote)
-        data = data.replace(b"&", b"&amp;")  # Must be done first!                                                                                           
+        data = data.replace(b"&", b"&amp;")  # Must be done first!
         data = data.replace(b"<", b"&lt;")
         data = data.replace(b">", b"&gt;")
         if quote:
             data = data.replace(b'"', b"&quot;")
-            data = data.replace(b'\'', b"&#x27;")
+            data = data.replace(b"'", b"&#x27;")
         return data
 
+
 def make_dict(b):
-    return '{%s}' % regex_quote.sub("'\g<name>':", b)
+    return "{%s}" % regex_quote.sub("'\g<name>':", b)
 
 
 def safe_eval(node_or_string, env):
@@ -606,10 +650,10 @@ def safe_eval(node_or_string, env):
     Python literal structures: strings, numbers, tuples, lists, dicts, booleans,
     and None.
     """
-    _safe_names = {'None': None, 'True': True, 'False': False}
+    _safe_names = {"None": None, "True": True, "False": False}
     _safe_names.update(env)
     if isinstance(node_or_string, basestring):
-        node_or_string = ast.parse(node_or_string, mode='eval')
+        node_or_string = ast.parse(node_or_string, mode="eval")
     if isinstance(node_or_string, ast.Expression):
         node_or_string = node_or_string.body
 
@@ -623,44 +667,54 @@ def safe_eval(node_or_string, env):
         elif isinstance(node, ast.List):
             return list(map(_convert, node.elts))
         elif isinstance(node, ast.Dict):
-            return dict((_convert(k), _convert(v)) for k, v
-                        in zip(node.keys, node.values))
+            return dict(
+                (_convert(k), _convert(v)) for k, v in zip(node.keys, node.values)
+            )
         elif isinstance(node, ast.Name):
             if node.id in _safe_names:
                 return _safe_names[node.id]
-        elif isinstance(node, ast.BinOp) and \
-                isinstance(node.op, (ast.Add, ast.Sub)) and \
-                isinstance(node.right, ast.Num) and \
-                isinstance(node.right.n, complex) and \
-                isinstance(node.left, ast.Num) and \
-                isinstance(node.left.n, (int, long, float)):
+        elif (
+            isinstance(node, ast.BinOp)
+            and isinstance(node.op, (ast.Add, ast.Sub))
+            and isinstance(node.right, ast.Num)
+            and isinstance(node.right.n, complex)
+            and isinstance(node.left, ast.Num)
+            and isinstance(node.left.n, (int, long, float))
+        ):
             left = node.left.n
             right = node.right.n
             if isinstance(node.op, ast.Add):
                 return left + right
             else:
                 return left - right
-        raise ValueError('malformed string')
+        raise ValueError("malformed string")
 
     return _convert(node_or_string)
 
 
 def markmin_escape(text):
-    """ insert \\ before markmin control characters: '`:*~[]{}@$ """
+    """insert \\ before markmin control characters: '`:*~[]{}@$"""
     return regex_markmin_escape.sub(
-        lambda m: '\\' + m.group(0).replace('\\', '\\\\'), text)
+        lambda m: "\\" + m.group(0).replace("\\", "\\\\"), text
+    )
 
 
 def replace_autolinks(text, autolinks):
-    return regex_auto.sub(lambda m: autolinks(m.group('k')), text)
+    return regex_auto.sub(lambda m: autolinks(m.group("k")), text)
 
 
 def replace_at_urls(text, url):
     # this is experimental @{function/args}
     def u1(match, url=url):
-        a, c, f, args = match.group('a', 'c', 'f', 'args')
-        return url(a=a or None, c=c or None, f=f or None,
-                   args=(args or '').split('/'), scheme=True, host=True)
+        a, c, f, args = match.group("a", "c", "f", "args")
+        return url(
+            a=a or None,
+            c=c or None,
+            f=f or None,
+            args=(args or "").split("/"),
+            scheme=True,
+            host=True,
+        )
 
     return regex_URL.sub(u1, text)
 
@@ -668,9 +722,9 @@ def replace_at_urls(text, url):
 def replace_components(text, env):
     # not perfect but acceptable
     def u2(match, env=env):
-        f = env.get(match.group('a'), match.group(0))
+        f = env.get(match.group("a"), match.group(0))
         if callable(f):
-            b = match.group('b')
+            b = match.group("b")
             try:
                 b = safe_eval(make_dict(b), env)
             except:
@@ -678,7 +732,7 @@ def replace_components(text, env):
             try:
                 f = f(**b) if isinstance(b, dict) else f(b)
             except Exception as e:
-                f = 'ERROR: %s' % e
+                f = "ERROR: %s" % e
             return str(f)
 
     text = regex_env2.sub(u2, text)
@@ -691,13 +745,13 @@ def autolinks_simple(url):
     image, video or audio tag
     """
     u_url = url.lower()
-    if '@' in url and '://' not in url:
+    if "@" in url and "://" not in url:
         return '<a href="mailto:%s">%s</a>' % (url, url)
-    elif u_url.endswith(('.jpg', '.jpeg', '.gif', '.png')):
+    elif u_url.endswith((".jpg", ".jpeg", ".gif", ".png")):
         return '<img src="%s" controls />' % url
-    elif u_url.endswith(('.mp4', '.mpeg', '.mov', '.ogv')):
+    elif u_url.endswith((".mp4", ".mpeg", ".mov", ".ogv")):
         return '<video src="%s" controls></video>' % url
-    elif u_url.endswith(('.mp3', '.wav', '.ogg')):
+    elif u_url.endswith((".mp3", ".wav", ".ogg")):
         return '<audio src="%s" controls></audio>' % url
     return '<a href="%s">%s</a>' % (url, url)
 
@@ -711,31 +765,36 @@ def protolinks_simple(proto, url):
             proto="iframe"
             url="http://www.example.com/path"
     """
-    if proto in ('iframe', 'embed'):  # == 'iframe':
+    if proto in ("iframe", "embed"):  # == 'iframe':
         return '<iframe src="%s" frameborder="0" allowfullscreen></iframe>' % url
     # elif proto == 'embed':  # NOTE: embed is a synonym to iframe now
     #    return '<a href="%s" class="%sembed">%s></a>'%(url,class_prefix,url)
-    elif proto == 'qr':
-        return '<img style="width:100px" src="http://chart.apis.google.com/chart?cht=qr&chs=100x100&chl=%s&choe=UTF-8&chld=H" alt="QR Code" title="QR Code" />' % url
-    return proto + ':' + url
+    elif proto == "qr":
+        return (
+            '<img style="width:100px" src="http://chart.apis.google.com/chart?cht=qr&chs=100x100&chl=%s&choe=UTF-8&chld=H" alt="QR Code" title="QR Code" />'
+            % url
+        )
+    return proto + ":" + url
 
 
 def email_simple(email):
     return '<a href="mailto:%s">%s</a>' % (email, email)
 
 
-def render(text,
-           extra={},
-           allowed={},
-           sep='p',
-           URL=None,
-           environment=None,
-           latex='google',
-           autolinks='default',
-           protolinks='default',
-           class_prefix='',
-           id_prefix='markmin_',
-           pretty_print=False):
+def render(
+    text,
+    extra={},
+    allowed={},
+    sep="p",
+    URL=None,
+    environment=None,
+    latex="google",
+    autolinks="default",
+    protolinks="default",
+    class_prefix="",
+    id_prefix="markmin_",
+    pretty_print=False,
+):
     """
     Arguments:
     - text is the text to be processed
@@ -975,18 +1034,22 @@ def render(text,
         autolinks = autolinks_simple
     if protolinks == "default":
         protolinks = protolinks_simple
-    pp = '\n' if pretty_print else ''
-    text = text if text is None or isinstance(text, str) else text.decode('utf8', 'strict')
+    pp = "\n" if pretty_print else ""
+    text = (
+        text if text is None or isinstance(text, str) else text.decode("utf8", "strict")
+    )
 
     if not (isinstance(text, str)):
-        text = str(text or '')
+        text = str(text or "")
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
-    text = text.replace('\x05', '').replace('\r\n', '\n')  # concatenate strings separeted by \\n
+    text = text.replace("\x05", "").replace(
+        "\r\n", "\n"
+    )  # concatenate strings separeted by \\n
     if URL is not None:
         text = replace_at_urls(text, URL)
 
-    if latex == 'google':
-        text = regex_dd.sub('``\g<latex>``:latex ', text)
+    if latex == "google":
+        text = regex_dd.sub("``\g<latex>``:latex ", text)
 
     #############################################################
     # replace all blocks marked with ``...``:class[id] with META
@@ -999,15 +1062,15 @@ def render(text,
         if g in (META, DISABLED_META):
             segments.append((None, None, None, g))
             return m.group()
-        elif g == '````':
-            segments.append((None, None, None, ''))
+        elif g == "````":
+            segments.append((None, None, None, ""))
             return m.group()
         else:
-            c = m.group('c') or ''
-            p = m.group('p') or ''
-            if 'code' in allowed and c not in allowed['code']:
-                c = ''
-            code = m.group('t').replace('!`!', '`')
+            c = m.group("c") or ""
+            p = m.group("p") or ""
+            if "code" in allowed and c not in allowed["code"]:
+                c = ""
+            code = m.group("t").replace("!`!", "`")
             segments.append((code, c, p, m.group(0)))
         return META
 
@@ -1020,15 +1083,14 @@ def render(text,
     links = []
 
     def mark_link(m):
-        links.append(None if m.group() == LINK
-                     else m.group('s'))
+        links.append(None if m.group() == LINK else m.group("s"))
         return LINK
 
     text = regex_link.sub(mark_link, text)
     text = local_html_escape(text)
 
     if protolinks:
-        text = regex_proto.sub(lambda m: protolinks(*m.group('p', 'k')), text)
+        text = regex_proto.sub(lambda m: protolinks(*m.group("p", "k")), text)
 
     if autolinks:
         text = replace_autolinks(text, autolinks)
@@ -1036,7 +1098,7 @@ def render(text,
     #############################################################
     # normalize spaces
     #############################################################
-    strings = text.split('\n')
+    strings = text.split("\n")
 
     def parse_title(t, s):  # out, lev, etags, tag, s):
         hlevel = str(len(t))
@@ -1046,7 +1108,7 @@ def render(text,
         lev = 0
         ltags[:] = []
         tlev[:] = []
-        return (lev, 'h')
+        return (lev, "h")
 
     def parse_list(t, p, s, tag, lev, mtag, lineno):
         lent = len(t)
@@ -1063,12 +1125,12 @@ def render(text,
                 ltags[:] = []
                 tlev[:] = []
                 etags[:] = []
-            if pend and mtag == '.':  # paragraph in a list:
+            if pend and mtag == ".":  # paragraph in a list:
                 out.append(etags.pop())
                 ltags.pop()
             for i in range(lent - lev):
-                out.append('<' + tag + '>' + pp)
-                etags.append('</' + tag + '>' + pp)
+                out.append("<" + tag + ">" + pp)
+                etags.append("</" + tag + ">" + pp)
                 lev += 1
                 ltags.append(lev)
                 tlev.append(tag)
@@ -1079,51 +1141,51 @@ def render(text,
                     ltags.pop()
                     out.append(etags.pop())
                 tlev[-1] = tag
-                out.append('<' + tag + '>' + pp)
-                etags.append('</' + tag + '>' + pp)
+                out.append("<" + tag + ">" + pp)
+                etags.append("</" + tag + ">" + pp)
                 ltags.append(lev)
             else:
                 if ltags.count(lev) > 1:
                     out.append(etags.pop())
                     ltags.pop()
-        mtag = 'l'
-        out.append('<li>')
-        etags.append('</li>' + pp)
+        mtag = "l"
+        out.append("<li>")
+        etags.append("</li>" + pp)
         ltags.append(lev)
-        if s[:1] == '-':
+        if s[:1] == "-":
             (s, mtag, lineno) = parse_table_or_blockquote(s, mtag, lineno)
-        if p and mtag == 'l':
-            (lev, mtag, lineno) = parse_point(t, s, lev, '', lineno)
+        if p and mtag == "l":
+            (lev, mtag, lineno) = parse_point(t, s, lev, "", lineno)
         else:
             out.append(s)
 
         return (lev, mtag, lineno)
 
     def parse_point(t, s, lev, mtag, lineno):
-        """ paragraphs in lists """
+        """paragraphs in lists"""
         lent = len(t)
         if lent > lev:
-            return parse_list(t, '.', s, 'ul', lev, mtag, lineno)
+            return parse_list(t, ".", s, "ul", lev, mtag, lineno)
         elif lent < lev:
             while ltags[-1] > lent:
                 ltags.pop()
                 out.append(etags.pop())
             lev = lent
             tlev[lev:] = []
-            mtag = ''
+            mtag = ""
         elif lent == lev:
-            if pend and mtag == '.':
+            if pend and mtag == ".":
                 out.append(etags.pop())
                 ltags.pop()
-        if br and mtag in ('l', '.'):
+        if br and mtag in ("l", "."):
             out.append(br)
         if s == META:
-            mtag = ''
+            mtag = ""
         else:
-            mtag = '.'
-            if s[:1] == '-':
+            mtag = "."
+            if s[:1] == "-":
                 (s, mtag, lineno) = parse_table_or_blockquote(s, mtag, lineno)
-            if mtag == '.':
+            if mtag == ".":
                 out.append(pbeg)
                 if pend:
                     etags.append(pend)
@@ -1136,28 +1198,27 @@ def render(text,
         # - is empty -> this is an <hr /> tag
         # - consists '|' -> table
         # - consists other characters -> blockquote
-        if (lineno + 1 >= strings_len or
-                not (s.count('-') == len(s) and len(s) > 3)):
+        if lineno + 1 >= strings_len or not (s.count("-") == len(s) and len(s) > 3):
             return (s, mtag, lineno)
 
         lineno += 1
         s = strings[lineno].strip()
         if s:
-            if '|' in s:
+            if "|" in s:
                 # table
                 tout = []
                 thead = []
                 tbody = []
                 rownum = 0
-                t_id = ''
-                t_cls = ''
+                t_id = ""
+                t_cls = ""
 
                 # parse table:
                 while lineno < strings_len:
                     s = strings[lineno].strip()
-                    if s[:1] == '=':
+                    if s[:1] == "=":
                         # header or footer
-                        if s.count('=') == len(s) and len(s) > 3:
+                        if s.count("=") == len(s) and len(s) > 3:
                             if not thead:  # if thead list is empty:
                                 thead = tout
                             else:
@@ -1169,43 +1230,56 @@ def render(text,
 
                     m = regex_tq.match(s)
                     if m:
-                        t_cls = m.group('c') or ''
-                        t_id = m.group('p') or ''
+                        t_cls = m.group("c") or ""
+                        t_id = m.group("p") or ""
                         break
 
                     if rownum % 2:
                         tr = '<tr class="even">'
                     else:
-                        tr = '<tr class="first">' if rownum == 0 else '<tr>'
-                    tout.append(tr + ''.join(['<td%s>%s</td>' % (
-                        ' class="num"'
-                        if regex_num.match(f) else '',
-                        f.strip()
-                    ) for f in s.split('|')]) + '</tr>' + pp)
+                        tr = '<tr class="first">' if rownum == 0 else "<tr>"
+                    tout.append(
+                        tr
+                        + "".join(
+                            [
+                                "<td%s>%s</td>"
+                                % (
+                                    ' class="num"' if regex_num.match(f) else "",
+                                    f.strip(),
+                                )
+                                for f in s.split("|")
+                            ]
+                        )
+                        + "</tr>"
+                        + pp
+                    )
                     rownum += 1
                     lineno += 1
 
-                t_cls = ' class="%s%s"' % (class_prefix, t_cls) \
-                    if t_cls and t_cls != 'id' else ''
-                t_id = ' id="%s%s"' % (id_prefix, t_id) if t_id else ''
-                s = ''
+                t_cls = (
+                    ' class="%s%s"' % (class_prefix, t_cls)
+                    if t_cls and t_cls != "id"
+                    else ""
+                )
+                t_id = ' id="%s%s"' % (id_prefix, t_id) if t_id else ""
+                s = ""
                 if thead:
-                    s += '<thead>' + pp + ''.join([l for l in thead]) + '</thead>' + pp
+                    s += "<thead>" + pp + "".join([l for l in thead]) + "</thead>" + pp
                 if not tbody:  # tbody strings are in tout list
                     tbody = tout
                     tout = []
                 if tbody:  # if tbody list is not empty:
-                    s += '<tbody>' + pp + ''.join([l for l in tbody]) + '</tbody>' + pp
+                    s += "<tbody>" + pp + "".join([l for l in tbody]) + "</tbody>" + pp
                 if tout:  # tfoot is not empty:
-                    s += '<tfoot>' + pp + ''.join([l for l in tout]) + '</tfoot>' + pp
-                s = '<table%s%s>%s%s</table>%s' % (t_cls, t_id, pp, s, pp)
-                mtag = 't'
+                    s += "<tfoot>" + pp + "".join([l for l in tout]) + "</tfoot>" + pp
+                s = "<table%s%s>%s%s</table>%s" % (t_cls, t_id, pp, s, pp)
+                mtag = "t"
             else:
                 # parse blockquote:
                 bq_begin = lineno
                 t_mode = False  # embedded table
-                t_cls = ''
-                t_id = ''
+                t_cls = ""
+                t_id = ""
 
                 # search blockquote closing line:
                 while lineno < strings_len:
@@ -1213,15 +1287,16 @@ def render(text,
                     if not t_mode:
                         m = regex_tq.match(s)
                         if m:
-                            if (lineno + 1 == strings_len or
-                                        '|' not in strings[lineno + 1]):
-                                t_cls = m.group('c') or ''
-                                t_id = m.group('p') or ''
+                            if (
+                                lineno + 1 == strings_len
+                                or "|" not in strings[lineno + 1]
+                            ):
+                                t_cls = m.group("c") or ""
+                                t_id = m.group("p") or ""
                                 break
 
                         if regex_bq_headline.match(s):
-                            if (lineno + 1 < strings_len and
-                                    strings[lineno + 1].strip()):
+                            if lineno + 1 < strings_len and strings[lineno + 1].strip():
                                 t_mode = True
                             lineno += 1
                             continue
@@ -1232,37 +1307,41 @@ def render(text,
 
                     lineno += 1
 
-                t_cls = ' class="%s%s"' % (class_prefix, t_cls) \
-                    if t_cls and t_cls != 'id' else ''
-                t_id = ' id="%s%s"' % (id_prefix, t_id) \
-                    if t_id else ''
+                t_cls = (
+                    ' class="%s%s"' % (class_prefix, t_cls)
+                    if t_cls and t_cls != "id"
+                    else ""
+                )
+                t_id = ' id="%s%s"' % (id_prefix, t_id) if t_id else ""
 
-                s = '<blockquote%s%s>%s</blockquote>%s' \
-                    % (t_cls,
-                       t_id,
-                       render('\n'.join(strings[bq_begin:lineno])), pp)
-                mtag = 'q'
+                s = "<blockquote%s%s>%s</blockquote>%s" % (
+                    t_cls,
+                    t_id,
+                    render("\n".join(strings[bq_begin:lineno])),
+                    pp,
+                )
+                mtag = "q"
         else:
-            s = '<hr />'
+            s = "<hr />"
             lineno -= 1
-            mtag = 'q'
-        return (s, 'q', lineno)
+            mtag = "q"
+        return (s, "q", lineno)
 
-    if sep == 'p':
+    if sep == "p":
         pbeg = "<p>"
         pend = "</p>" + pp
-        br = ''
+        br = ""
     else:
-        pbeg = pend = ''
-        br = "<br />" + pp if sep == 'br' else ''
+        pbeg = pend = ""
+        br = "<br />" + pp if sep == "br" else ""
 
     lev = 0  # nesting level of lists
-    c0 = ''  # first character of current line
+    c0 = ""  # first character of current line
     out = []  # list of processed lines
     etags = []  # trailing tags
     ltags = []  # level# correspondent to trailing tag
     tlev = []  # list of tags for each level ('ul' or 'ol')
-    mtag = ''  # marked tag (~last tag) ('l','.','h','p','t'). Used to set <br/>
+    mtag = ""  # marked tag (~last tag) ('l','.','h','p','t'). Used to set <br/>
     # and to avoid <p></p> around tables and blockquotes
     lineno = 0
     strings_len = len(strings)
@@ -1286,129 +1365,184 @@ def render(text,
                 # ss - other part of string
                 if t1 or t2:
                     # headers and lists:
-                    if c0 == '#':  # headers
+                    if c0 == "#":  # headers
                         (lev, mtag) = parse_title(t1, ss)
                         lineno += 1
                         continue
-                    elif c0 == '+':  # ordered list
-                        (lev, mtag, lineno) = parse_list(t2, p, ss, 'ol', lev, mtag, lineno)
+                    elif c0 == "+":  # ordered list
+                        (lev, mtag, lineno) = parse_list(
+                            t2, p, ss, "ol", lev, mtag, lineno
+                        )
                         lineno += 1
                         continue
-                    elif c0 == '-':  # unordered list, table or blockquote
+                    elif c0 == "-":  # unordered list, table or blockquote
                         if p or ss:
-                            (lev, mtag, lineno) = parse_list(t2, p, ss, 'ul', lev, mtag, lineno)
+                            (lev, mtag, lineno) = parse_list(
+                                t2, p, ss, "ul", lev, mtag, lineno
+                            )
                             lineno += 1
                             continue
                         else:
-                            (s, mtag, lineno) = parse_table_or_blockquote(s, mtag, lineno)
+                            (s, mtag, lineno) = parse_table_or_blockquote(
+                                s, mtag, lineno
+                            )
                     elif lev > 0:  # and c0 == '.' # paragraph in lists
                         (lev, mtag, lineno) = parse_point(t2, ss, lev, mtag, lineno)
                         lineno += 1
                         continue
 
-            if lev == 0 and (mtag == 'q' or s == META):
+            if lev == 0 and (mtag == "q" or s == META):
                 # new paragraph
-                pc0 = ''
+                pc0 = ""
 
-            if pc0 == '' or (mtag != 'p' and s0 not in (' ', '\t')):
+            if pc0 == "" or (mtag != "p" and s0 not in (" ", "\t")):
                 # paragraph
                 out.extend(etags[::-1])
                 etags = []
                 ltags = []
                 tlev = []
                 lev = 0
-                if br and mtag == 'p':
+                if br and mtag == "p":
                     out.append(br)
-                if mtag != 'q' and s != META:
+                if mtag != "q" and s != META:
                     if pend:
                         etags = [pend]
                     out.append(pbeg)
-                    mtag = 'p'
+                    mtag = "p"
                 else:
-                    mtag = ''
+                    mtag = ""
                 out.append(s)
             else:
-                if lev > 0 and mtag == '.' and s == META:
+                if lev > 0 and mtag == "." and s == META:
                     out.append(etags.pop())
                     ltags.pop()
                     out.append(s)
-                    mtag = ''
+                    mtag = ""
                 else:
-                    out.append(' ' + s)
+                    out.append(" " + s)
         lineno += 1
     out.extend(etags[::-1])
-    text = ''.join(out)
+    text = "".join(out)
 
     #############################################################
     # do strong,em,del
     #############################################################
-    text = regex_strong.sub('<strong>\g<t></strong>', text)
-    text = regex_del.sub('<del>\g<t></del>', text)
-    text = regex_em.sub('<em>\g<t></em>', text)
+    text = regex_strong.sub("<strong>\g<t></strong>", text)
+    text = regex_del.sub("<del>\g<t></del>", text)
+    text = regex_em.sub("<em>\g<t></em>", text)
 
     #############################################################
     # deal with images, videos, audios and links
     #############################################################
     def sub_media(m):
-        t, a, k, p, w = m.group('t', 'a', 'k', 'p', 'w')
+        t, a, k, p, w = m.group("t", "a", "k", "p", "w")
         if not k:
             return m.group(0)
         k = local_html_escape(k)
-        t = t or ''
-        style = 'width:%s' % w if w else ''
-        title = ' title="%s"' % local_html_escape(a).replace(META, DISABLED_META) if a else ''
-        p_begin = p_end = ''
-        if p == 'center':
+        t = t or ""
+        style = "width:%s" % w if w else ""
+        title = (
+            ' title="%s"' % local_html_escape(a).replace(META, DISABLED_META)
+            if a
+            else ""
+        )
+        p_begin = p_end = ""
+        if p == "center":
             p_begin = '<p style="text-align:center">'
-            p_end = '</p>' + pp
-        elif p == 'blockleft':
+            p_end = "</p>" + pp
+        elif p == "blockleft":
             p_begin = '<p style="text-align:left">'
-            p_end = '</p>' + pp
-        elif p == 'blockright':
+            p_end = "</p>" + pp
+        elif p == "blockright":
             p_begin = '<p style="text-align:right">'
-            p_end = '</p>' + pp
-        elif p in ('left', 'right'):
-            style = ('float:%s' % p) + (';%s' % style if style else '')
+            p_end = "</p>" + pp
+        elif p in ("left", "right"):
+            style = ("float:%s" % p) + (";%s" % style if style else "")
         if t and regex_auto.match(t):
             p_begin = p_begin + '<a href="%s">' % t
-            p_end = '</a>' + p_end
-            t = ''
+            p_end = "</a>" + p_end
+            t = ""
         if style:
             style = ' style="%s"' % style
-        if p in ('video', 'audio'):
-            t = render(t, {}, {}, 'br', URL, environment, latex,
-                       autolinks, protolinks, class_prefix, id_prefix, pretty_print)
-            return '<%(p)s controls="controls"%(title)s%(style)s><source src="%(k)s" />%(t)s</%(p)s>' \
-                   % dict(p=p, title=title, style=style, k=k, t=t)
-        alt = ' alt="%s"' % local_html_escape(t).replace(META, DISABLED_META) if t else ''
-        return '%(begin)s<img src="%(k)s"%(alt)s%(title)s%(style)s />%(end)s' \
-               % dict(begin=p_begin, k=k, alt=alt, title=title, style=style, end=p_end)
+        if p in ("video", "audio"):
+            t = render(
+                t,
+                {},
+                {},
+                "br",
+                URL,
+                environment,
+                latex,
+                autolinks,
+                protolinks,
+                class_prefix,
+                id_prefix,
+                pretty_print,
+            )
+            return (
+                '<%(p)s controls="controls"%(title)s%(style)s><source src="%(k)s" />%(t)s</%(p)s>'
+                % dict(p=p, title=title, style=style, k=k, t=t)
+            )
+        alt = (
+            ' alt="%s"' % local_html_escape(t).replace(META, DISABLED_META) if t else ""
+        )
+        return '%(begin)s<img src="%(k)s"%(alt)s%(title)s%(style)s />%(end)s' % dict(
+            begin=p_begin, k=k, alt=alt, title=title, style=style, end=p_end
+        )
 
     def sub_link(m):
-        t, a, k, p = m.group('t', 'a', 'k', 'p')
+        t, a, k, p = m.group("t", "a", "k", "p")
         if not k and not t:
             return m.group(0)
-        t = t or ''
-        a = local_html_escape(a) if a else ''
+        t = t or ""
+        a = local_html_escape(a) if a else ""
         if k:
-            if '#' in k and ':' not in k.split('#')[0]:
+            if "#" in k and ":" not in k.split("#")[0]:
                 # wikipage, not external url
-                k = k.replace('#', '#' + id_prefix)
+                k = k.replace("#", "#" + id_prefix)
             k = local_html_escape(k)
-            title = ' title="%s"' % a.replace(META, DISABLED_META) if a else ''
-            target = ' target="_blank"' if p == 'popup' else ''
-            t = render(t, {}, {}, 'br', URL, environment, latex, None,
-                       None, class_prefix, id_prefix, pretty_print) if t else k
-            return '<a href="%(k)s"%(title)s%(target)s>%(t)s</a>' \
-                   % dict(k=k, title=title, target=target, t=t)
-        if t == 'NEWLINE' and not a:
-            return '<br />' + pp
+            title = ' title="%s"' % a.replace(META, DISABLED_META) if a else ""
+            target = ' target="_blank"' if p == "popup" else ""
+            t = (
+                render(
+                    t,
+                    {},
+                    {},
+                    "br",
+                    URL,
+                    environment,
+                    latex,
+                    None,
+                    None,
+                    class_prefix,
+                    id_prefix,
+                    pretty_print,
+                )
+                if t
+                else k
+            )
+            return '<a href="%(k)s"%(title)s%(target)s>%(t)s</a>' % dict(
+                k=k, title=title, target=target, t=t
+            )
+        if t == "NEWLINE" and not a:
+            return "<br />" + pp
         return '<span class="anchor" id="%s">%s</span>' % (
             local_html_escape(id_prefix + t),
-            render(a, {}, {}, 'br', URL,
-                   environment, latex, autolinks,
-                   protolinks, class_prefix,
-                   id_prefix, pretty_print))
+            render(
+                a,
+                {},
+                {},
+                "br",
+                URL,
+                environment,
+                latex,
+                autolinks,
+                protolinks,
+                class_prefix,
+                id_prefix,
+                pretty_print,
+            ),
+        )
 
     parts = text.split(LINK)
     text = parts[0]
@@ -1421,7 +1555,7 @@ def render(text,
                 html = regex_link_level2.sub(sub_link, html)
             if html == s:
                 # return unprocessed string as a signal of an error
-                html = '[[%s]]' % s
+                html = "[[%s]]" % s
         text += html + parts[i + 1]
 
     #############################################################
@@ -1432,37 +1566,77 @@ def render(text,
         if code is None or m.group() == DISABLED_META:
             return local_html_escape(s)
         if b in extra:
-            if code[:1] == '\n':
+            if code[:1] == "\n":
                 code = code[1:]
-            if code[-1:] == '\n':
+            if code[-1:] == "\n":
                 code = code[:-1]
             if p:
                 return str(extra[b](code, p))
             else:
                 return str(extra[b](code))
-        elif b == 'cite':
-            return '[' + ','.join('<a href="#%s" class="%s">%s</a>' %
-                                  (id_prefix + d, b, d) for d in local_html_escape(code).split(',')) + ']'
-        elif b == 'latex':
+        elif b == "cite":
+            return (
+                "["
+                + ",".join(
+                    '<a href="#%s" class="%s">%s</a>' % (id_prefix + d, b, d)
+                    for d in local_html_escape(code).split(",")
+                )
+                + "]"
+            )
+        elif b == "latex":
             return LATEX % urllib_quote(code)
         elif b in html_colors:
-            return '<span style="color: %s">%s</span>' \
-                   % (b, render(code, {}, {}, 'br', URL, environment, latex,
-                                autolinks, protolinks, class_prefix, id_prefix, pretty_print))
-        elif b in ('c', 'color') and p:
-            c = p.split(':')
-            fg = 'color: %s;' % c[0] if c[0] else ''
-            bg = 'background-color: %s;' % c[1] if len(c) > 1 and c[1] else ''
-            return '<span style="%s%s">%s</span>' \
-                   % (fg, bg, render(code, {}, {}, 'br', URL, environment, latex,
-                                     autolinks, protolinks, class_prefix, id_prefix, pretty_print))
-        cls = ' class="%s%s"' % (class_prefix, b) if b and b != 'id' else ''
-        id = ' id="%s%s"' % (id_prefix, local_html_escape(p)) if p else ''
-        beg = (code[:1] == '\n')
-        end = [None, -1][code[-1:] == '\n']
+            return '<span style="color: %s">%s</span>' % (
+                b,
+                render(
+                    code,
+                    {},
+                    {},
+                    "br",
+                    URL,
+                    environment,
+                    latex,
+                    autolinks,
+                    protolinks,
+                    class_prefix,
+                    id_prefix,
+                    pretty_print,
+                ),
+            )
+        elif b in ("c", "color") and p:
+            c = p.split(":")
+            fg = "color: %s;" % c[0] if c[0] else ""
+            bg = "background-color: %s;" % c[1] if len(c) > 1 and c[1] else ""
+            return '<span style="%s%s">%s</span>' % (
+                fg,
+                bg,
+                render(
+                    code,
+                    {},
+                    {},
+                    "br",
+                    URL,
+                    environment,
+                    latex,
+                    autolinks,
+                    protolinks,
+                    class_prefix,
+                    id_prefix,
+                    pretty_print,
+                ),
+            )
+        cls = ' class="%s%s"' % (class_prefix, b) if b and b != "id" else ""
+        id = ' id="%s%s"' % (id_prefix, local_html_escape(p)) if p else ""
+        beg = code[:1] == "\n"
+        end = [None, -1][code[-1:] == "\n"]
         if beg and end:
-            return '<pre><code%s%s>%s</code></pre>%s' % (cls, id, local_html_escape(code[1:-1]), pp)
-        return '<code%s%s>%s</code>' % (cls, id, local_html_escape(code[beg:end]))
+            return "<pre><code%s%s>%s</code></pre>%s" % (
+                cls,
+                id,
+                local_html_escape(code[1:-1]),
+                pp,
+            )
+        return "<code%s%s>%s</code>" % (cls, id, local_html_escape(code[beg:end]))
 
     text = regex_expand_meta.sub(expand_meta, text)
 
@@ -1472,26 +1646,43 @@ def render(text,
     return text.translate(ttab_out)
 
 
-def markmin2html(text, extra={}, allowed={}, sep='p',
-                 autolinks='default', protolinks='default',
-                 class_prefix='', id_prefix='markmin_', pretty_print=False):
-    return render(text, extra, allowed, sep,
-                  autolinks=autolinks, protolinks=protolinks,
-                  class_prefix=class_prefix, id_prefix=id_prefix,
-                  pretty_print=pretty_print)
+def markmin2html(
+    text,
+    extra={},
+    allowed={},
+    sep="p",
+    autolinks="default",
+    protolinks="default",
+    class_prefix="",
+    id_prefix="markmin_",
+    pretty_print=False,
+):
+    return render(
+        text,
+        extra,
+        allowed,
+        sep,
+        autolinks=autolinks,
+        protolinks=protolinks,
+        class_prefix=class_prefix,
+        id_prefix=id_prefix,
+        pretty_print=pretty_print,
+    )
 
 
 def run_doctests():
     import doctest
+
     doctest.testmod()
 
 
-if __name__ == '__main__':
-    import sys
+if __name__ == "__main__":
     import doctest
+    import sys
     from textwrap import dedent
 
-    html = dedent("""
+    html = dedent(
+        """
          <!doctype html>
          <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
          <head>
@@ -1502,10 +1693,12 @@ if __name__ == '__main__':
          <body>
          %(body)s
          </body>
-         </html>""")[1:]
+         </html>"""
+    )[1:]
 
-    if sys.argv[1:2] == ['-h']:
-        style = dedent("""
+    if sys.argv[1:2] == ["-h"]:
+        style = dedent(
+            """
               <style>
                 blockquote { background-color: #FFFAAE; padding: 7px; }
                 table { border-collapse: collapse; }
@@ -1519,12 +1712,18 @@ if __name__ == '__main__':
 
                 td.num { text-align: right; }
                 pre { background-color: #E0E0E0; padding: 5px; }
-              </style>""")[1:]
+              </style>"""
+        )[1:]
 
-        print(html % dict(title="Markmin markup language",
-                          style=style,
-                          body=markmin2html(__doc__, pretty_print=True)))
-    elif sys.argv[1:2] == ['-t']:
+        print(
+            html
+            % dict(
+                title="Markmin markup language",
+                style=style,
+                body=markmin2html(__doc__, pretty_print=True),
+            )
+        )
+    elif sys.argv[1:2] == ["-t"]:
         from timeit import Timer
 
         loops = 1000
@@ -1533,16 +1732,18 @@ if __name__ == '__main__':
         t = min([ts.timeit(loops) for i in range(3)])
         print("%s loops, best of 3: %.3f ms per loop" % (loops, t / 1000 * loops))
     elif len(sys.argv) > 1:
-        fargv = open(sys.argv[1], 'r')
+        fargv = open(sys.argv[1], "r")
         try:
             markmin_text = fargv.read()
 
             # embed css file from second parameter into html file
             if len(sys.argv) > 2:
-                if sys.argv[2].startswith('@'):
-                    markmin_style = '<link rel="stylesheet" href="' + sys.argv[2][1:] + '"/>'
+                if sys.argv[2].startswith("@"):
+                    markmin_style = (
+                        '<link rel="stylesheet" href="' + sys.argv[2][1:] + '"/>'
+                    )
                 else:
-                    fargv2 = open(sys.argv[2], 'r')
+                    fargv2 = open(sys.argv[2], "r")
                     try:
                         markmin_style = "<style>\n" + fargv2.read() + "</style>"
                     finally:
@@ -1550,15 +1751,27 @@ if __name__ == '__main__':
             else:
                 markmin_style = ""
 
-            print(html % dict(title=sys.argv[1], style=markmin_style,
-                              body=markmin2html(markmin_text, pretty_print=True)))
+            print(
+                html
+                % dict(
+                    title=sys.argv[1],
+                    style=markmin_style,
+                    body=markmin2html(markmin_text, pretty_print=True),
+                )
+            )
         finally:
             fargv.close()
 
     else:
-        print("Usage: " + sys.argv[0] + " -h | -t | file.markmin [file.css|@path_to/css]")
+        print(
+            "Usage: " + sys.argv[0] + " -h | -t | file.markmin [file.css|@path_to/css]"
+        )
         print("where: -h  - print __doc__")
         print("       -t  - timeit __doc__ (for testing purpuse only)")
-        print("       file.markmin  [file.css] - process file.markmin + built in file.css (optional)")
-        print("       file.markmin  [@path_to/css] - process file.markmin + link path_to/css (optional)")
+        print(
+            "       file.markmin  [file.css] - process file.markmin + built in file.css (optional)"
+        )
+        print(
+            "       file.markmin  [@path_to/css] - process file.markmin + link path_to/css (optional)"
+        )
         run_doctests()

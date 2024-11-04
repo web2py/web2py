@@ -14,8 +14,10 @@
 
 
 from __future__ import unicode_literals
+
 import sys
-if sys.version > '3':
+
+if sys.version > "3":
     basestring = str
     unicode = str
 
@@ -27,8 +29,15 @@ import xml.dom.minidom
 from . import __author__, __copyright__, __license__, __version__
 
 # Utility functions used for marshalling, moved aside for readability
-from .helpers import TYPE_MAP, TYPE_MARSHAL_FN, TYPE_UNMARSHAL_FN, \
-                     REVERSE_TYPE_MAP, Struct, Date, Decimal
+from .helpers import (
+    REVERSE_TYPE_MAP,
+    TYPE_MAP,
+    TYPE_MARSHAL_FN,
+    TYPE_UNMARSHAL_FN,
+    Date,
+    Decimal,
+    Struct,
+)
 
 log = logging.getLogger(__name__)
 
@@ -36,20 +45,32 @@ log = logging.getLogger(__name__)
 class SimpleXMLElement(object):
     """Simple XML manipulation (simil PHP)"""
 
-    def __init__(self, text=None, elements=None, document=None,
-                 namespace=None, prefix=None, namespaces_map={}, jetty=False):
+    def __init__(
+        self,
+        text=None,
+        elements=None,
+        document=None,
+        namespace=None,
+        prefix=None,
+        namespaces_map={},
+        jetty=False,
+    ):
         """
         :param namespaces_map: How to map our namespace prefix to that given by the client;
           {prefix: received_prefix}
         """
         self.__namespaces_map = namespaces_map
-        _rx = "|".join(namespaces_map.keys())  # {'external': 'ext', 'model': 'mod'} -> 'external|model'
-        self.__ns_rx = re.compile(r"^(%s):.*$" % _rx)  # And now we build an expression ^(external|model):.*$
-                                                       # to find prefixes in all xml nodes i.e.: <model:code>1</model:code>
-                                                       # and later change that to <mod:code>1</mod:code>
+        _rx = "|".join(
+            namespaces_map.keys()
+        )  # {'external': 'ext', 'model': 'mod'} -> 'external|model'
+        self.__ns_rx = re.compile(
+            r"^(%s):.*$" % _rx
+        )  # And now we build an expression ^(external|model):.*$
+        # to find prefixes in all xml nodes i.e.: <model:code>1</model:code>
+        # and later change that to <mod:code>1</mod:code>
         self.__ns = namespace
         self.__prefix = prefix
-        self.__jetty = jetty                           # special list support
+        self.__jetty = jetty  # special list support
 
         if text is not None:
             try:
@@ -74,7 +95,9 @@ class SimpleXMLElement(object):
                 if ns:
                     element.setAttribute("xmlns", ns)
             elif self.__prefix:
-                element = self.__document.createElementNS(self.__ns, "%s:%s" % (self.__prefix, name))
+                element = self.__document.createElementNS(
+                    self.__ns, "%s:%s" % (self.__prefix, name)
+                )
             else:
                 element = self.__document.createElementNS(self.__ns, name)
         # don't append null tags!
@@ -90,7 +113,7 @@ class SimpleXMLElement(object):
             namespace=self.__ns,
             prefix=self.__prefix,
             jetty=self.__jetty,
-            namespaces_map=self.__namespaces_map
+            namespaces_map=self.__namespaces_map,
         )
 
     def __setattr__(self, tag, text):
@@ -103,8 +126,11 @@ class SimpleXMLElement(object):
 
     def __delattr__(self, tag):
         """Remove a child tag (non recursive!)"""
-        elements = [__element for __element in self._element.childNodes
-                    if __element.nodeType == __element.ELEMENT_NODE]
+        elements = [
+            __element
+            for __element in self._element.childNodes
+            if __element.nodeType == __element.ELEMENT_NODE
+        ]
         for element in elements:
             self._element.removeChild(element)
 
@@ -116,19 +142,22 @@ class SimpleXMLElement(object):
     def as_xml(self, filename=None, pretty=False):
         """Return the XML representation of the document"""
         if not pretty:
-            return self.__document.toxml('UTF-8')
+            return self.__document.toxml("UTF-8")
         else:
-            return self.__document.toprettyxml(encoding='UTF-8')
+            return self.__document.toprettyxml(encoding="UTF-8")
 
-    if sys.version > '3':
+    if sys.version > "3":
+
         def __repr__(self):
             """Return the XML representation of this tag"""
             return self._element.toxml()
+
     else:
+
         def __repr__(self):
             """Return the XML representation of this tag"""
             # NOTE: do not use self.as_xml('UTF-8') as it returns the whole xml doc
-            return self._element.toxml('UTF-8')
+            return self._element.toxml("UTF-8")
 
     def get_name(self):
         """Return the tag name of this node"""
@@ -147,13 +176,13 @@ class SimpleXMLElement(object):
         element = self._element
         while element is not None and element.attributes is not None:
             try:
-                return element.attributes['xmlns:%s' % ns].value
+                return element.attributes["xmlns:%s" % ns].value
             except KeyError:
                 element = element.parentNode
 
     def attributes(self):
         """Return a dict of attributes for this tag"""
-        #TODO: use slice syntax [:]?
+        # TODO: use slice syntax [:]?
         return self._element.attributes
 
     def __getitem__(self, item):
@@ -174,7 +203,7 @@ class SimpleXMLElement(object):
                 namespace=self.__ns,
                 prefix=self.__prefix,
                 jetty=self.__jetty,
-                namespaces_map=self.__namespaces_map
+                namespaces_map=self.__namespaces_map,
             )
 
     def add_attribute(self, name, value):
@@ -194,8 +223,14 @@ class SimpleXMLElement(object):
         "Remove an attribute"
         self._element.removeAttribute(item)
 
-    def __call__(self, tag=None, ns=None, children=False, root=False,
-                 error=True, ):
+    def __call__(
+        self,
+        tag=None,
+        ns=None,
+        children=False,
+        root=False,
+        error=True,
+    ):
         """Search (even in child nodes) and return a child tag by name"""
         try:
             if root:
@@ -206,7 +241,7 @@ class SimpleXMLElement(object):
                     namespace=self.__ns,
                     prefix=self.__prefix,
                     jetty=self.__jetty,
-                    namespaces_map=self.__namespaces_map
+                    namespaces_map=self.__namespaces_map,
                 )
             if tag is None:
                 # if no name given, iterate over siblings (same level)
@@ -219,7 +254,7 @@ class SimpleXMLElement(object):
                 # return tag by index
                 elements = [self.__elements[tag]]
             if ns and not elements:
-                for ns_uri in isinstance(ns, (tuple, list)) and ns or (ns, ):
+                for ns_uri in isinstance(ns, (tuple, list)) and ns or (ns,):
                     ##log.debug('searching %s by ns=%s', tag, ns_uri)
                     elements = self._element.getElementsByTagNameNS(ns_uri, tag)
                     if elements:
@@ -242,7 +277,8 @@ class SimpleXMLElement(object):
                 namespace=self.__ns,
                 prefix=self.__prefix,
                 jetty=self.__jetty,
-                namespaces_map=self.__namespaces_map)
+                namespaces_map=self.__namespaces_map,
+            )
         except AttributeError as e:
             raise AttributeError("Tag not found: %s (%s)" % (tag, e))
 
@@ -260,30 +296,36 @@ class SimpleXMLElement(object):
                     namespace=self.__ns,
                     prefix=self.__prefix,
                     jetty=self.__jetty,
-                    namespaces_map=self.__namespaces_map)
+                    namespaces_map=self.__namespaces_map,
+                )
         except:
             raise
 
     def __dir__(self):
         """List xml children tags names"""
-        return [node.tagName for node
-                in self._element.childNodes
-                if node.nodeType != node.TEXT_NODE]
+        return [
+            node.tagName
+            for node in self._element.childNodes
+            if node.nodeType != node.TEXT_NODE
+        ]
 
     def children(self):
         """Return xml children tags element"""
-        elements = [__element for __element in self._element.childNodes
-                    if __element.nodeType == __element.ELEMENT_NODE]
+        elements = [
+            __element
+            for __element in self._element.childNodes
+            if __element.nodeType == __element.ELEMENT_NODE
+        ]
         if not elements:
             return None
-            #raise IndexError("Tag %s has no children" % self._element.tagName)
+            # raise IndexError("Tag %s has no children" % self._element.tagName)
         return SimpleXMLElement(
             elements=elements,
             document=self.__document,
             namespace=self.__ns,
             prefix=self.__prefix,
             jetty=self.__jetty,
-            namespaces_map=self.__namespaces_map
+            namespaces_map=self.__namespaces_map,
         )
 
     def __len__(self):
@@ -296,17 +338,21 @@ class SimpleXMLElement(object):
 
     def __unicode__(self):
         """Returns the unicode text nodes of the current element"""
-        rc = ''
+        rc = ""
         for node in self._element.childNodes:
-            if node.nodeType == node.TEXT_NODE or node.nodeType == node.CDATA_SECTION_NODE:
+            if (
+                node.nodeType == node.TEXT_NODE
+                or node.nodeType == node.CDATA_SECTION_NODE
+            ):
                 rc = rc + node.data
         return rc
 
-    if sys.version > '3':
+    if sys.version > "3":
         __str__ = __unicode__
     else:
+
         def __str__(self):
-            return self.__unicode__().encode('utf-8')
+            return self.__unicode__().encode("utf-8")
 
     def __int__(self):
         """Returns the integer value of the current element"""
@@ -322,7 +368,7 @@ class SimpleXMLElement(object):
     _element = property(lambda self: self.__elements[0])
 
     def unmarshall(self, types, strict=True):
-        #import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
         """Convert to python values the current serialized xml element"""
         # types is a dict of {tag name: conversion function}
@@ -335,12 +381,12 @@ class SimpleXMLElement(object):
             name = str(node.get_local_name())
             ref_name_type = None
             # handle multirefs: href="#id0"
-            if 'href' in node.attributes().keys():
-                href = node['href'][1:]
+            if "href" in node.attributes().keys():
+                href = node["href"][1:]
                 for ref_node in self(root=True)("multiRef"):
-                    if ref_node['id'] == href:
+                    if ref_node["id"] == href:
                         node = ref_node
-                        ref_name_type = ref_node['xsi:type'].split(":")[1]
+                        ref_name_type = ref_node["xsi:type"].split(":")[1]
                         break
 
             try:
@@ -348,21 +394,23 @@ class SimpleXMLElement(object):
                     fn = types[name]
                     # custom array only in the response (not defined in the WSDL):
                     # <results soapenc:arrayType="xsd:string[199]>
-                    if any([k for k,v in node[:] if 'arrayType' in k]) and not isinstance(fn, list):
+                    if any(
+                        [k for k, v in node[:] if "arrayType" in k]
+                    ) and not isinstance(fn, list):
                         fn = [fn]
                 else:
                     fn = types
-            except (KeyError, ) as e:
-                xmlns = node['xmlns'] or node.get_namespace_uri(node.get_prefix())
-                if 'xsi:type' in node.attributes().keys():
-                    xsd_type = node['xsi:type'].split(":")[1]
+            except (KeyError,) as e:
+                xmlns = node["xmlns"] or node.get_namespace_uri(node.get_prefix())
+                if "xsi:type" in node.attributes().keys():
+                    xsd_type = node["xsi:type"].split(":")[1]
                     try:
                         # get fn type from SOAP-ENC:arrayType="xsd:string[28]"
-                        if xsd_type == 'Array':
-                            array_type = [k for k,v in node[:] if 'arrayType' in k][0]
+                        if xsd_type == "Array":
+                            array_type = [k for k, v in node[:] if "arrayType" in k][0]
                             xsd_type = node[array_type].split(":")[1]
                             if "[" in xsd_type:
-                                xsd_type = xsd_type[:xsd_type.index("[")]
+                                xsd_type = xsd_type[: xsd_type.index("[")]
                             fn = [REVERSE_TYPE_MAP[xsd_type]]
                         else:
                             fn = REVERSE_TYPE_MAP[xsd_type]
@@ -393,19 +441,19 @@ class SimpleXMLElement(object):
                 ##    children = children()
                 if fn and not isinstance(fn[0], dict):
                     # simple arrays []
-                    for child in (children or []):
+                    for child in children or []:
                         tmp_dict = child.unmarshall(fn[0], strict)
                         value.extend(tmp_dict.values())
-                #elif (self.__jetty and len(fn[0]) > 1):
-                elif (len(fn[0]) > 1):
+                # elif (self.__jetty and len(fn[0]) > 1):
+                elif len(fn[0]) > 1:
                     # Jetty and now all dialects use array style support [{k, v}]
                     for parent in node:
-                        tmp_dict = {}    # unmarshall each value & mix
-                        for child in (node.children() or []):
+                        tmp_dict = {}  # unmarshall each value & mix
+                        for child in node.children() or []:
                             tmp_dict.update(child.unmarshall(fn[0], strict))
                         value.append(tmp_dict)
                 else:  # len(fn[0]) == 0
-                    for child in (children or []):
+                    for child in children or []:
                         value.append(child.unmarshall(fn[0], strict))
 
             elif isinstance(fn, tuple):
@@ -414,7 +462,7 @@ class SimpleXMLElement(object):
                 children = node.children()
                 as_dict = len(fn) == 1 and isinstance(fn[0], dict)
 
-                for child in (children and children() or []):  # Readability counts
+                for child in children and children() or []:  # Readability counts
                     if as_dict:
                         _d.update(child.unmarshall(fn[0], strict))  # Merging pairs
                     else:
@@ -437,7 +485,7 @@ class SimpleXMLElement(object):
             else:
                 if fn is None:  # xsd:anyType not unmarshalled
                     value = node
-                elif unicode(node) or (fn == str and unicode(node) != ''):
+                elif unicode(node) or (fn == str and unicode(node) != ""):
                     try:
                         # get special deserialization function (if any)
                         fn = TYPE_UNMARSHAL_FN.get(fn, fn)
@@ -462,11 +510,18 @@ class SimpleXMLElement(object):
             try:
                 name = name.replace(pref, self.__namespaces_map[pref])
             except KeyError:
-                log.warning('Unknown namespace alias %s' % name)
+                log.warning("Unknown namespace alias %s" % name)
         return name
 
-    def marshall(self, name, value, add_child=True, add_comments=False,
-                 ns=False, add_children_ns=True):
+    def marshall(
+        self,
+        name,
+        value,
+        add_child=True,
+        add_comments=False,
+        ns=False,
+        add_children_ns=True,
+    ):
         """Analyze python value and add the serialized XML element using tag name"""
         # Change node name to that used by a client
         name = self._update_ns(name)
@@ -478,7 +533,7 @@ class SimpleXMLElement(object):
             for k, v in value.items():
                 if not add_children_ns:
                     ns = False
-                elif hasattr(value, 'namespaces'):
+                elif hasattr(value, "namespaces"):
                     # for children, use the wsdl element target namespace:
                     ns = value.namespaces.get(k)
                 else:
@@ -491,7 +546,7 @@ class SimpleXMLElement(object):
                 ns = False
             for k, v in value:
                 getattr(self, name).marshall(k, v, add_comments=add_comments, ns=ns)
-        elif isinstance(value, list): # serialize lists name: [value1, value2]
+        elif isinstance(value, list):  # serialize lists name: [value1, value2]
             # list elements should be a dict with one element:
             # 'vats': [{'vat': {'vat_amount': 50, 'vat_percent': 5}}, {...}]
             # or an array of complex types directly (a.k.a. jetty dialect)
@@ -507,7 +562,9 @@ class SimpleXMLElement(object):
                 # TODO: this could be an issue for some arrays of single values
                 if isinstance(t, dict) and len(t) > 1 and i < len(value) - 1:
                     child = self.add_child(name, ns=ns)
-        elif isinstance(value, (xml.dom.minidom.CDATASection, basestring)):  # do not convert strings or unicodes
+        elif isinstance(
+            value, (xml.dom.minidom.CDATASection, basestring)
+        ):  # do not convert strings or unicodes
             self.add_child(name, value, ns=ns)
         elif value is None:  # sent a empty tag?
             self.add_child(name, ns=ns)
@@ -527,6 +584,8 @@ class SimpleXMLElement(object):
     def write_c14n(self, output=None, exclusive=True):
         "Generate the canonical version of the XML node"
         from . import c14n
-        xml = c14n.Canonicalize(self._element, output,
-                                unsuppressedPrefixes=[] if exclusive else None)
+
+        xml = c14n.Canonicalize(
+            self._element, output, unsuppressedPrefixes=[] if exclusive else None
+        )
         return xml

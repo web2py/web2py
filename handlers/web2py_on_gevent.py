@@ -21,6 +21,8 @@ from gevent import monkey
 monkey.patch_all()
 
 def run(options):
+    from gluon.settings import global_settings
+    global_settings.web2py_runtime_handler = True
     import gluon.main
     if options.password != '<recycle>':
         gluon.main.save_password(options.password, int(options.port))

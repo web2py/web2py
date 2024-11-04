@@ -44,6 +44,8 @@ applications/*
 !applications/examples/*
 !applications/admin
 !applications/admin/*
+applications/*.zip
+applications/*.w2p
 applications/*/databases/*
 applications/*/sessions/*
 applications/*/errors/*
@@ -63,3 +65,4 @@ HOWTO-web2py-devel
 site-packages/
 logs/
 __pycache__/
+build/*

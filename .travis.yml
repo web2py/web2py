@@ -12,11 +12,7 @@ python:
   - '2.7'
   - '3.6'
   - '3.7'
-  - 'pypy3.5'
-
-matrix:
-  allow_failures:
-    - python: 'pypy3.5'
+  - '3.8'
 
 install:
   - pip install -e .

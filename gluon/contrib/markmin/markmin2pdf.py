@@ -4,15 +4,16 @@ License BSD
 """
 from __future__ import print_function
 
-import subprocess
 import os
 import os.path
 import re
+import subprocess
 import sys
-from tempfile import mkstemp, mkdtemp, NamedTemporaryFile
+from tempfile import NamedTemporaryFile, mkdtemp, mkstemp
+
 from gluon.contrib.markmin.markmin2latex import markmin2latex
 
-__all__ = ['markmin2pdf']
+__all__ = ["markmin2pdf"]
 
 
 def removeall(path):
@@ -23,7 +24,7 @@ def removeall(path):
             __func__(path)
         except OSError as xxx_todo_changeme:
             (errno, strerror) = xxx_todo_changeme.args
-            print(ERROR_STR % {'path': path, 'error': strerror})
+            print(ERROR_STR % {"path": path, "error": strerror})
 
     files = [path]
 
@@ -42,7 +43,7 @@ def removeall(path):
                 files = [os.path.join(file, x) for x in nested] + files
 
 
-def latex2pdf(latex, pdflatex='pdflatex', passes=3):
+def latex2pdf(latex, pdflatex="pdflatex", passes=3):
     """
     calls pdflatex in a tempfolder
 
@@ -58,7 +59,7 @@ def latex2pdf(latex, pdflatex='pdflatex', passes=3):
 
     # setup the envoriment
     tmpdir = mkdtemp()
-    texfile = open(tmpdir + '/test.tex', 'wt',encoding="utf-8")
+    texfile = open(tmpdir + "/test.tex", "wt", encoding="utf-8")
     texfile.write(latex)
     texfile.seek(0)
     texfile.close()
@@ -69,18 +70,25 @@ def latex2pdf(latex, pdflatex='pdflatex', passes=3):
         logfd, logname = mkstemp()
         outfile = os.fdopen(logfd)
         try:
-            ret = subprocess.call([pdflatex,
-                                   '-interaction=nonstopmode',
-                                   '-output-format', 'pdf',
-                                   '-output-directory', tmpdir,
-                                   texfile],
-                                  cwd=os.path.dirname(texfile), stdout=outfile,
-                                  stderr=subprocess.PIPE)
+            ret = subprocess.call(
+                [
+                    pdflatex,
+                    "-interaction=nonstopmode",
+                    "-output-format",
+                    "pdf",
+                    "-output-directory",
+                    tmpdir,
+                    texfile,
+                ],
+                cwd=os.path.dirname(texfile),
+                stdout=outfile,
+                stderr=subprocess.PIPE,
+            )
         finally:
             outfile.close()
-        re_errors = re.compile('^\!(.*)$', re.M)
-        re_warnings = re.compile('^LaTeX Warning\:(.*)$', re.M)
-        flog = open(logname,encoding="utf-8")
+        re_errors = re.compile("^\!(.*)$", re.M)
+        re_warnings = re.compile("^LaTeX Warning\:(.*)$", re.M)
+        flog = open(logname, encoding="utf-8")
         try:
             loglines = flog.read()
         finally:
@@ -89,11 +97,11 @@ def latex2pdf(latex, pdflatex='pdflatex', passes=3):
         warnings = re_warnings.findall(loglines)
         os.unlink(logname)
 
-    pdffile = texfile.rsplit('.', 1)[0] + '.pdf'
+    pdffile = texfile.rsplit(".", 1)[0] + ".pdf"
     data = None
 
     if os.path.isfile(pdffile):
-        with open(pdffile,'rb') as fpdf :
+        with open(pdffile, "rb") as fpdf:
             data = fpdf.read()
 
     removeall(tmpdir)
@@ -105,27 +113,28 @@ def markmin2pdf(text, image_mapper=lambda x: None, extra={}):
     return latex2pdf(markmin2latex(text, image_mapper=image_mapper, extra=extra))
 
 
-if __name__ == '__main__':
-    import sys
+if __name__ == "__main__":
     import doctest
+    import sys
+
     import markmin2html
 
-    if sys.argv[1:2] == ['-h']:
+    if sys.argv[1:2] == ["-h"]:
         data, warnings, errors = markmin2pdf(markmin2html.__doc__)
         if errors:
-            print('ERRORS:' + '\n'.join(errors))
-            print('WARNGINS:' + '\n'.join(warnings))
+            print("ERRORS:" + "\n".join(errors))
+            print("WARNGINS:" + "\n".join(warnings))
         else:
             print(data)
     elif len(sys.argv) > 1:
-        fargv = open(sys.argv[1], 'rb')
+        fargv = open(sys.argv[1], "rb")
         try:
             data, warnings, errors = markmin2pdf(fargv.read())
         finally:
             fargv.close()
         if errors:
-            print('ERRORS:' + '\n'.join(errors))
-            print('WARNGINS:' + '\n'.join(warnings))
+            print("ERRORS:" + "\n".join(errors))
+            print("WARNGINS:" + "\n".join(warnings))
         else:
             print(data)
     else:

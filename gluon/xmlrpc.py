@@ -7,12 +7,8 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
-from gluon._compat import PY2
+from xmlrpc.server import SimpleXMLRPCDispatcher
 
-if PY2:
-    from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
-else:
-    from xmlrpc.server import SimpleXMLRPCDispatcher
 
 def handler(request, response, methods):
     response.session_id = None  # no sessions for xmlrpc
@@ -20,6 +16,6 @@ def handler(request, response, methods):
     for method in methods:
         dispatcher.register_function(method)
     dispatcher.register_introspection_functions()
-    response.headers['Content-Type'] = 'text/xml'
-    dispatch = getattr(dispatcher, '_dispatch', None)
+    response.headers["Content-Type"] = "text/xml"
+    dispatch = getattr(dispatcher, "_dispatch", None)
     return dispatcher._marshaled_dispatch(request.body.read(), dispatch)

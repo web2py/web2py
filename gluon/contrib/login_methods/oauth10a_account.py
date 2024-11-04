@@ -12,12 +12,13 @@ Dependencies:
 
 """
 
-import oauth2 as oauth
 import cgi
-
 from urllib import urlencode
 
+import oauth2 as oauth
+
 from gluon import current
+
 
 class OAuthAccount(object):
     """
@@ -69,9 +70,9 @@ class OAuthAccount(object):
             path_info = next
         else:
             path_info = r.env.path_info
-        uri = '%s://%s%s' % (url_scheme, http_host, path_info)
+        uri = "%s://%s%s" % (url_scheme, http_host, path_info)
         if r.get_vars and not next:
-            uri += '?' + urlencode(r.get_vars)
+            uri += "?" + urlencode(r.get_vars)
         return uri
 
     def accessToken(self):
@@ -97,10 +98,9 @@ class OAuthAccount(object):
             client = oauth.Client(self.consumer, token)
 
             resp, content = client.request(self.access_token_url, "POST")
-            if str(resp['status']) != '200':
+            if str(resp["status"]) != "200":
                 self.session.request_token = None
-                self.globals['redirect'](self.globals[
-                                         'URL'](f='user', args='logout'))
+                self.globals["redirect"](self.globals["URL"](f="user", args="logout"))
 
             self.session.access_token = oauth.Token.from_string(content)
 
@@ -109,7 +109,16 @@ class OAuthAccount(object):
         self.session.access_token = None
         return None
 
-    def __init__(self, g, client_id, client_secret, auth_url, token_url, access_token_url, socket_timeout=60):
+    def __init__(
+        self,
+        g,
+        client_id,
+        client_secret,
+        auth_url,
+        token_url,
+        access_token_url,
+        socket_timeout=60,
+    ):
         self.globals = g
         self.client_id = client_id
         self.client_secret = client_secret
@@ -134,16 +143,16 @@ class OAuthAccount(object):
         return next
 
     def get_user(self):
-        '''Get user data.
+        """Get user data.
 
         Since OAuth does not specify what a user
         is, this function must be implemented for the specific
         provider.
-        '''
+        """
         raise NotImplementedError("Must override get_user()")
 
     def __oauth_login(self, next):
-        '''This method redirects the user to the authenticating form
+        """This method redirects the user to the authenticating form
         on authentication server if the authentication code
         and the authentication token are not available to the
         application yet.
@@ -151,7 +160,7 @@ class OAuthAccount(object):
         Once the authentication code has been received this method is
         called to set the access token into the session by calling
         accessToken()
-        '''
+        """
 
         if not self.accessToken():
             # setup the client
@@ -162,23 +171,29 @@ class OAuthAccount(object):
             callback_url = self.__redirect_uri(next)
             data = urlencode(dict(oauth_callback=callback_url))
             resp, content = client.request(self.token_url, "POST", body=data)
-            if resp['status'] != '200':
+            if resp["status"] != "200":
                 self.session.request_token = None
-                self.globals['redirect'](self.globals[
-                                         'URL'](f='user', args='logout'))
+                self.globals["redirect"](self.globals["URL"](f="user", args="logout"))
 
             # Store the request token in session.
-            request_token = self.session.request_token = oauth.Token.from_string(content)
+            request_token = self.session.request_token = oauth.Token.from_string(
+                content
+            )
 
             # Redirect the user to the authentication URL and pass the callback url.
-            data = urlencode(dict(oauth_token=request_token.key,
-                                  oauth_callback=callback_url))
-            auth_request_url = self.auth_url + '?' + data
+            data = urlencode(
+                dict(oauth_token=request_token.key, oauth_callback=callback_url)
+            )
+            auth_request_url = self.auth_url + "?" + data
 
-            HTTP = self.globals['HTTP']
+            HTTP = self.globals["HTTP"]
 
-            raise HTTP(302,
-                       "You are not authenticated: you are being redirected to the <a href='" + auth_request_url + "'> authentication server</a>",
-                       Location=auth_request_url)
+            raise HTTP(
+                302,
+                "You are not authenticated: you are being redirected to the <a href='"
+                + auth_request_url
+                + "'> authentication server</a>",
+                Location=auth_request_url,
+            )
 
         return None
