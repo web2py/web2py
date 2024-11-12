@@ -4402,7 +4402,7 @@ class Auth(AuthAPI):
             if not user:
                 raise HTTP(401, "Not Authorized")
             auth.impersonator = pickle.dumps(session, pickle.HIGHEST_PROTOCOL)
-            auth.user.update(table_user._filter_fields(user, True))
+            auth.user.update(table_user._filter_fields(user, allow_id=True))
             self.user = auth.user
             self.update_groups()
             log = self.messages["impersonate_log"]
@@ -5089,7 +5089,7 @@ class Crud(object):  # pragma: no cover
             separator=self.settings.label_separator,
         )
         if current.request.extension not in ("html", "load"):
-            return table._filter_fields(form.record, id=True)
+            return table._filter_fields(form.record, allow_id=True)
         return form
 
     def delete(

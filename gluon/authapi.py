@@ -933,7 +933,7 @@ class AuthAPI(object):
 
     def _update_session_user(self, user):
         if global_settings.web2py_runtime_gae:
-            user = Row(self.table_user()._filter_fields(user, id=True))
+            user = Row(self.table_user()._filter_fields(user, allow_id=True))
             delattr(user, self.settings.password_field)
         else:
             user = Row(user)
