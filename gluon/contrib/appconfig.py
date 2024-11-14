@@ -64,19 +64,18 @@ class AppConfigDict(dict):
             value = self.take(path).strip()
             if value.lower() in ("none", "null", ""):
                 return None
-            elif value.lower() == "true":
+            if value.lower() == "true":
                 return True
-            elif value.lower() == "false":
+            if value.lower() == "false":
                 return False
-            elif value.isdigit() or (value[0] == "-" and value[1:].isdigit()):
+            if value.isdigit() or (value[0] == "-" and value[1:].isdigit()):
                 return int(value)
-            elif "," in value:
+            if "," in value:
                 return map(lambda x: x.strip(), value.split(","))
-            else:
-                try:
-                    return float(value)
-                except:
-                    return value
+            try:
+                return float(value)
+            except Exception:
+                return value
         except:
             return default
 
@@ -88,7 +87,7 @@ class AppConfigDict(dict):
         walking = []
         for part in parts:
             if part not in value:
-                raise BaseException(
+                raise RuntimeError(
                     "%s not in config [%s]" % (part, "-->".join(walking))
                 )
             value = value[part]
@@ -99,12 +98,12 @@ class AppConfigDict(dict):
             try:
                 value = cast(value)
                 self.int_cache[path] = value
-            except (ValueError, TypeError):
-                raise BaseException("%s can't be converted to %s" % (value, cast))
+            except (ValueError, TypeError) as exc:
+                raise RuntimeError(f"{value} can't be converted to {cast}") from exc
         return value
 
 
-class AppConfigLoader(object):
+class AppConfigLoader:
     def __init__(self, configfile=None):
         if not configfile:
             priv_folder = os.path.join(current.request.folder, "private")
@@ -114,7 +113,7 @@ class AppConfigLoader(object):
                 if not os.path.isfile(configfile):
                     configfile = None
         if not configfile or not os.path.isfile(configfile):
-            raise BaseException("Config file not found")
+            raise RuntimeError("Config file not found")
         self.file = configfile
         self.ctype = os.path.splitext(configfile)[1][1:]
         self.settings = None
@@ -131,13 +130,14 @@ class AppConfigLoader(object):
         self.settings = AppConfigDict(settings)
 
     def read_config_json(self):
-        with open(self.file, "r") as c:
-            self.settings = AppConfigDict(json.load(c))
+        with open(self.file, "r", encoding="utf8") as stream:
+            config_data = stream.read()
+            self.settings = AppConfigDict(json.loads(config_data))
 
     def read_config(self):
         if self.settings is None:
             try:
                 getattr(self, "read_config_" + self.ctype)()
-            except AttributeError:
-                raise BaseException("Unsupported config file format")
+            except AttributeError as exc:
+                raise RuntimeError("Unsupported config file format") from exc
         return self.settings
