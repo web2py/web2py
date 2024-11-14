@@ -10,6 +10,7 @@ try:
     from gluon.fileutils import open_file
 except ImportError as err:
     print('gluon path not found')
+    sys.exit(1)
 
 
 class refTable(object):
