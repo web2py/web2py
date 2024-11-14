@@ -310,6 +310,18 @@ class Request(Storage):
                 raise HTTP(400, "Bad Request - HTTP body is incomplete")
         return self._body
 
+    def parse_content_type(self):
+        from email.policy import EmailPolicy as mime
+        header = mime.header_factory('content-type', self.env.content_type)
+
+        self.encoding = header.params.get("charset")
+        self.content_type = header.content_type
+
+    def get_body(self):
+        self.body.seek(0)
+        body = self.body.read()
+        return str(body, self.encoding or "utf8")
+
     def parse_all_vars(self):
         """Merges get_vars and post_vars to vars"""
         self._vars = copy.copy(self.get_vars)
