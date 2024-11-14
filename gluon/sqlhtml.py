@@ -2245,9 +2245,16 @@ class SQLFORM(FORM):
                 if record_id:
                     self.vars.id = self.record[self.id_field_name]
                     if fields:
-                        self.table._db(
-                            self.table._id == self.record[self.id_field_name]
-                        ).update(**fields)
+                        # Remove fields that haven't changed.
+                        fields = {
+                            name: value for name, value in fields.items()
+                            if self.record.get(name) != value
+                        }
+                        # update only if something has changed
+                        if fields:
+                            self.table._db(
+                                self.table._id == self.record[self.id_field_name]
+                            ).update(**fields)
                 else:
                     self.vars.id = self.table.insert(**fields)
 
