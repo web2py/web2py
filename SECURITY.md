@@ -13,7 +13,7 @@
 <p>If you discover a security vulnerability, please follow the guidelines below:</p>
 <ul>
   <li><strong>Do not open an issue</strong> detailing the vulnerability in the public repository.</li>
-  <li><strong>Contact us via email</strong> at: <a href="mailto:security@example.com">security@example.com</a> with details of the vulnerability.</li>
+  <li><strong>Contact us via email</strong> at: <a href="mailto:massimo.dipierro@gmail.com">massimo.dipierro@gmail.com</a> with details of the vulnerability.</li>
   <li>Include as much information as possible in your report to help us understand and address the issue quickly.</li>
 </ul>
 
