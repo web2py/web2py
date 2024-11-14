@@ -14,9 +14,9 @@
 import json
 import os
 import re
+from urllib.parse import urlencode
 
 from gluon import *
-from gluon._compat import urlencode
 from gluon.storage import Storage
 from gluon.tools import fetch
 

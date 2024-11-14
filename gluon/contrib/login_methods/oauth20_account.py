@@ -16,7 +16,8 @@ import json
 import time
 
 from gluon import HTTP, current, redirect
-from gluon._compat import urlencode, urllib2
+from urllib.parse import urlencode
+from urllib import request as urllib2
 
 
 class OAuthAccount(object):

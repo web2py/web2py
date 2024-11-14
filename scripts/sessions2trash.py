@@ -40,12 +40,12 @@ from __future__ import with_statement
 
 from gluon import current
 from gluon.storage import Storage
-from gluon._compat import pickle
 
 import datetime
 import stat
 import time
 import os
+import pickle
 
 EXPIRATION_MINUTES = 60
 SLEEP_MINUTES = 5

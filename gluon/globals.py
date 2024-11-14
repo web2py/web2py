@@ -769,8 +769,6 @@ class Response(Storage):
         if attachment:
             # Browsers still don't have a simple uniform way to have non ascii
             # characters in the filename so for now we are percent encoding it
-            if isinstance(download_filename, unicodeT):
-                download_filename = download_filename.encode("utf-8")
             download_filename = urllib_quote(download_filename)
             headers[
                 "Content-Disposition"

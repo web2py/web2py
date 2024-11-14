@@ -14,7 +14,6 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
 from gluon.cfs import getcfs
-from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, to_native, pjoin
 from gluon.languages import findT, sort_function
 
 # This script can be run with no arguments (which sets the application folder to the current working directory, and default language to English), one argument (which sets the default language), or two arguments (application folder path and default language).
@@ -23,7 +22,7 @@ from gluon.languages import findT, sort_function
 def read_dict_aux(filename):
 	lang_text = open(filename, 'r').read().replace('\r\n', '\n')
 	try:
-		return safe_eval(to_native(lang_text)) or {}
+		return safe_eval(lang_text) or {}
 	except Exception:
 		e = sys.exc_info()[1]
 		status = 'Syntax error in %s (%s)' % (filename, e)
@@ -43,8 +42,7 @@ def safe_eval(text):
 def write_file(file, contents):
 	file.write('# -*- coding: utf-8 -*-\n{\n')
 	for key in sorted(contents, key = sort_function):
-		file.write('%s: %s,\n' % (repr(to_unicode(key)),
-								repr(to_unicode(contents[key]))))
+		file.write('%s: %s,\n' % (repr(key), repr(contents[key])))
 	file.write('}\n')
 	file.close()
 

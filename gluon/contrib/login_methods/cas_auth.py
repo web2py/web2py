@@ -12,7 +12,7 @@ import xml.dom.minidom as dom
 import xml.parsers.expat as expat
 
 from gluon import URL, current, redirect
-from gluon._compat import to_native, urlopen
+from urllib.request import urlopen
 
 
 class CasAuth(object):
@@ -113,7 +113,7 @@ class CasAuth(object):
                 self.cas_my_url,
                 self.ticket,
             )
-            data = to_native(urlopen(url).read())
+            data = urlopen(url).read()
             if data.startswith("yes") or data.startswith("no"):
                 data = data.split("\n")
                 if data[0] == "yes":

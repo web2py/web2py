@@ -1,6 +1,8 @@
 import base64
 
-from gluon._compat import urllib2, urlopen
+from urllib import request as urllib2
+from urllib.request import urlopen
+
 
 
 def basic_auth(server="http://127.0.0.1"):
