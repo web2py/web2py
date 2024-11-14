@@ -3,7 +3,7 @@
 	url = https://github.com/web2py/pydal.git
 [submodule "gluon/packages/yatl"]
 	path = gluon/packages/yatl
-	url = https://github.com/web2py/yatl
+	url = https://github.com/web2py/yatl.git
 [submodule "gluon/packages/rocket3"]
 	path = gluon/packages/rocket3
-	url = git@github.com:web2py/rocket3.git
+	url = https://github.com/web2py/rocket3.git
