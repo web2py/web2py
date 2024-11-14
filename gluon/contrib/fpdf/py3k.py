@@ -7,31 +7,10 @@ import sys
 
 PY3K = sys.version_info >= (3, 0)
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
-try:
-    from urllib import urlopen
-except ImportError:
-    from urllib.request import urlopen
-
-try:
-    from io import BytesIO
-except ImportError:
-    try:
-        from cStringIO import StringIO as BytesIO
-    except ImportError:
-        from StringIO import StringIO as BytesIO
-
-try:
-    from hashlib import md5
-except ImportError:
-    try:
-        from md5 import md5
-    except ImportError:
-        md5 = None
+import pickle
+from hashlib import md5
+from io import BytesIO
+from urllib.request import urlopen
 
 
 def hashpath(fn):

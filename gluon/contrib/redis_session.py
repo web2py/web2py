@@ -12,7 +12,8 @@ from datetime import datetime
 from threading import Lock
 
 from gluon import current
-from gluon.contrib.redis_utils import acquire_lock, register_release_lock, release_lock
+from gluon.contrib.redis_utils import (acquire_lock, register_release_lock,
+                                       release_lock)
 from gluon.storage import Storage
 
 logger = logging.getLogger("web2py.session.redis")

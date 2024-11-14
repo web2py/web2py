@@ -21,7 +21,6 @@ from gluon.tools import fetch
 
 
 class DropboxAccount(object):
-
     """
     from gluon.contrib.login_methods.dropbox_account import DropboxAccount
     auth.settings.actions_disabled=['register','change_password',

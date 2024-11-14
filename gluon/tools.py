@@ -52,11 +52,9 @@ from gluon import *
 from gluon.authapi import AuthAPI
 from gluon.contenttype import contenttype
 from gluon.contrib.autolinks import expand_one
-from gluon.contrib.markmin.markmin2html import (
-    replace_at_urls,
-    replace_autolinks,
-    replace_components,
-)
+from gluon.contrib.markmin.markmin2html import (replace_at_urls,
+                                                replace_autolinks,
+                                                replace_components)
 from gluon.fileutils import check_credentials, read_file
 from gluon.storage import Messages, Settings, Storage, StorageList
 from gluon.utils import compare, web2py_uuid
@@ -457,8 +455,8 @@ class Mail(object):
 
         By default, mail.send opens a connection to the smtp server for each mail.
         This could be costly if you are sending many emails from a queue.
-        Use remote_server to override internal server connection facility, 
-        but do remember to clean up after you are done with the server. 
+        Use remote_server to override internal server connection facility,
+        but do remember to clean up after you are done with the server.
 
         Before return, method updates two object's fields:
 
@@ -1953,15 +1951,17 @@ class Auth(AuthAPI):
                 "Please ",
                 A(
                     "login",
-                    _href=self.settings.login_url
-                    + (
-                        "?_next="
-                        + urllib_quote(
-                            current.request.env.http_web2py_component_location
+                    _href=(
+                        self.settings.login_url
+                        + (
+                            "?_next="
+                            + urllib_quote(
+                                current.request.env.http_web2py_component_location
+                            )
                         )
-                    )
-                    if current.request.env.http_web2py_component_location
-                    else "",
+                        if current.request.env.http_web2py_component_location
+                        else ""
+                    ),
                 ),
                 " to view this content.",
                 _class="not-authorized alert alert-block",
@@ -4199,9 +4199,9 @@ class Auth(AuthAPI):
             requires[0] = CRYPT(
                 **requires[0].__dict__
             )  # Copy the existing CRYPT attributes
-            requires[
-                0
-            ].min_length = 0  # But do not enforce minimum length for the old password
+            requires[0].min_length = (
+                0  # But do not enforce minimum length for the old password
+            )
         form = SQLFORM.factory(
             Field(
                 "old_password",
@@ -7075,8 +7075,8 @@ class Wiki(object):
         page = db.wiki_page(slug=slug)
         if not (page and self.can_edit(page)):
             return self.not_authorized(page)
-        self.auth.db.wiki_media.id.represent = (
-            lambda id, row: id
+        self.auth.db.wiki_media.id.represent = lambda id, row: (
+            id
             if not row.filename
             else SPAN(
                 "@////%i/%s.%s"

@@ -2537,9 +2537,9 @@ class Cursor:
         if not self.connection:
             self.close()
 
-        l_catalog = (
-            l_schema
-        ) = l_table = l_foreignTable = l_foreignCatalog = l_foreignSchema = 0
+        l_catalog = l_schema = l_table = l_foreignTable = l_foreignCatalog = (
+            l_foreignSchema
+        ) = 0
 
         if unicode in [
             type(x)

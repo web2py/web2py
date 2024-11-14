@@ -33,14 +33,8 @@ from gluon import html, rewrite, validators
 from gluon.cache import Cache
 from gluon.cfs import getcfs
 from gluon.dal import DAL, Field
-from gluon.fileutils import (
-    abspath,
-    add_path_first,
-    listdir,
-    mktree,
-    read_file,
-    write_file,
-)
+from gluon.fileutils import (abspath, add_path_first, listdir, mktree,
+                             read_file, write_file)
 from gluon.globals import Response, current
 from gluon.http import HTTP, redirect
 from gluon.languages import TranslatorFactory
@@ -461,10 +455,10 @@ def build_environment(request, response, session, store_current=True):
     environment["request"] = request
     environment["response"] = response
     environment["session"] = session
-    environment[
-        "local_import"
-    ] = lambda name, reload=False, app=request.application: local_import_aux(
-        name, reload, app
+    environment["local_import"] = (
+        lambda name, reload=False, app=request.application: local_import_aux(
+            name, reload, app
+        )
     )
     BaseAdapter.set_folder(pjoin(request.folder, "databases"))
     from gluon.custom_import import custom_import_install
@@ -628,7 +622,7 @@ def run_models_in(environment):
 
 TEST_CODE = r"""
 def _TEST():
-    import doctest, sys, cStringIO, types, gluon.fileutils
+    import doctest, sys, io, types, gluon.fileutils
     if not gluon.fileutils.check_credentials(request):
         raise HTTP(401, web2py_error='invalid credentials')
     stdout = sys.stdout
@@ -639,7 +633,7 @@ def _TEST():
         if type(eval_key) == types.FunctionType:
             number_doctests = sum([len(ds.examples) for ds in doctest.DocTestFinder().find(eval_key)])
             if number_doctests>0:
-                sys.stdout = cStringIO.StringIO()
+                sys.stdout = io.StringIO()
                 name = '%s/controllers/%s.py in %s.__doc__' \
                     % (request.folder, request.controller, key)
                 doctest.run_docstring_examples(eval_key,

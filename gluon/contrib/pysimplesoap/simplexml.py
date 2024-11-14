@@ -27,17 +27,9 @@ import time
 import xml.dom.minidom
 
 from . import __author__, __copyright__, __license__, __version__
-
 # Utility functions used for marshalling, moved aside for readability
-from .helpers import (
-    REVERSE_TYPE_MAP,
-    TYPE_MAP,
-    TYPE_MARSHAL_FN,
-    TYPE_UNMARSHAL_FN,
-    Date,
-    Decimal,
-    Struct,
-)
+from .helpers import (REVERSE_TYPE_MAP, TYPE_MAP, TYPE_MARSHAL_FN,
+                      TYPE_UNMARSHAL_FN, Date, Decimal, Struct)
 
 log = logging.getLogger(__name__)
 

@@ -28,58 +28,23 @@ from pydal.adapters.base import CALLABLETYPES
 from pydal.base import DEFAULT
 from pydal.default_validators import default_validators
 from pydal.helpers.classes import Reference, SQLCustomType
-from pydal.helpers.methods import _repr_ref, bar_encode, merge_tablemaps, smart_query
+from pydal.helpers.methods import (_repr_ref, bar_encode, merge_tablemaps,
+                                   smart_query)
 from pydal.objects import Expression, Field, Row, Rows, Set, Table
 
 import gluon.serializers as serializers
 from gluon.globals import current
-from gluon.html import (
-    BR,
-    CAT,
-    COL,
-    COLGROUP,
-    DEFAULT_PASSWORD_DISPLAY,
-    DIV,
-    FIELDSET,
-    FORM,
-    IMG,
-    INPUT,
-    LABEL,
-    LI,
-    OPTION,
-    SCRIPT,
-    SELECT,
-    SPAN,
-    STYLE,
-    TABLE,
-    TAG,
-    TBODY,
-    TD,
-    TEXTAREA,
-    TH,
-    THEAD,
-    TR,
-    UL,
-    URL,
-    XML,
-    A,
-    P,
-    XmlComponent,
-    truncate_string,
-)
+from gluon.html import (BR, CAT, COL, COLGROUP, DEFAULT_PASSWORD_DISPLAY, DIV,
+                        FIELDSET, FORM, IMG, INPUT, LABEL, LI, OPTION, SCRIPT,
+                        SELECT, SPAN, STYLE, TABLE, TAG, TBODY, TD, TEXTAREA,
+                        TH, THEAD, TR, UL, URL, XML, A, P, XmlComponent,
+                        truncate_string)
 from gluon.http import HTTP, redirect
 from gluon.storage import Storage
 from gluon.utils import md5_hash
-from gluon.validators import (
-    IS_DATE,
-    IS_DATETIME,
-    IS_EMPTY_OR,
-    IS_FLOAT_IN_RANGE,
-    IS_INT_IN_RANGE,
-    IS_LIST_OF,
-    IS_NOT_EMPTY,
-    IS_STRONG,
-)
+from gluon.validators import (IS_DATE, IS_DATETIME, IS_EMPTY_OR,
+                              IS_FLOAT_IN_RANGE, IS_INT_IN_RANGE, IS_LIST_OF,
+                              IS_NOT_EMPTY, IS_STRONG)
 
 try:
     import gluon.settings as settings
@@ -950,10 +915,9 @@ class AutocompleteWidget(object):
             else:
                 record = self.db(self.fields[1] == value).select(self.fields[0]).first()
             attr["value"] = record and record[self.fields[0].name]
-            attr[
-                "_onblur"
-            ] = "jQuery('#%(div_id)s').delay(500).fadeOut('slow');" % dict(
-                div_id=div_id, u="F" + self.keyword
+            attr["_onblur"] = (
+                "jQuery('#%(div_id)s').delay(500).fadeOut('slow');"
+                % dict(div_id=div_id, u="F" + self.keyword)
             )
             js = """
             (function($) {
@@ -1025,10 +989,9 @@ class AutocompleteWidget(object):
             )
         else:
             attr["_name"] = field.name
-            attr[
-                "_onblur"
-            ] = "jQuery('#%(div_id)s').delay(500).fadeOut('slow');" % dict(
-                div_id=div_id, u="F" + self.keyword
+            attr["_onblur"] = (
+                "jQuery('#%(div_id)s').delay(500).fadeOut('slow');"
+                % dict(div_id=div_id, u="F" + self.keyword)
             )
             js = """
             (function($) {
@@ -1401,7 +1364,6 @@ def formstyle_bootstrap4_inline_factory(col_label_size=3):
 
 
 class SQLFORM(FORM):
-
     """
     SQLFORM is used to map a table (and a current record) into an HTML form.
 
@@ -2247,7 +2209,8 @@ class SQLFORM(FORM):
                     if fields:
                         # Remove fields that haven't changed.
                         fields = {
-                            name: value for name, value in fields.items()
+                            name: value
+                            for name, value in fields.items()
                             if self.record.get(name) != value
                         }
                         # update only if something has changed
@@ -3212,10 +3175,12 @@ class SQLFORM(FORM):
                             _value=keywords,
                             _id=skeywords_id,
                             _class="form-control",
-                            _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();"
-                            % (spanel_id, sfields_id)
-                            if advanced_search
-                            else "",
+                            _onfocus=(
+                                "jQuery('#%s').change();jQuery('#%s').slideDown();"
+                                % (spanel_id, sfields_id)
+                                if advanced_search
+                                else ""
+                            ),
                         ),
                         INPUT(
                             _type="submit",
@@ -4005,7 +3970,6 @@ class SQLFORM(FORM):
 
 
 class SQLTABLE(TABLE):
-
     """
     Given with a Rows object, as returned by a `db().select()`, generates
     an html table with the rows.

@@ -855,7 +855,8 @@ def demo7():
         task1 = s.task_status(env.get("id"), output=True)
         res = [
             (
-                "task %s returned W2P_TASK correctly" % (task1.scheduler_task.get("id")),
+                "task %s returned W2P_TASK correctly"
+                % (task1.scheduler_task.get("id")),
                 task1.result
                 == [
                     task1.scheduler_task.get("id"),

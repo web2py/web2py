@@ -16,17 +16,25 @@ get_plural_id = lambda n: int(n != 1)
 construct_plural_form = lambda word, plural_id: (
     word[:-2] + "gues"
     if word[-2:] == "ga"
-    else word[:-2] + "ques"
-    if word[-2:] == "ca"
-    else word[:-2] + "ces"
-    if word[-2:] == "ça"
-    else word[:-2] + "ges"
-    if word[-2:] == "ja"
-    else word[:-2] + "ües"
-    if word[-3:] in ("gua", "qua")
-    else word[:-1] + "es"
-    if word[-1:] == "a"
-    else word
-    if word[-1:] == "s"
-    else word + "s"
+    else (
+        word[:-2] + "ques"
+        if word[-2:] == "ca"
+        else (
+            word[:-2] + "ces"
+            if word[-2:] == "ça"
+            else (
+                word[:-2] + "ges"
+                if word[-2:] == "ja"
+                else (
+                    word[:-2] + "ües"
+                    if word[-3:] in ("gua", "qua")
+                    else (
+                        word[:-1] + "es"
+                        if word[-1:] == "a"
+                        else word if word[-1:] == "s" else word + "s"
+                    )
+                )
+            )
+        )
+    )
 )

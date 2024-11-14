@@ -182,25 +182,17 @@ import cgi
 import codecs
 import copy
 import datetime
+import io
 import itertools
 import re
 import struct
 import time
-import types
 import urllib
 import warnings
 
 import urllib2
 import urlparse
 from htmlentitydefs import codepoint2name, entitydefs, name2codepoint
-
-try:
-    from io import BytesIO as _StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO as _StringIO
-    except ImportError:
-        from StringIO import StringIO as _StringIO
 
 # ---------- optional modules (feedparser will work without these, but with reduced functionality) ----------
 
@@ -3616,7 +3608,7 @@ def _open_resource(
     if hasattr(url_file_stream_or_string, "read"):
         return url_file_stream_or_string
 
-    if isinstance(url_file_stream_or_string, basestring) and urlparse.urlparse(
+    if isinstance(url_file_stream_or_string, str) and urlparse.urlparse(
         url_file_stream_or_string
     )[0] in ("http", "https", "ftp", "file", "feed"):
         # Deal with the feed URI scheme
@@ -3672,9 +3664,7 @@ def _open_resource(
         pass
 
     # treat url_file_stream_or_string as string
-    if isinstance(url_file_stream_or_string, unicode):
-        return _StringIO(url_file_stream_or_string.encode("utf-8"))
-    return _StringIO(url_file_stream_or_string)
+    return io.StringIO(url_file_stream_or_string)
 
 
 def _convert_to_idn(url):
@@ -4896,7 +4886,7 @@ def parse(
     if f and data and http_headers:
         if gzip and "gzip" in http_headers.get("content-encoding", ""):
             try:
-                data = gzip.GzipFile(fileobj=_StringIO(data)).read()
+                data = gzip.GzipFile(fileobj=io.StringIO(data)).read()
             except (IOError, struct.error) as e:
                 # IOError can occur if the gzip header is bad.
                 # struct.error can occur if the data is damaged.
@@ -4990,7 +4980,7 @@ def parse(
         saxparser.setContentHandler(feedparser)
         saxparser.setErrorHandler(feedparser)
         source = xml.sax.xmlreader.InputSource()
-        source.setByteStream(_StringIO(data))
+        source.setByteStream(io.BytesIO(data.encode("utf8")))
         try:
             saxparser.parse(source)
         except xml.sax.SAXException as e:

@@ -698,7 +698,6 @@ class Table:
 
 
 class Cell(list):
-
     """
     \clvertalt  Text is top-aligned in cell (the default).
     \clvertalc  Text is centered vertically in cell.

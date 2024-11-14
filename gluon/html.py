@@ -1353,7 +1353,6 @@ copyreg.pickle(__tag_div__, TAG_pickler, TAG_unpickler)
 
 
 class __TAG__(XmlComponent):
-
     """
     TAG factory
 
@@ -1694,7 +1693,6 @@ class CENTER(DIV):
 
 
 class CODE(DIV):
-
     """
     Displays code in HTML with syntax highlighting.
 
@@ -1857,7 +1855,6 @@ class IFRAME(DIV):
 
 
 class INPUT(DIV):
-
     """
     INPUT Component
 
@@ -2001,7 +1998,6 @@ class INPUT(DIV):
 
 
 class TEXTAREA(INPUT):
-
     """
     Examples::
 
@@ -2109,7 +2105,6 @@ class LEGEND(DIV):
 
 
 class FORM(DIV):
-
     """
     Examples:
 
@@ -2394,9 +2389,9 @@ class FORM(DIV):
             TAG["button"](
                 value,
                 _class=_class,
-                _onclick=url
-                if url.startswith("javascript:")
-                else self.REDIRECT_JS % url,
+                _onclick=(
+                    url if url.startswith("javascript:") else self.REDIRECT_JS % url
+                ),
             )
         )
 

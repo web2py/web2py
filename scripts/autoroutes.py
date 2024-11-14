@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 autoroutes writes routes for you based on a simpler routing
 configuration file called routes.conf. Example:
 
@@ -29,70 +29,85 @@ and vice-versa.
 To use, cp scripts/autoroutes.py routes.py
 
 and either edit the config string below, or set config = "" and edit routes.conf
-'''
+"""
 
-config = '''
+config = """
 127.0.0.1   /examples/default
 domain1.com /app1/default
 domain2.com /app2/default
 domain3.com /app3/defcon3
-'''
+"""
 if not config.strip():
     try:
-        config_file = open('routes.conf', 'r')
+        config_file = open("routes.conf", "r")
         try:
             config = config_file.read()
         finally:
             config_file.close()
     except:
-        config = ''
+        config = ""
 
 
 def auto_in(apps):
     routes = [
-        ('/robots.txt', '/welcome/static/robots.txt'),
-        ('/favicon.ico', '/welcome/static/favicon.ico'),
-        ('/admin$anything', '/admin$anything'),
+        ("/robots.txt", "/welcome/static/robots.txt"),
+        ("/favicon.ico", "/welcome/static/favicon.ico"),
+        ("/admin$anything", "/admin$anything"),
     ]
-    for domain, path in [x.strip().split() for x in apps.split('\n') if x.strip() and not x.strip().startswith('#')]:
-        if not path.startswith('/'):
-            path = '/' + path
-        if path.endswith('/'):
+    for domain, path in [
+        x.strip().split()
+        for x in apps.split("\n")
+        if x.strip() and not x.strip().startswith("#")
+    ]:
+        if not path.startswith("/"):
+            path = "/" + path
+        if path.endswith("/"):
             path = path[:-1]
-        app = path.split('/')[1]
+        app = path.split("/")[1]
         routes += [
-            ('.*:https?://(.*\.)?%s:$method /' % domain, '%s' % path),
-            ('.*:https?://(.*\.)?%s:$method /static/$anything' %
-             domain, '/%s/static/$anything' % app),
-            ('.*:https?://(.*\.)?%s:$method /appadmin/$anything' %
-             domain, '/%s/appadmin/$anything' % app),
-            ('.*:https?://(.*\.)?%s:$method /$anything' %
-             domain, '%s/$anything' % path),
+            (".*:https?://(.*\.)?%s:$method /" % domain, "%s" % path),
+            (
+                ".*:https?://(.*\.)?%s:$method /static/$anything" % domain,
+                "/%s/static/$anything" % app,
+            ),
+            (
+                ".*:https?://(.*\.)?%s:$method /appadmin/$anything" % domain,
+                "/%s/appadmin/$anything" % app,
+            ),
+            (
+                ".*:https?://(.*\.)?%s:$method /$anything" % domain,
+                "%s/$anything" % path,
+            ),
         ]
     return routes
 
 
 def auto_out(apps):
     routes = []
-    for domain, path in [x.strip().split() for x in apps.split('\n') if x.strip() and not x.strip().startswith('#')]:
-        if not path.startswith('/'):
-            path = '/' + path
-        if path.endswith('/'):
+    for domain, path in [
+        x.strip().split()
+        for x in apps.split("\n")
+        if x.strip() and not x.strip().startswith("#")
+    ]:
+        if not path.startswith("/"):
+            path = "/" + path
+        if path.endswith("/"):
             path = path[:-1]
-        app = path.split('/')[1]
+        app = path.split("/")[1]
         routes += [
-            ('/%s/static/$anything' % app, '/static/$anything'),
-            ('/%s/appadmin/$anything' % app, '/appadmin/$anything'),
-            ('%s/$anything' % path, '/$anything'),
+            ("/%s/static/$anything" % app, "/static/$anything"),
+            ("/%s/appadmin/$anything" % app, "/appadmin/$anything"),
+            ("%s/$anything" % path, "/$anything"),
         ]
     return routes
+
 
 routes_in = auto_in(config)
 routes_out = auto_out(config)
 
 
 def __routes_doctest():
-    '''
+    """
     Dummy function for doctesting autoroutes.py.
 
     Use filter_url() to test incoming or outgoing routes;
@@ -130,21 +145,25 @@ def __routes_doctest():
     '/fcn?query'
     >>> filter_url('http://domain2.com/app3/defcon3/fcn#anchor', out=True)
     '/fcn#anchor'
-    '''
+    """
     pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     try:
         import gluon.main
     except ImportError:
         import sys
         import os
+
         os.chdir(os.path.dirname(os.path.dirname(__file__)))
         sys.path.append(os.path.dirname(os.path.dirname(__file__)))
         import gluon.main
     from gluon.rewrite import regex_select, load, filter_url, regex_filter_out
-    regex_select()          # use base routing parameters
-    load(routes=__file__)   # load this file
+
+    regex_select()  # use base routing parameters
+    load(routes=__file__)  # load this file
 
     import doctest
+
     doctest.testmod()

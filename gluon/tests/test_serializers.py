@@ -10,7 +10,6 @@ import decimal
 import unittest
 
 from gluon.html import SPAN
-
 # careful with the import path 'cause of isinstance() checks
 from gluon.languages import TranslatorFactory
 from gluon.serializers import *

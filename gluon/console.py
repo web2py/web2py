@@ -896,10 +896,8 @@ def parse_args(parser, cli_args, deprecated_opts, integer_log_level, namespace=N
         # are skipped, the special IGNORE value is used for this
         store_true = lambda v: True if v else IGNORE
         str_or_default = lambda v: str(v) if v else IGNORE
-        list_or_default = (
-            lambda v: ([str(i) for i in v] if isinstance(v, list) else [str(v)])
-            if v
-            else IGNORE
+        list_or_default = lambda v: (
+            ([str(i) for i in v] if isinstance(v, list) else [str(v)]) if v else IGNORE
         )
         # NOTE: 'help', 'version', 'folder', 'cron_job' and 'GAE' are not
         #       sourced from file, the same applies to deprecated options

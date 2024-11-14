@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 To use, e.g. python .\web2py.py -S APPNAME --force_migrate
 To use, e.g. python .\web2py.py -S APPNAME --force_migrate --fake_migrate
-'''
+"""
 
 import logging
 
@@ -12,7 +12,7 @@ logger = logging.getLogger("web2py")
 def get_databases(request):
     dbs = {}
     global_env = globals()
-    for (key, value) in global_env.items():
+    for key, value in global_env.items():
         try:
             cond = isinstance(value, GQLDB)
         except:
@@ -22,11 +22,11 @@ def get_databases(request):
     return dbs
 
 
-logger.debug('Getting all databases')
+logger.debug("Getting all databases")
 databases = get_databases(None)
-logger.debug('databases = %s', databases)
+logger.debug("databases = %s", databases)
 for db_name in databases:
-    logger.debug('Migrating %s', db_name)
+    logger.debug("Migrating %s", db_name)
     db = databases[db_name]
     tables = db.tables
     for table_name in tables:
@@ -38,6 +38,6 @@ for db_name in databases:
         # isempty is implemented with a select with limitby=(0, 1)
         # if the table is not empty the virtual fields will be processed
         # and if they query other tables you will have problems.
-        table._virtual_fields = []        
+        table._virtual_fields = []
         db(table).isempty()
     db.commit()

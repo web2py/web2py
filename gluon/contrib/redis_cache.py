@@ -16,12 +16,8 @@ from threading import Lock
 
 from gluon import current
 from gluon.cache import CacheAbstract
-from gluon.contrib.redis_utils import (
-    RConnectionError,
-    acquire_lock,
-    register_release_lock,
-    release_lock,
-)
+from gluon.contrib.redis_utils import (RConnectionError, acquire_lock,
+                                       register_release_lock, release_lock)
 
 logger = logging.getLogger("web2py.cache.redis")
 

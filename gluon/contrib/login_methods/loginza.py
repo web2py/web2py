@@ -16,7 +16,6 @@ from gluon.tools import fetch
 
 
 class Loginza(object):
-
     """
     from gluon.contrib.login_methods.loginza import Loginza
     auth.settings.login_form = Loginza(request,

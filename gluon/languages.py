@@ -771,9 +771,11 @@ class TranslatorFactory(object):
                 if not isinstance(symbols, tuple):
                     symbols = (symbols,)
                 symbols = tuple(
-                    value
-                    if isinstance(value, NUMBERS)
-                    else xmlescape(value).translate(ttab_in)
+                    (
+                        value
+                        if isinstance(value, NUMBERS)
+                        else xmlescape(value).translate(ttab_in)
+                    )
                     for value in symbols
                 )
             message = self.params_substitution(message, symbols)
@@ -1018,9 +1020,11 @@ class TranslatorFactory(object):
                 if not isinstance(symbols, tuple):
                     symbols = (symbols,)
                 symbols = tuple(
-                    value
-                    if isinstance(value, NUMBERS)
-                    else str(value).translate(ttab_in)
+                    (
+                        value
+                        if isinstance(value, NUMBERS)
+                        else str(value).translate(ttab_in)
+                    )
                     for value in symbols
                 )
             message = self.params_substitution(message, symbols)

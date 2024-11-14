@@ -9,6 +9,7 @@ Modifed by Dave Stoll dave.stoll@gmail.com
 
 - modifed to support Dow Commerce API
 """
+
 from __future__ import print_function
 
 __all__ = ["DowCommerce"]

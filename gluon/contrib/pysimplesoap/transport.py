@@ -197,13 +197,7 @@ try:
 except ImportError:
     pass
 else:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        try:
-            from StringIO import StringIO
-        except ImportError:
-            from io import StringIO
+    from io import StringIO
 
     class pycurlTransport(TransportBase):
         _wrapper_version = pycurl.version

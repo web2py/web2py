@@ -12,16 +12,8 @@ from gluon import current
 from gluon.settings import global_settings
 from gluon.storage import Messages, Settings, Storage
 from gluon.utils import web2py_uuid
-from gluon.validators import (
-    CRYPT,
-    IS_EMAIL,
-    IS_EQUAL_TO,
-    IS_INT_IN_RANGE,
-    IS_LOWER,
-    IS_MATCH,
-    IS_NOT_EMPTY,
-    IS_NOT_IN_DB,
-)
+from gluon.validators import (CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE,
+                              IS_LOWER, IS_MATCH, IS_NOT_EMPTY, IS_NOT_IN_DB)
 
 DEFAULT = lambda: None
 
@@ -1264,9 +1256,9 @@ class AuthAPI(object):
             requires[0] = CRYPT(
                 **requires[0].__dict__
             )  # Copy the existing CRYPT attributes
-            requires[
-                0
-            ].min_length = 0  # But do not enforce minimum length for the old password
+            requires[0].min_length = (
+                0  # But do not enforce minimum length for the old password
+            )
 
         old_password = kwargs.get("old_password", "")
         new_password = kwargs.get("new_password", "")

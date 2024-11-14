@@ -5,8 +5,8 @@
 """
 
 import os
-import sys
 import pickle
+import sys
 import unittest
 
 from gluon.dal import DAL, Field

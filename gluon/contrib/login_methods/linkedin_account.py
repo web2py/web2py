@@ -46,9 +46,9 @@ class LinkedInAccount(object):
         )
         if result:
             profile = self.api.GetProfile()
-            profile = self.api.GetProfile(
-                profile
-            ).public_url = "http://www.linkedin.com/in/ozgurv"
+            profile = self.api.GetProfile(profile).public_url = (
+                "http://www.linkedin.com/in/ozgurv"
+            )
             return dict(
                 first_name=profile.first_name,
                 last_name=profile.last_name,

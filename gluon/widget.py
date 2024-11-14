@@ -29,7 +29,8 @@ from gluon.console import console, is_appdir
 from gluon.fileutils import create_welcome_w2p, read_file
 from gluon.settings import global_settings
 from gluon.shell import die, run, test
-from gluon.utils import getipaddrinfo, is_loopback_ip_address, is_valid_ip_address
+from gluon.utils import (getipaddrinfo, is_loopback_ip_address,
+                         is_valid_ip_address)
 
 ProgramName = "web2py Web Framework"
 ProgramAuthor = "Created by Massimo Di Pierro, Copyright 2007-" + str(

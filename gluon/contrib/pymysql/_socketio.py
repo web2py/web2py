@@ -15,7 +15,6 @@ _blocking_errnos = (errno.EAGAIN, errno.EWOULDBLOCK)
 
 
 class SocketIO(io.RawIOBase):
-
     """Raw I/O implementation for stream sockets.
 
     This class supports the makefile() method on sockets.  It provides

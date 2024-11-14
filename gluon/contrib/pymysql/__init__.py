@@ -21,32 +21,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
+
 import sys
 
 from ._compat import PY2
 from .constants import FIELD_TYPE
 from .converters import escape_dict, escape_sequence, escape_string
-from .err import (
-    DatabaseError,
-    DataError,
-    Error,
-    IntegrityError,
-    InterfaceError,
-    InternalError,
-    MySQLError,
-    NotSupportedError,
-    OperationalError,
-    ProgrammingError,
-    Warning,
-)
-from .times import (
-    Date,
-    DateFromTicks,
-    Time,
-    TimeFromTicks,
-    Timestamp,
-    TimestampFromTicks,
-)
+from .err import (DatabaseError, DataError, Error, IntegrityError,
+                  InterfaceError, InternalError, MySQLError, NotSupportedError,
+                  OperationalError, ProgrammingError, Warning)
+from .times import (Date, DateFromTicks, Time, TimeFromTicks, Timestamp,
+                    TimestampFromTicks)
 
 VERSION = (0, 7, 9, None)
 threadsafety = 1

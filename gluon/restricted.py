@@ -27,7 +27,6 @@ __all__ = ["RestrictedError", "restricted", "TicketStorage", "compile2"]
 
 
 class TicketStorage(Storage):
-
     """
     Defines the ticket object and the default values of its members (None)
     """

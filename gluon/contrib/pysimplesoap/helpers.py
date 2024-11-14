@@ -226,9 +226,9 @@ def process_element(
                                 # create an indirect struct {type_name: ...}:
                                 fn_array = Struct(key)
                                 fn_array[type_name] = fn_complex
-                                fn_array.namespaces[
-                                    None
-                                ] = fn_namespace  # set the default namespace
+                                fn_array.namespaces[None] = (
+                                    fn_namespace  # set the default namespace
+                                )
                                 fn_array.qualified = qualified
                             fn.append(fn_array)
             else:

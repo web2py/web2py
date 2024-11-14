@@ -11,9 +11,7 @@ nplurals = 3  # Russian language has 3 forms:
 get_plural_id = lambda n: (
     0
     if n % 10 == 1 and n % 100 != 11
-    else 1
-    if n % 10 >= 2 and n % 10 <= 4 and (n % 100 < 10 or n % 100 >= 20)
-    else 2
+    else 1 if n % 10 >= 2 and n % 10 <= 4 and (n % 100 < 10 or n % 100 >= 20) else 2
 )
 
 # construct_plural_form() is not used now because of complex

@@ -21,22 +21,23 @@ SOFTCRON = False
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
 
-if not os.path.isdir('applications'):
-    raise RuntimeError('Running from the wrong folder')
+if not os.path.isdir("applications"):
+    raise RuntimeError("Running from the wrong folder")
 
 sys.path = [path] + [p for p in sys.path if not p == path]
 
 from gluon.settings import global_settings
+
 global_settings.web2py_runtime_handler = True
 
 import gluon.main
 
 if LOGGING:
-    application = gluon.main.appfactory(wsgiapp=gluon.main.wsgibase,
-                                        logfilename='httpserver.log',
-                                        profiler_dir=None)
+    application = gluon.main.appfactory(
+        wsgiapp=gluon.main.wsgibase, logfilename="httpserver.log", profiler_dir=None
+    )
 else:
     application = gluon.main.wsgibase
 
 if SOFTCRON:
-    global_settings.web2py_crontype = 'soft'
+    global_settings.web2py_crontype = "soft"

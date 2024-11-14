@@ -32,22 +32,10 @@ import tempfile
 import warnings
 
 from . import TIMEOUT, __author__, __copyright__, __license__, __version__
-
 # Utility functions used throughout wsdl_parse, moved aside for readability
-from .helpers import (
-    TYPE_MAP,
-    Alias,
-    fetch,
-    get_local_name,
-    get_message,
-    get_namespace_prefix,
-    make_key,
-    postprocess_element,
-    preprocess_schema,
-    process_element,
-    sort_dict,
-    urlsplit,
-)
+from .helpers import (TYPE_MAP, Alias, fetch, get_local_name, get_message,
+                      get_namespace_prefix, make_key, postprocess_element,
+                      preprocess_schema, process_element, sort_dict, urlsplit)
 from .simplexml import REVERSE_TYPE_MAP, TYPE_MAP, SimpleXMLElement, Struct
 from .transport import get_Http, get_http_wrapper, set_http_wrapper
 from .wsse import UsernameToken

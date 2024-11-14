@@ -8,14 +8,8 @@ import unittest
 from hashlib import md5
 
 import gluon.utils
-from gluon.utils import (
-    compare,
-    is_valid_ip_address,
-    md5_hash,
-    secure_dumps,
-    secure_loads,
-    web2py_uuid,
-)
+from gluon.utils import (compare, is_valid_ip_address, md5_hash, secure_dumps,
+                         secure_loads, web2py_uuid)
 from gluon.validators import get_digest, simple_hash
 
 

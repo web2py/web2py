@@ -127,9 +127,7 @@ class ServerProxy(object):
             "params": args or vars,
         }
         if self.version:
-            data[
-                "jsonrpc"
-            ] = (
+            data["jsonrpc"] = (
                 self.version
             )  # mandatory key/value for jsonrpc2 validation else err -32600
         request = json.dumps(data, cls=self.json_encoder)

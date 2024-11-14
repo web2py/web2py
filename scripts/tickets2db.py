@@ -13,18 +13,23 @@ from gluon import DAL
 
 SLEEP_MINUTES = 5
 
-errors_path = os.path.join(request.folder, 'errors')
+errors_path = os.path.join(request.folder, "errors")
 try:
-    db_string = open(os.path.join(request.folder, 'private', 'ticket_storage.txt')).read().replace('\r', '').replace('\n', '').strip()
+    db_string = (
+        open(os.path.join(request.folder, "private", "ticket_storage.txt"))
+        .read()
+        .replace("\r", "")
+        .replace("\n", "")
+        .strip()
+    )
 except:
-    db_string = 'sqlite://storage.db'
+    db_string = "sqlite://storage.db"
 
-db_path = os.path.join(request.folder, 'databases')
+db_path = os.path.join(request.folder, "databases")
 
 tk_db = DAL(db_string, folder=db_path, auto_import=True)
 ts = TicketStorage(db=tk_db)
-tk_table = ts._get_table(
-    db=tk_db, tablename=ts.tablename, app=request.application)
+tk_table = ts._get_table(db=tk_db, tablename=ts.tablename, app=request.application)
 
 
 hashes = {}
@@ -41,10 +46,9 @@ while 1:
         modified_time = datetime.datetime.fromtimestamp(modified_time)
         ticket_id = file
         ticket_data = open(filename).read()
-        tk_table.insert(ticket_id=ticket_id,
-                        ticket_data=ticket_data,
-                        created_datetime=modified_time
-                        )
+        tk_table.insert(
+            ticket_id=ticket_id, ticket_data=ticket_data, created_datetime=modified_time
+        )
         tk_db.commit()
         os.unlink(filename)
 

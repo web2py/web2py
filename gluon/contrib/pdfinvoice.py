@@ -1,12 +1,13 @@
 """
 BSD license -  created by Massimo Di Pierro
 """
+
 from __future__ import print_function
 
 import datetime
+import io
 from decimal import Decimal
 
-import cStringIO
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.pdfgen.canvas import Canvas
@@ -35,7 +36,7 @@ class PDF(object):
 
     def draw(self, invoice, items_page=10):
         """Draws the invoice"""
-        buffer = cStringIO.StringIO()
+        buffer = io.StringIO()
         invoice_items = invoice["items"]
         pages = max((len(invoice_items) - 2) / items_page + 1, 1)
         canvas = Canvas(buffer, pagesize=self.page_size)

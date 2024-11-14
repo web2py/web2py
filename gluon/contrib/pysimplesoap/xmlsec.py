@@ -16,8 +16,8 @@ from __future__ import print_function
 import base64
 import hashlib
 import os
+from io import StringIO
 
-from cStringIO import StringIO
 from M2Crypto import BIO, EVP, RSA, X509, m2
 
 # if lxml is not installed, use c14n.py native implementation

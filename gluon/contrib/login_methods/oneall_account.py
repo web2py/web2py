@@ -20,7 +20,6 @@ from gluon.tools import fetch
 
 
 class OneallAccount(object):
-
     """
     from gluon.contrib.login_methods.oneall_account import OneallAccount
     auth.settings.actions_disabled=['register','change_password',

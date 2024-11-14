@@ -46,21 +46,7 @@ _generator_name = __name__ + "-" + ".".join(map(str, __version__))
 
 import datetime
 import sys
-
-if sys.version_info[0] == 3:
-    # Python 3
-    basestring = str
-    from io import StringIO
-else:
-    # Python 2
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        # Very old (or memory constrained) systems might
-        # have left out the compiled C version. Fall back
-        # to the pure Python one. Haven't seen this sort
-        # of system since the early 2000s.
-        from StringIO import StringIO
+from io import StringIO
 
 # Could make this the base class; will need to add 'publish'
 
@@ -81,7 +67,7 @@ class WriteXmlMixin:
 
 
 def _element(handler, name, obj, d={}):
-    if isinstance(obj, basestring) or obj is None:
+    if isinstance(obj, str) or obj is None:
         # special-case handling to make the API easier
         # to use for the common case.
         handler.startElement(name, d)
@@ -451,7 +437,7 @@ class RSS2(WriteXmlMixin):
         _opt_element(handler, "lastBuildDate", lastBuildDate)
 
         for category in self.categories:
-            if isinstance(category, basestring):
+            if isinstance(category, str):
                 category = Category(category)
             category.publish(handler)
 

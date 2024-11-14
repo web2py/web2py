@@ -22,14 +22,8 @@ from gluon.globals import Request, Response, Session
 from gluon.http import HTTP
 from gluon.languages import TranslatorFactory
 from gluon.storage import Storage
-from gluon.tools import (
-    Auth,
-    Expose,
-    Mail,
-    Recaptcha2,
-    prettydate,
-    prevent_open_redirect,
-)
+from gluon.tools import (Auth, Expose, Mail, Recaptcha2, prettydate,
+                         prevent_open_redirect)
 
 IS_IMAP = "imap" in DEFAULT_URI
 

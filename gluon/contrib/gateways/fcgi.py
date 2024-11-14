@@ -74,15 +74,8 @@ except ImportError:
 
     thread_available = False
 
-is_py2 = sys.version_info[0] == 2
-
-if is_py2:
-    from cgi import escape
-
-    import cStringIO as StringIO
-else:
-    from html import escape
-    from io import StringIO
+from html import escape
+from io import StringIO
 
 # Apparently 2.3 doesn't define SHUT_WR? Assume it is 1 in this case.
 if not hasattr(socket, "SHUT_WR"):

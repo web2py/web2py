@@ -1,8 +1,6 @@
 import base64
-
 from urllib import request as urllib2
 from urllib.request import urlopen
-
 
 
 def basic_auth(server="http://127.0.0.1"):

@@ -41,6 +41,7 @@ wordpress.com
 revision3.com
 viddler.com
 """
+
 from __future__ import print_function
 
 import cgi

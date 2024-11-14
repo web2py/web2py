@@ -32,7 +32,6 @@ class all_styles(object):
 
 
 class Highlighter(object):
-
     """Does syntax highlighting."""
 
     def __init__(

@@ -28,18 +28,8 @@ from functools import wraps
 
 from .fonts import fpdf_charwidths
 from .php import UTF8StringToArray, UTF8ToUTF16BE, print_r, sprintf, substr
-from .py3k import (
-    PY3K,
-    BytesIO,
-    Image,
-    b,
-    basestring,
-    exception,
-    hashpath,
-    pickle,
-    unicode,
-    urlopen,
-)
+from .py3k import (PY3K, BytesIO, Image, b, basestring, exception, hashpath,
+                   pickle, unicode, urlopen)
 from .ttfonts import TTFontFile
 
 # Global variables

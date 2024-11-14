@@ -22,7 +22,6 @@ from gluon.tools import fetch
 
 
 class RPXAccount(object):
-
     """
     from gluon.contrib.login_methods.rpx_account import RPXAccount
     auth.settings.actions_disabled=['register','change_password',

@@ -10,9 +10,9 @@ Tinkered by Szabolcs Gyuris < szimszo n @ o regpreshaz dot eu>
 """
 import xml.dom.minidom as dom
 import xml.parsers.expat as expat
+from urllib.request import urlopen
 
 from gluon import URL, current, redirect
-from urllib.request import urlopen
 
 
 class CasAuth(object):

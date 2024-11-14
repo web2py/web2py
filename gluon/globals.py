@@ -15,7 +15,6 @@ Contains the classes for the global used variables:
 import cgi
 import copy
 import copyreg
-
 # from types import DictionaryType
 import datetime
 import hashlib
@@ -46,7 +45,8 @@ from gluon.http import HTTP, redirect
 from gluon.serializers import custom_json, json
 from gluon.settings import global_settings
 from gluon.storage import List, Storage
-from gluon.streamer import DEFAULT_CHUNK_SIZE, stream_file_or_304_or_206, streamer
+from gluon.streamer import (DEFAULT_CHUNK_SIZE, stream_file_or_304_or_206,
+                            streamer)
 from gluon.utils import secure_dumps, secure_loads, web2py_uuid
 
 FMT = "%a, %d-%b-%Y %H:%M:%S PST"
@@ -167,7 +167,6 @@ def copystream_progress(request, chunk_size=10**5):
 
 
 class Request(Storage):
-
     """
     Defines the request object and the default values of its members
 
@@ -312,7 +311,8 @@ class Request(Storage):
 
     def parse_content_type(self):
         from email.policy import EmailPolicy as mime
-        header = mime.header_factory('content-type', self.env.content_type)
+
+        header = mime.header_factory("content-type", self.env.content_type)
 
         self.encoding = header.params.get("charset")
         self.content_type = header.content_type
@@ -451,7 +451,6 @@ class Request(Storage):
 
 
 class Response(Storage):
-
     """
     Defines the response object and the default values of its members
     response.write(   ) can be used to write in the output html
@@ -770,9 +769,9 @@ class Response(Storage):
             # Browsers still don't have a simple uniform way to have non ascii
             # characters in the filename so for now we are percent encoding it
             download_filename = urllib_quote(download_filename)
-            headers[
-                "Content-Disposition"
-            ] = 'attachment; filename="%s"' % download_filename.replace('"', '\\"')
+            headers["Content-Disposition"] = (
+                'attachment; filename="%s"' % download_filename.replace('"', '\\"')
+            )
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
     def json(self, data, default=None, indent=None):
@@ -1120,9 +1119,9 @@ class Session(Storage):
             response.cookies[response.session_id_name] = response.session_id
             response.cookies[response.session_id_name]["path"] = "/"
             if cookie_expires:
-                response.cookies[response.session_id_name][
-                    "expires"
-                ] = cookie_expires.strftime(FMT)
+                response.cookies[response.session_id_name]["expires"] = (
+                    cookie_expires.strftime(FMT)
+                )
 
         session_pickled = pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
         response.session_hash = hashlib.md5(session_pickled).hexdigest()

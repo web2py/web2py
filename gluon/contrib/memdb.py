@@ -13,14 +13,8 @@ __all__ = ["MEMDB", "Field"]
 import copy
 import csv
 import datetime
-import os
-import random
+import io
 import re
-import sys
-import types
-
-import cStringIO
-import thread
 
 import gluon.validators as validators
 from gluon import SQLTABLE
@@ -107,7 +101,6 @@ def sqlhtml_validators(field_type, length):
 
 
 class DALStorage(dict):
-
     """
     a dictionary that let you do d['a'] as well as d.a
     """
@@ -130,7 +123,6 @@ class SQLCallableList(list):
 
 
 class MEMDB(DALStorage):
-
     """
     an instance of this class represents a database connection
 
@@ -170,7 +162,6 @@ class SQLALL(object):
 
 
 class Table(DALStorage):
-
     """
     an instance of this class represents a database table
 
@@ -348,7 +339,6 @@ class Expression(object):
 
 
 class Field(Expression):
-
     """
     an instance of this class represents a database field
 
@@ -463,7 +453,6 @@ class QueryException:
 
 
 class Query(object):
-
     """
     A query object necessary to define a set.
     It can be stored or can be passed to GQLDB.__call__() to obtain a Set
@@ -497,7 +486,6 @@ class Query(object):
 
 
 class Set(object):
-
     """
     As Set represents a set of records in the database,
     the records are identified by the where=Query(...) object.
@@ -616,7 +604,6 @@ def update_record(
 
 
 class Rows(object):
-
     """
     A wrapper for the return value of a select. It basically represents a table.
     It has an iterator and each row is represented as a dictionary.
@@ -706,9 +693,11 @@ class Rows(object):
                 row[tablename][fieldname] = value
             if fieldname == "id":
                 id = row[tablename].id
-                row[tablename].update_record = lambda t=row[tablename], s=self._db[
-                    tablename
-                ], id=id, **a: update_record(t, s, id, a)
+                row[tablename].update_record = (
+                    lambda t=row[tablename], s=self._db[
+                        tablename
+                    ], id=id, **a: update_record(t, s, id, a)
+                )
                 for referee_table, referee_name in table._referenced_by:
                     s = self._db[referee_table][referee_name]
                     row[tablename][referee_table] = Set(self._db, s == id)
@@ -729,7 +718,7 @@ class Rows(object):
         serializes the table into a csv file
         """
 
-        s = cStringIO.StringIO()
+        s = io.StringIO()
         writer = csv.writer(s)
         writer.writerow(self.colnames)
         c = len(self.colnames)

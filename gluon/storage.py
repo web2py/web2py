@@ -277,7 +277,6 @@ class FastStorage(dict):
 
 
 class List(list):
-
     """
     Like a regular python list but callable.
     When  a(i) is called if i is out of bounds returns None
