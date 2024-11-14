@@ -20,18 +20,16 @@ else:
 if '-f' in sys.argv:
     fi = sys.argv.index('-f')
     # maybe session2trash arg
-    if '-A' in sys.argv and  fi > sys.argv.index('-A'):
+    if '-A' in sys.argv and fi > sys.argv.index('-A'):
         fi = None
 elif '--folder' in sys.argv:
     fi = sys.argv.index('--folder')
 else:
     fi = None
+
 if fi and fi < len(sys.argv):
     fi += 1
     folder = sys.argv[fi]
-    if not os.path.isdir(os.path.join(folder, 'gluon')):
-        print("%s: error: bad folder %s" % (sys.argv[0], folder), file=sys.stderr)
-        sys.exit(1)
     path = sys.argv[fi] = os.path.abspath(folder)
 
 os.chdir(path)
