@@ -12,7 +12,6 @@ Dependencies:
 
 """
 
-import cgi
 from urllib import urlencode
 
 import oauth2 as oauth

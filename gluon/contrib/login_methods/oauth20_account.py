@@ -11,11 +11,10 @@ OAuth 2.0 spec: http://tools.ietf.org/html/rfc6749
 
 """
 
-import cgi
 import json
 import time
 from urllib import request as urllib2
-from urllib.parse import urlencode
+from urllib.parse import urlencode, parse_qs
 
 from gluon import HTTP, current, redirect
 
@@ -199,7 +198,7 @@ class OAuthAccount(object):
                                 "Cannot parse oauth server response %s %s" % (data, e)
                             )
                     else:  # try facebook style first with x-www-form-encoded
-                        tokendata = cgi.parse_qs(data)
+                        tokendata = parse_qs(data)
                         current.session.token = dict(
                             [(k, v[-1]) for k, v in tokendata.items()]
                         )

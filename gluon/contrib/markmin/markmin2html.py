@@ -3,22 +3,12 @@
 # created by Massimo Di Pierro
 # recreated by Vladyslav Kozlovskyy
 # license MIT/BSD/GPL
-from __future__ import print_function
 
 import ast
 import re
 import sys
-import urllib
 
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    from string import maketrans
-    from urllib import quote as urllib_quote
-else:
-    from urllib.parse import quote as urllib_quote
-
-    maketrans = str.maketrans
+from urllib.parse import quote as urllib_quote
 
 
 """
@@ -601,11 +591,11 @@ regex_media_level2 = re.compile(
 
 regex_markmin_escape = re.compile(r"(\\*)(['`:*~\\[\]{}@\$+\-.#\n])")
 regex_backslash = re.compile(r"\\(['`:*~\\[\]{}@\$+\-.#\n])")
-ttab_in = maketrans(
+ttab_in = str.maketrans(
     "'`:*~\\[]{}@$+-.#\n",
     "\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05",
 )
-ttab_out = maketrans(
+ttab_out = str.maketrans(
     "\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05",
     "'`:*~\\[]{}@$+-.#\n",
 )
@@ -620,23 +610,17 @@ def local_html_escape(data, quote=False):
     characters, both double quote (") and single quote (') characters are also
     translated.
     """
-    if PY2:
-        import cgi
+    import html
 
-        data = cgi.escape(data, quote)
-        return data.replace("'", "&#x27;") if quote else data
-    else:
-        import html
-
-        if isinstance(data, str):
-            return html.escape(data, quote=quote)
-        data = data.replace(b"&", b"&amp;")  # Must be done first!
-        data = data.replace(b"<", b"&lt;")
-        data = data.replace(b">", b"&gt;")
-        if quote:
-            data = data.replace(b'"', b"&quot;")
-            data = data.replace(b"'", b"&#x27;")
-        return data
+    if isinstance(data, str):
+        return html.escape(data, quote=quote)
+    data = data.replace(b"&", b"&amp;")  # Must be done first!
+    data = data.replace(b"<", b"&lt;")
+    data = data.replace(b">", b"&gt;")
+    if quote:
+        data = data.replace(b'"', b"&quot;")
+        data = data.replace(b"'", b"&#x27;")
+    return data
 
 
 def make_dict(b):

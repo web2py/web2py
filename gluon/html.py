@@ -11,7 +11,6 @@ Template helpers
 """
 
 import base64
-import cgi
 import copy
 import copyreg
 import functools
@@ -1937,7 +1936,7 @@ class INPUT(DIV):
             t = self["_type"] = "text"
         t = t.lower()
         value = self["value"]
-        if self["_value"] is None or isinstance(self["_value"], cgi.FieldStorage):
+        if self["_value"] is None or hasattr(self["_value"], "file"):
             _value = None
         else:
             _value = str(self["_value"])
@@ -2533,7 +2532,7 @@ class BEAUTIFY(DIV):
             if (
                 hasattr(c, "value")
                 and not callable(c.value)
-                and not isinstance(c, cgi.FieldStorage)
+                and not hasattr(c, "file")
             ):
                 if c.value:
                     components.append(c.value)
@@ -2575,7 +2574,7 @@ class BEAUTIFY(DIV):
             elif isinstance(c, (list, tuple)):
                 items = [TR(TD(BEAUTIFY(item, **attributes))) for item in c]
                 components.append(TABLE(*items, **attributes))
-            elif isinstance(c, cgi.FieldStorage):
+            elif hasattr(c, "file"):
                 components.append("FieldStorage object")
             else:
                 components.append(repr(c))

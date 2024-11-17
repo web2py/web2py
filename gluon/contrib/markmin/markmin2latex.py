@@ -3,10 +3,8 @@
 # license MIT/BSD/GPL
 from __future__ import print_function
 
-import cgi
 import doctest
 import re
-import sys
 from optparse import OptionParser
 
 __all__ = ["render", "markmin2latex"]

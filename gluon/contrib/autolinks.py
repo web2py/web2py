@@ -42,9 +42,7 @@ revision3.com
 viddler.com
 """
 
-from __future__ import print_function
-
-import cgi
+import html
 import re
 import sys
 import urllib
@@ -174,7 +172,7 @@ urllib._urlopener = VimeoURLOpener()
 def oembed(url):
     for k, v in EMBED_MAPS:
         if k.match(url):
-            oembed = v + "?format=json&url=" + cgi.escape(url)
+            oembed = v + "?format=json&url=" + html.escape(url)
             try:
                 data = urllib.urlopen(oembed).read()
                 return loads(data)  # json!
