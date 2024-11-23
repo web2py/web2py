@@ -106,20 +106,8 @@ win:
 	mv ../web2py_win/web2py_win.zip .
 binaries:
 	echo '' > NEWINSTALL
-	cp VERSION ../web2py_win_py27/web2py/
-	cp README.markdown ../web2py_win_py27/web2py/
-	cp NEWINSTALL ../web2py_win_py27/web2py/
-	cp LICENSE ../web2py_win_py27/web2py/
-	cp CHANGELOG ../web2py_win_py27/web2py/
-	rm -rf ../web2py_win_py27/web2py/gluon
-	cp -r gluon ../web2py_win_py27/web2py/gluon
-	rm -rf ../web2py_win_py27/web2py/applications/*
-	cp -r applications/__init__.py ../web2py_win_py27/web2py/applications/
-	cp -r applications/admin ../web2py_win_py27/web2py/applications/
-	cp -r applications/welcome ../web2py_win_py27/web2py/applications/
-	cp -r applications/examples ../web2py_win_py27/web2py/applications/
-	cd ../web2py_win_py27; zip -r ../web2py/web2py_win_py27.zip web2py
 
+	# repackage windows binary for python 3.7
 	cp VERSION ../web2py_win_py37/web2py/
 	cp README.markdown ../web2py_win_py37/web2py/
 	cp NEWINSTALL ../web2py_win_py37/web2py/
@@ -134,20 +122,7 @@ binaries:
 	cp -r applications/examples ../web2py_win_py37/web2py/applications/
 	cd ../web2py_win_py37; zip -r ../web2py/web2py_win_py37.zip web2py
 
-	cp VERSION ../web2py_osx_py27/web2py.app/Contents/MacOS/
-	cp README.markdown ../web2py_osx_py27/web2py.app/Contents/MacOS/
-	cp NEWINSTALL ../web2py_osx_py27/web2py.app/Contents/MacOS/
-	cp LICENSE ../web2py_osx_py27/web2py.app/Contents/MacOS/
-	cp CHANGELOG ../web2py_osx_py27/web2py.app/Contents/MacOS/	
-	rm -rf ../web2py_osx_py27/web2py.app/Contents/MacOS/gluon
-	cp -r gluon ../web2py_osx_py27/web2py.app/Contents/MacOS/gluon
-	rm -rf ../web2py_osx_py27/web2py.app/Contents/MacOS/applications/*
-	cp -r applications/__init__.py ../web2py_osx_py27/web2py.app/Contents/MacOS/applications/
-	cp -r applications/admin ../web2py_osx_py27/web2py.app/Contents/MacOS/applications/
-	cp -r applications/welcome ../web2py_osx_py27/web2py.app/Contents/MacOS/applications/
-	cp -r applications/examples ../web2py_osx_py27/web2py.app/Contents/MacOS/applications/
-	cd ../web2py_osx_py27; zip -r ../web2py/web2py_osx_py27.zip web2py.app
-
+	# repackage OSX binary for python 3.7
 	cp VERSION ../web2py_osx_py37/web2py.app/Contents/MacOS/
 	cp README.markdown ../web2py_osx_py37/web2py.app/Contents/MacOS/
 	cp NEWINSTALL ../web2py_osx_py37/web2py.app/Contents/MacOS/
