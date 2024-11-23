@@ -13,7 +13,7 @@
 
 The best way to understand web2py is to try it. You can try it online [[here http://www.web2py.com/demo_admin]] (this online version is identical to the actual web2py although some functions are disabled for security reasons).
 
-web2py was inspired by Ruby on Rails and, as Rails, it focuses on rapid development and follows a Model View Controller design. web2py differs from Rails because it is based on Python (thus it is faster and more scalable), because it provides a comprehensive web-based administrative interface (thus there is no need to ever type shell commands unless you wish), includes libraries to handle more protocols (for example XML-RPC and RSS feeds), and can run on the Google App Engine.
+web2py was inspired by Ruby on Rails and, as Rails, it focuses on rapid development and follows a Model View Controller design. web2py differs from Rails because it is based on Python (thus it is faster and more scalable), because it provides a comprehensive web-based administrative interface (thus there is no need to ever type shell commands unless you wish), includes libraries to handle more protocols (for example XML-RPC and RSS feeds), and can run on the Google Firestore
 
 web2py was also inspired by Django and, as Django, it has the ability to generate forms from database tables and it includes an extensive set of validators. web2py differs from Django because it is more compact, easier to learn and does not have any project-level configuration files.
 

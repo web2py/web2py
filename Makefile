@@ -45,7 +45,7 @@ rmfiles:
 	rm -rf applications/examples/uploads/* 
 src:
 	### Use semantic versioning
-	echo 'Version 2.99.0-beta+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 3.00.0+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
 	make clean
 	# make rmfiles
@@ -64,7 +64,7 @@ mdp:
 	make app
 	make win
 app:
-	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
+	python3.7 -c 'import compileall; compileall.compile_dir("gluon/")'
 	#python web2py.py -S welcome -R __exit__.py
 	#cd ../web2py_osx/site-packages/; unzip ../site-packages.zip
 	#find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;

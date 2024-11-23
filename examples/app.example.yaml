@@ -1,17 +1,10 @@
 #  For Google App Engine deployment, copy this file to app.yaml
 #  and edit as required
-#  See https://cloud.google.com/appengine/docs/standard/python/config/appref
-#  and http://www.web2py.com/book/default/chapter/13#Deploying-on-Google-App-Engine
+#  See:
+#  - https://cloud.google.com/appengine/docs/flexible/reference/app-yaml?tab=python
+#  - http://www.web2py.com/book/default/chapter/13#Deploying-on-Google-App-Engine
 
-application: yourappname
-version: 1
-api_version: 1
-
-# use these lines for Python 2.7
-# upload app with: appcfg.py update web2py (where 'web2py' is web2py's root directory)
-#
-runtime: python27
-threadsafe: true    # true for WSGI & concurrent requests (Python 2.7 only)
+runtime: python311
 
 default_expiration: "24h"   # for static files
 
