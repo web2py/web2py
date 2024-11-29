@@ -58,35 +58,35 @@ try:
 except ImportError:
     have_soup = False
 
-regex_link = re.compile("https?://\S+")
+regex_link = re.compile(r"https?://\S+")
 
 EMBED_MAPS = [
-    (re.compile("http://\S*?flickr.com/\S*"), "http://www.flickr.com/services/oembed/"),
+    (re.compile(r"http://\S*?flickr.com/\S*"), "http://www.flickr.com/services/oembed/"),
     (
-        re.compile("http://\S*.youtu(\.be|be\.com)/watch\S*"),
+        re.compile(r"http://\S*.youtu(\.be|be\.com)/watch\S*"),
         "http://www.youtube.com/oembed",
     ),
     (
-        re.compile("http://www.hulu.com/watch/\S*"),
+        re.compile(r"http://www.hulu.com/watch/\S*"),
         "http://www.hulu.com/api/oembed.json",
     ),
-    (re.compile("http://vimeo.com/\S*"), "http://vimeo.com/api/oembed.json"),
+    (re.compile(r"http://vimeo.com/\S*"), "http://vimeo.com/api/oembed.json"),
     (
-        re.compile("http://www.slideshare.net/[^\/]+/\S*"),
+        re.compile(r"http://www.slideshare.net/[^\/]+/\S*"),
         "http://www.slideshare.net/api/oembed/2",
     ),
-    (re.compile("http://qik.com/\S*"), "http://qik.com/api/oembed.json"),
+    (re.compile(r"http://qik.com/\S*"), "http://qik.com/api/oembed.json"),
     (
-        re.compile("http://www.polleverywhere.com/\w+/\S+"),
+        re.compile(r"http://www.polleverywhere.com/\w+/\S+"),
         "http://www.polleverywhere.com/services/oembed/",
     ),
     (
-        re.compile("http://\S+.wordpress.com/\S+"),
+        re.compile(r"http://\S+.wordpress.com/\S+"),
         "http://public-api.wordpress.com/oembed/",
     ),
-    (re.compile("http://*.revision3.com/\S+"), "http://revision3.com/api/oembed/"),
+    (re.compile(r"http://*.revision3.com/\S+"), "http://revision3.com/api/oembed/"),
     (
-        re.compile("http://\S+.viddler.com/\S+"),
+        re.compile(r"http://\S+.viddler.com/\S+"),
         "http://lab.viddler.com/services/oembed/",
     ),
 ]

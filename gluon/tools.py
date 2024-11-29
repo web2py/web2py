@@ -3876,7 +3876,7 @@ class Auth(AuthAPI):
         )
 
         if form.process().accepted:
-            emails = re.compile("[^\s'\"@<>,;:]+\@[^\s'\"@<>,;:]+").findall(
+            emails = re.compile(r"[^\s'\"@<>,;:]+\@[^\s'\"@<>,;:]+").findall(
                 form.vars.emails
             )
             # send the invitations
@@ -7222,7 +7222,7 @@ class Wiki(object):
         if menu_page:
             tree = {"": menu}
             regex = re.compile(
-                "[\r\n\t]*(?P<base>(\s*\-\s*)+)(?P<title>\w.*?)\s+\>\s+(?P<link>\S+)"
+                r"[\r\n\t]*(?P<base>(\s*\-\s*)+)(?P<title>\w.*?)\s+\>\s+(?P<link>\S+)"
             )
             for match in regex.finditer(self.fix_hostname(menu_page.body)):
                 base = match.group("base").replace(" ", "")

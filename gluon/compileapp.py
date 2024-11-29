@@ -538,7 +538,7 @@ def compile_models(folder):
         os.unlink(filename)
 
 
-REGEX_LONG_STRING = re.compile('(""".*?"""|' "'''.*?''')", re.DOTALL)
+REGEX_LONG_STRING = re.compile(r'(""".*?"""|' "'''.*?''')", re.DOTALL)
 REGEX_EXPOSED = re.compile(r"^def\s+(_?[a-zA-Z0-9]\w*)\( *\)\s*:", re.MULTILINE)
 
 

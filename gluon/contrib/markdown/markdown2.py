@@ -306,7 +306,7 @@ class Markdown(object):
             # Look for emacs-style file variable hints.
             emacs_vars = self._get_emacs_vars(text)
             if "markdown-extras" in emacs_vars:
-                splitter = re.compile("[ ,]+")
+                splitter = re.compile(r"[ ,]+")
                 for e in splitter.split(emacs_vars["markdown-extras"]):
                     if "=" in e:
                         ename, earg = e.split("=", 1)
@@ -1595,7 +1595,7 @@ class Markdown(object):
                     marker_pat,
                 )
                 if self.list_level:  # sub-list
-                    list_re = re.compile("^" + whole_list, re.X | re.M | re.S)
+                    list_re = re.compile(r"^" + whole_list, re.X | re.M | re.S)
                 else:
                     list_re = re.compile(
                         r"(?:(?<=\n\n)|\A\n?)" + whole_list, re.X | re.M | re.S
@@ -1968,8 +1968,8 @@ class Markdown(object):
     """
     _block_quote_re = re.compile(_block_quote_base % "", re.M | re.X)
     _block_quote_re_spoiler = re.compile(_block_quote_base % "[ \t]*?!?", re.M | re.X)
-    _bq_one_level_re = re.compile("^[ \t]*>[ \t]?", re.M)
-    _bq_one_level_re_spoiler = re.compile("^[ \t]*>[ \t]*?![ \t]?", re.M)
+    _bq_one_level_re = re.compile(r"^[ \t]*>[ \t]?", re.M)
+    _bq_one_level_re_spoiler = re.compile(r"^[ \t]*>[ \t]*?![ \t]?", re.M)
     _bq_all_lines_spoilers = re.compile(r"\A(?:^[ \t]*>[ \t]*?!.*[\n\r]*)+\Z", re.M)
     _html_pre_block_re = re.compile(r"(\s*<pre>.+?</pre>)", re.S)
 
@@ -2295,8 +2295,8 @@ def _curry(*args, **kwargs):
 # Recipe: regex_from_encoded_pattern (1.0)
 def _regex_from_encoded_pattern(s):
     """'foo'    -> re.compile(re.escape('foo'))
-    '/foo/'  -> re.compile('foo')
-    '/foo/i' -> re.compile('foo', re.I)
+    '/foo/'  -> re.compile(r'foo')
+    '/foo/i' -> re.compile(r'foo', re.I)
     """
     if s.startswith("/") and s.rfind("/") != 0:
         # Parse it: /PATTERN/FLAGS
@@ -2628,7 +2628,7 @@ def main(argv=None):
     if opts.extras:
         extras = {}
         for s in opts.extras:
-            splitter = re.compile("[,;: ]+")
+            splitter = re.compile(r"[,;: ]+")
             for e in splitter.split(s):
                 if "=" in e:
                     ename, earg = e.split("=", 1)

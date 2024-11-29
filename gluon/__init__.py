@@ -10,7 +10,10 @@ Web2Py framework modules
 ========================
 """
 
+__version__ = "3.0.3"
+
 __all__ = [
+    "__version__",
     "A",
     "B",
     "BEAUTIFY",
@@ -131,7 +134,7 @@ MESSAGE = (
 
 
 def import_packages():
-    for package, location in [("pydal", "dal"), ("yatl", "yatl")]:
+    for package, location in [("pydal", "dal"), ("yatl", "yatl"), ('rocket3', 'rocket3'), ('pymysql','pymysql')]:
         try:
             path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "packages", location

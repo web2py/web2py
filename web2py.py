@@ -38,7 +38,7 @@ sys.path = [path] + [p for p in sys.path if not p == path]
 
 # important that this import is after the os.chdir
 
-# import gluon.import_all # NOTE: should this be uncommented for py2exe.py ?
+import gluon.import_all
 import gluon.widget
 
 if __name__ == "__main__":

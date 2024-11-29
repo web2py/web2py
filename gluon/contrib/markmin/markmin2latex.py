@@ -10,54 +10,54 @@ from optparse import OptionParser
 __all__ = ["render", "markmin2latex"]
 
 META = "META"
-regex_newlines = re.compile("(\n\r)|(\r\n)")
-regex_dd = re.compile("\$\$(?P<latex>.*?)\$\$")
-regex_code = re.compile("(" + META + ")|(``(?P<t>.*?)``(:(?P<c>\w+))?)", re.S)
-regex_title = re.compile("^#{1} (?P<t>[^\n]+)", re.M)
+regex_newlines = re.compile(r"(\n\r)|(\r\n)")
+regex_dd = re.compile(r"\$\$(?P<latex>.*?)\$\$")
+regex_code = re.compile(r"(" + META + ")|(``(?P<t>.*?)``(:(?P<c>\w+))?)", re.S)
+regex_title = re.compile(r"^#{1} (?P<t>[^\n]+)", re.M)
 regex_maps = [
-    (re.compile("[ \t\r]+\n"), "\n"),
-    (re.compile("\*\*(?P<t>[^\s\*]+( +[^\s\*]+)*)\*\*"), "{\\\\bf \g<t>}"),
-    (re.compile("''(?P<t>[^\s']+( +[^\s']+)*)''"), "{\\\it \g<t>}"),
-    (re.compile("^#{5,6}\s*(?P<t>[^\n]+)", re.M), "\n\n{\\\\bf \g<t>}\n"),
+    (re.compile(r"[ \t\r]+\n"), "\n"),
+    (re.compile(r"\*\*(?P<t>[^\s\*]+( +[^\s\*]+)*)\*\*"), "{\\\\bf \g<t>}"),
+    (re.compile(r"''(?P<t>[^\s']+( +[^\s']+)*)''"), "{\\\it \g<t>}"),
+    (re.compile(r"^#{5,6}\s*(?P<t>[^\n]+)", re.M), "\n\n{\\\\bf \g<t>}\n"),
     (
-        re.compile("^#{4}\s*(?P<t>[^\n]+)", re.M),
+        re.compile(r"^#{4}\s*(?P<t>[^\n]+)", re.M),
         "\n\n\\\\goodbreak\\\subsubsection{\g<t>}\n",
     ),
     (
-        re.compile("^#{3}\s*(?P<t>[^\n]+)", re.M),
+        re.compile(r"^#{3}\s*(?P<t>[^\n]+)", re.M),
         "\n\n\\\\goodbreak\\\subsection{\g<t>}\n",
     ),
-    (re.compile("^#{2}\s*(?P<t>[^\n]+)", re.M), "\n\n\\\\goodbreak\\\section{\g<t>}\n"),
-    (re.compile("^#{1}\s*(?P<t>[^\n]+)", re.M), ""),
+    (re.compile(r"^#{2}\s*(?P<t>[^\n]+)", re.M), "\n\n\\\\goodbreak\\\section{\g<t>}\n"),
+    (re.compile(r"^#{1}\s*(?P<t>[^\n]+)", re.M), ""),
     (
-        re.compile("^\- +(?P<t>.*)", re.M),
+        re.compile(r"^\- +(?P<t>.*)", re.M),
         "\\\\begin{itemize}\n\\\item \g<t>\n\\\end{itemize}",
     ),
     (
-        re.compile("^\+ +(?P<t>.*)", re.M),
+        re.compile(r"^\+ +(?P<t>.*)", re.M),
         "\\\\begin{itemize}\n\\\item \g<t>\n\\\end{itemize}",
     ),
-    (re.compile("\\\\end\{itemize\}\s+\\\\begin\{itemize\}"), "\n"),
-    (re.compile("\n\s+\n"), "\n\n"),
+    (re.compile(r"\\\\end\{itemize\}\s+\\\\begin\{itemize\}"), "\n"),
+    (re.compile(r"\n\s+\n"), "\n\n"),
 ]
-regex_table = re.compile("^\-{4,}\n(?P<t>.*?)\n\-{4,}(:(?P<c>\w+))?\n", re.M | re.S)
+regex_table = re.compile(r"^\-{4,}\n(?P<t>.*?)\n\-{4,}(:(?P<c>\w+))?\n", re.M | re.S)
 
-regex_anchor = re.compile("\[\[(?P<t>\S+)\]\]")
-regex_bibitem = re.compile("\-\s*\[\[(?P<t>\S+)\]\]")
+regex_anchor = re.compile(r"\[\[(?P<t>\S+)\]\]")
+regex_bibitem = re.compile(r"\-\s*\[\[(?P<t>\S+)\]\]")
 regex_image_width = re.compile(
     "\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|center) +(?P<w>\d+px)\]\]"
 )
-regex_image = re.compile("\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|center)\]\]")
-# regex_video = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +video\]\]')
-# regex_audio = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +audio\]\]')
-regex_link = re.compile("\[\[(?P<t>[^\]]*?) +(?P<k>\S+)\]\]")
-regex_auto = re.compile('(?<!["\w])(?P<k>\w+://[\w\.\-\?&%\:]+)', re.M)
-regex_commas = re.compile("[ ]+(?P<t>[,;\.])")
-regex_noindent = re.compile("\n\n(?P<t>[a-z])")
+regex_image = re.compile(r"\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|center)\]\]")
+# regex_video = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +video\]\]')
+# regex_audio = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +audio\]\]')
+regex_link = re.compile(r"\[\[(?P<t>[^\]]*?) +(?P<k>\S+)\]\]")
+regex_auto = re.compile(r'(?<!["\w])(?P<k>\w+://[\w\.\-\?&%\:]+)', re.M)
+regex_commas = re.compile(r"[ ]+(?P<t>[,;\.])")
+regex_noindent = re.compile(r"\n\n(?P<t>[a-z])")
 
 
-# regex_quote_left = re.compile('"(?=\w)')
-# regex_quote_right = re.compile('(?=\w\.)"')
+# regex_quote_left = re.compile(r'"(?=\w)')
+# regex_quote_right = re.compile(r'(?=\w\.)"')
 
 
 def latex_escape(text, pound=True):
@@ -177,7 +177,7 @@ def render(
     text = regex_noindent.sub("\n\\\\noindent \g<t>", text)
 
     # ## fix paths in images
-    regex = re.compile("\\\\_\w*\.(eps|png|jpg|gif)")
+    regex = re.compile(r"\\\\_\w*\.(eps|png|jpg|gif)")
     while True:
         match = regex.search(text)
         if not match:

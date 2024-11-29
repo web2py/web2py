@@ -262,8 +262,8 @@ class Sheet:
 
     """
 
-    regex = re.compile("(?<!\w)[a-zA-Z_]\w*")
-    pregex = re.compile("\d+")
+    regex = re.compile(r"(?<!\w)[a-zA-Z_]\w*")
+    pregex = re.compile(r"\d+")
     re_strings = re.compile(
         r"(?P<name>"
         + r"[uU]?[rR]?'''([^']+|'{1,2}(?!'))*'''|"
@@ -893,7 +893,7 @@ class Sheet:
             gluon.html.BR,
             gluon.html.SCRIPT,
         )
-        regex = re.compile("r\d+c\d+")
+        regex = re.compile(r"r\d+c\d+")
 
         if not self.c_headers:
             header = TR(TH(), *[TH("c%s" % c) for c in range(self.cols)])

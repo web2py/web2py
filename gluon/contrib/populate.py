@@ -123,7 +123,7 @@ class Learner:
         key = keys[random.randint(0, len(keys) - 1)]
         words = key
         words = words.capitalize()
-        regex = re.compile("[a-z]+")
+        regex = re.compile(r"[a-z]+")
         for i in range(length):
             okey = key
             if not key in self.db:

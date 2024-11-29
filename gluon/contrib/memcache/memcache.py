@@ -101,7 +101,7 @@ try:
 except NameError:
     _str_cls = str
 
-valid_key_chars_re = re.compile("[\x21-\x7e\x80-\xff]+$")
+valid_key_chars_re = re.compile(r"[\x21-\x7e\x80-\xff]+$")
 
 
 #  Original author: Evan Martin of Danga Interactive

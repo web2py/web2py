@@ -87,8 +87,8 @@ def latex2pdf(latex, pdflatex="pdflatex", passes=3):
             )
         finally:
             outfile.close()
-        re_errors = re.compile("^\!(.*)$", re.M)
-        re_warnings = re.compile("^LaTeX Warning\:(.*)$", re.M)
+        re_errors = re.compile(r"^\!(.*)$", re.M)
+        re_warnings = re.compile(r"^LaTeX Warning\:(.*)$", re.M)
         flog = open(logname, encoding="utf-8")
         try:
             loglines = flog.read()

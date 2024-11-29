@@ -58,7 +58,7 @@ defined_status = {
     509: "BANDWIDTH LIMIT EXCEEDED",
 }
 
-regex_status = re.compile("^\d{3} [0-9A-Z ]+$")
+regex_status = re.compile(r"^\d{3} [0-9A-Z ]+$")
 regex_header_newlines = re.compile(r"[\r\n]")
 
 

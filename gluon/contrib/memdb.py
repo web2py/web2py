@@ -47,7 +47,7 @@ SQL_DIALECTS = {
 
 
 def cleanup(text):
-    if re.compile("[^0-9a-zA-Z_]").findall(text):
+    if re.compile(r"[^0-9a-zA-Z_]").findall(text):
         raise SyntaxError(
             "Can't cleanup '%s': only [0-9a-zA-Z_] allowed in table and field names"
             % text

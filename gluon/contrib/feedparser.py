@@ -258,8 +258,8 @@ else:
     # names, and the compiled code objects of several sgmllib.SGMLParser
     # methods are copied into _BaseHTMLProcessor so that they execute in
     # feedparser's scope instead of sgmllib's scope.
-    charref = re.compile("&#(\d+|[xX][0-9a-fA-F]+);")
-    tagfind = re.compile("[a-zA-Z][-_.:a-zA-Z0-9]*")
+    charref = re.compile(r"&#(\d+|[xX][0-9a-fA-F]+);")
+    tagfind = re.compile(r"[a-zA-Z][-_.:a-zA-Z0-9]*")
     attrfind = re.compile(
         r"\s*([a-zA-Z_][-:.a-zA-Z_0-9]*)[$]?(\s*=\s*"
         r'(\'[^\']*\'|"[^"]*"|[][\-a-zA-Z0-9./,:;+*%?!&$\(\)_#=~\'"@]*))?'
@@ -516,7 +516,7 @@ _cp1252 = {
     159: unichr(376),  # latin capital letter y with diaeresis
 }
 
-_urifixer = re.compile("^([A-Za-z][A-Za-z0-9+-.]*://)(/*)(.*?)")
+_urifixer = re.compile(r"^([A-Za-z][A-Za-z0-9+-.]*://)(/*)(.*?)")
 
 
 def _urljoin(base, uri):
@@ -2312,8 +2312,8 @@ if _XML_AVAILABLE:
 
 
 class _BaseHTMLProcessor(sgmllib.SGMLParser):
-    special = re.compile("""[<>'"]""")
-    bare_ampersand = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
+    special = re.compile(r"""[<>'"]""")
+    bare_ampersand = re.compile(r"&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
     elements_no_end_tag = set(
         [
             "area",
@@ -3449,7 +3449,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
     def sanitize_style(self, style):
         # disallow urls
-        style = re.compile("url\s*\(\s*[^\s)]+?\s*\)\s*").sub(" ", style)
+        style = re.compile(r"url\s*\(\s*[^\s)]+?\s*\)\s*").sub(" ", style)
 
         # gauntlet
         if not re.match(
@@ -4434,7 +4434,7 @@ ZERO_BYTES = _l2bytes([0x00, 0x00])
 
 # Match the opening XML declaration.
 # Example: <?xml version="1.0" encoding="utf-8"?>
-RE_XML_DECLARATION = re.compile("^<\?xml[^>]*?>")
+RE_XML_DECLARATION = re.compile(r"^<\?xml[^>]*?>")
 
 # Capture the value of the XML processing instruction's encoding attribute.
 # Example: <?xml version="1.0" encoding="utf-8"?>

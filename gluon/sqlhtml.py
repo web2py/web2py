@@ -160,19 +160,19 @@ def pluralize(singular, rules=None):
         global PLURALIZE_RULES
         if PLURALIZE_RULES is None:
             PLURALIZE_RULES = [
-                (re.compile("child$"), re.compile("child$"), "children"),
-                (re.compile("oot$"), re.compile("oot$"), "eet"),
-                (re.compile("ooth$"), re.compile("ooth$"), "eeth"),
-                (re.compile("l[eo]af$"), re.compile("l([eo])af$"), "l\\1aves"),
-                (re.compile("sis$"), re.compile("sis$"), "ses"),
-                (re.compile("man$"), re.compile("man$"), "men"),
-                (re.compile("ife$"), re.compile("ife$"), "ives"),
-                (re.compile("eau$"), re.compile("eau$"), "eaux"),
-                (re.compile("lf$"), re.compile("lf$"), "lves"),
-                (re.compile("[sxz]$"), re.compile("$"), "es"),
-                (re.compile("[^aeioudgkprt]h$"), re.compile("$"), "es"),
-                (re.compile("(qu|[^aeiou])y$"), re.compile("y$"), "ies"),
-                (re.compile("$"), re.compile("$"), "s"),
+                (re.compile(r"child$"), re.compile(r"child$"), "children"),
+                (re.compile(r"oot$"), re.compile(r"oot$"), "eet"),
+                (re.compile(r"ooth$"), re.compile(r"ooth$"), "eeth"),
+                (re.compile(r"l[eo]af$"), re.compile(r"l([eo])af$"), "l\\1aves"),
+                (re.compile(r"sis$"), re.compile(r"sis$"), "ses"),
+                (re.compile(r"man$"), re.compile(r"man$"), "men"),
+                (re.compile(r"ife$"), re.compile(r"ife$"), "ives"),
+                (re.compile(r"eau$"), re.compile(r"eau$"), "eaux"),
+                (re.compile(r"lf$"), re.compile(r"lf$"), "lves"),
+                (re.compile(r"[sxz]$"), re.compile(r"$"), "es"),
+                (re.compile(r"[^aeioudgkprt]h$"), re.compile(r"$"), "es"),
+                (re.compile(r"(qu|[^aeiou])y$"), re.compile(r"y$"), "ies"),
+                (re.compile(r"$"), re.compile(r"$"), "s"),
             ]
         rules = PLURALIZE_RULES
     for line in rules:
@@ -500,7 +500,7 @@ class CheckboxesWidget(OptionsWidget):
         see also: `FormWidget.widget`
         """
 
-        # was values = re.compile('[\w\-:]+').findall(str(value))
+        # was values = re.compile(r'[\w\-:]+').findall(str(value))
         if isinstance(value, (list, tuple)):
             values = [str(v) for v in value]
         else:

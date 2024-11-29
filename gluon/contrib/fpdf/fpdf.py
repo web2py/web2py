@@ -2219,8 +2219,8 @@ class FPDF(object):
                     color += b(data[pos])
                     alpha += b(data[pos])
                     line = substr(data, pos + 1, length)
-                    re_c = re.compile("(.).".encode("ascii"), flags=re.DOTALL)
-                    re_a = re.compile(".(.)".encode("ascii"), flags=re.DOTALL)
+                    re_c = re.compile(r"(.).".encode("ascii"), flags=re.DOTALL)
+                    re_a = re.compile(r".(.)".encode("ascii"), flags=re.DOTALL)
                     color += re_c.sub(lambda m: m.group(1), line)
                     alpha += re_a.sub(lambda m: m.group(1), line)
             else:
@@ -2231,8 +2231,8 @@ class FPDF(object):
                     color += b(data[pos])
                     alpha += b(data[pos])
                     line = substr(data, pos + 1, length)
-                    re_c = re.compile("(...).".encode("ascii"), flags=re.DOTALL)
-                    re_a = re.compile("...(.)".encode("ascii"), flags=re.DOTALL)
+                    re_c = re.compile(r"(...).".encode("ascii"), flags=re.DOTALL)
+                    re_a = re.compile(r"...(.)".encode("ascii"), flags=re.DOTALL)
                     color += re_c.sub(lambda m: m.group(1), line)
                     alpha += re_a.sub(lambda m: m.group(1), line)
             del data
