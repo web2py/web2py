@@ -134,7 +134,7 @@ MESSAGE = (
 
 
 def import_packages():
-    for package, location in [("pydal", "dal"), ("yatl", "yatl"), ('rocket3', 'rocket3'), ('pymysql','pymysql')]:
+    for package, location in [("pydal", "dal"), ("yatl", "yatl"), ('rocket3', 'rocket3')]:
         try:
             path = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)), "packages", location
