@@ -70,7 +70,7 @@ def api():
 @cache.action(time_expire=300, cache_model=cache.ram, quick='P')
 def license():
     import os
-    filename = os.path.join(request.env.gluon_parent, 'LICENSE')
+    filename = os.path.join(request.env.gluon_parent, 'LICENSE.web2py.txt')
     return response.render(dict(license=MARKMIN(read_file(filename))))
 
 

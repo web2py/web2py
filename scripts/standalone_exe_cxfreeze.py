@@ -35,9 +35,8 @@ buildOptions = dict(
     includes=base_modules,
     include_files=[
         "applications",
-        "ABOUT",
-        "LICENSE",
-        "VERSION",
+        "ABOUT.web2py.txt",
+        "LICENSE.web2py.txt",
         "logging.example.conf",
         "options_std.py",
         "app.example.yaml",

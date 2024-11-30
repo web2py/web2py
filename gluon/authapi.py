@@ -319,7 +319,7 @@ class AuthAPI(object):
             if username or settings.cas_provider:
                 is_unique_username = [
                     IS_MATCH(
-                        "[\w\.\-]+",
+                        r"[\w\.\-]+",
                         strict=True,
                         error_message=self.messages.invalid_username,
                     ),

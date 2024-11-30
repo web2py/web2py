@@ -71,17 +71,17 @@ regex_translate_m = re.compile(PY_M_STRING_LITERAL_RE, re.DOTALL)
 regex_param = re.compile(r"{(?P<s>.+?)}")
 
 # pattern for a valid accept_language
-regex_language = re.compile("([a-z]{2,3}(?:\-[a-z]{2})?(?:\-[a-z]{2})?)(?:[,;]|$)")
-regex_langfile = re.compile("^[a-z]{2,3}(-[a-z]{2})?\.py$")
+regex_language = re.compile(r"([a-z]{2,3}(?:\-[a-z]{2})?(?:\-[a-z]{2})?)(?:[,;]|$)")
+regex_langfile = re.compile(r"^[a-z]{2,3}(-[a-z]{2})?\.py$")
 regex_backslash = re.compile(r"\\([\\{}%])")
 regex_plural = re.compile("%({.+?})")
 regex_plural_dict = re.compile(
-    "^{(?P<w>[^()[\]][^()[\]]*?)\((?P<n>[^()\[\]]+)\)}$"
+    r"^{(?P<w>[^()[\]][^()[\]]*?)\((?P<n>[^()\[\]]+)\)}$"
 )  # %%{word(varname or number)}
 regex_plural_tuple = re.compile(
-    "^{(?P<w>[^[\]()]+)(?:\[(?P<i>\d+)\])?}$"
+    r"^{(?P<w>[^[\]()]+)(?:\[(?P<i>\d+)\])?}$"
 )  # %%{word[index]} or %%{word}
-regex_plural_file = re.compile("^plural-[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$")
+regex_plural_file = re.compile(r"^plural-[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$")
 
 
 def is_writable():
@@ -1057,10 +1057,10 @@ def findT(path, language=DEFAULT_LANGUAGE):
             sentences[message] = message.replace("@markmin\x01", "")
 
     for filename in (
-        listdir(mp, "^.+\.py$", 0)
-        + listdir(cp, "^.+\.py$", 0)
-        + listdir(vp, "^.+\.html$", 0)
-        + listdir(mop, "^.+\.py$", 0)
+        listdir(mp, r"^.+\.py$", 0)
+        + listdir(cp, r"^.+\.py$", 0)
+        + listdir(vp, r"^.+\.html$", 0)
+        + listdir(mop, r"^.+\.py$", 0)
     ):
         data = read_locked(filename).decode("utf8")
         items = regex_translate.findall(data)

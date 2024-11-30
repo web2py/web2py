@@ -129,7 +129,7 @@ elif os_version == "Darwin":
 
 
 # add data_files
-for req in ["CHANGELOG", "LICENSE", "VERSION"]:
+for req in ["CHANGELOG.md", "LICENSE.web2py.txt"]:
     for bin_folder in bin_folders:
         shutil.copy(req, os.path.join(bin_folder, req))
 # cleanup unuseful binary cache

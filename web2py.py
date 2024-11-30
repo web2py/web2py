@@ -36,9 +36,6 @@ os.chdir(path)
 
 sys.path = [path] + [p for p in sys.path if not p == path]
 
-# important that this import is after the os.chdir
-
-import gluon.import_all
 import gluon.widget
 
 if __name__ == "__main__":
@@ -48,7 +45,6 @@ if __name__ == "__main__":
     if "COVERAGE_PROCESS_START" in os.environ:
         try:
             import coverage
-
             coverage.process_startup()
         except:
             print("Coverage is not available")
