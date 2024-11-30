@@ -52,7 +52,6 @@ That's it!!!
     project/
         README
         LICENSE
-        VERSION                    > this web2py version
         web2py.py                  > the startup script
         anyserver.py               > to run with third party servers
         ...                        > other handlers and example files

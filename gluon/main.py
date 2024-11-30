@@ -99,6 +99,7 @@ from gluon.rewrite import load as load_routes
 from gluon.rewrite import try_rewrite_on_error, url_in
 from gluon.utils import getipaddrinfo, is_valid_ip_address
 from gluon.validators import CRYPT
+from gluon.version import VERSION
 
 __all__ = ["wsgibase", "save_password", "appfactory", "HttpServer"]
 
@@ -107,11 +108,7 @@ requests = 0  # gc timer
 # Security Checks: validate URL and session_id here,
 # accept_language is validated in languages
 
-try:
-    version_info = read_file(pjoin(global_settings.gluon_parent, "VERSION"))
-    web2py_version = global_settings.web2py_version = version_info.split()[-1].strip()
-except:
-    raise RuntimeError("Cannot determine web2py version")
+web2py_version = global_settings.web2py_version = VERSION
 
 # do not need rocket nor HttpServer when served by handler
 # (e.g. apache + mod_wsgi), speed up execution and save memory

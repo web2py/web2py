@@ -31,12 +31,13 @@ from gluon.settings import global_settings
 from gluon.shell import die, run, test
 from gluon.utils import (getipaddrinfo, is_loopback_ip_address,
                          is_valid_ip_address)
+from gluon.version import VERSION
 
 ProgramName = "web2py Web Framework"
 ProgramAuthor = "Created by Massimo Di Pierro, Copyright 2007-" + str(
     time.localtime().tm_year
 )
-ProgramVersion = read_file("VERSION").rstrip()
+ProgramVersion = VERSION
 
 if sys.version_info < (2, 7) or (3, 0) < sys.version_info < (3, 5):
     from platform import python_version

@@ -2,6 +2,7 @@
 
 import setuptools
 from setuptools import setup
+from gluon.version import VERSION
 
 import tarfile
 import os, sys
@@ -42,11 +43,11 @@ def tar(file, filelist, expression="^.+$"):
 
 def start():
     if "sdist" in sys.argv:
-        tar("gluon/env.tar", ["applications", "VERSION", "extras/icons/splashlogo.gif"])
+        tar("gluon/env.tar", ["applications", "extras/icons/splashlogo.gif"])
 
     setup(
         name="web2py",
-        version=read_file("VERSION").split()[1],
+        version=VERSION.split(),
         description="""full-stack framework for rapid development and prototyping
         of secure database-driven web-based applications, written and
         programmable in Python.""",

@@ -13,6 +13,7 @@ import os
 import sys
 import optparse
 import urllib
+from gluon.version import VERSION
 
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
@@ -350,11 +351,7 @@ def run(
 
 def main():
     usage = "python anyserver.py -s tornado -i 127.0.0.1 -p 8000 -l -P"
-    try:
-        version = open("VERSION", "r")
-    except IOError:
-        version = ""
-    parser = optparse.OptionParser(usage, None, optparse.Option, version)
+    parser = optparse.OptionParser(usage, None, optparse.Option, VERSION)
     parser.add_option(
         "-l",
         "--logging",

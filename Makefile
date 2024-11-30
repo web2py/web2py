@@ -45,7 +45,7 @@ rmfiles:
 	rm -rf applications/examples/uploads/* 
 src:
 	### Use semantic versioning
-	echo 'Version 3.00.3-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'VERSION = "3.00.4-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S`'"' > gluon/version.py
 	### rm -f all junk files
 	make clean
 	# make rmfiles
@@ -74,7 +74,6 @@ app:
 	cp README.markdown ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp NEWINSTALL ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp LICENSE ../web2py_osx/web2py/web2py.app/Contents/Resources
-	cp VERSION ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp CHANGELOG ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp -r extras ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp -r examples ../web2py_osx/web2py/web2py.app/Contents/Resources
@@ -92,7 +91,6 @@ win:
 	cp README.markdown ../web2py_win/web2py/
 	cp NEWINSTALL ../web2py_win/web2py/
 	cp LICENSE ../web2py_win/web2py/
-	cp VERSION ../web2py_win/web2py/
 	cp CHANGELOG ../web2py_win/web2py/
 	cp -r extras ../web2py_win/web2py/
 	cp -r examples ../web2py_win/web2py/
@@ -108,7 +106,6 @@ binaries:
 	echo '' > NEWINSTALL
 
 	# repackage windows binary for python 3.7
-	cp VERSION ../web2py_win_py37/web2py/
 	cp README.markdown ../web2py_win_py37/web2py/
 	cp NEWINSTALL ../web2py_win_py37/web2py/
 	cp LICENSE ../web2py_win_py37/web2py/
@@ -123,7 +120,6 @@ binaries:
 	cd ../web2py_win_py37; zip -r ../web2py/web2py_win_py37.zip web2py
 
 	# repackage OSX binary for python 3.7
-	cp VERSION ../web2py_osx_py37/web2py.app/Contents/MacOS/
 	cp README.markdown ../web2py_osx_py37/web2py.app/Contents/MacOS/
 	cp NEWINSTALL ../web2py_osx_py37/web2py.app/Contents/MacOS/
 	cp LICENSE ../web2py_osx_py37/web2py.app/Contents/MacOS/
