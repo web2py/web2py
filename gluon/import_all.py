@@ -13,10 +13,8 @@ This file is not strictly required by web2py. It is used for three purposes:
 
 """
 
-import builtins
 import os
 import sys
-
 import array
 import atexit
 import base64
@@ -92,7 +90,6 @@ import modulefinder
 import netrc
 import operator
 import optparse
-import os
 import pdb
 import pickle
 import pickletools
