@@ -132,15 +132,18 @@ MESSAGE = (
     + "You can also download a complete copy from http://www.web2py.com."
 )
 
-
 def import_packages():
-    for package, location in [("pydal", "dal"), ("yatl", "yatl"), ('rocket3', 'rocket3')]:
+    for package in ["pydal", "yatl", "rocket3"]:
         try:
-            path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "packages", location
-            )
+            if hasattr(sys, '_MEIPASS'):
+                # we are into a pyinstaller build!
+                base = sys._MEIPASS
+            else:
+                base = os.path.dirname(os.path.abspath(__file__))
+            path = os.path.join(base, "packages", package)
             if path not in sys.path:
                 sys.path.insert(0, path)
+                os.listdir(path)
             sys.modules[package] = builtins.__import__(package)
         except ImportError:
             raise RuntimeError(MESSAGE % package)

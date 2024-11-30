@@ -100,6 +100,7 @@ import pprint
 import py_compile
 import pyclbr
 import pydoc
+import pyexpat
 import queue
 import quopri
 import random
@@ -156,6 +157,7 @@ import xml.sax
 import xml.sax.handler
 import xml.sax.saxutils
 import xml.sax.xmlreader
+import xmlrpc.client
 import zipfile
 import zipimport
 import zlib

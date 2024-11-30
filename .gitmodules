@@ -1,5 +1,5 @@
 [submodule "gluon/packages/dal"]
-	path = gluon/packages/dal
+	path = gluon/packages/pydal
 	url = https://github.com/web2py/pydal.git
 [submodule "gluon/packages/yatl"]
 	path = gluon/packages/yatl
