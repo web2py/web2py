@@ -317,7 +317,7 @@ class CacheOnDisk(CacheAbstract):
                 import base64
 
                 def key_filter_in_windows(key):
-                    """
+                    r"""
                     Windows doesn't allow \ / : * ? "< > | in filenames.
                     To go around this encode the keys with base32.
                     """

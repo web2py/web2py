@@ -11,11 +11,11 @@ clean:
 	find . -name '*.rej' -exec rm -f {} \; 
 	find . -name '#*' -exec rm -f {} \;
 	find . -name '*.pyc' -exec rm -f {} \;
-	find . -name 'Thumbs.db' -exec rm -f {} \; 
-	find . -name '__pycache__' -type d -exec rm -rf {} \; 
-	find applications/admin/ -name '.*' -exec rm -f {} \; 
-	find applications/examples/ -name '.*' -exec rm -f {} \; 
-	find applications/welcome/ -name '.*' -exec rm -f {} \; 
+	find . -name 'Thumbs.db' -exec rm -f {} \;
+	find . -name '__pycache__' -type d -exec rm -rf {} \; || true
+	find applications/admin/ -name '.*' -exec rm -f {} \;
+	find applications/examples/ -name '.*' -exec rm -f {} \;
+	find applications/welcome/ -name '.*' -exec rm -f {} \;
 	rm -f routes.py 
 	rm -rf applications/*/sessions/*
 	rm -rf applications/*/errors/* | echo 'too many files'

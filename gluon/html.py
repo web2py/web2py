@@ -1049,7 +1049,7 @@ class DIV(XmlComponent):
         return self.xml()
 
     def flatten(self, render=None):
-        """
+        r"""
         Returns the text stored by the DIV object rendered by the render function
         the render function must take text, tagname, and attributes
         `render=None` is equivalent to `render=lambda text, tag, attr: text`
@@ -1078,10 +1078,10 @@ class DIV(XmlComponent):
             text = render(text, self.tag, self.attributes)
         return text
 
-    regex_tag = re.compile("^[\w\-\:]+")
-    regex_id = re.compile("#([\w\-]+)")
-    regex_class = re.compile("\.([\w\-]+)")
-    regex_attr = re.compile("\[([\w\-\:]+)=(.*?)\]")
+    regex_tag = re.compile(r"^[\w\-\:]+")
+    regex_id = re.compile(r"#([\w\-]+)")
+    regex_class = re.compile(r"\.([\w\-]+)")
+    regex_attr = re.compile(r"\[([\w\-\:]+)=(.*?)\]")
 
     def elements(self, *args, **kargs):
         """
@@ -1196,7 +1196,7 @@ class DIV(XmlComponent):
                         kargs["_id"] = match_id.group(1)
                     if match_class:
                         kargs["_class"] = re.compile(
-                            "(?<!\w)%s(?!\w)"
+                            r"(?<!\w)%s(?!\w)"
                             % match_class.group(1)
                             .replace("-", "\\-")
                             .replace(":", "\\:")
@@ -2718,7 +2718,7 @@ def embed64(filename=None, file=None, data=None, extension="image/gif"):
 
 # TODO: Check if this test() is still relevant now that we have gluon/tests/test_html.py
 def test():
-    """
+    r"""
     Example:
 
     >>> from validators import *
@@ -2820,7 +2820,7 @@ class web2pyHTMLParser(HTMLParser):
 def markdown_serializer(text, tag=None, attr=None):
     attr = attr or {}
     if tag is None:
-        return re.sub("\s+", " ", text)
+        return re.sub(r"\s+", " ", text)
     if tag == "br":
         return "\n\n"
     if tag == "h1":
