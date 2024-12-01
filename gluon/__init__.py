@@ -143,7 +143,6 @@ def import_packages():
             path = os.path.join(base, "packages", package)
             if path not in sys.path:
                 sys.path.insert(0, path)
-                os.listdir(path)
             sys.modules[package] = builtins.__import__(package)
         except ImportError:
             raise RuntimeError(MESSAGE % package)

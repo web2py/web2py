@@ -45,7 +45,7 @@ coverage:
 	coverage html --rcfile=gluon/tests/coverage.ini
 src:
 	### Use semantic versioning
-	echo 'VERSION = "3.0.5-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S`'"' > gluon/version.py
+	echo 'VERSION = "3.0.6-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S`'"' > gluon/version.py
 	### rm -f all junk files
 	make clean
 	### make welcome layout and appadmin the default
@@ -74,7 +74,7 @@ win:
 	cp -r applications/welcome $(TMPDIR)/web2py_win/web2py/applications
 	cp -r applications/examples $(TMPDIR)/web2py_win/web2py/applications
 	cp applications/__init__.py $(TMPDIR)/web2py_win/web2py/applications
-	cd $(TMPDIR)/web2py_win/web2py; make
+	cd $(TMPDIR)/web2py_win/ && rm -f web2py_win32_py312.zip && zip -r web2py_win32_py312.zip web2py
 	ls -l $(TMPDIR)/web2py_win/web2py_win32_py312.zip
 	mv $(TMPDIR)/web2py_win/web2py_win32_py312.zip binaries/
 	rm -rf $(TMPDIR)

@@ -397,7 +397,7 @@ def getipaddrinfo(host):
             if (addrinfo[0] == socket.AF_INET or addrinfo[0] == socket.AF_INET6)
             and isinstance(addrinfo[4][0], str)
         ]
-    except socket.error:
+    except Exception:
         return []
 
 
