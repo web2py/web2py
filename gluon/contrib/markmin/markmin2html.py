@@ -7,6 +7,7 @@
 import ast
 import re
 import sys
+import html
 
 from urllib.parse import quote as urllib_quote
 
@@ -610,18 +611,9 @@ def local_html_escape(data, quote=False):
     characters, both double quote (") and single quote (') characters are also
     translated.
     """
-    import html
-
-    if isinstance(data, str):
-        return html.escape(data, quote=quote)
-    data = data.replace(b"&", b"&amp;")  # Must be done first!
-    data = data.replace(b"<", b"&lt;")
-    data = data.replace(b">", b"&gt;")
-    if quote:
-        data = data.replace(b'"', b"&quot;")
-        data = data.replace(b"'", b"&#x27;")
-    return data
-
+    if isinstance(data, bytes):
+        data = data.decode("utf8")
+    return html.escape(data, quote=quote)
 
 def make_dict(b):
     return "{%s}" % regex_quote.sub(r"'\g<name>':", b)

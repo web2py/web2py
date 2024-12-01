@@ -4314,7 +4314,7 @@ class ExportClass(object):
         for record in self.rows:
             row = []
             for col in self.rows.colnames:
-                if not self.rows.db._adapter.REGEX_TABLE_DOT_FIELD.match(col):
+                if "." not in col:
                     row.append(record._extra[col])
                 else:
                     # The grid code modifies rows.colnames, adding double quotes

@@ -988,7 +988,7 @@ class TestBareHelpers(unittest.TestCase):
     def test_markdown(self):
         def markdown(text, tag=None, attributes={}):
             r = {
-                None: re.sub("\s+", " ", text),
+                None: re.sub(r"\s+", " ", text),
                 "h1": "#" + text + "\\n\\n",
                 "p": text + "\\n",
             }.get(tag, text)

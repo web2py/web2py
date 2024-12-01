@@ -15,6 +15,7 @@ import unittest
 DEFAULT_URI = os.getenv("DB", "sqlite:memory")
 
 from pydal.objects import Table
+from pydal.utils import utcnow
 
 from gluon import H3, SPAN, TABLE, TD, TR, URL, A, current, tools
 from gluon.dal import DAL, Field
@@ -1401,7 +1402,7 @@ class TestToolsFunctions(unittest.TestCase):
         in_one_year = now - datetime.timedelta(days=-366)
         self.assertEqual(prettydate(d=in_one_year), "1 year from now")
         # utc=True
-        now = datetime.datetime.utcnow()
+        now = utcnow()
         self.assertEqual(prettydate(d=now, utc=True), "now")
         one_second = now - datetime.timedelta(seconds=1)
         self.assertEqual(prettydate(d=one_second, utc=True), "1 second ago")

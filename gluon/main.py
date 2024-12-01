@@ -509,7 +509,7 @@ def wsgibase(environ, responder):
                     if request.ajax:
                         if response.flash:
                             http_response.headers["web2py-component-flash"] = quote(
-                                xmlescape(response.flash).replace(b"\n", b"")
+                                xmlescape(response.flash).replace("\n", "")
                             )
                         if response.js:
                             http_response.headers["web2py-component-command"] = quote(

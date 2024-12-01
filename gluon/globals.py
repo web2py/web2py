@@ -34,6 +34,7 @@ from urllib import parse as urlparse
 from urllib.parse import quote as urllib_quote
 
 from pydal.contrib import portalocker
+from pydal.utils import utcnow
 
 import gluon.settings as settings
 from gluon import recfile
@@ -182,7 +183,7 @@ class Request(Storage):
     - args
     - extension
     - now: datetime.datetime.now()
-    - utcnow : datetime.datetime.utcnow()
+    - utcnow : pydal.utils.utcnow
     - is_local
     - is_https
     - restful()
@@ -205,7 +206,7 @@ class Request(Storage):
         self.args = List()
         self.extension = "html"
         self.now = datetime.datetime.now()
-        self.utcnow = datetime.datetime.utcnow()
+        self.utcnow = utcnow()
         self.is_restful = False
         self.is_https = False
         self.is_local = False

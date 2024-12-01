@@ -46,6 +46,7 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 
 from pydal.objects import Query, Row, Set
+from pydal.utils import utcnow
 
 import gluon.serializers as serializers
 from gluon import *
@@ -1371,7 +1372,7 @@ class AuthJWT(object):
             # signature verification failed
             raise HTTP(400, "Token signature is invalid")
         if self.verify_expiration:
-            now = time.mktime(datetime.datetime.utcnow().timetuple())
+            now = time.mktime(utcnow().timetuple())
             if tokend["exp"] + self.leeway < now:
                 raise HTTP(400, "Token is expired")
         if callable(self.before_authorization):
@@ -1387,9 +1388,9 @@ class AuthJWT(object):
         """
         # TODO: Check the following comment
         # is the following safe or should we use
-        # calendar.timegm(datetime.datetime.utcnow().timetuple())
+        # calendar.timegm(utcnow().timetuple())
         # result seem to be the same (seconds since epoch, in UTC)
-        now = time.mktime(datetime.datetime.utcnow().timetuple())
+        now = time.mktime(utcnow().timetuple())
         expires = now + self.expiration
         payload = dict(
             hmac_key=session_auth["hmac_key"],
@@ -1401,7 +1402,7 @@ class AuthJWT(object):
         return payload
 
     def refresh_token(self, orig_payload):
-        now = time.mktime(datetime.datetime.utcnow().timetuple())
+        now = time.mktime(utcnow().timetuple())
         if self.verify_expiration:
             orig_exp = orig_payload["exp"]
             if orig_exp + self.leeway < now:
@@ -6235,7 +6236,7 @@ def completion(callback):
 
 
 def prettydate(d, T=lambda x: x, utc=False):
-    now = datetime.datetime.utcnow() if utc else datetime.datetime.now()
+    now = utcnow() if utc else datetime.datetime.now()
     if isinstance(d, datetime.datetime):
         dt = now - d
     elif isinstance(d, datetime.date):

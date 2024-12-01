@@ -111,7 +111,7 @@ class UsernameDigestToken(UsernameToken):
         usertoken = wsse.add_child("wsse:UsernameToken", ns=False)
         usertoken.add_child("wsse:Username", self.username, ns=False)
 
-        created = (datetime.datetime.utcnow() + self.drift).isoformat() + "Z"
+        created = (datetime.datetime.now() + self.drift).isoformat() + "Z"
         usertoken.add_child("wsu:Created", created, ns=False)
 
         nonce = randombytes(16)

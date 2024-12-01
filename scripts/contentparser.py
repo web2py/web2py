@@ -122,7 +122,7 @@ if __name__ == '__main__':
         io.seek(0)
         contenttype = open('contenttype.py', 'w')
         try:
-            contenttype.write(re.sub(vregex, 'database version %s.\n' % nversion, re.sub('CONTENT_TYPE = \{(.|\n)+?\}', io.getvalue(), current)))
+            contenttype.write(re.sub(vregex, 'database version %s.\n' % nversion, re.sub(r'CONTENT_TYPE = \{(.|\n)+?\}', io.getvalue(), current)))
         finally:
             contenttype.close()
         if not current.closed:

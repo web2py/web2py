@@ -32,6 +32,8 @@ from json import dumps, loads
 
 from pydal.base import DEFAULT
 from pydal.objects import Query
+from pydal.utils import utcnow
+
 
 from gluon import (DAL, IS_DATETIME, IS_EMPTY_OR, IS_IN_DB, IS_IN_SET,
                    IS_INT_IN_RANGE, IS_NOT_EMPTY, IS_NOT_IN_DB, Field)
@@ -838,7 +840,7 @@ class Scheduler(threading.Thread):
 
     def now(self):
         """Shortcut that fetches current time based on UTC preferences."""
-        return self.utc_time and datetime.datetime.utcnow() or datetime.datetime.now()
+        return self.utc_time and utcnow() or datetime.datetime.now()
 
     def set_requirements(self, scheduler_task):
         """Called to set defaults for lazy_tables connections."""
