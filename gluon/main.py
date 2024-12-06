@@ -8,10 +8,6 @@
 The gluon wsgi application
 ---------------------------
 """
-
-if False:
-    from . import import_all  # DO NOT REMOVE PART OF FREEZE PROCESS
-
 import copy
 import datetime
 import gc
@@ -54,7 +50,10 @@ from gluon.utils import unlocalised_http_header_date, web2py_uuid
 
 web2py_path = global_settings.applications_parent  # backward compatibility
 
-create_missing_folders()
+try:
+    create_missing_folders()
+except OSError:
+    print("Unable to create missing folders - perhaps readonly filesystem")
 
 # set up logging for subsequent imports
 import logging.config
@@ -110,10 +109,6 @@ requests = 0  # gc timer
 
 web2py_version = global_settings.web2py_version = VERSION
 
-# do not need rocket nor HttpServer when served by handler
-# (e.g. apache + mod_wsgi), speed up execution and save memory
-if not global_settings.web2py_runtime_handler:
-    from gluon.packages.rocket3 import rocket3
 
 load_routes()
 
@@ -420,8 +415,10 @@ def wsgibase(environ, responder):
                 # ##################################################
                 # build missing folders
                 # ##################################################
-
-                create_missing_app_folders(request)
+                try:
+                    create_missing_app_folders(request)
+                except OSError:
+                    print("Unable to create missing app folders - perhaps readonly filesystem")
 
                 # ##################################################
                 # get the GET and POST data
@@ -742,6 +739,8 @@ class HttpServer(object):
         """
         starts the web server.
         """
+
+        import rocket3
 
         if interfaces:
             # if interfaces is specified, it must be tested for rocket parameter correctness

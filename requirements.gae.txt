@@ -1,2 +1,7 @@
+pydal
+rocket3
+yatl
+pymysql
+uwsgi
 firebase_admin
 google-cloud-firestore

@@ -3,8 +3,15 @@
 #  See:
 #  - https://cloud.google.com/appengine/docs/flexible/reference/app-yaml?tab=python
 #  - http://www.web2py.com/book/default/chapter/13#Deploying-on-Google-App-Engine
+#
+# gcloud init
+# cp requirements.gae.txt requirements.txt
+# gcloud app deploy
+#
 
 runtime: python311
+
+entrypoint: uwsgi --http-socket :$PORT --wsgi-file gluon/main.py --callable wsgibase --master --processes 1 --threads 2
 
 default_expiration: "24h"   # for static files
 
@@ -41,40 +48,6 @@ admin_console:
   pages:
   - name: Appstats
     url: /_ah/stats
-
-skip_files: |
- ^(.*/)?(
- (app\.yaml)|
- (app\.yml)|
- (index\.yaml)|
- (index\.yml)|
- (#.*#)|
- (.*~)|
- (.*\.py[co])|
- (.*/RCS/.*)|
- (\..*)|
- (applications/examples/.*)|
- ((examples|welcome)\.(w2p|tar))|
- (applications/.*?/(cron|databases|errors|cache|sessions)/.*)|
- ((logs|scripts)/.*)|
- (anyserver\.py)|
- (web2py\.py)|
- ((cgi|fcgi|modpython|wsgi)handler\.py)|
- (epydoc\.(conf|css))|
- (httpserver\.log)|
- (logging\.example\.conf)|
- (route[rs]\.example\.py)|
- (setup_(app|exe)\.py)|
- (splashlogo\.gif)|
- (parameters_\d+\.py)|
- (options_std.py)|
- (gluon/tests/.*)|
- (gluon/rocket\.py)|
- (contrib/(gateways|markdown|memcache|pymysql)/.*)|
- (contrib/(populate|taskbar_widget)\.py)|
- (google_appengine/.*)|
- (.*\.(bak|orig))|
- )$
 
 builtins:
 - remote_api: on

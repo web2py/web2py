@@ -26,7 +26,6 @@ If you have an existing repository, the commands below need to be executed at le
 
 PyDAL uses a separate stable release cycle to the rest of web2py. PyDAL releases will use a date-naming scheme similar to Ubuntu. Issues related to PyDAL should be reported to its separate repository.
 
-
 ## Documentation (readthedocs.org)
 
 [![Docs Status](https://readthedocs.org/projects/web2py/badge/?version=latest&style=flat-square)](http://web2py.rtfd.org/)
