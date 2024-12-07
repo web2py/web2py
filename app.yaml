@@ -11,7 +11,7 @@
 
 runtime: python311
 
-entrypoint: uwsgi --http-socket :$PORT --wsgi-file gluon/main.py --callable wsgibase --master --processes 1 --threads 2
+entrypoint: gunicorn -b :$PORT gluon:wsgibase
 
 default_expiration: "24h"   # for static files
 

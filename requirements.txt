@@ -1,8 +1,8 @@
-pydal
-rocket3
-yatl
-pymysql
-# uwsgi
+# pydal
+# rocket3
+# yatl
+# pymysql
+gunicorn
 # psycopg2
-# firebase_admin
-# google-cloud-firestore
+firebase_admin
+google-cloud-firestore

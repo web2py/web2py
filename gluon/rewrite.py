@@ -825,6 +825,7 @@ def filter_url(
         "request_method": method,
         "wsgi_url_scheme": urlscheme,
         "http_host": urlhost,
+        "web2py_runtime_gae": ("GAE_APPLICATION" in os.environ),
     }
 
     request = Storage()

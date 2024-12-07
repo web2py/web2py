@@ -117,6 +117,7 @@ __all__ = [
     "redirect",
     "current",
     "embed64",
+    "wsgibase",
 ]
 
 #: add pydal to sys.modules
@@ -135,11 +136,7 @@ MESSAGE = (
 def import_packages():
     for package in ["pydal", "yatl", "rocket3"]:
         try:
-            if hasattr(sys, '_MEIPASS'):
-                # we are into a pyinstaller build!
-                base = sys._MEIPASS
-            else:
-                base = os.path.dirname(os.path.abspath(__file__))
+            base = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(base, "packages", package)
             if path not in sys.path:
                 sys.path.insert(0, path)
@@ -157,6 +154,7 @@ from .html import *
 from .http import HTTP, redirect
 from .sqlhtml import SQLFORM, SQLTABLE
 from .validators import *
+from .main import wsgibase
 
 # Dummy code to enable code completion in IDE's.
 if 0:

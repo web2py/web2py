@@ -27,7 +27,7 @@ if request.global_settings.web2py_version < "3.0.6":
 # -------------------------------------------------------------------------
 configuration = AppConfig(reload=True)
 
-if "GAE_APPLICATION" not in os.environ:
+if "GAE_APPLICATION" in os.environ:
     # ---------------------------------------------------------------------
     # if NOT running on Google App Engine use SQLite or other DB
     # ---------------------------------------------------------------------
