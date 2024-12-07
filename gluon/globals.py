@@ -1175,7 +1175,7 @@ class Session(Storage):
                 return
             (record_id, sep, unique_key) = response.session_id.partition(":")
 
-            if record_id.isdigit() and long(record_id) > 0:
+            if record_id.isdigit() and int(record_id) > 0:
                 new_unique_key = web2py_uuid()
                 row = table(record_id)
                 if row and row["unique_key"] == unique_key:
@@ -1267,7 +1267,7 @@ class Session(Storage):
             table = response.session_db_table
             if response.session_id:
                 (record_id, sep, unique_key) = response.session_id.partition(":")
-                if record_id.isdigit() and long(record_id) > 0:
+                if record_id.isdigit() and int(record_id) > 0:
                     table._db(table.id == record_id).delete()
         Storage.clear(self)
 
