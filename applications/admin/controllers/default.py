@@ -1771,9 +1771,9 @@ def make_link(path):
         for key in editable.keys():
             check_extension = folder.endswith("%s/%s" % (app, key))
             if ext.lower() == editable[key] and check_extension:
-                return to_native(A('"' + tryFile + '"',
-                                   _href=URL(r=request,
-                                   f='edit/%s/%s/%s' % (app, key, filename))).xml())
+                return A('"' + tryFile + '"',
+                         _href=URL(r=request,
+                         f='edit/%s/%s/%s' % (app, key, filename))).xml()
     return ''
 
 
