@@ -241,7 +241,7 @@ class Table(DALStorage):
         for i in range(3):
             id = self._create_id()
             if self.get(id) is None and self.update(id, **fields):
-                return long(id)
+                return int(id)
         else:
             raise RuntimeError("Too many ID conflicts")
 
@@ -267,7 +267,7 @@ class Table(DALStorage):
         return "__memdb__/t/%s/k/%s" % (self._tablename, str(id))
 
     def _create_id(self):
-        return long(web2py_uuid().replace("-", ""), 16)
+        return int(web2py_uuid().replace("-", ""), 16)
 
     def __str__(self):
         return self._tablename
@@ -442,7 +442,7 @@ def obj_represent(object, fieldtype, db):
                 s,
             )
         elif fieldtype == "integer" and not isinstance(object, long):
-            object = long(object)
+            object = int(object)
 
     return object
 
@@ -550,7 +550,7 @@ class Set(object):
         new_item = []
         for t in fields:
             if t == "id":
-                new_item.append(long(id))
+                new_item.append(int(id))
             else:
                 new_item.append(getattr(item, t))
         r = [new_item]
