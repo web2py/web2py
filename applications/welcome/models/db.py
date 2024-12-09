@@ -13,8 +13,8 @@ import os
 # File is released under public domain and you can use without limitations
 # -------------------------------------------------------------------------
 
-if request.global_settings.web2py_version < "3.0.6":
-    raise HTTP(500, "Requires web2py 3.0.6 or newer")
+if request.global_settings.web2py_version < "3.0.9":
+    raise HTTP(500, "Requires web2py 3.0.9 or newer")
 
 # -------------------------------------------------------------------------
 # if SSL/HTTPS is properly configured and you want all HTTP requests to
