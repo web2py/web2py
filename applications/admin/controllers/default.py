@@ -1087,8 +1087,12 @@ def about():
     """ Read about info """
     app = get_app()
     # ## check if file is not there
-    about = safe_read(apath('%s/ABOUT.web2py.txt' % app, r=request))
-    license = safe_read(apath('%s/LICENSE.web2py.txt' % app, r=request))
+    try:
+        about = safe_read(apath('%s/ABOUT.web2py.txt' % app, r=request))
+        license = safe_read(apath('%s/LICENSE.web2py.txt' % app, r=request))
+    except FileNotFoundError:
+        about = safe_read(apath('%s/ABOUT' % app, r=request))
+        license = safe_read(apath('%s/LICENSE' % app, r=request))
     return dict(app=app, about=MARKMIN(about), license=MARKMIN(license), progress=report_progress(app))
 
 
