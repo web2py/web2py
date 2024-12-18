@@ -1,7 +1,7 @@
 {{extend 'layout.html'}}
 {{
 import re, functools
-regex_space = re.compile('\s+')
+regex_space = re.compile(r'\s+')
 def all(items):
     return functools.reduce(lambda a,b:a and b,items,True)
 def peekfile(path,file,vars={},title=None):

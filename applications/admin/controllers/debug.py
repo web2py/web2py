@@ -131,7 +131,7 @@ def breakpoints():
     "Add or remove breakpoints"
 
     # Get all .py files
-    files = listdir(apath('', r=request), '.*\.py$')
+    files = listdir(apath('', r=request), r'.*\.py$')
     files = [filename for filename in files
              if filename and 'languages' not in filename
              and not filename.startswith("admin")
