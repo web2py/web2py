@@ -67,3 +67,4 @@ site-packages/
 logs/
 __pycache__/
 build/*
+venv
