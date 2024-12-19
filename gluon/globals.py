@@ -231,16 +231,11 @@ class Request(Storage):
         post_vars = self._post_vars = Storage()
         body = self.body
         # if content-type is application/json, we must read the body
-        is_json = env.get("content_type", "")[:16] == "application/json"
+        is_json = env.get("CONTENT_TYPE", "")[:16] == "application/json"
 
         if is_json:
             try:
-                # In Python 3 versions prior to 3.6 load doesn't accept bytes and
-                # bytearray, so we read the body convert to native and use loads
-                # instead of load.
-                # This line can be simplified to json_vars = json_parser.load(body)
-                # if and when we drop support for python versions under 3.6
-                json_vars = json_parser.loads(body.read().decode("utf8"))
+                json_vars = json_parser.loads(body)
             except:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}
