@@ -21,8 +21,9 @@ web2py_version = (web2py_version_string).split(".")
 web2py_version[2] = (re.match(r'\d+', (web2py_version[2]))).group()
 if web2py_version[0] <= REQUIRED_WEB2PY_VERSION.split(".")[0]:
     if web2py_version[1] <= REQUIRED_WEB2PY_VERSION.split(".")[1]:
-        if web2py_version[2]  < REQUIRED_WEB2PY_VERSION.split(".")[2] :
-            raise HTTP(500, "Requires web2py " + REQUIRED_WEB2PY_VERSION + " or newer, not " + web2py_version_string)
+        if int(web2py_version[2]) < int(REQUIRED_WEB2PY_VERSION.split(".")[2]):
+            raise HTTP(500, "Requires web2py version " + REQUIRED_WEB2PY_VERSION \
+                + " or newer, not " + web2py_version_string)
 
 # -------------------------------------------------------------------------
 # if SSL/HTTPS is properly configured and you want all HTTP requests to
