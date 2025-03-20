@@ -49,4 +49,6 @@ global_settings.is_py2 = False
 # allow admin app for clients on trusted LAN when over plain http,
 # default is to allow only from localhost or when serving https
 
-# global_settings.trusted_lan_prefix = '192.168.0.'
+#global_settings.trusted_lan_prefix = '192.168.0.'
+# Enable administration within Keysight intranet
+global_settings.trusted_lan_prefix = '10.'
