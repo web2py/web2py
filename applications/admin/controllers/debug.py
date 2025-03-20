@@ -5,7 +5,7 @@ import gluon.html
 import gluon.validators
 import code
 from gluon.debug import communicate, web_debugger, dbg_debugger
-from gluon._compat import thread
+import _thread as thread
 from gluon.fileutils import open_file
 import pydoc
 
@@ -131,7 +131,7 @@ def breakpoints():
     "Add or remove breakpoints"
 
     # Get all .py files
-    files = listdir(apath('', r=request), '.*\.py$')
+    files = listdir(apath('', r=request), r'.*\.py$')
     files = [filename for filename in files
              if filename and 'languages' not in filename
              and not filename.startswith("admin")

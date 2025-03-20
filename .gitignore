@@ -37,6 +37,7 @@ parameters*.py
 ./admin.w2p
 ./examples.w2p
 cron.master
+binaries/*old*
 applications/*
 !applications/welcome
 !applications/welcome/*
@@ -44,6 +45,8 @@ applications/*
 !applications/examples/*
 !applications/admin
 !applications/admin/*
+applications/*.zip
+applications/*.w2p
 applications/*/databases/*
 applications/*/sessions/*
 applications/*/errors/*
@@ -64,3 +67,4 @@ site-packages/
 logs/
 __pycache__/
 build/*
+venv

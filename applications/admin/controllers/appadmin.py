@@ -10,7 +10,6 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
-from gluon._compat import iteritems
 
 is_gae = request.env.web2py_runtime_gae or False
 
@@ -449,7 +448,7 @@ def ccache():
         except (KeyError, ZeroDivisionError):
             ram['ratio'] = 0
 
-        for key, value in iteritems(cache.ram.storage):
+        for key, value in cache.ram.storage.items():
             if asizeof:
                 ram['bytes'] += asizeof(value[1])
                 ram['objects'] += 1

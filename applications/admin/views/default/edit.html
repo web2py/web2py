@@ -1,12 +1,12 @@
 {{main_id='editor_main'}}
 {{extend 'layout.html'}}
 {{
-dirs=[{'name':'models', 'reg':'.*\.py$'},
-      {'name':'controllers', 'reg':'.*\.py$'},
-      {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
-      {'name':'modules', 'reg':'.*\.py$'},
-      {'name':'static', 'reg': '[^\.#].*'},
-      {'name':'private', 'reg':'.*\.py$'}]
+dirs=[{'name':'models', 'reg': r'.*\.py$'},
+      {'name':'controllers', 'reg': r'.*\.py$'},
+      {'name':'views', 'reg': r'[\w/\-]+(\.\w+)+$'},
+      {'name':'modules', 'reg': r'.*\.py$'},
+      {'name':'static', 'reg': r'[^\.#].*'},
+      {'name':'private', 'reg': r'.*\.py$'}]
    
 def file_create_form(location, anchor=None, helptext=""):
     form=FORM(
@@ -33,7 +33,7 @@ def file_create_form(location, anchor=None, helptext=""):
 {{
   def shortcut(combo, description):
     return XML('<li class="span5"><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
-  def listfiles(app, dir, regexp='.*\.py$'):
+  def listfiles(app, dir, regexp= r'.*\.py$'):
       files = sorted(
          listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
       files = [x.replace(os.path.sep, '/') for x in files if not x.endswith('.bak')]

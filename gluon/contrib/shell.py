@@ -29,34 +29,38 @@
 An interactive, stateful AJAX shell that runs Python code on the server.
 """
 from __future__ import print_function
-from gluon._compat import ClassType, pickle, StringIO
+
 import logging
-import new
+import pickle
 import sys
+import threading
 import traceback
 import types
-import threading
+from io import StringIO
+
+import new
+
 locker = threading.RLock()
 
 # Set to True if stack traces should be shown in the browser, etc.
 _DEBUG = True
 
 # The entity kind for shell historys. Feel free to rename to suit your app.
-_HISTORY_KIND = '_Shell_History'
+_HISTORY_KIND = "_Shell_History"
 
 # Types that can't be pickled.
 UNPICKLABLE_TYPES = [
     types.ModuleType,
     type,
-    ClassType,
+    type,
     types.FunctionType,
 ]
 
 # Unpicklable statements to seed new historys with.
 INITIAL_UNPICKLABLES = [
-    'import logging',
-    'import os',
-    'import sys',
+    "import logging",
+    "import os",
+    "import sys",
 ]
 
 
@@ -83,6 +87,7 @@ class History:
     Using Text instead of string is an optimization. We don't query on any of
     these properties, so they don't need to be indexed.
     """
+
     global_names = []
     globals = []
     unpicklable_names = []
@@ -120,10 +125,11 @@ class History:
             del self.globals[index]
 
     def globals_dict(self):
-        """Returns a dictionary view of the globals.
-        """
-        return dict((name, pickle.loads(val))
-                    for name, val in zip(self.global_names, self.globals))
+        """Returns a dictionary view of the globals."""
+        return dict(
+            (name, pickle.loads(val))
+            for name, val in zip(self.global_names, self.globals)
+        )
 
     def add_unpicklable(self, statement, names):
         """Adds a statement and list of names to the unpicklables.
@@ -169,28 +175,29 @@ def run(history, statement, env={}):
 
     # extract the statement to be run
     if not statement:
-        return ''
+        return ""
 
     # the python compiler doesn't like network line endings
-    statement = statement.replace('\r\n', '\n')
+    statement = statement.replace("\r\n", "\n")
 
     # add a couple newlines at the end of the statement. this makes
     # single-line expressions such as 'class Foo: pass' evaluate happily.
-    statement += '\n\n'
+    statement += "\n\n"
 
     # log and compile the statement up front
     try:
-        logging.info('Compiling and evaluating:\n%s' % statement)
-        compiled = compile(statement, '<string>', 'single')
+        logging.info("Compiling and evaluating:\n%s" % statement)
+        compiled = compile(statement, "<string>", "single")
     except:
         return str(traceback.format_exc())
 
     # create a dedicated module to be used as this statement's __main__
-    statement_module = new.module('__main__')
+    statement_module = new.module("__main__")
 
     # use this request's __builtin__, since it changes on each request.
     # this is needed for import statements, among other things.
     import __builtin__
+
     statement_module.__builtins__ = __builtin__
 
     # load the history from the datastore
@@ -199,11 +206,11 @@ def run(history, statement, env={}):
     # swap in our custom module for __main__. then unpickle the history
     # globals, run the statement, and re-pickle the history globals, all
     # inside it.
-    old_main = sys.modules.get('__main__')
+    old_main = sys.modules.get("__main__")
     output = StringIO()
     try:
-        sys.modules['__main__'] = statement_module
-        statement_module.__name__ = '__main__'
+        sys.modules["__main__"] = statement_module
+        statement_module.__name__ = "__main__"
         statement_module.__dict__.update(env)
 
         # re-evaluate the unpicklables
@@ -215,14 +222,15 @@ def run(history, statement, env={}):
             try:
                 statement_module.__dict__[name] = val
             except:
-                msg = 'Dropping %s since it could not be unpickled.\n' % name
+                msg = "Dropping %s since it could not be unpickled.\n" % name
                 output.write(msg)
                 logging.warning(msg + traceback.format_exc())
                 history.remove_global(name)
 
         # run!
-        old_globals = dict((key, represent(
-            value)) for key, value in statement_module.__dict__.items())
+        old_globals = dict(
+            (key, represent(value)) for key, value in statement_module.__dict__.items()
+        )
         try:
             old_stdout, old_stderr = sys.stdout, sys.stderr
             try:
@@ -242,17 +250,18 @@ def run(history, statement, env={}):
             if name not in old_globals or represent(val) != old_globals[name]:
                 new_globals[name] = val
 
-        if True in [isinstance(val, tuple(UNPICKLABLE_TYPES))
-                    for val in new_globals.values()]:
+        if True in [
+            isinstance(val, tuple(UNPICKLABLE_TYPES)) for val in new_globals.values()
+        ]:
             # this statement added an unpicklable global. store the statement and
             # the names of all of the globals it added in the unpicklables.
             history.add_unpicklable(statement, new_globals.keys())
-            logging.debug('Storing this statement as an unpicklable.')
+            logging.debug("Storing this statement as an unpicklable.")
         else:
             # this statement didn't add any unpicklables. pickle and store the
             # new globals back into the datastore.
             for name, val in new_globals.items():
-                if not name.startswith('__'):
+                if not name.startswith("__"):
                     try:
                         history.set_global(name, val)
                     except (TypeError, pickle.PicklingError) as ex:
@@ -260,10 +269,11 @@ def run(history, statement, env={}):
                         history.add_unpicklable(statement, new_globals.keys())
 
     finally:
-        sys.modules['__main__'] = old_main
+        sys.modules["__main__"] = old_main
     return output.getvalue()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     history = History()
     while True:
-        print(run(history, raw_input('>>> ')).rstrip())
+        print(run(history, raw_input(">>> ")).rstrip())

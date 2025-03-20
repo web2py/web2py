@@ -9,10 +9,15 @@
 #    License: BSD
 #
 
-import sys, httplib, urllib, urllib2
+import sys
+import urllib
 from xml.dom.minidom import parseString
 
+import httplib
+import urllib2
+
 # TODO: input validation, test, debugging output
+
 
 class PaymenTech(object):
     """
@@ -168,11 +173,20 @@ class PaymenTech(object):
         </Request>
     """
 
-    def __init__(self, development=False, user=None, password=None,
-               industry=None, message=None, api_url=None,
-               bin_code=None, merchant=None, host=None,
-               terminal=None, target=None):
-
+    def __init__(
+        self,
+        development=False,
+        user=None,
+        password=None,
+        industry=None,
+        message=None,
+        api_url=None,
+        bin_code=None,
+        merchant=None,
+        host=None,
+        terminal=None,
+        target=None,
+    ):
         # PaymenTech point of sales data
         self.user = user
         self.password = password
@@ -196,8 +210,9 @@ class PaymenTech(object):
                 # production
                 self.target = "https://orbital1.paymentech.net/authorize"
 
-            self.host, self.api_url = \
-                urllib2.splithost(urllib2.splittype(self.target)[1])
+            self.host, self.api_url = urllib2.splithost(
+                urllib2.splittype(self.target)[1]
+            )
 
         else:
             if not self.target:
@@ -280,17 +295,32 @@ class PaymenTech(object):
         """
 
         # default charge data
-        data = dict(user=self.user, password=self.password,
-                    industry=self.industry, message=self.message,
-                    bin_code=self.bin_code, merchant=self.merchant,
-                    terminal=self.terminal, account="", exp="",
-                    currency_code="", currency_exponent="",
-                    card_sec_val_ind="", card_sec_val="", avs_zip="",
-                    avs_address_1="", avs_address_2="", avs_city="",
-                    avs_state="", avs_phone="", avs_country="",
-                    profile_from_order_ind="",
-                    profile_order_override_ind="", order_id="",
-                    amount="")
+        data = dict(
+            user=self.user,
+            password=self.password,
+            industry=self.industry,
+            message=self.message,
+            bin_code=self.bin_code,
+            merchant=self.merchant,
+            terminal=self.terminal,
+            account="",
+            exp="",
+            currency_code="",
+            currency_exponent="",
+            card_sec_val_ind="",
+            card_sec_val="",
+            avs_zip="",
+            avs_address_1="",
+            avs_address_2="",
+            avs_city="",
+            avs_state="",
+            avs_phone="",
+            avs_country="",
+            profile_from_order_ind="",
+            profile_order_override_ind="",
+            order_id="",
+            amount="",
+        )
 
         result = dict()
 
@@ -298,10 +328,9 @@ class PaymenTech(object):
         for k, v in kwargs.iteritems():
             data[k] = v
 
-        status_code = status_message = header = resp_code = \
-        tx_ref_num = order_id = None
+        status_code = status_message = header = resp_code = tx_ref_num = order_id = None
         conn = httplib.HTTPS(self.host)
-        conn.putrequest('POST', self.api_url)
+        conn.putrequest("POST", self.api_url)
 
         if self.development:
             content_type = "PTI56"
@@ -313,8 +342,7 @@ class PaymenTech(object):
         else:
             xml_string = raw
 
-        conn.putheader("Content-Type",
-                       "application/%s") % content_type
+        conn.putheader("Content-Type", "application/%s") % content_type
         conn.putheader("Content-transfer-encoding", "text")
         conn.putheader("Request-number", "1")
         conn.putheader("Content-length", str(len(xml_string)))
@@ -324,19 +352,21 @@ class PaymenTech(object):
         conn.endheaders()
         conn.send(xml_string)
 
-        result["status_code"], result["status_message"], \
-        result["header"] = conn.getreply()
+        (
+            result["status_code"],
+            result["status_message"],
+            result["header"],
+        ) = conn.getreply()
 
         fp = conn.getfile()
         output = fp.read()
         fp.close()
 
         dom = parseString(output)
-        result["resp_code"] = \
-            dom.getElementsByTagName('RespCode')[0].firstChild.data
-        result["tx_ref_num"] = \
-            dom.getElementsByTagName('TxRefNum')[0].firstChild.data
-        result["order_id"] = \
-            dom.getElementsByTagName('CustomerRefNum')[0].firstChild.data
+        result["resp_code"] = dom.getElementsByTagName("RespCode")[0].firstChild.data
+        result["tx_ref_num"] = dom.getElementsByTagName("TxRefNum")[0].firstChild.data
+        result["order_id"] = dom.getElementsByTagName("CustomerRefNum")[
+            0
+        ].firstChild.data
 
         return result

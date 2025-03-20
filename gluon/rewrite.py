@@ -15,22 +15,17 @@ Refer to router.example.py and routes.example.py for additional documentation.
 
 """
 
+import logging
 import os
 import re
-import logging
-import traceback
 import threading
-from gluon.storage import Storage, List
-from gluon.http import HTTP
+import traceback
+from urllib.parse import quote, quote_plus, unquote
+
 from gluon.fileutils import abspath, read_file
+from gluon.http import HTTP
 from gluon.settings import global_settings
-from gluon._compat import (
-    urllib_unquote,
-    urllib_quote,
-    iteritems,
-    xrange,
-    urllib_quote_plus,
-)
+from gluon.storage import List, Storage
 
 isdir = os.path.isdir
 isfile = os.path.isfile
@@ -272,7 +267,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                 "*/*",
             )
         )
-        for (key, uri) in THREAD_LOCAL.routes.routes_onerror:
+        for key, uri in THREAD_LOCAL.routes.routes_onerror:
             if key in keys:
                 if uri == "!":
                     # do nothing!
@@ -285,7 +280,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                 query_string += "code=%s&ticket=%s&requested_uri=%s&request_url=%s" % (
                     status,
                     ticket,
-                    urllib_quote_plus(request.env.request_uri),
+                    quote_plus(request.env.request_uri),
                     request.url,
                 )
                 if uri.startswith("http://") or uri.startswith("https://"):
@@ -318,7 +313,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                 "*/*",
             )
         )
-        for (key, redir) in THREAD_LOCAL.routes.routes_onerror:
+        for key, redir in THREAD_LOCAL.routes.routes_onerror:
             if key in keys:
                 if redir == "!":
                     break
@@ -327,7 +322,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                         redir,
                         status,
                         ticket,
-                        urllib_quote_plus(request.env.request_uri),
+                        quote_plus(request.env.request_uri),
                         request.url,
                     )
                 else:
@@ -335,7 +330,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                         redir,
                         status,
                         ticket,
-                        urllib_quote_plus(request.env.request_uri),
+                        quote_plus(request.env.request_uri),
                         request.url,
                     )
                 return HTTP(
@@ -593,7 +588,7 @@ def load_routers(all_apps):
     #
     domains = dict()
     if routers.BASE.domains:
-        for (d, a) in iteritems(routers.BASE.domains):
+        for d, a in routers.BASE.domains.items():
             (domain, app) = (d.strip(":"), a.strip("/"))
             if ":" in domain:
                 (domain, port) = domain.split(":")
@@ -627,7 +622,7 @@ def regex_uri(e, regexes, tag, default=None):
         e.get("REQUEST_METHOD", "get").lower(),
         path,
     )
-    for (regex, value, custom_env) in regexes:
+    for regex, value, custom_env in regexes:
         if regex.match(key):
             e.update(custom_env)
             rewritten = regex.sub(value, key)
@@ -703,13 +698,13 @@ def regex_url_in(request, environ):
     routes = THREAD_LOCAL.routes
     if routes.routes_in:
         environ = regex_filter_in(environ)
-    request.env.update((k.lower().replace(".", "_"), v) for k, v in iteritems(environ))
+    request.env.update((k.lower().replace(".", "_"), v) for k, v in environ.items())
 
     # ##################################################
     # serve if a static file
     # ##################################################
 
-    path = urllib_unquote(request.env.path_info) or "/"
+    path = unquote(request.env.path_info) or "/"
     path = path.replace("\\", "/")
     if path.endswith("/") and len(path) > 1:
         path = path[:-1]
@@ -778,7 +773,7 @@ def regex_filter_out(url, e=None):
             )
         else:
             items[0] = ":http://localhost:get %s" % items[0]
-        for (regex, value, tmp) in routes.routes_out:
+        for regex, value, tmp in routes.routes_out:
             if regex.match(items[0]):
                 rewritten = "?".join([regex.sub(value, items[0])] + items[1:])
                 log_rewrite("routes_out: [%s] -> %s" % (url, rewritten))
@@ -816,7 +811,7 @@ def filter_url(
     if isinstance(domain, str):
         domain = (domain, None)
     (path_info, query_string) = (uri[:k], uri[k + 1 :])
-    path_info = urllib_unquote(path_info)  # simulate server
+    path_info = unquote(path_info)  # simulate server
     e = {
         "REMOTE_ADDR": remote,
         "REQUEST_METHOD": method,
@@ -830,6 +825,7 @@ def filter_url(
         "request_method": method,
         "wsgi_url_scheme": urlscheme,
         "http_host": urlhost,
+        "web2py_runtime_gae": ("GAE_APPLICATION" in os.environ),
     }
 
     request = Storage()
@@ -901,7 +897,7 @@ def filter_err(status, application="app", ticket="tkt"):
                 "*/*",
             )
         )
-        for (key, redir) in routes.routes_onerror:
+        for key, redir in routes.routes_onerror:
             if key in keys:
                 if redir == "!":
                     break
@@ -983,7 +979,7 @@ class MapUrlIn(object):
             prefixlen = len(prefix)
             if prefixlen > len(self.args):
                 return
-            for i in xrange(prefixlen):
+            for i in range(prefixlen):
                 if prefix[i] != self.args[i]:
                     return  # prefix didn't match
             self.args = List(self.args[prefixlen:])  # strip the prefix
@@ -1228,7 +1224,7 @@ class MapUrlIn(object):
 
     def sluggify(self):
         self.request.env.update(
-            (k.lower().replace(".", "_"), v) for k, v in iteritems(self.env)
+            (k.lower().replace(".", "_"), v) for k, v in self.env.items()
         )
 
     def update_request(self):
@@ -1256,9 +1252,7 @@ class MapUrlIn(object):
         uri = "/%s%s%s%s" % (
             app,
             uri,
-            urllib_quote("/" + "/".join(str(x) for x in self.args))
-            if self.args
-            else "",
+            quote("/" + "/".join(str(x) for x in self.args)) if self.args else "",
             ("?" + self.query) if self.query else "",
         )
         self.env["REQUEST_URI"] = uri

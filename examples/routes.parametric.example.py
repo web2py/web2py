@@ -101,10 +101,9 @@
 #  but provides full rewrite functionality.
 
 routers = dict(
-
     # base router
     BASE=dict(
-        default_application='welcome',
+        default_application="welcome",
     ),
 )
 
@@ -113,7 +112,7 @@ routers = dict(
 #                  off, print (print uses print statement rather than logging)
 # GAE users may want to use 'off' to suppress routine logging.
 #
-logging = 'debug'
+logging = "debug"
 
 # Error-handling redirects all HTTP errors (status codes >= 400) to a specified
 # path.  If you wish to use error-handling redirects, uncomment the tuple
@@ -148,7 +147,7 @@ logging = 'debug'
 
 
 def __routes_doctest():
-    '''
+    """
     Dummy function for doctesting routes.py.
 
     Use filter_url() to test incoming or outgoing routes;
@@ -205,9 +204,11 @@ def __routes_doctest():
     399
     >>> filter_err(400)
     400
-    '''
+    """
     pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

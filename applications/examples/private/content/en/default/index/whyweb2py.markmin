@@ -5,7 +5,7 @@
 - **Easy to run.** It requires no installation and no configuration.
 - **Runs on** Windows, Mac, Unix/Linux, Google App Engine, Amazon EC2, and almost any web hosting via Python 2.5/2.6/2.7, or Java with Jython.
 - **Runs with** Apache, Lighttpd, Cherokee and almost any other web server via CGI, FastCGI, WSGI, mod_proxy, and/or mod_python. It can embed third party WSGI apps and middleware.
-- **Talks to** SQLite, PostgreSQL, MySQL, MSSQL, FireBird, Oracle, IBM DB2, Informix, Ingres, and Google App Engine. 
+- **Talks to** SQLite, PostgreSQL, MySQL, MSSQL, FireBird, Oracle, IBM DB2, Informix, Ingres, and Google Firestore. 
 - **Secure** [[It prevents the most common types of vulnerabilities http://web2py.com/examples/default/security]] including Cross Site Scripting, Injection Flaws, and Malicious File Execution.
 - **Enforces good Software Engineering practices** (Model-View-Controller design, Server-side form validation, postbacks) that make the code more readable, scalable, and maintainable.
 - **Speaks multiple protocols** HTML/XML, RSS/ATOM, RTF, PDF, JSON, AJAX, XML-RPC, CSV, REST, WIKI, Flash/AMF, and Linked Data (RDF). 

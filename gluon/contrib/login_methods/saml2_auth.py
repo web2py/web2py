@@ -73,80 +73,111 @@ you must have private/sp_conf.py, the pysaml2 sp configuration file. For example
 
 """
 
-from saml2 import BINDING_HTTP_REDIRECT, BINDING_HTTP_POST
+import os
+import types
+
+from saml2 import BINDING_HTTP_POST, BINDING_HTTP_REDIRECT
 from saml2.client import Saml2Client
+
+from gluon import URL, current, redirect
 from gluon.utils import web2py_uuid
-from gluon import current, redirect, URL
-import os, types
+
 
 def obj2dict(obj, processed=None):
-    """                                                                        
-    converts any object into a dict, recursively                               
+    """
+    converts any object into a dict, recursively
     """
     processed = processed if not processed is None else set()
     if obj is None:
         return None
-    if isinstance(obj,(int,long,str,unicode,float,bool)):
+    if isinstance(obj, (int, long, str, unicode, float, bool)):
         return obj
     if id(obj) in processed:
-        return '<reference>'
+        return "<reference>"
     processed.add(id(obj))
-    if isinstance(obj,(list,tuple)):
-        return [obj2dict(item,processed) for item in obj]
-    if not isinstance(obj, dict) and hasattr(obj,'__dict__'):
+    if isinstance(obj, (list, tuple)):
+        return [obj2dict(item, processed) for item in obj]
+    if not isinstance(obj, dict) and hasattr(obj, "__dict__"):
         obj = obj.__dict__
     else:
         return repr(obj)
-    return dict((key,obj2dict(value,processed)) for key,value in obj.items()
-                if not key.startswith('_') and
-                not type(value) in (types.FunctionType,
-                                    types.LambdaType,
-                                    types.BuiltinFunctionType,
-                                    types.BuiltinMethodType))
+    return dict(
+        (key, obj2dict(value, processed))
+        for key, value in obj.items()
+        if not key.startswith("_")
+        and not type(value)
+        in (
+            types.FunctionType,
+            types.LambdaType,
+            types.BuiltinFunctionType,
+            types.BuiltinMethodType,
+        )
+    )
 
-def saml2_handler(session, request, config_filename = None, entityid = None):
-    config_filename = config_filename or os.path.join(request.folder,'private','sp_conf')
-    client = Saml2Client(config_file = config_filename)
+
+def saml2_handler(session, request, config_filename=None, entityid=None):
+    config_filename = config_filename or os.path.join(
+        request.folder, "private", "sp_conf"
+    )
+    client = Saml2Client(config_file=config_filename)
     if not entityid:
         idps = client.metadata.with_descriptor("idpsso")
         entityid = list(idps.keys())[0]
     bindings = [BINDING_HTTP_REDIRECT, BINDING_HTTP_POST]
     binding, destination = client.pick_binding(
-        "single_sign_on_service", bindings, "idpsso", entity_id=entityid)
-    if request.env.request_method == 'GET':
-        binding = BINDING_HTTP_REDIRECT 
-    elif request.env.request_method == 'POST':
+        "single_sign_on_service", bindings, "idpsso", entity_id=entityid
+    )
+    if request.env.request_method == "GET":
+        binding = BINDING_HTTP_REDIRECT
+    elif request.env.request_method == "POST":
         binding = BINDING_HTTP_POST
     if not request.vars.SAMLResponse:
-        req_id, req = client.create_authn_request(destination, binding=BINDING_HTTP_POST)
-        relay_state = web2py_uuid().replace('-','')
-        session.saml_outstanding_queries = {req_id: request.url}    
+        req_id, req = client.create_authn_request(
+            destination, binding=BINDING_HTTP_POST
+        )
+        relay_state = web2py_uuid().replace("-", "")
+        session.saml_outstanding_queries = {req_id: request.url}
         session.saml_req_id = req_id
-        http_args = client.apply_binding(binding, str(req), destination,
-                                         relay_state=relay_state)
-        return {'url':dict(http_args["headers"])['Location']}
+        http_args = client.apply_binding(
+            binding, str(req), destination, relay_state=relay_state
+        )
+        return {"url": dict(http_args["headers"])["Location"]}
     else:
         relay_state = request.vars.RelayState
         req_id = session.saml_req_id
         unquoted_response = request.vars.SAMLResponse
-        res =  {}
+        res = {}
         try:
             data = client.parse_authn_request_response(
-                unquoted_response, binding, session.saml_outstanding_queries)
-            res['response'] = data if data else {}
+                unquoted_response, binding, session.saml_outstanding_queries
+            )
+            res["response"] = data if data else {}
         except Exception as e:
             import traceback
-            res['error'] = traceback.format_exc()
+
+            res["error"] = traceback.format_exc()
         return res
-    
+
 
 class Saml2Auth(object):
-
-    def __init__(self, config_file=None, maps=dict(
-            username=lambda v:v['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn'][0],
-            email=lambda v:v['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn'][0],
-            user_id=lambda v:v['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn'][0],
-            ), logout_url=None, change_password_url=None, entityid=None):
+    def __init__(
+        self,
+        config_file=None,
+        maps=dict(
+            username=lambda v: v[
+                "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"
+            ][0],
+            email=lambda v: v[
+                "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"
+            ][0],
+            user_id=lambda v: v[
+                "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn"
+            ][0],
+        ),
+        logout_url=None,
+        change_password_url=None,
+        entityid=None,
+    ):
         self.config_file = config_file
         self.maps = maps
 
@@ -155,26 +186,29 @@ class Saml2Auth(object):
 
         # URL to let users change their password in the IDP system
         self.saml_change_password_url = change_password_url
-    
+
         # URL to specify an IDP if using federation metadata or an MDQ
         self.entityid = entityid
 
     def login_url(self, next="/"):
         d = saml2_handler(current.session, current.request, entityid=self.entityid)
-        if 'url' in d:
-            redirect(d['url'])
-        elif 'error' in d:
-            redirect(URL('default','index'))
-        elif 'response' in d:            
+        if "url" in d:
+            redirect(d["url"])
+        elif "error" in d:
+            redirect(URL("default", "index"))
+        elif "response" in d:
             # a['assertions'][0]['attribute_statement'][0]['attribute']
             # is list of
             # {'name': 'http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname', 'name_format': None, 'text': None, 'friendly_name': None, 'attribute_value': [{'text': 'CAA\\dev-mdp', 'extension_attributes': "{'{http://www.w3.org/2001/XMLSchema-instance}type': 'xs:string'}", 'extension_elements': []}], 'extension_elements': [], 'extension_attributes': '{}'}
             try:
-                attributes = d['response'].assertions[0].attribute_statement[0].attribute
+                attributes = (
+                    d["response"].assertions[0].attribute_statement[0].attribute
+                )
             except:
-                attributes = d['response'].assertion.attribute_statement[0].attribute
+                attributes = d["response"].assertion.attribute_statement[0].attribute
             current.session.saml2_info = dict(
-                (a.name, [i.text for i in a.attribute_value]) for a in attributes)
+                (a.name, [i.text for i in a.attribute_value]) for a in attributes
+            )
         return next
 
     def logout_url(self, next="/"):
@@ -187,10 +221,10 @@ class Saml2Auth(object):
         self._SAML_change_password()
         return next
 
-    def get_user(self):        
+    def get_user(self):
         user = current.session.saml2_info
         if user:
-            d = {'source': 'web2py saml2'}
+            d = {"source": "web2py saml2"}
             for key in self.maps:
                 d[key] = self.maps[key](user)
             return d

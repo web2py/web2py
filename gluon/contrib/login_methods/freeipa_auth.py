@@ -1,5 +1,5 @@
-import sys
 import logging
+import sys
 
 try:
     import ldap
@@ -17,7 +17,7 @@ def freeipa_auth(server, basedn, group):
     base_dn: root of ldap tree containing user & groups
     group: group authing user has to be a member of
 
-   """
+    """
     logger = logging.getLogger("web2py.auth.freeipa_auth")
 
     def freeipa_auth_aux(username, password):

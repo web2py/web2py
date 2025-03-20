@@ -8,21 +8,24 @@
 Support for smart import syntax for web2py applications
 -------------------------------------------------------
 """
-from gluon._compat import builtin, unicodeT, to_native, reload
+import builtins
+import importlib
 import os
 import sys
 import threading
+
 from gluon import current
 
-NATIVE_IMPORTER = builtin.__import__
-INVALID_MODULES = set(('', 'gluon', 'applications', 'custom_import'))
+NATIVE_IMPORTER = builtins.__import__
+INVALID_MODULES = set(("", "gluon", "applications", "custom_import"))
 
 # backward compatibility API
 
+
 def custom_import_install():
-    if builtin.__import__ == NATIVE_IMPORTER:
+    if builtins.__import__ == NATIVE_IMPORTER:
         INVALID_MODULES.update(sys.modules.keys())
-        builtin.__import__ = custom_importer
+        builtins.__import__ = custom_importer
 
 
 def track_changes(track=True):
@@ -39,6 +42,7 @@ def is_tracking_changes():
 # which also changes the default value to 0 (was -1)
 _DEFAULT_LEVEL = 0 if sys.version_info[:2] >= (3, 3) else -1
 
+
 def custom_importer(name, globals={}, locals=None, fromlist=(), level=_DEFAULT_LEVEL):
     """
     web2py's custom importer. It behaves like the standard Python importer but
@@ -48,12 +52,14 @@ def custom_importer(name, globals={}, locals=None, fromlist=(), level=_DEFAULT_L
     """
 
     # support for non-ascii name
-    if isinstance(name, unicodeT):
-        name = to_native(name)
+    if isinstance(name, bytes):
+        name = name.decode("utf8")
 
-    if hasattr(current, 'request') \
-            and level <= 0 \
-            and name.partition('.')[0] not in INVALID_MODULES:
+    if (
+        hasattr(current, "request")
+        and level <= 0
+        and name.partition(".")[0] not in INVALID_MODULES
+    ):
         # absolute import from application code
         try:
             return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
@@ -65,13 +71,14 @@ def custom_importer(name, globals={}, locals=None, fromlist=(), level=_DEFAULT_L
             base_importer = NATIVE_IMPORTER
         # rstrip for backward compatibility
         items = current.request.folder.rstrip(os.sep).split(os.sep)
-        modules_prefix = '.'.join(items[-2:]) + '.modules'
+        modules_prefix = ".".join(items[-2:]) + ".modules"
         if not fromlist:
             # "import x" or "import x.y"
             result = None
             for itemname in name.split("."):
                 new_mod = base_importer(
-                    modules_prefix, globals, locals, (itemname,), level)
+                    modules_prefix, globals, locals, (itemname,), level
+                )
                 modules_prefix += "." + itemname
                 if result is None:
                     try:
@@ -99,7 +106,9 @@ class TrackImporter(object):
     def __init__(self):
         self._import_dates = {}  # Import dates of the files of the modules
 
-    def __call__(self, name, globals={}, locals=None, fromlist=(), level=_DEFAULT_LEVEL):
+    def __call__(
+        self, name, globals={}, locals=None, fromlist=(), level=_DEFAULT_LEVEL
+    ):
         """
         The import method itself.
         """
@@ -142,8 +151,9 @@ class TrackImporter(object):
                 if file.endswith(".py"):
                     # Get path without file ext:
                     file = os.path.splitext(file)[0]
-                    reload_mod = os.path.isdir(file) \
-                        and os.path.isfile(file + self.PACKAGE_PATH_SUFFIX)
+                    reload_mod = os.path.isdir(file) and os.path.isfile(
+                        file + self.PACKAGE_PATH_SUFFIX
+                    )
                     mod_to_pack = reload_mod
                 else:  # Package turning into module?
                     file += ".py"
@@ -160,7 +170,7 @@ class TrackImporter(object):
                     # Reload the module:
                     NATIVE_IMPORTER(mod_name, globals, locals, [], level)
                 else:
-                    reload(module)
+                    importlib.reload(module)
 
     def _get_module_file(self, module):
         """
@@ -173,5 +183,6 @@ class TrackImporter(object):
             if file.endswith(self.PACKAGE_PATH_SUFFIX):
                 file = os.path.dirname(file)  # Track dir for packages
         return file
+
 
 TRACK_IMPORTER = TrackImporter()

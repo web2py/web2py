@@ -1,14 +1,16 @@
 import sys
+
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
 import pymysql
+
 _mysql = pymysql
+from pymysql._compat import PY2, long_type
 from pymysql.constants import FIELD_TYPE
 from pymysql.tests import base
-from pymysql._compat import PY2, long_type
 
 if not PY2:
     basestring = str
@@ -33,7 +35,7 @@ class CoreModule(unittest.TestCase):
 
     def test_NULL(self):
         """Should have a NULL constant."""
-        self.assertEqual(_mysql.NULL, 'NULL')
+        self.assertEqual(_mysql.NULL, "NULL")
 
     def test_version(self):
         """Version information sanity."""
@@ -62,40 +64,56 @@ class CoreAPI(unittest.TestCase):
 
     def test_thread_id(self):
         tid = self.conn.thread_id()
-        self.assertTrue(isinstance(tid, (int, long_type)),
-                        "thread_id didn't return an integral value.")
+        self.assertTrue(
+            isinstance(tid, (int, long_type)),
+            "thread_id didn't return an integral value.",
+        )
 
-        self.assertRaises(TypeError, self.conn.thread_id, ('evil',),
-                          "thread_id shouldn't accept arguments.")
+        self.assertRaises(
+            TypeError,
+            self.conn.thread_id,
+            ("evil",),
+            "thread_id shouldn't accept arguments.",
+        )
 
     def test_affected_rows(self):
-        self.assertEqual(self.conn.affected_rows(), 0,
-                          "Should return 0 before we do anything.")
+        self.assertEqual(
+            self.conn.affected_rows(), 0, "Should return 0 before we do anything."
+        )
 
-
-    #def test_debug(self):
-        ## FIXME Only actually tests if you lack SUPER
-        #self.assertRaises(pymysql.OperationalError,
-                          #self.conn.dump_debug_info)
+    # def test_debug(self):
+    ## FIXME Only actually tests if you lack SUPER
+    # self.assertRaises(pymysql.OperationalError,
+    # self.conn.dump_debug_info)
 
     def test_charset_name(self):
-        self.assertTrue(isinstance(self.conn.character_set_name(), basestring),
-                        "Should return a string.")
+        self.assertTrue(
+            isinstance(self.conn.character_set_name(), basestring),
+            "Should return a string.",
+        )
 
     def test_host_info(self):
-        assert isinstance(self.conn.get_host_info(), basestring), "should return a string"
+        assert isinstance(
+            self.conn.get_host_info(), basestring
+        ), "should return a string"
 
     def test_proto_info(self):
-        self.assertTrue(isinstance(self.conn.get_proto_info(), int),
-                        "Should return an int.")
+        self.assertTrue(
+            isinstance(self.conn.get_proto_info(), int), "Should return an int."
+        )
 
     def test_server_info(self):
         if sys.version_info[0] == 2:
-            self.assertTrue(isinstance(self.conn.get_server_info(), basestring),
-                            "Should return an str.")
+            self.assertTrue(
+                isinstance(self.conn.get_server_info(), basestring),
+                "Should return an str.",
+            )
         else:
-            self.assertTrue(isinstance(self.conn.get_server_info(), basestring),
-                            "Should return an str.")
+            self.assertTrue(
+                isinstance(self.conn.get_server_info(), basestring),
+                "Should return an str.",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

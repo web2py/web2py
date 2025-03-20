@@ -1,5 +1,6 @@
 {{extend 'default.mobile/layout.html'}}
 {{
+import functools  
 def A_info(*a,**b):
     b['_data-role'] = 'button'
     b['_data-icon'] = 'info'
@@ -22,7 +23,7 @@ def A_check(*a,**b):
     return A(*a,**b)
     
 def all(items):
-    return reduce(lambda a,b:a and b,items,True)
+    return functools.reduce(lambda a,b:a and b,items,True)
 def peekfile(path,file):
     return A_info(file.replace('\\\\','/'),_href=URL('peek', args=(app, path, file)))
 def editfile(path,file):

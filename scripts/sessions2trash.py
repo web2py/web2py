@@ -40,12 +40,12 @@ from __future__ import with_statement
 
 from gluon import current
 from gluon.storage import Storage
-from gluon._compat import pickle
 
 import datetime
 import stat
 import time
 import os
+import pickle
 
 EXPIRATION_MINUTES = 60
 SLEEP_MINUTES = 5
@@ -86,19 +86,19 @@ class SessionSet(object):
 
             if age > self.expiration or not self.expiration:
                 item.delete()
-                status = 'trashed'
+                status = "trashed"
             else:
-                status = 'OK'
+                status = "OK"
 
             if self.verbose > 1:
-                print('key: %s' % item)
-                print('expiration: %s seconds' % self.expiration)
-                print('last visit: %s' % last_visit)
-                print('age: %s seconds' % age)
-                print('status: %s' % status)
-                print('')
+                print("key: %s" % item)
+                print("expiration: %s seconds" % self.expiration)
+                print("last visit: %s" % last_visit)
+                print("age: %s seconds" % age)
+                print("status: %s" % status)
+                print("")
             elif self.verbose > 0:
-                print('%s %s' % (item, status))
+                print("%s %s" % (item, status))
 
 
 class SessionSetDb(SessionSet):
@@ -130,7 +130,7 @@ class SessionSetFiles(SessionSet):
 
     def get(self):
         """Return list of SessionFile instances for existing sessions."""
-        root_path = os.path.join(current.request.folder, 'sessions')
+        root_path = os.path.join(current.request.folder, "sessions")
         for path, dirs, files in os.walk(root_path, topdown=False):
             for x in files:
                 yield SessionFile(os.path.join(path, x))
@@ -158,9 +158,14 @@ class SessionDb(object):
             return self.row.modified_datetime
         else:
             try:
-                return datetime.datetime.strptime(self.row.modified_datetime, '%Y-%m-%d %H:%M:%S.%f')
+                return datetime.datetime.strptime(
+                    self.row.modified_datetime, "%Y-%m-%d %H:%M:%S.%f"
+                )
             except:
-                print('failed to retrieve last modified time (value: %s)' % self.row.modified_datetime)
+                print(
+                    "failed to retrieve last modified time (value: %s)"
+                    % self.row.modified_datetime
+                )
 
     def __str__(self):
         return self.row.unique_key
@@ -180,13 +185,12 @@ class SessionFile(object):
 
     def get(self):
         session = Storage()
-        with open(self.filename, 'rb') as f:
+        with open(self.filename, "rb") as f:
             session.update(pickle.load(f))
         return session
 
     def last_visit_default(self):
-        return datetime.datetime.fromtimestamp(
-            os.stat(self.filename)[stat.ST_MTIME])
+        return datetime.datetime.fromtimestamp(os.stat(self.filename)[stat.ST_MTIME])
 
     def __str__(self):
         return self.filename
@@ -200,6 +204,7 @@ def total_seconds(delta):
         delta: datetime.timedelta instance.
     """
     return (delta.microseconds + (delta.seconds + (delta.days * 86400)) * 1000000) / 1e6
+
 
 def single_loop(expiration=None, force=False, verbose=False):
     if expiration is None:
@@ -220,26 +225,48 @@ def main():
 
     parser = OptionParser(usage="%%prog [options]\nVersion: %s" % VERSION)
 
-    parser.add_option('-f', '--force',
-                      action='store_true', dest='force', default=False,
-                      help=('Ignore session expiration. '
-                            'Force expiry based on -x option or auth.settings.expiration.')
-                      )
-    parser.add_option('-o', '--once',
-                      action='store_true', dest='once', default=False,
-                      help='Delete sessions, then exit.',
-                      )
-    parser.add_option('-s', '--sleep',
-                      dest='sleep', default=SLEEP_MINUTES * 60, type="int",
-                      help='Number of seconds to sleep between executions. Default 300.',
-                      )
-    parser.add_option('-v', '--verbose',
-                      default=0, action='count',
-                      help="print verbose output, a second -v increases verbosity")
-    parser.add_option('-x', '--expiration',
-                      dest='expiration', default=None, type="int",
-                      help='Expiration value for sessions without expiration (in seconds)',
-                      )
+    parser.add_option(
+        "-f",
+        "--force",
+        action="store_true",
+        dest="force",
+        default=False,
+        help=(
+            "Ignore session expiration. "
+            "Force expiry based on -x option or auth.settings.expiration."
+        ),
+    )
+    parser.add_option(
+        "-o",
+        "--once",
+        action="store_true",
+        dest="once",
+        default=False,
+        help="Delete sessions, then exit.",
+    )
+    parser.add_option(
+        "-s",
+        "--sleep",
+        dest="sleep",
+        default=SLEEP_MINUTES * 60,
+        type="int",
+        help="Number of seconds to sleep between executions. Default 300.",
+    )
+    parser.add_option(
+        "-v",
+        "--verbose",
+        default=0,
+        action="count",
+        help="print verbose output, a second -v increases verbosity",
+    )
+    parser.add_option(
+        "-x",
+        "--expiration",
+        dest="expiration",
+        default=None,
+        type="int",
+        help="Expiration value for sessions without expiration (in seconds)",
+    )
 
     (options, unused_args) = parser.parse_args()
 
@@ -252,8 +279,9 @@ def main():
             break
         else:
             if options.verbose:
-                print('Sleeping %s seconds' % (options.sleep))
+                print("Sleeping %s seconds" % (options.sleep))
             time.sleep(options.sleep)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

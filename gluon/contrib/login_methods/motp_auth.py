@@ -2,12 +2,11 @@
 
 import time
 from hashlib import md5
+
 from gluon.dal import DAL
 
 
-def motp_auth(db=DAL('sqlite://storage.sqlite'),
-              time_offset=60):
-
+def motp_auth(db=DAL("sqlite://storage.sqlite"), time_offset=60):
     """
     motp allows you to login with a one time password(OTP) generated on a motp client,
     motp clients are available for practically all platforms.
@@ -89,18 +88,16 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
                 return True
         return False
 
-    def motp_auth_aux(email,
-                      password,
-                      db=db,
-                      offset=time_offset):
+    def motp_auth_aux(email, password, db=db, offset=time_offset):
         if db:
             user_data = db(db.auth_user.email == email).select().first()
             if user_data:
-                if user_data['motp_secret'] and user_data['motp_pin']:
-                    motp_secret = user_data['motp_secret']
-                    motp_pin = user_data['motp_pin']
+                if user_data["motp_secret"] and user_data["motp_pin"]:
+                    motp_secret = user_data["motp_secret"]
+                    motp_pin = user_data["motp_pin"]
                     otp_check = verify_otp(
-                        password, motp_pin, motp_secret, offset=offset)
+                        password, motp_pin, motp_secret, offset=offset
+                    )
                     if otp_check:
                         return True
                     else:
@@ -108,4 +105,5 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
                 else:
                     return False
         return False
+
     return motp_auth_aux

@@ -1,17 +1,16 @@
-## Readme
+## web2py
 
-web2py is a free open source full-stack framework for rapid development of fast, scalable, secure and portable database-driven web-based applications.
+web2py is an open source full-stack framework for agile development 
+of secure database-driven web-based applications, written and programmable in 
+Python. 
 
-It is written and programmable in Python. LGPLv3 License
+Created by Massimo Di Pierro <massimo.dipierro@gmail.com>
 
-Learn more at http://web2py.com
+## About the future of web2py
 
-## Google App Engine deployment
-
-    cp examples/app.yaml ./
-    cp handlers/gaehandler.py ./
-
-Then edit ./app.yaml and replace "yourappname" with yourappname.
+Web2py was created in 2007 for Python 2.7. As of 2024 we support Python 3.9+ and no longer support earlier version.
+We do not recommend using Web2py for new projects but we recommend upgrading to py4web (http://py4web.com), also known as web3py.
+Web2py and Py4web share template language, pydal, rocket3 and similar design phylosophy.
 
 ## Important reminder about this GIT repo
 
@@ -26,7 +25,6 @@ If you have an existing repository, the commands below need to be executed at le
     git submodule update --init --recursive
 
 PyDAL uses a separate stable release cycle to the rest of web2py. PyDAL releases will use a date-naming scheme similar to Ubuntu. Issues related to PyDAL should be reported to its separate repository.
-
 
 ## Documentation (readthedocs.org)
 
@@ -50,9 +48,8 @@ That's it!!!
 ## web2py directory structure
 
     project/
-        README
-        LICENSE
-        VERSION                    > this web2py version
+        README.md
+        LICENSE.web2py.txt
         web2py.py                  > the startup script
         anyserver.py               > to run with third party servers
         ...                        > other handlers and example files
@@ -91,6 +88,6 @@ That's it!!!
         logs/                      > log files will go in there
         deposit/                   > a place where web2py stores apps temporarily
 
-## Issues?
+## Have Issues
 
 Report issues at https://github.com/web2py/web2py/issues

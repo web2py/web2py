@@ -13,9 +13,10 @@ Note:
     FOR INTERNAL USE ONLY
 """
 
+import _thread as thread
 from os import stat
+
 from gluon.fileutils import read_file
-from gluon._compat import thread
 
 cfs = {}  # for speed-up
 cfs_lock = thread.allocate_lock()  # and thread safety
@@ -38,7 +39,7 @@ def getcfs(key, filename, filter=None):
     try:
         t = stat(filename).st_mtime
     except OSError:
-        return filter() if callable(filter) else ''
+        return filter() if callable(filter) else ""
     cfs_lock.acquire()
     item = cfs.get(key, None)
     cfs_lock.release()

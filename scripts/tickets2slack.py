@@ -31,12 +31,12 @@ from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 
 
-path = os.path.join(request.folder, 'errors')
-sent_errors_file = os.path.join(path, 'slack_errors.pickle')
+path = os.path.join(request.folder, "errors")
+sent_errors_file = os.path.join(path, "slack_errors.pickle")
 hashes = {}
 if os.path.exists(sent_errors_file):
     try:
-        with open(sent_errors_file, 'rb') as f:
+        with open(sent_errors_file, "rb") as f:
             hashes = pickle.load(f)
     except Exception as _:
         pass
@@ -44,13 +44,14 @@ if os.path.exists(sent_errors_file):
 # ## CONFIGURE HERE
 SLEEP_MINUTES = 5
 ALLOW_DUPLICATES = False
-global_settings.slack_hook = global_settings.slack_hook or \
-    'https://hooks.slack.com/services/your_service'
+global_settings.slack_hook = (
+    global_settings.slack_hook or "https://hooks.slack.com/services/your_service"
+)
 # ## END CONFIGURATION
 
 while 1:
     for file_name in os.listdir(path):
-        if file_name == 'slack_errors.pickle':
+        if file_name == "slack_errors.pickle":
             continue
 
         if not ALLOW_DUPLICATES:
@@ -66,13 +67,16 @@ while 1:
         except Exception as _:
             continue  # not an exception file?
 
-        url = URL(a='admin', f='ticket', args=[request.application, file],
-                  scheme=True)
-        payload = json.dumps(dict(text="Error in %(app)s.\n%(url)s" %
-                                       dict(app=request.application, url=url)))
+        url = URL(a="admin", f="ticket", args=[request.application, file], scheme=True)
+        payload = json.dumps(
+            dict(
+                text="Error in %(app)s.\n%(url)s"
+                % dict(app=request.application, url=url)
+            )
+        )
 
         requests.post(global_settings.slack_hook, data=dict(payload=payload))
 
-    with open(sent_errors_file, 'wb') as f:
+    with open(sent_errors_file, "wb") as f:
         pickle.dump(hashes, f)
     time.sleep(SLEEP_MINUTES * 60)

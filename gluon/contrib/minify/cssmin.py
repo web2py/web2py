@@ -17,8 +17,7 @@ except ImportError:
 
 import re
 
-
-__version__ = '0.1.4'
+__version__ = "0.1.4"
 
 
 def remove_comments(css):
@@ -30,7 +29,7 @@ def remove_comments(css):
     while comment_start >= 0:
         # Preserve comments that look like `/*!...*/`.
         # Slicing is used to make sure we don"t get an IndexError.
-        preserve = css[comment_start + 2:comment_start + 3] == "!"
+        preserve = css[comment_start + 2 : comment_start + 3] == "!"
 
         comment_end = css.find("*/", comment_start + 2)
         if comment_end < 0:
@@ -47,7 +46,7 @@ def remove_comments(css):
                 comment_start = comment_end + 2
                 iemac = False
             elif not preserve:
-                css = css[:comment_start] + css[comment_end + 2:]
+                css = css[:comment_start] + css[comment_end + 2 :]
             else:
                 comment_start = comment_end + 2
         comment_start = css.find("/*", comment_start)
@@ -59,7 +58,6 @@ def remove_unnecessary_whitespace(css):
     """Remove unnecessary whitespace characters."""
 
     def pseudoclasscolon(css):
-
         """
         Prevents 'p :link' from becoming 'p:link'.
 
@@ -70,10 +68,13 @@ def remove_unnecessary_whitespace(css):
         regex = re.compile(r"(^|\})(([^\{\:])+\:)+([^\{]*\{)")
         match = regex.search(css)
         while match:
-            css = ''.join([
-                css[:match.start()],
-                match.group().replace(":", "___PSEUDOCLASSCOLON___"),
-                css[match.end():]])
+            css = "".join(
+                [
+                    css[: match.start()],
+                    match.group().replace(":", "___PSEUDOCLASSCOLON___"),
+                    css[match.end() :],
+                ]
+            )
             match = regex.search(css)
         return css
 
@@ -90,7 +91,7 @@ def remove_unnecessary_whitespace(css):
     css = re.sub(r"\band\(", "and (", css)
 
     # Put the colons back.
-    css = css.replace('___PSEUDOCLASSCOLON___', ':')
+    css = css.replace("___PSEUDOCLASSCOLON___", ":")
 
     # Remove spaces from after things.
     css = re.sub(r"([!{}:;>+\(\[,])\s+", r"\1", css)
@@ -117,7 +118,7 @@ def normalize_rgb_colors_to_hex(css):
     match = regex.search(css)
     while match:
         colors = map(lambda s: s.strip(), match.group(1).split(","))
-        hexcolor = '#%.2x%.2x%.2x' % tuple(map(int, colors))
+        hexcolor = "#%.2x%.2x%.2x" % tuple(map(int, colors))
         css = css.replace(match.group(), hexcolor)
         match = regex.search(css)
     return css
@@ -151,14 +152,17 @@ def condense_floating_points(css):
 def condense_hex_colors(css):
     """Shorten colors from #AABBCC to #ABC where possible."""
 
-    regex = re.compile(r"([^\"'=\s])(\s*)#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])")
+    regex = re.compile(
+        r"([^\"'=\s])(\s*)#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])"
+    )
     match = regex.search(css)
     while match:
         first = match.group(3) + match.group(5) + match.group(7)
         second = match.group(4) + match.group(6) + match.group(8)
         if first.lower() == second.lower():
             css = css.replace(
-                match.group(), match.group(1) + match.group(2) + '#' + first)
+                match.group(), match.group(1) + match.group(2) + "#" + first
+            )
             match = regex.search(css, match.end() - 3)
         else:
             match = regex.search(css, match.end())
@@ -184,13 +188,13 @@ def wrap_css_lines(css, line_length):
     line_start = 0
     for i, char in enumerate(css):
         # It's safe to break after `}` characters.
-        if char == '}' and (i - line_start >= line_length):
-            lines.append(css[line_start:i + 1])
+        if char == "}" and (i - line_start >= line_length):
+            lines.append(css[line_start : i + 1])
             line_start = i + 1
 
     if line_start < len(css):
         lines.append(css[line_start:])
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 def cssmin(css, wrap=None):
@@ -218,17 +222,24 @@ def main():
     import sys
 
     p = optparse.OptionParser(
-        prog="cssmin", version=__version__,
+        prog="cssmin",
+        version=__version__,
         usage="%prog [--wrap N]",
-        description="""Reads raw CSS from stdin, and writes compressed CSS to stdout.""")
+        description="""Reads raw CSS from stdin, and writes compressed CSS to stdout.""",
+    )
 
     p.add_option(
-        '-w', '--wrap', type='int', default=None, metavar='N',
-        help="Wrap output to approximately N chars per line.")
+        "-w",
+        "--wrap",
+        type="int",
+        default=None,
+        metavar="N",
+        help="Wrap output to approximately N chars per line.",
+    )
 
     options, args = p.parse_args()
     sys.stdout.write(cssmin(sys.stdin.read(), wrap=options.wrap))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

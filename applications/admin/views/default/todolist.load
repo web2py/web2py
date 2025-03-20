@@ -1,6 +1,6 @@
 <div>
 <!--div class="page-header"-->
-    {{n_todo=reduce(lambda x,y: x + len(y['matches']), todo, 0)}}
+    {{n_todo = sum(len(file['matches']) for file in todo)}}
     <h4>{{="%s TODO in %s" % (n_todo, app)}}</h4>
 <!--/div-->
 <ul class="nav nav-list cm-s-web2py">

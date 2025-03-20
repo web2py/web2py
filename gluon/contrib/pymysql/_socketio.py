@@ -4,17 +4,17 @@ SocketIO imported from socket module in Python 3.
 Copyright (c) 2001-2013 Python Software Foundation; All Rights Reserved.
 """
 
-from socket import *
-import io
 import errno
+import io
+from socket import *
 
-__all__ = ['SocketIO']
+__all__ = ["SocketIO"]
 
 EINTR = errno.EINTR
 _blocking_errnos = (errno.EAGAIN, errno.EWOULDBLOCK)
 
-class SocketIO(io.RawIOBase):
 
+class SocketIO(io.RawIOBase):
     """Raw I/O implementation for stream sockets.
 
     This class supports the makefile() method on sockets.  It provides
@@ -85,29 +85,25 @@ class SocketIO(io.RawIOBase):
             raise
 
     def readable(self):
-        """True if the SocketIO is open for reading.
-        """
+        """True if the SocketIO is open for reading."""
         if self.closed:
             raise ValueError("I/O operation on closed socket.")
         return self._reading
 
     def writable(self):
-        """True if the SocketIO is open for writing.
-        """
+        """True if the SocketIO is open for writing."""
         if self.closed:
             raise ValueError("I/O operation on closed socket.")
         return self._writing
 
     def seekable(self):
-        """True if the SocketIO is open for seeking.
-        """
+        """True if the SocketIO is open for seeking."""
         if self.closed:
             raise ValueError("I/O operation on closed socket.")
         return super().seekable()
 
     def fileno(self):
-        """Return the file descriptor of the underlying socket.
-        """
+        """Return the file descriptor of the underlying socket."""
         self._checkClosed()
         return self._sock.fileno()
 
@@ -131,4 +127,3 @@ class SocketIO(io.RawIOBase):
         io.RawIOBase.close(self)
         self._sock._decref_socketios()
         self._sock = None
-

@@ -57,12 +57,13 @@ import wsgiref.handlers
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
 
-if not os.path.isdir('applications'):
-    raise RuntimeError('Running from the wrong folder')
+if not os.path.isdir("applications"):
+    raise RuntimeError("Running from the wrong folder")
 
 sys.path = [path] + [p for p in sys.path if not p == path]
 
 from gluon.settings import global_settings
+
 global_settings.web2py_runtime_handler = True
 
 import gluon.main

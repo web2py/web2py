@@ -30,12 +30,13 @@ apt-get -y install zip unzip
 apt-get -y install tar
 apt-get -y install openssh-server
 apt-get -y install build-essential
+apt-get -y install python3
 apt-get -y install ipython
-apt-get -y install python-dev
+apt-get -y install python3-dev
 apt-get -y install postgresql
 apt-get -y install apache2
 apt-get -y install libapache2-mod-wsgi
-apt-get -y install python-psycopg2
+apt-get -y install python3-psycopg2
 apt-get -y install postfix
 apt-get -y install wget
 apt-get -y install python3-matplotlib

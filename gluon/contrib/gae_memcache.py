@@ -10,14 +10,14 @@ cache.ram=cache.disk=MemcacheClient(request)
 """
 
 import time
+
 from google.appengine.api.memcache import Client
 
 
 class MemcacheClient(object):
-
     client = Client()
 
-    def __init__(self, request, default_time_expire = 300):
+    def __init__(self, request, default_time_expire=300):
         self.request = request
         self.default_time_expire = default_time_expire
 
@@ -33,7 +33,7 @@ class MemcacheClient(object):
         if time_expire is None:
             time_expire = self.default_time_expire
 
-        key = '%s/%s' % (self.request.application, key)
+        key = "%s/%s" % (self.request.application, key)
         value = None
         obj = self.client.get(key) if time_expire != 0 else None
         if obj:
@@ -44,7 +44,7 @@ class MemcacheClient(object):
         return value
 
     def increment(self, key, value=1):
-        key = '%s/%s' % (self.request.application, key)
+        key = "%s/%s" % (self.request.application, key)
         obj = self.client.get(key)
         if obj:
             value = obj[1] + value
@@ -56,7 +56,7 @@ class MemcacheClient(object):
 
     def clear(self, key=None):
         if key:
-            key = '%s/%s' % (self.request.application, key)
+            key = "%s/%s" % (self.request.application, key)
             self.client.delete(key)
         else:
             self.client.flush_all()

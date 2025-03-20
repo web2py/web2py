@@ -1,23 +1,16 @@
+import io
 import os
 import sys
-from collections import deque
 import argparse
-import cStringIO
 import operator
-import cPickle as pickle
-from collections import deque
 import math
 import re
-import cmd
-try:
-  import pyreadline as readline
-except ImportError:
-  import readline
 try:
     from gluon import DAL
     from gluon.fileutils import open_file
 except ImportError as err:
     print('gluon path not found')
+    sys.exit(1)
 
 
 class refTable(object):
@@ -68,7 +61,7 @@ class refTable(object):
                    'left': str.ljust
                    }[justify.lower()]
 
-        output = cStringIO.StringIO()
+        output = io.StringIO()
 
         if separateRows:
             print >> output, rowSeparator

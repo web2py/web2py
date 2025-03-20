@@ -6,7 +6,7 @@ ExtendedLoginForm is used to extend normal login form in web2py with one more lo
 So user can choose the built-in login or extended login methods.
 """
 
-from gluon import current, DIV
+from gluon import DIV, current
 
 
 class ExtendedLoginForm(object):
@@ -35,12 +35,7 @@ class ExtendedLoginForm(object):
 
     """
 
-    def __init__(self,
-                 auth,
-                 alt_login_form,
-                 signals=[],
-                 login_arg='login'
-                 ):
+    def __init__(self, auth, alt_login_form, signals=[], login_arg="login"):
         self.auth = auth
         self.alt_login_form = alt_login_form
         self.signals = signals
@@ -50,7 +45,7 @@ class ExtendedLoginForm(object):
         """
         Delegate the get_user to alt_login_form.get_user.
         """
-        if hasattr(self.alt_login_form, 'get_user'):
+        if hasattr(self.alt_login_form, "get_user"):
             return self.alt_login_form.get_user()
         return None  # let gluon.tools.Auth.get_or_create_user do the rest
 
@@ -60,7 +55,7 @@ class ExtendedLoginForm(object):
 
         In normal case, this should be replaced by get_user, and never get called.
         """
-        if hasattr(self.alt_login_form, 'login_url'):
+        if hasattr(self.alt_login_form, "login_url"):
             return self.alt_login_form.login_url(next)
         return self.auth.settings.login_url
 
@@ -72,7 +67,7 @@ class ExtendedLoginForm(object):
 
         If alt_login_form implemented logout_url function, it will return that function call.
         """
-        if hasattr(self.alt_login_form, 'logout_url'):
+        if hasattr(self.alt_login_form, "logout_url"):
             return self.alt_login_form.logout_url(next)
         return next
 
@@ -92,9 +87,9 @@ class ExtendedLoginForm(object):
         request = current.request
         args = request.args
 
-        if (self.signals and
-            any([True for signal in self.signals if signal in request.vars])
-            ):
+        if self.signals and any(
+            [True for signal in self.signals if signal in request.vars]
+        ):
             return self.alt_login_form.login_form()
 
         self.auth.settings.login_form = self.auth

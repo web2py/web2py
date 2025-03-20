@@ -55,31 +55,29 @@ def main():
     os.mkdir(target)
 
     # change to os specificsep
-    REQUIRED = REQUIRED.replace('/', os.sep)
-    IGNORED = IGNORED.replace('/', os.sep)
+    REQUIRED = REQUIRED.replace("/", os.sep)
+    IGNORED = IGNORED.replace("/", os.sep)
 
     # make a list of all files to include
-    files = [x.strip() for x in REQUIRED.split('\n')
-             if x and not x[0] == '#']
-    ignore = [x.strip() for x in IGNORED.split('\n')
-              if x and not x[0] == '#']
+    files = [x.strip() for x in REQUIRED.split("\n") if x and not x[0] == "#"]
+    ignore = [x.strip() for x in IGNORED.split("\n") if x and not x[0] == "#"]
 
     def accept(filename):
         for p in ignore:
             if filename.startswith(p):
                 return False
         return True
-    pattern = os.path.join('gluon', '*.py')
+
+    pattern = os.path.join("gluon", "*.py")
     while True:
         newfiles = [x for x in glob.glob(pattern) if accept(x)]
         if not newfiles:
             break
         files += newfiles
-        pattern = os.path.join(pattern[:-3], '*.py')
+        pattern = os.path.join(pattern[:-3], "*.py")
     # copy all files, make missing folder, build default.py
     files.sort()
-    defaultpy = os.path.join(
-        'applications', 'welcome', 'controllers', 'default.py')
+    defaultpy = os.path.join("applications", "welcome", "controllers", "default.py")
     for f in files:
         dirs = f.split(os.path.sep)
         for i in range(1, len(dirs)):
@@ -88,10 +86,10 @@ def main():
             except OSError:
                 pass
         if f == defaultpy:
-            open(os.path.join(
-                target, f), 'w').write('def index(): return "hello"\n')
+            open(os.path.join(target, f), "w").write('def index(): return "hello"\n')
         else:
             shutil.copyfile(f, os.path.join(target, f))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

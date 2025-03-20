@@ -17,25 +17,21 @@ __copyright__ = "Copyright (C) 2011 Mariano Reingart"
 __license__ = "LGPL 3.0"
 __version__ = "0.05"
 
-import sys
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    from xmlrpclib import Transport, SafeTransport
-    from cStringIO import StringIO
-else:
-    from xmlrpc.client import Transport, SafeTransport
-    from io import StringIO
-import random
 import json
-from gluon._compat import basestring, urlparse
+import random
+import sys
+from io import StringIO
+from urllib import parse as urlparse
+from xmlrpc.client import SafeTransport, Transport
+
 
 class JSONRPCError(RuntimeError):
     "Error object for remote procedure call fail"
-    def __init__(self, code, message, data=''):        
-        if isinstance(data, basestring):
+
+    def __init__(self, code, message, data=""):
+        if isinstance(data, str):
             data = [data]
-        value = "%s: %s\n%s" % (code, message, '\n'.join(data))
+        value = "%s: %s\n%s" % (code, message, "\n".join(data))
         RuntimeError.__init__(self, value)
         self.code = code
         self.message = message
@@ -44,11 +40,12 @@ class JSONRPCError(RuntimeError):
 
 class JSONDummyParser:
     "json wrapper for xmlrpclib parser interfase"
+
     def __init__(self):
         self.buf = StringIO()
 
     def feed(self, data):
-        self.buf.write(data.decode('utf-8'))
+        self.buf.write(data.decode("utf-8"))
 
     def close(self):
         return self.buf.getvalue()
@@ -82,13 +79,21 @@ class JSONSafeTransport(JSONTransportMixin, SafeTransport):
 class ServerProxy(object):
     "JSON RPC Simple Client Service Proxy"
 
-    def __init__(self, uri, transport=None, encoding=None, verbose=0, version=None, json_encoder=None):
-        self.location = uri             # server location (url)
-        self.trace = verbose            # show debug messages
-        self.exceptions = True          # raise errors? (JSONRPCError)
+    def __init__(
+        self,
+        uri,
+        transport=None,
+        encoding=None,
+        verbose=0,
+        version=None,
+        json_encoder=None,
+    ):
+        self.location = uri  # server location (url)
+        self.trace = verbose  # show debug messages
+        self.exceptions = True  # raise errors? (JSONRPCError)
         self.timeout = None
-        self.json_request = self.json_response = ''
-        self.version = version          # '2.0' for jsonrpc2
+        self.json_request = self.json_response = ""
+        self.version = version  # '2.0' for jsonrpc2
         self.json_encoder = json_encoder  # Allow for a custom JSON encoding class
 
         parsed = urlparse.urlparse(uri)
@@ -116,17 +121,20 @@ class ServerProxy(object):
 
         # build data sent to the service
         request_id = random.randint(0, sys.maxsize)
-        data = {'id': request_id, 'method': method, 'params': args or vars, }
+        data = {
+            "id": request_id,
+            "method": method,
+            "params": args or vars,
+        }
         if self.version:
-            data['jsonrpc'] = self.version #mandatory key/value for jsonrpc2 validation else err -32600
+            data["jsonrpc"] = (
+                self.version
+            )  # mandatory key/value for jsonrpc2 validation else err -32600
         request = json.dumps(data, cls=self.json_encoder)
 
         # make HTTP request (retry if connection is lost)
         response = self.__transport.request(
-            self.__host,
-            self.__handler,
-            request,
-            verbose=self.__verbose
+            self.__host, self.__handler, request, verbose=self.__verbose
         )
 
         # store plain request and response for further debugging
@@ -137,15 +145,17 @@ class ServerProxy(object):
         # {'version': '1.1', 'id': id, 'result': result, 'error': None}
         response = json.loads(response)
 
-        self.error = response.get('error', {})
+        self.error = response.get("error", {})
         if self.error and self.exceptions:
-            raise JSONRPCError(self.error.get('code', 0),
-                               self.error.get('message', ''),
-                               self.error.get('data', None))
-        if response['id'] != request_id:
+            raise JSONRPCError(
+                self.error.get("code", 0),
+                self.error.get("message", ""),
+                self.error.get("data", None),
+            )
+        if response["id"] != request_id:
             raise JSONRPCError(0, "JSON Request ID != Response ID")
 
-        return response.get('result')
+        return response.get("result")
 
 
 ServiceProxy = ServerProxy
@@ -154,5 +164,8 @@ ServiceProxy = ServerProxy
 if __name__ == "__main__":
     # basic tests:
     location = "http://www.web2py.com.ar/webservices/sample/call/jsonrpc"
-    client = ServerProxy(location, verbose='--verbose' in sys.argv,)
+    client = ServerProxy(
+        location,
+        verbose="--verbose" in sys.argv,
+    )
     print(client.add(1, 2))

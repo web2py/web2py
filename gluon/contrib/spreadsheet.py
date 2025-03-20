@@ -5,23 +5,33 @@ Developed by Massimo Di Pierro, optional component of web2py, BSDv3 license.
 """
 from __future__ import print_function
 
-import re
-import pickle
 import copy
 import json
+import pickle
+import re
 
 
 def quote(text):
-    return str(text).replace('\\', '\\\\').replace("'", "\\'")
+    return str(text).replace("\\", "\\\\").replace("'", "\\'")
 
 
 class Node:
-    def __init__(self, name, value, url='.', readonly=False, active=True,
-                 onchange=None, select=False, size=4, **kwarg):
+    def __init__(
+        self,
+        name,
+        value,
+        url=".",
+        readonly=False,
+        active=True,
+        onchange=None,
+        select=False,
+        size=4,
+        **kwarg
+    ):
         self.url = url
         self.name = name
         self.value = str(value)
-        self.computed_value = ''
+        self.computed_value = ""
         self.incoming = {}
         self.outcoming = {}
         self.readonly = readonly
@@ -33,11 +43,15 @@ class Node:
 
     def xml(self):
         if self.select:
-            selectAttributes = dict(_name=self.name,_id=self.name,_size=self.size,
-                                    _onblur="ajax('%s/blur',['%s']);"%(self.url,self.name))
+            selectAttributes = dict(
+                _name=self.name,
+                _id=self.name,
+                _size=self.size,
+                _onblur="ajax('%s/blur',['%s']);" % (self.url, self.name),
+            )
             #                        _onkeyup="ajax('%s/keyup',['%s'], ':eval');"%(self.url,self.name),
             #                        _onfocus="ajax('%s/focus',['%s'], ':eval');"%(self.url,self.name),
-            for k,v in selectAttributes.items():
+            for k, v in selectAttributes.items():
                 self.select[k] = v
             return self.select.xml()
         else:
@@ -45,12 +59,22 @@ class Node:
         onkeyup="ajax('%s/keyup',['%s'], ':eval');"
         onfocus="ajax('%s/focus',['%s'], ':eval');"
         onblur="ajax('%s/blur',['%s'], ':eval');" %s/>
-        """ % (self.name, self.name, self.computed_value, self.size,
-               self.url, self.name, self.url, self.name, self.url, self.name,
-               (self.readonly and 'readonly ') or '')
+        """ % (
+                self.name,
+                self.name,
+                self.computed_value,
+                self.size,
+                self.url,
+                self.name,
+                self.url,
+                self.name,
+                self.url,
+                self.name,
+                (self.readonly and "readonly ") or "",
+            )
 
     def __repr__(self):
-        return '%s:%s' % (self.name, self.computed_value)
+        return "%s:%s" % (self.name, self.computed_value)
 
 
 class Sheet:
@@ -238,13 +262,16 @@ class Sheet:
 
     """
 
-    regex = re.compile('(?<!\w)[a-zA-Z_]\w*')
-    pregex = re.compile('\d+')
-    re_strings = re.compile(r'(?P<name>'
-                            + r"[uU]?[rR]?'''([^']+|'{1,2}(?!'))*'''|"
-                            + r"'([^'\\]|\\.)*'|"
-                            + r'"""([^"]|"{1,2}(?!"))*"""|'
-                            + r'"([^"\\]|\\.)*")', re.DOTALL)
+    regex = re.compile(r"(?<!\w)[a-zA-Z_]\w*")
+    pregex = re.compile(r"\d+")
+    re_strings = re.compile(
+        r"(?P<name>"
+        + r"[uU]?[rR]?'''([^']+|'{1,2}(?!'))*'''|"
+        + r"'([^'\\]|\\.)*'|"
+        + r'"""([^"]|"{1,2}(?!"))*"""|'
+        + r'"([^"\\]|\\.)*")',
+        re.DOTALL,
+    )
 
     def dumps(self):
         dump = pickle.dumps(self)
@@ -252,14 +279,15 @@ class Sheet:
 
     @staticmethod
     def position(key):
-        """ Returns int row, int col for a 'rncn' formatted key'"""
+        """Returns int row, int col for a 'rncn' formatted key'"""
         try:
             r, c = Sheet.pregex.findall(key)
             r, c = int(r), int(c)
         except (ValueError, IndexError, TypeError) as e:
-            error = "%s. %s" % \
-                ("Unexpected position parameter",
-                 "Must be a key of type 'rncn'")
+            error = "%s. %s" % (
+                "Unexpected position parameter",
+                "Must be a key of type 'rncn'",
+            )
             raise ValueError(error)
         return r, c
 
@@ -270,7 +298,7 @@ class Sheet:
 
     @staticmethod
     def updated(data):
-        """ Reads spreadsheet update information sent client-side.
+        """Reads spreadsheet update information sent client-side.
 
         Returns a dict with updated database rows/fields.
         Structure:
@@ -342,31 +370,31 @@ class Sheet:
             # normal cell processing
             cell = request.vars.keys()[0]
 
-            if request.args(0) == 'focus':
-                return "jQuery('#%(cell)s').val('%(value)s');" % \
-                    dict(cell=cell, value=quote(self[cell].value))
+            if request.args(0) == "focus":
+                return "jQuery('#%(cell)s').val('%(value)s');" % dict(
+                    cell=cell, value=quote(self[cell].value)
+                )
 
             value = request.vars[cell]
             self[cell] = value
 
-            if request.args(0) == 'blur':
-                return "jQuery('#%(cell)s').val('%(value)s');" % \
-                    dict(cell=cell, value=quote(self[cell].computed_value))
+            if request.args(0) == "blur":
+                return "jQuery('#%(cell)s').val('%(value)s');" % dict(
+                    cell=cell, value=quote(self[cell].computed_value)
+                )
 
-            elif request.args(0) == 'keyup':
-                jquery = ''
+            elif request.args(0) == "keyup":
+                jquery = ""
                 for other_key in self.modified:
                     if other_key != cell:
-                        jquery += "jQuery('#%(other_key)s').val('%(value)s');" % \
-                            dict(other_key=other_key,
-                                 value=quote(self[other_key].computed_value))
+                        jquery += "jQuery('#%(other_key)s').val('%(value)s');" % dict(
+                            other_key=other_key,
+                            value=quote(self[other_key].computed_value),
+                        )
 
         else:
             # spreadsheet db update
-            result = dict(modified=0,
-                          errors=0,
-                          message="",
-                          db_callback="")
+            result = dict(modified=0, errors=0, message="", db_callback="")
 
             if db is not None:
                 data = request.vars["data"]
@@ -394,17 +422,28 @@ class Sheet:
         return attributes
 
     def even_or_odd(self, v):
-        """ Used for table row stripping """
+        """Used for table row stripping"""
         if v % 2 == 0:
             return "even"
         else:
             return "odd"
 
-    def __init__(self, rows, cols, url='.', readonly=False,
-                 active=True, onchange=None, value=None, data=None,
-                 headers=None, update_button="", c_headers=None,
-                 r_headers=None, **kwarg):
-
+    def __init__(
+        self,
+        rows,
+        cols,
+        url=".",
+        readonly=False,
+        active=True,
+        onchange=None,
+        value=None,
+        data=None,
+        headers=None,
+        update_button="",
+        c_headers=None,
+        r_headers=None,
+        **kwarg
+    ):
         """
         Arguments:
         headers: a dict with "table.fieldname": name values
@@ -428,9 +467,23 @@ class Sheet:
         self.cols = cols
         self.url = url
         self.nodes = {}
-        self.error = 'ERROR: %(error)s'
-        self.allowed_keywords = ['for', 'in', 'if', 'else', 'and', 'or', 'not',
-                                 'i', 'j', 'k', 'x', 'y', 'z', 'sum']
+        self.error = "ERROR: %(error)s"
+        self.allowed_keywords = [
+            "for",
+            "in",
+            "if",
+            "else",
+            "and",
+            "or",
+            "not",
+            "i",
+            "j",
+            "k",
+            "x",
+            "y",
+            "z",
+            "sum",
+        ]
         self.value = value
         self.environment = {}
         self.attributes = self.get_attributes(kwarg)
@@ -452,7 +505,7 @@ class Sheet:
             "id_colnames": {},
             "cells": {},
             "modified": {},
-            "headers": headers
+            "headers": headers,
         }
 
         # if db and query:
@@ -483,7 +536,7 @@ class Sheet:
                         self.client["id_colnames"][colname] = y
 
         for k in xrange(self.rows * self.cols):
-            key = 'r%sc%s' % (k / self.cols, k % self.cols)
+            key = "r%sc%s" % (k / self.cols, k % self.cols)
             r, c = self.position(key)
             if key in self.client["cells"]:
                 value = self.client["cells"][key]
@@ -498,11 +551,10 @@ class Sheet:
                 else:
                     value = self.value
             else:
-                value = '0.00'
-            self.cell(key, value,
-                      readonly, active, onchange)
+                value = "0.00"
+            self.cell(key, value, readonly, active, onchange)
 
-        exec('from math import *', {}, self.environment)
+        exec("from math import *", {}, self.environment)
 
     def delete_from(self, other_list):
         indices = [k for (k, node) in enumerate(other_list) if k == node]
@@ -519,8 +571,16 @@ class Sheet:
     def define(self, name, obj):
         self.environment[name] = obj
 
-    def cell(self, key, value, readonly=False, active=True,
-             onchange=None, select=False, **kwarg):
+    def cell(
+        self,
+        key,
+        value,
+        readonly=False,
+        active=True,
+        onchange=None,
+        select=False,
+        **kwarg
+    ):
         """
         key is the name of the cell
         value is the initial value of the cell. It can be a formula "=1+3"
@@ -542,8 +602,9 @@ class Sheet:
         if callable(value):
             value = value(r, c)
 
-        node = Node(key, value, self.url, readonly, active,
-                    onchange, select=select, **kwarg)
+        node = Node(
+            key, value, self.url, readonly, active, onchange, select=select, **kwarg
+        )
         self.nodes[key] = node
         self[key] = value
 
@@ -579,27 +640,37 @@ class Sheet:
         if isinstance(cells, dict):
             for col, data in cells.iteritems():
                 key = "r%sc%s" % (row, col)
-                active, onchange, readonly, cell_value = \
-                    self.get_cell_arguments(data, default=kwarg)
+                active, onchange, readonly, cell_value = self.get_cell_arguments(
+                    data, default=kwarg
+                )
                 if value is None:
                     v = cell_value
                 else:
                     v = value
-                self.cell(key, v, active=active,
-                          readonly=readonly,
-                          onchange=onchange, **attributes)
+                self.cell(
+                    key,
+                    v,
+                    active=active,
+                    readonly=readonly,
+                    onchange=onchange,
+                    **attributes
+                )
         else:
-            active, onchange, readonly, all_value = \
-                self.get_cell_arguments(kwarg)
+            active, onchange, readonly, all_value = self.get_cell_arguments(kwarg)
             for col, cell_value in enumerate(cells):
                 key = "r%sc%s" % (row, col)
                 if value is None:
                     v = cell_value
                 else:
                     v = value
-                self.cell(key, v, active=active,
-                          onchange=onchange,
-                          readonly=readonly, **attributes)
+                self.cell(
+                    key,
+                    v,
+                    active=active,
+                    onchange=onchange,
+                    readonly=readonly,
+                    **attributes
+                )
 
     def column(self, col, cells, value=None, **kwarg):
         """
@@ -615,26 +686,37 @@ class Sheet:
         if isinstance(cells, dict):
             for row, data in cells.iteritems():
                 key = "r%sc%s" % (row, col)
-                active, onchange, readonly, cell_value = \
-                    self.get_cell_arguments(data, default=kwarg)
+                active, onchange, readonly, cell_value = self.get_cell_arguments(
+                    data, default=kwarg
+                )
                 if value is None:
                     v = cell_value
                 else:
                     v = value
-                self.cell(key, v, active=active, readonly=readonly,
-                          onchange=onchange, **attributes)
+                self.cell(
+                    key,
+                    v,
+                    active=active,
+                    readonly=readonly,
+                    onchange=onchange,
+                    **attributes
+                )
         else:
-            active, onchange, readonly, all_value = \
-                self.get_cell_arguments(kwarg)
+            active, onchange, readonly, all_value = self.get_cell_arguments(kwarg)
             for row, cell_value in enumerate(cells):
                 key = "r%sc%s" % (row, col)
                 if value is None:
                     v = cell_value
                 else:
                     v = value
-                self.cell(key, v, active=active,
-                          onchange=onchange, readonly=readonly,
-                          **attributes)
+                self.cell(
+                    key,
+                    v,
+                    active=active,
+                    onchange=onchange,
+                    readonly=readonly,
+                    **attributes
+                )
 
     def matrix(self, cells, starts="r0c0", ends=None, value=None, **kwarg):
         """
@@ -662,20 +744,26 @@ class Sheet:
             for key, data in cells.iteritems():
                 r, c = self.position(key)
                 key = "r%sc%s" % (r + starts_r, c + starts_c)
-                active, onchange, readonly, cell_value = \
-                    self.get_cell_arguments(data, default=kwarg)
+                active, onchange, readonly, cell_value = self.get_cell_arguments(
+                    data, default=kwarg
+                )
                 if value is None:
                     v = cell_value
                 else:
                     v = value
-                if (ends is None) or ((ends_r >= r + starts_r) and
-                                      (ends_c >= c + starts_c)):
-                    self.cell(key, v, active=active,
-                              readonly=readonly,
-                              onchange=onchange, **attributes)
+                if (ends is None) or (
+                    (ends_r >= r + starts_r) and (ends_c >= c + starts_c)
+                ):
+                    self.cell(
+                        key,
+                        v,
+                        active=active,
+                        readonly=readonly,
+                        onchange=onchange,
+                        **attributes
+                    )
         else:
-            active, onchange, readonly, all_value = \
-                self.get_cell_arguments(kwarg)
+            active, onchange, readonly, all_value = self.get_cell_arguments(kwarg)
             for r, row in enumerate(cells):
                 for c, cell_value in enumerate(row):
                     if value is None:
@@ -683,21 +771,24 @@ class Sheet:
                     else:
                         v = value
                     key = "r%sc%s" % (r + starts_r, c + starts_c)
-                    if (ends is None) or \
-                       ((ends_r >= r + starts_r) and
-                            (ends_c >= c + starts_c)):
-                        self.cell(key, v,
-                                  active=active,
-                                  onchange=onchange,
-                                  readonly=readonly,
-                                  **attributes)
+                    if (ends is None) or (
+                        (ends_r >= r + starts_r) and (ends_c >= c + starts_c)
+                    ):
+                        self.cell(
+                            key,
+                            v,
+                            active=active,
+                            onchange=onchange,
+                            readonly=readonly,
+                            **attributes
+                        )
 
     def __setitem__(self, key, value):
         key = str(key)
         value = str(value)
         node = self.nodes[key]
         node.value = value
-        if value[:1] == '=' and node.active:
+        if value[:1] == "=" and node.active:
             # clear all edges involving current node
             for other_node in node.incoming:
                 del other_node.outcoming[node]
@@ -708,19 +799,21 @@ class Sheet:
             for match in self.regex.finditer(command):
                 other_key = match.group()
                 if other_key == key:
-                    self.computed_value = self.error % dict(error='cycle')
+                    self.computed_value = self.error % dict(error="cycle")
                     self.modified = {}
                     break
                 if other_key in self.nodes:
                     other_node = self.nodes[other_key]
                     other_node.outcoming[node] = True
                     node.incoming[other_node] = True
-                elif not other_key in self.allowed_keywords and \
-                        not other_key in self.environment:
+                elif (
+                    not other_key in self.allowed_keywords
+                    and not other_key in self.environment
+                ):
                     node.locked = True
-                    node.computed_value = \
-                        self.error % dict(
-                            error='invalid keyword: ' + other_key)
+                    node.computed_value = self.error % dict(
+                        error="invalid keyword: " + other_key
+                    )
                     self.modified = {}
                     break
             self.compute(node)
@@ -738,11 +831,11 @@ class Sheet:
         self.modified = self.iterate(node)
 
     def compute(self, node):
-        if node.value[:1] == '=' and not node.locked:
+        if node.value[:1] == "=" and not node.locked:
             try:
-                exec('__value__=' + node.value[1:], {}, self.environment)
-                node.computed_value = self.environment['__value__']
-                del self.environment['__value__']
+                exec("__value__=" + node.value[1:], {}, self.environment)
+                node.computed_value = self.environment["__value__"]
+                del self.environment["__value__"]
             except Exception as e:
                 node.computed_value = self.error % dict(error=str(e))
         self.environment[node.name] = node.computed_value
@@ -755,14 +848,13 @@ class Sheet:
         while changed_nodes:
             ok = False
             set_changed_nodes = set(changed_nodes)
-            for (k, other_node) in enumerate(changed_nodes):
-                #print other_node, changed_nodes
-                if not set(other_node.incoming.keys()).\
-                        intersection(set_changed_nodes):
-                    #print 'ok'
+            for k, other_node in enumerate(changed_nodes):
+                # print other_node, changed_nodes
+                if not set(other_node.incoming.keys()).intersection(set_changed_nodes):
+                    # print 'ok'
                     self.compute(other_node)
                     output[other_node.name] = other_node.computed_value
-                    #print other_node
+                    # print other_node
                     del changed_nodes[k]
                     ok = True
                     break
@@ -777,7 +869,7 @@ class Sheet:
         d = {}
         for key in self.nodes:
             node = self.nodes[key]
-            if node.value[:1] != '=' or not node.active:
+            if node.value[:1] != "=" or not node.active:
                 d[key] = node.computed_value
         return d
 
@@ -786,39 +878,46 @@ class Sheet:
             if not key in self.nodes:
                 continue
             node = self.nodes[key]
-            if node.value[:1] != '=' or not node.active:
+            if node.value[:1] != "=" or not node.active:
                 node.value = d[key]
 
     def sheet(self):
         import gluon.html
-        (DIV, TABLE, TR, TD, TH, BR, SCRIPT) = \
-            (gluon.html.DIV, gluon.html.TABLE, gluon.html.TR, gluon.html.TD,
-             gluon.html.TH, gluon.html.BR, gluon.html.SCRIPT)
-        regex = re.compile('r\d+c\d+')
+
+        (DIV, TABLE, TR, TD, TH, BR, SCRIPT) = (
+            gluon.html.DIV,
+            gluon.html.TABLE,
+            gluon.html.TR,
+            gluon.html.TD,
+            gluon.html.TH,
+            gluon.html.BR,
+            gluon.html.SCRIPT,
+        )
+        regex = re.compile(r"r\d+c\d+")
 
         if not self.c_headers:
-            header = TR(TH(), *[TH('c%s' % c)
-                            for c in range(self.cols)])
+            header = TR(TH(), *[TH("c%s" % c) for c in range(self.cols)])
         else:
-            header = TR(TH(), *[TH('%s' % c)
-                            for c in self.c_headers])
+            header = TR(TH(), *[TH("%s" % c) for c in self.c_headers])
 
         rows = []
         for r in range(self.rows):
             if not self.r_headers:
-                tds = [TH('r%s' % r), ]
+                tds = [
+                    TH("r%s" % r),
+                ]
             else:
-                tds = [TH('%s' % self.r_headers[r]), ]
+                tds = [
+                    TH("%s" % self.r_headers[r]),
+                ]
             for c in range(self.cols):
-                key = 'r%sc%s' % (r, c)
-                attributes = {"_class": "w2p_spreadsheet_col_%s" %
-                              self.even_or_odd(c)}
+                key = "r%sc%s" % (r, c)
+                attributes = {"_class": "w2p_spreadsheet_col_%s" % self.even_or_odd(c)}
                 if key in self.td_attributes:
                     attributes.update(self.td_attributes[key])
                 td = TD(self.nodes[key], **attributes)
                 tds.append(td)
-            attributes = {"_class": "w2p_spreadsheet_row_%s" %
-                          self.even_or_odd(r)}
+            attributes = {"_class": "w2p_spreadsheet_row_%s" % self.even_or_odd(r)}
             if str(r) in self.tr_attributes:
                 attributes.update(self.tr_attributes[str(r)])
             rows.append(TR(*tds, **attributes))
@@ -863,42 +962,58 @@ class Sheet:
                     w2p_spreadsheet_update_db);
               });
             }
-            """ % dict(data=json.dumps(self.client),
-                       name=attributes["_class"],
-                       url=self.url,
-                       update_button=self.update_button))
+            """
+                % dict(
+                    data=json.dumps(self.client),
+                    name=attributes["_class"],
+                    url=self.url,
+                    update_button=self.update_button,
+                )
+            )
 
             # extra row for fieldnames
             unsorted_headers = []
             if self.client["headers"] is not None:
                 for fieldname, name in self.client["headers"].iteritems():
-                    unsorted_headers.append((self.client["columns"][fieldname],
-                                             name))
+                    unsorted_headers.append((self.client["columns"][fieldname], name))
             else:
                 for fieldname, c in self.client["columns"].iteritems():
                     unsorted_headers.append((c, fieldname))
 
-            sorted_headers = [TH(), ] + \
-                [TH(header[1]) for header in sorted(unsorted_headers)]
-            table.insert(0, TR(*sorted_headers,
-                                **{'_class': "%s_fieldnames" %
-                                   attributes["_class"]}))
+            sorted_headers = [
+                TH(),
+            ] + [TH(header[1]) for header in sorted(unsorted_headers)]
+            table.insert(
+                0,
+                TR(
+                    *sorted_headers,
+                    **{"_class": "%s_fieldnames" % attributes["_class"]}
+                ),
+            )
         else:
             data = SCRIPT(""" // web2py Spreadsheets: no db data.""")
 
-        return DIV(table,
-                   BR(),
-                   TABLE(*[TR(TH(key), TD(self.nodes[key]))
-                           for key in self.nodes if not regex.match(key)]),
-                   data, **attributes)
+        return DIV(
+            table,
+            BR(),
+            TABLE(
+                *[
+                    TR(TH(key), TD(self.nodes[key]))
+                    for key in self.nodes
+                    if not regex.match(key)
+                ]
+            ),
+            data,
+            **attributes
+        )
 
     def xml(self):
         return self.sheet().xml()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     s = Sheet(0, 0)
-    s.cell('a', value="2")
-    s.cell('b', value="=sin(a)")
-    s.cell('c', value="=cos(a)**2+b*b")
-    print(s['c'].computed_value)
+    s.cell("a", value="2")
+    s.cell("b", value="=sin(a)")
+    s.cell("c", value="=cos(a)**2+b*b")
+    print(s["c"].computed_value)

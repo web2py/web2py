@@ -84,26 +84,33 @@ Tornado code inspired by http://thomas.pelletier.im/2010/08/websocket-tornado-re
 
 """
 from __future__ import print_function
+
+import hashlib
+import hmac
+import optparse
+import sys
+import time
+from urllib.parse import urlencode
+from urllib.request import urlopen
+
 import tornado.httpserver
-import tornado.websocket
 import tornado.ioloop
 import tornado.web
-import hmac
-import sys
-import optparse
-import time
-import sys
+import tornado.websocket
+
 import gluon.utils
-import hashlib
-from gluon._compat import to_native, to_bytes, urlencode, urlopen
 
 listeners, names, tokens = {}, {}, {}
 
-def websocket_send(url, message, hmac_key=None, group='default'):
-    sig = hmac_key and hmac.new(to_bytes(hmac_key), to_bytes(message), hashlib.md5).hexdigest() or ''
-    params = urlencode(
-        {'message': message, 'signature': sig, 'group': group})
-    f = urlopen(url, to_bytes(params))
+
+def websocket_send(url, message, hmac_key=None, group="default"):
+    sig = (
+        hmac_key
+        and hmac.new(hmac_key.encode(), message.encode(), hashlib.md5).hexdigest()
+        or ""
+    )
+    params = urlencode({"message": message, "signature": sig, "group": group})
+    f = urlopen(url, params)
     data = f.read()
     f.close()
     return data
@@ -113,17 +120,22 @@ class PostHandler(tornado.web.RequestHandler):
     """
     only authorized parties can post messages
     """
+
     def post(self):
-        if hmac_key and not 'signature' in self.request.arguments:
+        if hmac_key and not "signature" in self.request.arguments:
             self.send_error(401)
-        if 'message' in self.request.arguments:
-            message = self.request.arguments['message'][0].decode(encoding='UTF-8')
-            group = self.request.arguments.get('group', ['default'])[0].decode(encoding='UTF-8')
-            print('%s:MESSAGE to %s:%s' % (time.time(), group, message))
+        if "message" in self.request.arguments:
+            message = self.request.arguments["message"][0].decode(encoding="UTF-8")
+            group = self.request.arguments.get("group", ["default"])[0].decode(
+                encoding="UTF-8"
+            )
+            print("%s:MESSAGE to %s:%s" % (time.time(), group, message))
             if hmac_key:
-                signature = self.request.arguments['signature'][0]
-                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message), hashlib.md5).hexdigest()
-                if not gluon.utils.compare(to_native(signature), actual_signature):
+                signature = self.request.arguments["signature"][0]
+                actual_signature = hmac.new(
+                    hmac_key.encode(), message.encode(), hashlib.md5
+                ).hexdigest()
+                if not gluon.utils.compare(signature, actual_signature):
                     self.send_error(401)
             for client in listeners.get(group, []):
                 client.write_message(message)
@@ -135,29 +147,31 @@ class TokenHandler(tornado.web.RequestHandler):
     the message here is the token (any uuid)
     allows only authorized parties to joins, for example, a chat
     """
+
     def post(self):
-        if hmac_key and not 'message' in self.request.arguments:
+        if hmac_key and not "message" in self.request.arguments:
             self.send_error(401)
-        if 'message' in self.request.arguments:
-            message = self.request.arguments['message'][0]
+        if "message" in self.request.arguments:
+            message = self.request.arguments["message"][0]
             if hmac_key:
-                signature = self.request.arguments['signature'][0]
-                actual_signature = hmac.new(to_bytes(hmac_key), to_bytes(message), hashlib.md5).hexdigest()
-                if not gluon.utils.compare(to_native(signature), actual_signature):
+                signature = self.request.arguments["signature"][0]
+                actual_signature = hmac.new(
+                    hmac_key.encode(), message.encode(), hashlib.md5
+                ).hexdigest()
+                if not gluon.utils.compare(signature, actual_signature):
                     self.send_error(401)
             tokens[message] = None
 
 
 class DistributeHandler(tornado.websocket.WebSocketHandler):
-
     def check_origin(self, origin):
         return True
 
     def open(self, params):
-        group, token, name = params.split('/') + [None, None]
-        self.group = group or 'default'
-        self.token = token or 'none'
-        self.name = name or 'anonymous'
+        group, token, name = params.split("/") + [None, None]
+        self.group = group or "default"
+        self.token = token or "none"
+        self.name = name or "anonymous"
         # only authorized parties can join
         if DistributeHandler.tokens:
             if not self.token in tokens or not token[self.token] is None:
@@ -168,10 +182,10 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
             listeners[self.group] = []
         # notify clients that a member has joined the groups
         for client in listeners.get(self.group, []):
-            client.write_message('+' + self.name)
+            client.write_message("+" + self.name)
         listeners[self.group].append(self)
         names[self] = self.name
-        print('%s:CONNECT to %s' % (time.time(), self.group))
+        print("%s:CONNECT to %s" % (time.time(), self.group))
 
     def on_message(self, message):
         pass
@@ -182,8 +196,9 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
         del names[self]
         # notify clients that a member has left the groups
         for client in listeners.get(self.group, []):
-            client.write_message('-' + self.name)
-        print('%s:DISCONNECT from %s' % (time.time(), self.group))
+            client.write_message("-" + self.name)
+        print("%s:DISCONNECT from %s" % (time.time(), self.group))
+
 
 # if your webserver is different from tornado server uncomment this
 # or override using something more restrictive:
@@ -195,44 +210,41 @@ if __name__ == "__main__":
     usage = __doc__
     version = ""
     parser = optparse.OptionParser(usage, None, optparse.Option, version)
-    parser.add_option('-p',
-                      '--port',
-                      default='8888',
-                      dest='port',
-                      help='socket')
-    parser.add_option('-l',
-                      '--listen',
-                      default='0.0.0.0',
-                      dest='address',
-                      help='listener address')
-    parser.add_option('-k',
-                      '--hmac_key',
-                      default='',
-                      dest='hmac_key',
-                      help='hmac_key')
-    parser.add_option('-t',
-                      '--tokens',
-                      action='store_true',
-                      default=False,
-                      dest='tokens',
-                      help='require tockens to join')
-    parser.add_option('-s',
-                      '--sslkey',
-                      default=False,
-                      dest='keyfile',
-                      help='require ssl keyfile full path')
-    parser.add_option('-c',
-                      '--sslcert',
-                      default=False,
-                      dest='certfile',
-                      help='require ssl certfile full path')
+    parser.add_option("-p", "--port", default="8888", dest="port", help="socket")
+    parser.add_option(
+        "-l", "--listen", default="0.0.0.0", dest="address", help="listener address"
+    )
+    parser.add_option("-k", "--hmac_key", default="", dest="hmac_key", help="hmac_key")
+    parser.add_option(
+        "-t",
+        "--tokens",
+        action="store_true",
+        default=False,
+        dest="tokens",
+        help="require tockens to join",
+    )
+    parser.add_option(
+        "-s",
+        "--sslkey",
+        default=False,
+        dest="keyfile",
+        help="require ssl keyfile full path",
+    )
+    parser.add_option(
+        "-c",
+        "--sslcert",
+        default=False,
+        dest="certfile",
+        help="require ssl certfile full path",
+    )
     (options, args) = parser.parse_args()
     hmac_key = options.hmac_key
     DistributeHandler.tokens = options.tokens
     urls = [
-        (r'/', PostHandler),
-        (r'/token', TokenHandler),
-        (r'/realtime/(.*)', DistributeHandler)]
+        (r"/", PostHandler),
+        (r"/token", TokenHandler),
+        (r"/realtime/(.*)", DistributeHandler),
+    ]
     application = tornado.web.Application(urls, auto_reload=True)
     if options.keyfile and options.certfile:
         ssl_options = dict(certfile=options.certfile, keyfile=options.keyfile)

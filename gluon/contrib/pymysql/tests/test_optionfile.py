@@ -1,6 +1,7 @@
-from pymysql.optionfile import Parser
 from unittest import TestCase
+
 from pymysql._compat import PY2
+from pymysql.optionfile import Parser
 
 try:
     from cStringIO import StringIO
@@ -8,19 +9,18 @@ except ImportError:
     from io import StringIO
 
 
-__all__ = ['TestParser']
+__all__ = ["TestParser"]
 
 
-_cfg_file = (r"""
+_cfg_file = r"""
 [default]
 string = foo
 quoted = "bar"
 single_quoted = 'foobar'
-""")
+"""
 
 
 class TestParser(TestCase):
-
     def test_string(self):
         parser = Parser()
         if PY2:

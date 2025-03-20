@@ -1,1 +1,1 @@
-from yatl.template import render, parse_template
+from yatl.template import parse_template, render

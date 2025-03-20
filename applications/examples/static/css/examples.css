@@ -25,7 +25,7 @@ p, li { line-height: 1.6em}
 
 /* Improve CODE() display though padding has no effect as some PRE are hardcoded somewhere can't find it */
 /* padding of 10px should make it... */
-pre {background-color: rgb(35, 35, 35)!important; border-radius:5px; color:white; padding: 10px}
+pre {background-color: rgb(35, 35, 35)!important; color:white; padding: 10px}
 
 /* Improve buttons in download page */
 a.btn.btn180 {padding:10px; font-size:1.2em; width:200px}

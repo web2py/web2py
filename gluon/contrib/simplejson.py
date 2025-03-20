@@ -6,5 +6,6 @@ TODO: Remove this.
 """
 from json import *
 
+
 class JSONDecodeError(ValueError):
     pass

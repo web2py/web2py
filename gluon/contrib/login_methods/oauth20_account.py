@@ -11,91 +11,90 @@ OAuth 2.0 spec: http://tools.ietf.org/html/rfc6749
 
 """
 
-import time
-import cgi
-
-from gluon._compat import urllib2
-from gluon._compat import urlencode
-
-from gluon import current, redirect, HTTP
-
 import json
+import time
+from urllib import request as urllib2
+from urllib.parse import urlencode, parse_qs
+
+from gluon import HTTP, current, redirect
+
 
 class OAuthAccount(object):
     """
-    Login will be done via   OAuth Framework, instead of web2py's
-    login form.
+        Login will be done via   OAuth Framework, instead of web2py's
+        login form.
 
-    You need to override the get_user method to match your auth provider needs.
-    Example for facebook in your model (eg db.py)::
-        # define the auth_table before call to auth.define_tables()
-        auth_table = db.define_table(
-           auth.settings.table_user_name,
-           Field('first_name', length=128, default=""),
-           Field('last_name', length=128, default=""),
-           Field('username', length=128, default="", unique=True),
-           Field('password', 'password', length=256,
-           readable=False, label='Password'),
-           Field('registration_key', length=128, default= "",
-           writable=False, readable=False))
+        You need to override the get_user method to match your auth provider needs.
+        Example for facebook in your model (eg db.py)::
+            # define the auth_table before call to auth.define_tables()
+            auth_table = db.define_table(
+               auth.settings.table_user_name,
+               Field('first_name', length=128, default=""),
+               Field('last_name', length=128, default=""),
+               Field('username', length=128, default="", unique=True),
+               Field('password', 'password', length=256,
+               readable=False, label='Password'),
+               Field('registration_key', length=128, default= "",
+               writable=False, readable=False))
 
-        auth_table.username.requires = IS_NOT_IN_DB(db, auth_table.username)
-        auth.define_tables()
+            auth_table.username.requires = IS_NOT_IN_DB(db, auth_table.username)
+            auth.define_tables()
 
-        CLIENT_ID=\"<put your fb application id here>\"
-        CLIENT_SECRET=\"<put your fb application secret here>\"
-        AUTH_URL="http://..."
-        TOKEN_URL="http://..."
-        # remember to download and install facebook GraphAPI module in your app
-        from facebook import GraphAPI, GraphAPIError
-        from gluon.contrib.login_methods.oauth20_account import OAuthAccount
-        class FaceBookAccount(OAuthAccount):
-            '''OAuth impl for FaceBook'''
-            AUTH_URL="https://graph.facebook.com/oauth/authorize"
-            TOKEN_URL="https://graph.facebook.com/oauth/access_token"
+            CLIENT_ID=\"<put your fb application id here>\"
+            CLIENT_SECRET=\"<put your fb application secret here>\"
+            AUTH_URL="http://..."
+            TOKEN_URL="http://..."
+            # remember to download and install facebook GraphAPI module in your app
+            from facebook import GraphAPI, GraphAPIError
+            from gluon.contrib.login_methods.oauth20_account import OAuthAccount
+            class FaceBookAccount(OAuthAccount):
+                '''OAuth impl for FaceBook'''
+                AUTH_URL="https://graph.facebook.com/oauth/authorize"
+                TOKEN_URL="https://graph.facebook.com/oauth/access_token"
 
-            def __init__(self):
-               OAuthAccount.__init__(self,
-                                     client_id=CLIENT_ID,
-                                     client_secret=CLIENT_SECRET,
-                                     auth_url=self.AUTH_URL,
-                                     token_url=self.TOKEN_URL,
-                                     scope='user_photos,friends_photos')
-               self.graph = None
-
-            def get_user(self):
-               '''
-                Returns the user using the Graph API.
-               '''
-
-               if not self.accessToken():
-                  return None
-
-               if not self.graph:
-                  self.graph = GraphAPI((self.accessToken()))
-
-               user = None
-               try:
-                   user = self.graph.get_object("me")
-               except GraphAPIError, e:
-                   self.session.token = None
+                def __init__(self):
+                   OAuthAccount.__init__(self,
+                                         client_id=CLIENT_ID,
+                                         client_secret=CLIENT_SECRET,
+                                         auth_url=self.AUTH_URL,
+                                         token_url=self.TOKEN_URL,
+                                         scope='user_photos,friends_photos')
                    self.graph = None
 
+                def get_user(self):
+                   '''
+                    Returns the user using the Graph API.
+                   '''
 
-               if user:
-                   return dict(first_name = user['first_name'],
-                               last_name = user['last_name'],
-                               username = user['id'])
+                   if not self.accessToken():
+                      return None
+
+                   if not self.graph:
+                      self.graph = GraphAPI((self.accessToken()))
+
+                   user = None
+                   try:
+                       user = self.graph.get_object("me")
+                   except GraphAPIError, e:
+                       self.session.token = None
+                       self.graph = None
 
 
-               auth.settings.actions_disabled=['register',
-                   'change_password','request_reset_password','profile']
-               auth.settings.login_form=FaceBookAccount()
+                   if user:
+                       return dict(first_name = user['first_name'],
+                                   last_name = user['last_name'],
+                                   username = user['id'])
 
-Any optional arg in the constructor will be passed asis to remote
-server for requests.  It can be used for the optional"scope" parameters for Facebook.
+
+                   auth.settings.actions_disabled=['register',
+                       'change_password','request_reset_password','profile']
+                   auth.settings.login_form=FaceBookAccount()
+
+    Any optional arg in the constructor will be passed asis to remote
+    server for requests.  It can be used for the optional"scope" parameters for Facebook.
 
     """
+
     def __redirect_uri(self, next=None):
         """
         Build the uri used by the authenticating server to redirect
@@ -106,19 +105,18 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         r = current.request
         http_host = r.env.http_host
 
-        if r.env.https == 'on':
-            url_scheme = 'https'
+        if r.env.https == "on":
+            url_scheme = "https"
         else:
             url_scheme = r.env.wsgi_url_scheme
         if next:
             path_info = next
         else:
             path_info = r.env.path_info
-        uri = '%s://%s%s' % (url_scheme, http_host, path_info)
+        uri = "%s://%s%s" % (url_scheme, http_host, path_info)
         if r.get_vars and not next:
-            uri += '?' + urlencode(r.get_vars)
+            uri += "?" + urlencode(r.get_vars)
         return uri
-
 
     def __build_url_opener(self, uri):
         """
@@ -127,10 +125,9 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         # Create an OpenerDirector with support
         # for Basic HTTP Authentication...
         password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        password_mgr.add_password(realm=None,
-                                  uri=uri,
-                                  user=self.client_id,
-                                  passwd=self.client_secret)
+        password_mgr.add_password(
+            realm=None, uri=uri, user=self.client_id, passwd=self.client_secret
+        )
         handler = urllib2.HTTPBasicAuthHandler(password_mgr)
         opener = urllib2.build_opener(handler)
         return opener
@@ -140,17 +137,17 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         Return the access token generated by the authenticating server.
 
         If token is already in the session that one will be used.
-        If token has expired refresh_token is used to get another token. 
+        If token has expired refresh_token is used to get another token.
         Otherwise the token is fetched from the auth server.
         """
         refresh_token = None
-        if current.session.token and 'expires' in current.session.token:
-            expires = current.session.token['expires']
+        if current.session.token and "expires" in current.session.token:
+            expires = current.session.token["expires"]
             # reuse token until expiration
             if expires == 0 or expires > time.time():
-                return current.session.token['access_token']
-            if 'refresh_token' in current.session.token:
-                refresh_token = current.session.token['refresh_token']
+                return current.session.token["access_token"]
+            if "refresh_token" in current.session.token:
+                refresh_token = current.session.token["refresh_token"]
 
         code = current.request.vars.code
 
@@ -163,18 +160,17 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                 data.update(
                     redirect_uri=current.session.redirect_uri,
                     code=code,
-                    grant_type='authorization_code'
+                    grant_type="authorization_code",
                 )
             elif refresh_token:
-                data.update(
-                    refresh_token=refresh_token,
-                    grant_type='refresh_token'
-                )
+                data.update(refresh_token=refresh_token, grant_type="refresh_token")
 
             open_url = None
             opener = self.__build_url_opener(self.token_url)
             try:
-                open_url = opener.open(self.token_url, urlencode(data).encode(), self.socket_timeout)
+                open_url = opener.open(
+                    self.token_url, urlencode(data).encode(), self.socket_timeout
+                )
             except urllib2.HTTPError as e:
                 tmp = e.read()
                 raise Exception(tmp)
@@ -193,49 +189,61 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                         resp_type = open_url.info().gettype()
 
                     # try json style first
-                    if not resp_type or resp_type[:16] == 'application/json':
+                    if not resp_type or resp_type[:16] == "application/json":
                         try:
                             tokendata = json.loads(data)
                             current.session.token = tokendata
                         except Exception as e:
-                            raise Exception("Cannot parse oauth server response %s %s" % (data, e))
-                    else: # try facebook style first with x-www-form-encoded
-                        tokendata = cgi.parse_qs(data)
-                        current.session.token = \
-                          dict([(k, v[-1]) for k, v in tokendata.items()])
-                    if not tokendata: # parsing failed?
+                            raise Exception(
+                                "Cannot parse oauth server response %s %s" % (data, e)
+                            )
+                    else:  # try facebook style first with x-www-form-encoded
+                        tokendata = parse_qs(data)
+                        current.session.token = dict(
+                            [(k, v[-1]) for k, v in tokendata.items()]
+                        )
+                    if not tokendata:  # parsing failed?
                         raise Exception("Cannot parse oauth server response %s" % data)
                     # set expiration absolute time try to avoid broken
                     # implementations where "expires_in" becomes "expires"
-                    if 'expires_in' in current.session.token:
-                        exps = 'expires_in'
-                    elif 'expires' in current.session.token:
-                        exps = 'expires'
+                    if "expires_in" in current.session.token:
+                        exps = "expires_in"
+                    elif "expires" in current.session.token:
+                        exps = "expires"
                     else:
                         exps = None
-                    current.session.token['expires'] = exps and \
-                        int(current.session.token[exps]) + \
-                        time.time()
+                    current.session.token["expires"] = (
+                        exps and int(current.session.token[exps]) + time.time()
+                    )
                 finally:
                     opener.close()
-                return current.session.token['access_token']
+                return current.session.token["access_token"]
 
         current.session.token = None
         return None
 
-    def __init__(self, g=None,
-                 client_id=None, client_secret=None,
-                 auth_url=None, token_url=None, socket_timeout=60, **args):
+    def __init__(
+        self,
+        g=None,
+        client_id=None,
+        client_secret=None,
+        auth_url=None,
+        token_url=None,
+        socket_timeout=60,
+        **args
+    ):
         """
         first argument is unused. Here only for legacy reasons.
         """
         if [client_id, client_secret, auth_url, token_url].count(None) > 0:
-            raise RuntimeError("""Following args are mandatory:
+            raise RuntimeError(
+                """Following args are mandatory:
             client_id,
             client_secret,
             auth_url,
             token_url.
-            """)
+            """
+            )
         self.client_id = client_id
         self.client_secret = client_secret
         self.auth_url = auth_url
@@ -258,9 +266,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         """
         if not current.session.token:
             return None
-        return dict(first_name='Pinco',
-                    last_name='Pallino',
-                    username='pincopallino')
+        return dict(first_name="Pinco", last_name="Pallino", username="pincopallino")
         raise NotImplementedError("Must override get_user()")
 
         # Following code is never executed.  It can be used as example
@@ -279,9 +285,11 @@ server for requests.  It can be used for the optional"scope" parameters for Face
             self.graph = None
 
         if user:
-            return dict(first_name=user['first_name'],
-                        last_name=user['last_name'],
-                        username=user['id'])
+            return dict(
+                first_name=user["first_name"],
+                last_name=user["last_name"],
+                username=user["id"],
+            )
 
     def __oauth_login(self, next):
         """
@@ -298,13 +306,19 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         token = self.accessToken()
         if not token:
             current.session.redirect_uri = self.__redirect_uri(next)
-            data = dict(redirect_uri=current.session.redirect_uri,
-                        response_type='code',
-                        client_id=self.client_id)
+            data = dict(
+                redirect_uri=current.session.redirect_uri,
+                response_type="code",
+                client_id=self.client_id,
+            )
             if self.args:
                 data.update(self.args)
             auth_request_url = self.auth_url + "?" + urlencode(data)
-            raise HTTP(302,
-                       "You are not authenticated: you are being redirected to the <a href='" + auth_request_url + "'> authentication server</a>",
-                       Location=auth_request_url)
+            raise HTTP(
+                302,
+                "You are not authenticated: you are being redirected to the <a href='"
+                + auth_request_url
+                + "'> authentication server</a>",
+                Location=auth_request_url,
+            )
         return
