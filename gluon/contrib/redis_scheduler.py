@@ -762,8 +762,8 @@ class RScheduler(Scheduler):
             except:
                 pass
         rtn = self.db.scheduler_task.validate_and_insert(**kwargs)
-        if not rtn.errors:
-            rtn.uuid = tuuid
+        if not rtn.get('errors'):
+            rtn['uuid'] = tuuid
             if immediate:
                 r_server = self.r_server
                 ticker = self.get_workers(only_ticker=True)
@@ -781,7 +781,7 @@ class RScheduler(Scheduler):
                                 time.sleep(0.1)
                                 continue
         else:
-            rtn.uuid = None
+            rtn['uuid'] = None
         return rtn
 
     def stop_task(self, ref):
