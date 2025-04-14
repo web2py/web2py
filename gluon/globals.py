@@ -301,28 +301,28 @@ class Request(Storage):
 
             # Handle multipart/form-data
             if content_type.startswith("multipart/form-data"):
-                # Extract boundary for parsing
-                boundary = content_type.split("boundary=")[-1].strip()
-                if not boundary:
-                    raise ValueError("No boundary in multipart form-data")
-
                 raw_data = body.read(content_length)
                 body.seek(0)
 
-                # Add boundary markers to match MIME format
-                raw_data = b"--" + boundary.encode("utf-8") + b"\r\n" + raw_data
+                # Boundary is embedded in content_type
+                raw_data = (
+                    "Content-Type: " + content_type + "\r\n" +
+                    "Content-Length: " + str(content_length) + "\r\n" +
+                    "\r\n"
+                ).encode("utf-8") + raw_data
+
                 parser = BytesParser()
-                msg = parser.parse(BytesIO(raw_data))
+                msg = parser.parsebytes(raw_data)
 
                 for part in msg.walk():
                     if part.get_content_disposition() == "form-data":
                         name = part.get_param("name", header="content-disposition")
                         filename = part.get_param("filename", header="content-disposition")
                         if filename:  # If part is a file upload
-                            post_vars[name] = {
-                                "filename": filename,
-                                "content": part.get_payload(decode=True),
-                            }
+                            post_vars[name] = Storage(
+                                filename=filename,
+                                file=BytesIO(part.get_payload(decode=True))
+                            )
                         else:  # If part is a regular field
                             post_vars[name] = part.get_payload(decode=True).decode("utf8")
 
