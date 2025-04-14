@@ -166,6 +166,10 @@ def truncate_string(text, length, dots="..."):
         text = text[: length - len(dots)] + dots
     return text
 
+class SafeString(str):
+    """ A string know to be safe that does not need to be escaped """
+    def xml(self):
+        return self
 
 def URL(
     a=None,
@@ -430,7 +434,7 @@ def URL(
         port,
         language=language,
     )
-    return url
+    return SafeString(url)
 
 
 def verifyURL(
