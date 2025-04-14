@@ -17,7 +17,7 @@ from gluon.html import (ASSIGNJS, BEAUTIFY, BODY, BR, BUTTON, CAT, CENTER,
                         SPAN, STRONG, STYLE, TABLE, TAG, TBODY, TD, TEXTAREA,
                         TFOOT, TH, THEAD, TITLE, TR, TT, UL, URL, XHTML, XML,
                         A, B, I, P, TAG_pickler, TAG_unpickler, XML_pickle,
-                        XML_unpickle, truncate_string, verifyURL,
+                        XML_unpickle, xmlescape, truncate_string, verifyURL,
                         web2pyHTMLParser)
 from gluon.storage import Storage
 
@@ -212,6 +212,8 @@ class TestBareHelpers(unittest.TestCase):
             url_encode=True,
         )
         self.assertEqual(rtn, "/a/c/f/x/y/z?li%C3%A9=2&ma%C3%AF=1&ma%C3%AF=3")
+        # Test you don't sanitize URL vars &
+        self.assertEqual(rtn, xmlescape(rtn))
 
     def test_verifyURL(self):
         r = Storage()
