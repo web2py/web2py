@@ -5,14 +5,43 @@
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
-Contains the classes for the global used variables:
+
+Web Request Processing Module for Web2py Framework
+
+This module handles HTTP request processing and variable management in the Web2py framework.
+It contains the classes for the global used variables:
 
 - Request
 - Response
 - Session
 
+It provides core functionality for:
+
+- HTTP request body parsing and caching
+- Content-type detection and handling
+- Form data processing (multipart and url-encoded)
+- File upload handling
+- GET/POST variable management
+- Request environment management
+
+Key Components:
+    - RequestHandler: Main class for processing HTTP requests
+    - Body parsing: Handles multipart/form-data and application/x-www-form-urlencoded
+    - Variable management: Combines GET/POST variables with proper precedence
+    - File uploads: Processes uploaded files with metadata
+
+Dependencies:
+    - email.parser: For MIME message parsing
+    - email.policy: For content-type parsing
+    - io: For BytesIO streaming
+    - copy: For variable copying
+    - urllib.parse: For query string parsing
+
+Usage:
+    The RequestHandler class is instantiated for each HTTP request and manages
+    the complete request lifecycle including body parsing and variable handling.
 """
-import cgi
+
 import copy
 import copyreg
 # from types import DictionaryType
@@ -27,11 +56,13 @@ import sys
 import tempfile
 import threading
 import traceback
+from email.parser import BytesParser
 from http import cookies as Cookie
 from io import BytesIO, StringIO
 from pickle import DICT, EMPTY_DICT, MARK, Pickler
 from urllib import parse as urlparse
 from urllib.parse import quote as urllib_quote
+from urllib.parse import parse_qs
 
 from pydal.contrib import portalocker
 from pydal.utils import utcnow
@@ -230,6 +261,7 @@ class Request(Storage):
         env = self.env
         post_vars = self._post_vars = Storage()
         body = self.body
+
         # if content-type is application/json, we must read the body
         is_json = env.get("CONTENT_TYPE", "")[:16] == "application/json"
 
@@ -262,42 +294,85 @@ class Request(Storage):
                 }
             else:
                 headers = None
-            dpost = cgi.FieldStorage(
-                fp=body, environ=env, headers=headers, keep_blank_values=1
-            )
-            try:
-                post_vars.update(dpost)
-            except:
-                pass
+
+            # Replacing original cgi.FieldStorage
+            content_type = env.get("CONTENT_TYPE", "")
+            content_length = int(env.get("CONTENT_LENGTH", 0) or 0)
+
+            # Handle multipart/form-data
+            if content_type.startswith("multipart/form-data"):
+                raw_data = body.read(content_length)
+                body.seek(0)
+
+                # Boundary is embedded in content_type
+                raw_data = (
+                    "Content-Type: " + content_type + "\r\n" +
+                    "Content-Length: " + str(content_length) + "\r\n" +
+                    "\r\n"
+                ).encode("utf-8") + raw_data
+
+                parser = BytesParser()
+                msg = parser.parsebytes(raw_data)
+
+                for part in msg.walk():
+                    if part.get_content_disposition() == "form-data":
+                        name = part.get_param("name", header="content-disposition")
+                        filename = part.get_param("filename", header="content-disposition")
+                        if filename:  # If part is a file upload
+                            post_vars[name] = Storage(
+                                filename=filename,
+                                file=BytesIO(part.get_payload(decode=True))
+                            )
+                        else:  # If part is a regular field
+                            post_vars[name] = part.get_payload(decode=True).decode("utf8")
+
+            # Handle application/x-www-form-urlencoded
+            elif content_type == "application/x-www-form-urlencoded":
+                raw_data = body.read(content_length).decode("utf8")
+                body.seek(0)
+                post_vars.update(parse_qs(raw_data, keep_blank_values=True))
+
+            # Restore QUERY_STRING if it was temporarily removed
             if query_string is not None:
                 env["QUERY_STRING"] = query_string
+
             # The same detection used by FieldStorage to detect multipart POSTs
             body.seek(0)
 
+            # Helper function to handle both lists and single values
             def listify(a):
                 return (not isinstance(a, list) and [a]) or a
 
             try:
-                keys = sorted(dpost)
+                keys = sorted(post_vars)
             except TypeError:
                 keys = []
             for key in keys:
                 if key is None:
                     continue  # not sure why cgi.FieldStorage returns None key
-                dpk = dpost[key]
+                dpk = post_vars[key]
                 # if an element is not a file replace it with
                 # its value else leave it alone
 
                 pvalue = listify(
-                    [(_dpk if _dpk.filename else _dpk.value) for _dpk in dpk]
+                    [(_dpk if isinstance(_dpk, dict) and "filename" in _dpk else _dpk)
+                    for _dpk in dpk]
                     if isinstance(dpk, list)
-                    else (dpk if dpk.filename else dpk.value)
+                    else (dpk if isinstance(dpk, dict) and "filename" in dpk else dpk)
                 )
                 if len(pvalue):
                     post_vars[key] = (len(pvalue) > 1 and pvalue) or pvalue[0]
 
+        # Reset body for reuse
+        body.seek(0)
+
     @property
     def body(self):
+        """
+        Lazy-loading property for request body
+        Copies stream with progress tracking
+        @raises HTTP 400 if body is incomplete
+        """
         if self._body is None:
             try:
                 self._body = copystream_progress(self)
@@ -306,6 +381,10 @@ class Request(Storage):
         return self._body
 
     def parse_content_type(self):
+        """
+        Parses content-type header using email.policy
+        Sets encoding and content_type properties
+        """
         from email.policy import EmailPolicy as mime
 
         header = mime.header_factory("content-type", self.env.content_type)
@@ -319,7 +398,10 @@ class Request(Storage):
         return str(body, self.encoding or "utf8")
 
     def parse_all_vars(self):
-        """Merges get_vars and post_vars to vars"""
+        """
+        Combines GET and POST variables into a single vars dict
+        POST vars take precedence over GET vars
+        """
         self._vars = copy.copy(self.get_vars)
         for key, value in self.post_vars.items():
             if key not in self._vars:
