@@ -267,7 +267,7 @@ class Request(Storage):
 
         if is_json:
             try:
-                json_vars = json_parser.loads(body)
+                json_vars = json_parser.load(body)
             except:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}
