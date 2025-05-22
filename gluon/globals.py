@@ -335,7 +335,7 @@ class Request(Storage):
                             )
 
             # Handle application/x-www-form-urlencoded
-            elif content_type == "application/x-www-form-urlencoded":
+            elif content_type.startswith("application/x-www-form-urlencoded"):
                 raw_data = body.read(content_length).decode("utf8")
                 body.seek(0)
                 post_vars.update(parse_qs(raw_data, keep_blank_values=True))
