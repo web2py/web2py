@@ -3488,7 +3488,7 @@ class Auth(AuthAPI):
                     and self.settings.mailer.send(
                         to=form.vars.email,
                         subject=self.messages.verify_email_subject,
-                        message=self.messages.verify_email % d,
+                        message=str(self.messages.verify_email % d),
                     )
                 ):
                     self.db.rollback()
