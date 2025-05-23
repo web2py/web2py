@@ -12,7 +12,7 @@ __all__ = ["render", "markmin2latex"]
 META = "META"
 regex_newlines = re.compile(r"(\n\r)|(\r\n)")
 regex_dd = re.compile(r"\$\$(?P<latex>.*?)\$\$")
-regex_code = re.compile(r"(" + META + ")|(``(?P<t>.*?)``(:(?P<c>\w+))?)", re.S)
+regex_code = re.compile(r"(" + META + r")|(``(?P<t>.*?)``(:(?P<c>\w+))?)", re.S)
 regex_title = re.compile(r"^#{1} (?P<t>[^\n]+)", re.M)
 regex_maps = [
     (re.compile(r"[ \t\r]+\n"), "\n"),
@@ -45,7 +45,7 @@ regex_table = re.compile(r"^\-{4,}\n(?P<t>.*?)\n\-{4,}(:(?P<c>\w+))?\n", re.M | 
 regex_anchor = re.compile(r"\[\[(?P<t>\S+)\]\]")
 regex_bibitem = re.compile(r"\-\s*\[\[(?P<t>\S+)\]\]")
 regex_image_width = re.compile(
-    "\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|center) +(?P<w>\d+px)\]\]"
+    r"\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|center) +(?P<w>\d+px)\]\]"
 )
 regex_image = re.compile(r"\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|center)\]\]")
 # regex_video = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +video\]\]')
