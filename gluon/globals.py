@@ -299,6 +299,10 @@ class Request(Storage):
             content_type = env.get("CONTENT_TYPE", "")
             content_length = int(env.get("CONTENT_LENGTH", 0) or 0)
 
+            # Helper function to handle both lists and single values
+            def listify(a):
+                return (not isinstance(a, list) and [a]) or a
+
             # Handle multipart/form-data
             if content_type.startswith("multipart/form-data"):
                 raw_data = body.read(content_length)
@@ -324,10 +328,14 @@ class Request(Storage):
                                 file=BytesIO(part.get_payload(decode=True))
                             )
                         else:  # If part is a regular field
-                            post_vars[name] = part.get_payload(decode=True).decode("utf8")
+                            field = part.get_payload(decode=True).decode("utf8")
+                            post_vars[name] = (
+                                    field if name not in post_vars
+                                    else listify(post_vars[name]) + [field]
+                            )
 
             # Handle application/x-www-form-urlencoded
-            elif content_type == "application/x-www-form-urlencoded":
+            elif content_type.startswith("application/x-www-form-urlencoded"):
                 raw_data = body.read(content_length).decode("utf8")
                 body.seek(0)
                 post_vars.update(parse_qs(raw_data, keep_blank_values=True))
@@ -338,10 +346,6 @@ class Request(Storage):
 
             # The same detection used by FieldStorage to detect multipart POSTs
             body.seek(0)
-
-            # Helper function to handle both lists and single values
-            def listify(a):
-                return (not isinstance(a, list) and [a]) or a
 
             try:
                 keys = sorted(post_vars)
