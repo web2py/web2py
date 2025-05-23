@@ -208,11 +208,11 @@ def render(
                 authors.append(author)
                 html = ""
             elif b == "inxx":
-                html = "\inxx{%s}" % latex_escape(code)
+                html = r"\inxx{%s}" % latex_escape(code)
             elif b == "cite":
-                html = "~\cite{%s}" % latex_escape(code.strip())
+                html = r"~\cite{%s}" % latex_escape(code.strip())
             elif b == "ref":
-                html = "~\ref{%s}" % latex_escape(code.strip())
+                html = r"~\ref{%s}" % latex_escape(code.strip())
             elif b == "latex":
                 if "\n" in code:
                     html = "\n\\begin{equation}\n%s\n\\end{equation}\n" % code.strip()
