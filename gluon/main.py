@@ -645,7 +645,7 @@ def appfactory(
         raise BaseException("Deprecated API")
     if profiler_dir:
         profiler_dir = abspath(profiler_dir)
-        logger.warn("profiler is on. will use dir %s", profiler_dir)
+        logger.warning("profiler is on. will use dir %s", profiler_dir)
         if not os.path.isdir(profiler_dir):
             try:
                 os.makedirs(profiler_dir)

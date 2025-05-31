@@ -198,7 +198,7 @@ def read_possible_plural_rules():
                 plurals[lang] = (lang, nplurals, get_plural_id, construct_plural_form)
     except ImportError:
         e = sys.exc_info()[1]
-        logging.warn("Unable to import plural rules: %s" % e)
+        logging.warning("Unable to import plural rules: %s" % e)
     return plurals
 
 
@@ -792,7 +792,7 @@ class TranslatorFactory(object):
         ns=None,
     ):
         """
-        Gets cached translated markmin-message with inserted parametes
+        Gets cached translated markmin-message with inserted parameters
         if lazy==True lazyT object is returned
         """
         if lazy is None:
@@ -1073,7 +1073,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
             try:
                 message = safe_eval(item)
             except:
-                continue  # silently ignore inproperly formatted strings
+                continue  # silently ignore improperly formatted strings
             add_message(message)
     gluon_msg = [Auth.default_messages, Crud.default_messages]
     for item in [x for m in gluon_msg for x in m.values() if x is not None]:

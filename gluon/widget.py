@@ -680,12 +680,12 @@ def start():
             content = open(os.path.join("examples", "app.example.yaml"), "rb").read()
             open("app.yaml", "wb").write(content.replace("yourappname", name))
         else:
-            print("app.yaml alreday exists in the web2py folder")
+            print("app.yaml already exists in the web2py folder")
         if not os.path.exists("gaehandler.py"):
             content = open(os.path.join("handlers", "gaehandler.py"), "rb").read()
             open("gaehandler.py", "wb").write(content)
         else:
-            print("gaehandler.py alreday exists in the web2py folder")
+            print("gaehandler.py already exists in the web2py folder")
         return
 
     logger = logging.getLogger("web2py")
@@ -797,7 +797,7 @@ def start():
 
             root = tkinter.Tk()
         except (ImportError, OSError):
-            logger.warn("GUI not available because Tk library is not installed")
+            logger.warning("GUI not available because Tk library is not installed")
             options.no_gui = True
         except:
             logger.exception("cannot get Tk root window, GUI disabled")
