@@ -251,13 +251,13 @@ def run(
         ):
             confirm = raw_input("application %s does not exist, create (y/N)?" % a)
         else:
-            logging.warn("application does not exist and will not be created")
+            logger.warning("application does not exist and will not be created")
             return
         if confirm.lower() in ("y", "yes"):
             os.mkdir(adir)
             fileutils.create_app(adir)
         else:
-            logging.warn(
+            logger.warning(
                 "application folder does not exist and has not been created as requested"
             )
             return
