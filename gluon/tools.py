@@ -3630,7 +3630,7 @@ class Auth(AuthAPI):
             self.settings.mailer.send(
                 to=form.vars.email,
                 subject=self.messages.retrieve_username_subject,
-                message=self.messages.retrieve_username % dict(username=username),
+                message=str(self.messages.retrieve_username % dict(username=username)),
             )
             session.flash = self.messages.email_sent
             for user in users:
@@ -3727,7 +3727,7 @@ class Auth(AuthAPI):
             if self.settings.mailer and self.settings.mailer.send(
                 to=form.vars.email,
                 subject=self.messages.retrieve_password_subject,
-                message=self.messages.retrieve_password % dict(password=password),
+                message=str(self.messages.retrieve_password % dict(password=password)),
             ):
                 session.flash = self.messages.email_sent
             else:
