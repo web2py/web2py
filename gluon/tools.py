@@ -3844,7 +3844,7 @@ class Auth(AuthAPI):
             dict(key=reset_password_key, link=link, site=current.request.env.http_host)
         )
         if self.settings.mailer and self.settings.mailer.send(
-            to=user.email, subject=subject % d, message=body % d
+            to=user.email, subject=subject % d, message=str(body % d)
         ):
             user.update_record(reset_password_key=reset_password_key)
             return True
