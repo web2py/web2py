@@ -4136,7 +4136,7 @@ class Auth(AuthAPI):
         if self.settings.mailer and self.settings.mailer.send(
             to=user.email,
             subject=self.messages.reset_password_subject,
-            message=self.messages.reset_password % d,
+            message=str(self.messages.reset_password % d),
         ):
             user.update_record(reset_password_key=reset_password_key)
             return True
