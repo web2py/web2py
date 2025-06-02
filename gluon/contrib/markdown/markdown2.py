@@ -915,8 +915,8 @@ class Markdown(object):
         return _pyshell_block_re.sub(self._pyshell_block_sub, text)
 
     def _table_sub(self, match):
-        trim_space_re = "^[ \t\n]+|[ \t\n]+$"
-        trim_bar_re = "^\||\|$"
+        trim_space_re = r"^[ \t\n]+|[ \t\n]+$"
+        trim_bar_re = r"^\||\|$"
 
         head, underline, body = match.groups()
 
