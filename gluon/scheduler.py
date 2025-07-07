@@ -1385,8 +1385,12 @@ class Scheduler(threading.Thread):
             # if no other tickers are around
             if not_busy:
                 # only if I'm not busy
-                db(sw.worker_name == my_name).update(is_ticker=True)
-                db(sw.worker_name != my_name).update(is_ticker=False)
+                # NOTE: this old way could easily cause deadlocks
+                # db(sw.worker_name == my_name).update(is_ticker=True)
+                # db(sw.worker_name != my_name).update(is_ticker=False)
+                #
+                # So we use an update expression
+                db(sw.id > 0).update(is_ticker=sw.worker_name == my_name)
                 logger.info("TICKER: I'm a ticker")
             else:
                 # I'm busy
