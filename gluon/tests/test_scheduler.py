@@ -51,6 +51,8 @@ class BaseTestScheduler(unittest.TestCase):
         except:
             pass
         appdir = os.path.join("applications", test_app_name)
+        if hasattr(self, 'db'):
+            self.db.close()
         if os.path.exists(appdir):
             shutil.rmtree(appdir)
 
