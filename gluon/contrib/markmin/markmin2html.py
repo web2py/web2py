@@ -7,7 +7,7 @@
 import ast
 import re
 import sys
-import html
+import html as html_module
 
 from urllib.parse import quote as urllib_quote
 
@@ -613,7 +613,7 @@ def local_html_escape(data, quote=False):
     """
     if isinstance(data, bytes):
         data = data.decode("utf8")
-    return html.escape(data, quote=quote)
+    return html_module.escape(data, quote=quote)
 
 def make_dict(b):
     return "{%s}" % regex_quote.sub(r"'\g<name>':", b)
@@ -714,12 +714,16 @@ def replace_components(text, env):
     text = regex_env2.sub(u2, text)
     return text
 
+def is_unsafe(url):
+    return (url or "").lower().replace(" ", "").startswith("javascript:")
 
 def autolinks_simple(url):
     """
     it automatically converts the url to link,
     image, video or audio tag
     """
+    if is_unsafe(url):
+        return f'<span class="markmin_unsafe">{html.escape(url)}</span>'
     u_url = url.lower()
     if "@" in url and "://" not in url:
         return '<a href="mailto:%s">%s</a>' % (url, url)
@@ -741,6 +745,9 @@ def protolinks_simple(proto, url):
             proto="iframe"
             url="http://www.example.com/path"
     """
+    url = html.escape(url)
+    if is_unsafe(url):
+        return f'<span class="markmin_unsafe">{url}</span>'    
     if proto in ("iframe", "embed"):  # == 'iframe':
         return '<iframe src="%s" frameborder="0" allowfullscreen></iframe>' % url
     # elif proto == 'embed':  # NOTE: embed is a synonym to iframe now
@@ -1005,6 +1012,10 @@ def render(
 
     >>> render("anchor with name 'NEWLINE': [[NEWLINE [newline] ]]")
     '<p>anchor with name \\'NEWLINE\\': <span class="anchor" id="markmin_NEWLINE">newline</span></p>'
+
+    >>> render("anchor with unsafe code [[click me javascript:alert('ouch!') ]]")
+    '<p>anchor with unsafe code <span class="markin_unsafe">click me</span>'
+    
     """
     if autolinks == "default":
         autolinks = autolinks_simple
