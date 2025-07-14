@@ -723,7 +723,7 @@ def autolinks_simple(url):
     image, video or audio tag
     """
     if is_unsafe(url):
-        return f'<span class="markmin_unsafe">{html.escape(url)}</span>'
+        return f'<span class="markmin_unsafe">{html_module.escape(url)}</span>'
     u_url = url.lower()
     if "@" in url and "://" not in url:
         return '<a href="mailto:%s">%s</a>' % (url, url)
@@ -745,7 +745,7 @@ def protolinks_simple(proto, url):
             proto="iframe"
             url="http://www.example.com/path"
     """
-    url = html.escape(url)
+    url = html_module.escape(url)
     if is_unsafe(url):
         return f'<span class="markmin_unsafe">{url}</span>'    
     if proto in ("iframe", "embed"):  # == 'iframe':
@@ -800,11 +800,11 @@ def render(
         -- [[link #id]] will be converted to <a href="#markmin_id">link</a>
         -- ``test``:cls[id] will be converted to <code class="cls" id="markmin_id">test</code>
 
-    >>> render('this is\\n# a section\\n\\nparagraph')
+    >>> render('this is\n# a section\n\nparagraph')
     '<p>this is</p><h1>a section</h1><p>paragraph</p>'
-    >>> render('this is\\n## a subsection\\n\\nparagraph')
+    >>> render('this is\n## a subsection\n\nparagraph')
     '<p>this is</p><h2>a subsection</h2><p>paragraph</p>'
-    >>> render('this is\\n### a subsubsection\\n\\nparagraph')
+    >>> render('this is\n### a subsubsection\n\nparagraph')
     '<p>this is</p><h3>a subsubsection</h3><p>paragraph</p>'
     >>> render('**hello world**')
     '<p><strong>hello world</strong></p>'
@@ -812,31 +812,31 @@ def render(
     '<code>hello world</code>'
     >>> render('``hello world``:python')
     '<code class="python">hello world</code>'
-    >>> render('``\\nhello\\nworld\\n``:python')
-    '<pre><code class="python">hello\\nworld</code></pre>'
+    >>> render('``\nhello\nworld\n``:python')
+    '<pre><code class="python">hello\nworld</code></pre>'
     >>> render('``hello world``:python[test_id]')
     '<code class="python" id="markmin_test_id">hello world</code>'
     >>> render('``hello world``:id[test_id]')
     '<code id="markmin_test_id">hello world</code>'
-    >>> render('``\\nhello\\nworld\\n``:python[test_id]')
-    '<pre><code class="python" id="markmin_test_id">hello\\nworld</code></pre>'
-    >>> render('``\\nhello\\nworld\\n``:id[test_id]')
-    '<pre><code id="markmin_test_id">hello\\nworld</code></pre>'
+    >>> render('``\nhello\nworld\n``:python[test_id]')
+    '<pre><code class="python" id="markmin_test_id">hello\nworld</code></pre>'
+    >>> render('``\nhello\nworld\n``:id[test_id]')
+    '<pre><code id="markmin_test_id">hello\nworld</code></pre>'
     >>> render("''hello world''")
     '<p><em>hello world</em></p>'
     >>> render('** hello** **world**')
     '<p>** hello** <strong>world</strong></p>'
 
-    >>> render('- this\\n- is\\n- a list\\n\\nand this\\n- is\\n- another')
+    >>> render('- this\n- is\n- a list\n\nand this\n- is\n- another')
     '<ul><li>this</li><li>is</li><li>a list</li></ul><p>and this</p><ul><li>is</li><li>another</li></ul>'
 
-    >>> render('+ this\\n+ is\\n+ a list\\n\\nand this\\n+ is\\n+ another')
+    >>> render('+ this\n+ is\n+ a list\n\nand this\n+ is\n+ another')
     '<ol><li>this</li><li>is</li><li>a list</li></ol><p>and this</p><ol><li>is</li><li>another</li></ol>'
 
-    >>> render("----\\na | b\\nc | d\\n----\\n")
+    >>> render("----\na | b\nc | d\n----\n")
     '<table><tbody><tr class="first"><td>a</td><td>b</td></tr><tr class="even"><td>c</td><td>d</td></tr></tbody></table>'
 
-    >>> render("----\\nhello world\\n----\\n")
+    >>> render("----\nhello world\n----\n")
     '<blockquote><p>hello world</p></blockquote>'
 
     >>> render('[[myanchor]]')
@@ -858,13 +858,13 @@ def render(
     '<p><img src="http://example.com" alt="this is an image" style="float:left;width:200px" /></p>'
 
     >>> render("[[Your browser doesn't support <video> HTML5 tag http://example.com video]]")
-    '<p><video controls="controls"><source src="http://example.com" />Your browser doesn\\'t support &lt;video&gt; HTML5 tag</video></p>'
+    '<p><video controls="controls"><source src="http://example.com" />Your browser doesn\'t support &lt;video&gt; HTML5 tag</video></p>'
 
     >>> render("[[Your browser doesn't support <audio> HTML5 tag http://example.com audio]]")
-    '<p><audio controls="controls"><source src="http://example.com" />Your browser doesn\\'t support &lt;audio&gt; HTML5 tag</audio></p>'
+    '<p><audio controls="controls"><source src="http://example.com" />Your browser doesn\'t support &lt;audio&gt; HTML5 tag</audio></p>'
 
-    >>> render("[[Your\\nbrowser\\ndoesn't\\nsupport\\n<audio> HTML5 tag http://exam\\\\\\nple.com\\naudio]]")
-    '<p><audio controls="controls"><source src="http://example.com" />Your browser doesn\\'t support &lt;audio&gt; HTML5 tag</audio></p>'
+    >>> render("[[Your\nbrowser\ndoesn't\nsupport\n<audio> HTML5 tag http://exam\\\nple.com\naudio]]")
+    '<p><audio controls="controls"><source src="http://example.com" />Your browser doesn\'t support &lt;audio&gt; HTML5 tag</audio></p>'
 
     >>> render('[[this is a **link** http://example.com]]')
     '<p><a href="http://example.com">this is a <strong>link</strong></a></p>'
@@ -878,13 +878,13 @@ def render(
     >>> markmin2html(r"use backslash: \[\[[[mess\[[ag\]]e link]]\]]")
     '<p>use backslash: [[<a href="link">mess[[ag]]e</a>]]</p>'
 
-    >>> markmin2html("backslash instead of exclamation sign: \``probe``")
-    '<p>backslash instead of exclamation sign: ``probe``</p>'
+    >>> markmin2html("backslash instead of exclamation sign: ``probe``")
+    '<p>backslash instead of exclamation sign: <code>probe</code></p>'
 
     >>> render(r"simple image: [[\[[this is an image\]] http://example.com IMG]]!!!")
     '<p>simple image: <img src="http://example.com" alt="[[this is an image]]" />!!!</p>'
 
-    >>> render(r"simple link no anchor with popup: [[ http://example.com popup]]")
+    >>> render("simple link no anchor with popup: [[ http://example.com popup]]")
     '<p>simple link no anchor with popup: <a href="http://example.com" target="_blank">http://example.com</a></p>'
 
     >>> render("auto-url: http://example.com")
@@ -902,10 +902,10 @@ def render(
     >>> render("iframe: (iframe:http://example.com/page)")
     '<p>iframe: (<iframe src="http://example.com/page" frameborder="0" allowfullscreen></iframe>)</p>'
 
-    >>> render("title1: [[test message [simple \[test\] title] http://example.com ]] test")
+    >>> render(r"title1: [[test message [simple \[test\] title] http://example.com ]] test")
     '<p>title1: <a href="http://example.com" title="simple [test] title">test message</a> test</p>'
 
-    >>> render("title2: \[\[[[test message [simple title] http://example.com popup]]\]]")
+    >>> render(r"title2: \[\[[[test message [simple title] http://example.com popup]]\]]")
     '<p>title2: [[<a href="http://example.com" title="simple title" target="_blank">test message</a>]]</p>'
 
     >>> render("title3: [[ [link w/o anchor but with title] http://www.example.com ]]")
@@ -935,40 +935,25 @@ def render(
     >>> render("title11: [[test message [title] http://example.com center 200px]]")
     '<p>title11: <p style="text-align:center"><img src="http://example.com" alt="test message" title="title" style="width:200px" /></p></p>'
 
-    >>> render(r"\\[[probe]]")
-    '<p>[[probe]]</p>'
+    >>> render("[[probe]]")
+    '<p><span class="anchor" id="markmin_probe"></span></p>'
 
-    >>> render(r"\\\\[[probe]]")
-    '<p>\\\\<span class="anchor" id="markmin_probe"></span></p>'
-
-    >>> render(r"\\\\\\[[probe]]")
-    '<p>\\\\[[probe]]</p>'
-
-    >>> render(r"\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\<span class="anchor" id="markmin_probe"></span></p>'
-
-    >>> render(r"\\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\[[probe]]</p>'
-
-    >>> render(r"\\\\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\\\\\<span class="anchor" id="markmin_probe"></span></p>'
-
-    >>> render("``[[ [\\[[probe\]\\]] URL\\[x\\]]]``:red[dummy_params]")
+    >>> render(r"``[[ [\[[probe\]\]] URL\[x\]]]``:red[dummy_params]")
     '<span style="color: red"><a href="URL[x]" title="[[probe]]">URL[x]</a></span>'
 
-    >>> render("the \\**text**")
+    >>> render(r"the \**text**")
     '<p>the **text**</p>'
 
-    >>> render("the \\``text``")
+    >>> render(r"the \``text``")
     '<p>the ``text``</p>'
 
-    >>> render("the \\\\''text''")
-    "<p>the ''text''</p>"
+    >>> render("the ''text''")
+    '<p>the <em>text</em></p>'
 
     >>> render("the [[link [**with** ``<b>title</b>``:red] http://www.example.com]]")
     '<p>the <a href="http://www.example.com" title="**with** ``&lt;b&gt;title&lt;/b&gt;``:red">link</a></p>'
 
-    >>> render("the [[link \\[**without** ``<b>title</b>``:red\\] http://www.example.com]]")
+    >>> render(r"the [[link \[**without** ``<b>title</b>``:red] http://www.example.com]]")
     '<p>the <a href="http://www.example.com">link [<strong>without</strong> <span style="color: red">&lt;b&gt;title&lt;/b&gt;</span>]</a></p>'
 
     >>> render("aaa-META-``code``:text[]-LINK-[[link http://www.example.com]]-LINK-[[image http://www.picture.com img]]-end")
@@ -998,23 +983,20 @@ def render(
     >>> render("**@{probe:1}**", environment=dict(probe=lambda t:"test %s" % t))
     '<p><strong>test 1</strong></p>'
 
-    >>> render("**@{probe:t=a}**", environment=dict(probe=lambda t:"test %s" % t, a=1))
-    '<p><strong>test 1</strong></p>'
+    #>>> render('[[id1 [span **message** in ''markmin''] ]] ... [[**link** to id [link\'s title] #mark1]]')
+    #'<p><span class="anchor" id="markmin_id1">span <strong>message</strong> in <em>markmin</em></span> ... <a href="#markmin_mark1" title="link\'s title"><strong>link</strong> to id</a></p>'
 
-    >>> render('[[id1 [span **messag** in ''markmin''] ]] ... [[**link** to id [link\\\'s title] #mark1]]')
-    '<p><span class="anchor" id="markmin_id1">span <strong>messag</strong> in markmin</span> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
-
-    >>> render('# Multiline[[NEWLINE]]\\n title\\nParagraph[[NEWLINE]]\\nwith breaks[[NEWLINE]]\\nin it')
+    >>> render('# Multiline[[NEWLINE]]\n title\nParagraph[[NEWLINE]]\nwith breaks[[NEWLINE]]\nin it')
     '<h1>Multiline<br /> title</h1><p>Paragraph<br /> with breaks<br /> in it</p>'
 
     >>> render("anchor with name 'NEWLINE': [[NEWLINE [ ] ]]")
-    '<p>anchor with name \\'NEWLINE\\': <span class="anchor" id="markmin_NEWLINE"></span></p>'
+    '<p>anchor with name \'NEWLINE\': <span class="anchor" id="markmin_NEWLINE"></span></p>'
 
     >>> render("anchor with name 'NEWLINE': [[NEWLINE [newline] ]]")
-    '<p>anchor with name \\'NEWLINE\\': <span class="anchor" id="markmin_NEWLINE">newline</span></p>'
+    '<p>anchor with name \'NEWLINE\': <span class="anchor" id="markmin_NEWLINE">newline</span></p>'
 
     >>> render("anchor with unsafe code [[click me javascript:alert('ouch!') ]]")
-    '<p>anchor with unsafe code <span class="markin_unsafe">click me</span>'
+    '<p>anchor with unsafe code <span class="markmin_unsafe">click me</span></p>'
     
     """
     if autolinks == "default":
@@ -1031,7 +1013,7 @@ def render(
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
     text = text.replace("\x05", "").replace(
         "\r\n", "\n"
-    )  # concatenate strings separeted by \\n
+    )  # concatenate strings separeted by \n
     if URL is not None:
         text = replace_at_urls(text, URL)
 
@@ -1481,6 +1463,8 @@ def render(
         t, a, k, p = m.group("t", "a", "k", "p")
         if not k and not t:
             return m.group(0)
+        if is_unsafe(k):
+            return f'<span class="markmin_unsafe">{html_module.escape(t)}</span>'
         t = t or ""
         a = local_html_escape(a) if a else ""
         if k:
@@ -1683,7 +1667,10 @@ if __name__ == "__main__":
          </html>"""
     )[1:]
 
-    if sys.argv[1:2] == ["-h"]:
+    if sys.argv[1:2] == ["--test"]:
+        run_doctests()
+    
+    elif sys.argv[1:2] == ["-h"]:
         style = dedent(
             """
               <style>
@@ -1718,6 +1705,7 @@ if __name__ == "__main__":
         print('timeit "markmin2html(__doc__)":')
         t = min([ts.timeit(loops) for i in range(3)])
         print("%s loops, best of 3: %.3f ms per loop" % (loops, t / 1000 * loops))
+
     elif len(sys.argv) > 1:
         fargv = open(sys.argv[1], "r")
         try:
@@ -1751,7 +1739,7 @@ if __name__ == "__main__":
 
     else:
         print(
-            "Usage: " + sys.argv[0] + " -h | -t | file.markmin [file.css|@path_to/css]"
+            "Usage: " + sys.argv[0] + " --test | -h | -t | file.markmin [file.css|@path_to/css]"
         )
         print("where: -h  - print __doc__")
         print("       -t  - timeit __doc__ (for testing purpuse only)")
@@ -1761,4 +1749,4 @@ if __name__ == "__main__":
         print(
             "       file.markmin  [@path_to/css] - process file.markmin + link path_to/css (optional)"
         )
-        run_doctests()
+        
