@@ -82,6 +82,11 @@ logger = logging.getLogger("web2py")
 exists = os.path.exists
 pjoin = os.path.join
 
+# monkey patch pydal
+import pydal
+pydal.get_default_represent = lambda value: value
+# end monkey patch
+
 from pydal.base import BaseAdapter
 
 from gluon import newcron

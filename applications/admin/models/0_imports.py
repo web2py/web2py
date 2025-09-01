@@ -3,7 +3,6 @@ import os
 import sys
 import re
 import urllib
-import cgi
 import difflib
 import shutil
 import stat

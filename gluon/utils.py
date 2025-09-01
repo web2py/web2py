@@ -146,14 +146,14 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
 
 def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     """loads a signed data dump"""
-    components = data.count(":")
+    components = data.count(b":")
     if components == 1:
         return secure_loads_deprecated(
             data, encryption_key, hash_key, compression_level
         )
     if components != 2:
         return None
-    version, signature, encrypted_data = data.split(":", 2)
+    version, signature, encrypted_data = data.split(b":", 2)
     if version != b"hmac256":
         return None
     encryption_key = encryption_key.encode("utf8")
