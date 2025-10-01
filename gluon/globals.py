@@ -56,7 +56,7 @@ import sys
 import tempfile
 import threading
 import traceback
-from email.parser import BytesParser
+from gluon.contrib.multipart import MultipartParser, parse_options_header
 from http import cookies as Cookie
 from io import BytesIO, StringIO
 from pickle import DICT, EMPTY_DICT, MARK, Pickler
@@ -305,35 +305,23 @@ class Request(Storage):
 
             # Handle multipart/form-data
             if content_type.startswith("multipart/form-data"):
-                raw_data = body.read(content_length)
+                ct, opts = parse_options_header(content_type)
+                boundary = opts.get("boundary")
+                charset = opts.get("charset", "utf-8")
+                parser = MultipartParser(body, boundary, content_length=content_length, charset=charset)
+                for part in parser.parts():
+                    if part.filename:  # file upload
+                        post_vars[part.name] = Storage(
+                            filename=part.filename,  # already decoded properly
+                            file=BytesIO(part.raw)
+                        )
+                    else:  # normal field
+                        value = part.value  # decoded as UTF-8 automatically
+                        post_vars[part.name] = (
+                            value if part.name not in post_vars
+                            else listify(post_vars[part.name]) + [value]
+                        )
                 body.seek(0)
-
-                # Boundary is embedded in content_type
-                raw_data = (
-                    "Content-Type: " + content_type + "\r\n" +
-                    "Content-Length: " + str(content_length) + "\r\n" +
-                    "\r\n"
-                ).encode("utf-8") + raw_data
-
-                parser = BytesParser()
-                msg = parser.parsebytes(raw_data)
-
-                for part in msg.walk():
-                    if part.get_content_disposition() == "form-data":
-                        name = part.get_param("name", header="content-disposition")
-                        filename = part.get_param("filename", header="content-disposition")
-                        if filename:  # If part is a file upload
-                            post_vars[name] = Storage(
-                                filename=filename,
-                                file=BytesIO(part.get_payload(decode=True))
-                            )
-                        else:  # If part is a regular field
-                            field = part.get_payload(decode=True).decode("utf8")
-                            post_vars[name] = (
-                                    field if name not in post_vars
-                                    else listify(post_vars[name]) + [field]
-                            )
-
             # Handle application/x-www-form-urlencoded
             elif content_type.startswith("application/x-www-form-urlencoded"):
                 raw_data = body.read(content_length).decode("utf8")
@@ -366,7 +354,6 @@ class Request(Storage):
                 )
                 if len(pvalue):
                     post_vars[key] = (len(pvalue) > 1 and pvalue) or pvalue[0]
-
         # Reset body for reuse
         body.seek(0)
 
