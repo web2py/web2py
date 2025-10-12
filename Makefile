@@ -45,7 +45,7 @@ coverage:
 	coverage html --rcfile=gluon/tests/coverage.ini
 src:
 	### Use semantic versioning
-	echo 'VERSION = "3.0.13-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S`'"' > gluon/version.py
+	echo 'VERSION = "3.0.14-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S`'"' > gluon/version.py
 	### rm -f all junk files
 	make clean
 	### make welcome layout and appadmin the default
