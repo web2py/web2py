@@ -56,7 +56,7 @@ import sys
 import tempfile
 import threading
 import traceback
-from gluon.contrib.multipart import MultipartParser, parse_options_header
+from gluon.contrib.multipart import MultipartParser, parse_options_header, ParserError
 from http import cookies as Cookie
 from io import BytesIO, StringIO
 from pickle import DICT, EMPTY_DICT, MARK, Pickler
@@ -308,19 +308,23 @@ class Request(Storage):
                 ct, opts = parse_options_header(content_type)
                 boundary = opts.get("boundary")
                 charset = opts.get("charset", "utf-8")
-                parser = MultipartParser(body, boundary, content_length=content_length, charset=charset)
-                for part in parser.parts():
-                    if part.filename:  # file upload
-                        post_vars[part.name] = Storage(
-                            filename=part.filename,  # already decoded properly
-                            file=BytesIO(part.raw)
-                        )
-                    else:  # normal field
-                        value = part.value  # decoded as UTF-8 automatically
-                        post_vars[part.name] = (
-                            value if part.name not in post_vars
-                            else listify(post_vars[part.name]) + [value]
-                        )
+                parser = iter(MultipartParser(body, boundary, content_length=content_length, charset=charset))
+                while True:
+                    try:
+                        part = next(parser)
+                        if part.filename:  # file upload
+                            post_vars[part.name] = Storage(
+                                filename=part.filename,  # already decoded properly
+                                file=BytesIO(part.raw)
+                            )
+                        else:  # normal field
+                            value = part.value  # decoded as UTF-8 automatically
+                            post_vars[part.name] = (
+                                value if part.name not in post_vars
+                                else listify(post_vars[part.name]) + [value]
+                            )
+                    except (StopIteration, ParserError):
+                        break
                 body.seek(0)
             # Handle application/x-www-form-urlencoded
             elif content_type.startswith("application/x-www-form-urlencoded"):
