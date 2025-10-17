@@ -26,4 +26,4 @@ WORKDIR /home/web2py/web2py
 
 EXPOSE 8000
 
-CMD . /home/web2py/bin/activate && /usr/bin/python /home/web2py/web2py/anyserver.py -s gunicorn -i 0.0.0.0 -p 8000
+CMD . /home/web2py/bin/activate && python3 /home/web2py/web2py/anyserver.py -s gunicorn -i 0.0.0.0 -p 8000
