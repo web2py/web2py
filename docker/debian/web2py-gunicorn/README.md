@@ -42,4 +42,4 @@ docker-compose ps
 
 
 ## To access admin panel:
-1. https://github.com/web2py/web2py/issues/2484#issuecomment-3416079905
+Create `parameters_XXXX.py` file and Turn on DEMO_MODE as mentioned in this github comment: https://github.com/web2py/web2py/issues/2484#issuecomment-3416079905
