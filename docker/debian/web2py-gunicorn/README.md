@@ -39,3 +39,7 @@ docker run -d -v applications:/home/web2py/web2py/applications -p 8000:8000 --na
 
 docker-compose up -d
 docker-compose ps
+
+
+## To access admin panel:
+Create `parameters_XXXX.py` file and Turn on DEMO_MODE as mentioned in this github comment: https://github.com/web2py/web2py/issues/2484#issuecomment-3416079905
