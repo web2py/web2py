@@ -39,3 +39,7 @@ docker run -d -v applications:/home/web2py/web2py/applications -p 8000:8000 --na
 
 docker-compose up -d
 docker-compose ps
+
+
+## To access admin panel:
+1. https://github.com/web2py/web2py/issues/2484#issuecomment-3416079905
