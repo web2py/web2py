@@ -3,9 +3,8 @@ FROM debian:latest
 #LABEL your_label
 
 RUN apt update && \
- apt install -y python python-pip python-setuptools unzip wget python-gunicorn && \
- pip install virtualenv 
-
+ apt install -y python3 python3-setuptools unzip wget virtualenv
+ 
 RUN groupadd -r web2py && \
  useradd -m -r -g web2py web2py
 
@@ -19,6 +18,9 @@ RUN virtualenv /home/web2py && \
  unzip -o web2py_src.zip && \
  rm -rf /home/web2py/web2py/applications/examples && \
  chmod 755 -R /home/web2py/web2py
+
+RUN /home/web2py/bin/bin/pip3 install gunicorn
+RUN /home/web2py/bin/bin/pip3 install legacy-cgi
 
 WORKDIR /home/web2py/web2py
 
