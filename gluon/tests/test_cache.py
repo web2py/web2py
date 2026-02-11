@@ -106,8 +106,11 @@ class TestCache(unittest.TestCase):
 
             # empty cache file
             folder = os.path.join(s.folder, "cache")
-            val_file = recfile.open("a", mode="r+b", path=folder)
+            # Use the filtered key name for Windows compatibility
+            filtered_key = cache.storage.key_filter_in("a")
+            val_file = recfile.open(filtered_key, mode="r+b", path=folder)
             val_file.truncate()
+            val_file.close()
 
             self.assertEqual(cache("a", lambda: 2, 0), 2)
 
