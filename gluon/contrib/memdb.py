@@ -632,7 +632,7 @@ class Rows(object):
             packed = self.colnames[j].split(".")
             try:
                 (tablename, fieldname) = packed
-            except:
+            except Exception:
                 if not "_extra" in row:
                     row["_extra"] = DALStorage()
                 row["_extra"][self.colnames[j]] = value

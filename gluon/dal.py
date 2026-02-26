@@ -30,19 +30,19 @@ if not DRIVERS.get("pymysql"):
         from .contrib import pymysql
 
         DRIVERS["pymysql"] = pymysql
-    except:
+    except Exception:
         pass
 if not DRIVERS.get("pyodbc"):
     try:
         from .contrib import pypyodbc as pyodbc
 
         DRIVERS["pyodbc"] = pyodbc
-    except:
+    except Exception:
         pass
 if not DRIVERS.get("pg8000"):
     try:
         from .contrib import pg8000
 
         DRIVERS["pg8000"] = pg8000
-    except:
+    except Exception:
         pass

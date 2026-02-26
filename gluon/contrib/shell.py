@@ -163,7 +163,7 @@ def represent(obj):
     """
     try:
         return pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
-    except:
+    except Exception:
         return repr(obj)
 
 
@@ -188,7 +188,7 @@ def run(history, statement, env={}):
     try:
         logging.info("Compiling and evaluating:\n%s" % statement)
         compiled = compile(statement, "<string>", "single")
-    except:
+    except Exception:
         return str(traceback.format_exc())
 
     # create a dedicated module to be used as this statement's __main__
@@ -221,7 +221,7 @@ def run(history, statement, env={}):
         for name, val in history.globals_dict().items():
             try:
                 statement_module.__dict__[name] = val
-            except:
+            except Exception:
                 msg = "Dropping %s since it could not be unpickled.\n" % name
                 output.write(msg)
                 logging.warning(msg + traceback.format_exc())
@@ -240,7 +240,7 @@ def run(history, statement, env={}):
             finally:
                 locker.release()
                 sys.stdout, sys.stderr = old_stdout, old_stderr
-        except:
+        except Exception:
             output.write(str(traceback.format_exc()))
             return output.getvalue()
 

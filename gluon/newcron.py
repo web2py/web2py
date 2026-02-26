@@ -147,7 +147,7 @@ class Token(object):
             portalocker.lock(self.master, portalocker.LOCK_EX)
             try:
                 (start, stop) = pickle.load(self.master)
-            except:
+            except Exception:
                 start = 0
                 stop = 1
             if startup or self.now - start > locktime:

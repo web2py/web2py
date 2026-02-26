@@ -41,7 +41,7 @@ def startwebserver():
             c = WebClient("http://127.0.0.1:8000/")
             c.get(test_app_name)
             break
-        except:
+        except Exception:
             continue
     print("")
 

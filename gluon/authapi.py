@@ -197,7 +197,7 @@ class AuthAPI(object):
                     user.get("first_name", user.get("email")),
                     user.get("last_name", ""),
                 )
-            except:
+            except Exception:
                 return id
 
         ondelete = self.settings.ondelete
@@ -676,7 +676,7 @@ class AuthAPI(object):
         group_id = group_id or self.id_group(role)
         try:
             group_id = int(group_id)
-        except:
+        except Exception:
             group_id = self.id_group(group_id)  # interpret group_id as a role
         if not user_id and self.user:
             user_id = self.user.id
@@ -719,7 +719,7 @@ class AuthAPI(object):
         group_id = group_id or self.id_group(role)
         try:
             group_id = int(group_id)
-        except:
+        except Exception:
             group_id = self.id_group(group_id)  # interpret group_id as a role
         if not user_id and self.user:
             user_id = self.user.id
@@ -762,7 +762,7 @@ class AuthAPI(object):
             group_id = group_id or self.id_group(role)
             try:
                 group_id = int(group_id)
-            except:
+            except Exception:
                 group_id = self.id_group(group_id)  # interpret group_id as a role
             membership = self.table_membership()
             if (
@@ -1128,7 +1128,7 @@ class AuthAPI(object):
 
         try:  # Make sure we have our original minimum length
             table_user[passfield].requires[-1].min_length = settings.password_min_length
-        except:
+        except Exception:
             pass
 
         key = web2py_uuid()

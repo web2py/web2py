@@ -547,7 +547,7 @@ else:
     try:
         # First try direct loading libodbc.so
         ODBC_API = ctypes.cdll.LoadLibrary("libodbc.so")
-    except:
+    except Exception:
         # If direct loading libodbc.so failed
         # We try finding the libodbc.so by using find_library
         from ctypes.util import find_library
@@ -573,7 +573,7 @@ else:
         # Then we try loading the found libodbc.so again
         try:
             ODBC_API = ctypes.cdll.LoadLibrary(library)
-        except:
+        except Exception:
             # If still fail loading, abort.
             raise OdbcLibraryError("Error while loading " + library)
 
@@ -1536,7 +1536,7 @@ class Cursor:
                                 break
                             else:
                                 raise sys.exc_info()[1]
-                        except:
+                        except Exception:
                             raise sys.exc_info()[1]
 
                     self._PARAM_SQL_TYPE_LIST.append(
@@ -3005,7 +3005,7 @@ class Connection:
                 info_tuple = cur.getTypeInfo(sql_type)
                 if info_tuple is not None:
                     self.type_size_dic[sql_type] = info_tuple[2], info_tuple[14]
-            except:
+            except Exception:
                 pass
             cur.close()
 
@@ -3014,7 +3014,7 @@ class Connection:
             driver_name = self.getinfo(SQL_DRIVER_NAME)
             if any(x in driver_name for x in ("SQLSRV", "ncli", "libsqlncli")):
                 self.support_SQLDescribeParam = True
-        except:
+        except Exception:
             pass
 
     def commit(self):

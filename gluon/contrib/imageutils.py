@@ -58,7 +58,7 @@ class RESIZE(object):
                 img.save(s, "JPEG", quality=self.quality)
             s.seek(0)
             value.file = s
-        except:
+        except Exception:
             return (value, self.error_message)
         else:
             return (value, None)

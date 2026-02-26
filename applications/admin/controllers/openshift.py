@@ -30,7 +30,7 @@ def deploy():
     if form.accepts(request, session):
         try:
             kill()
-        except:
+        except Exception:
             pass
 
         ignore_apps = [

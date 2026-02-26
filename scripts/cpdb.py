@@ -156,7 +156,7 @@ class console:
                     self.commandSort.append((int(self
                                                  .commands[cmd].__doc__.split(
                                                  "|")[0]), cmd))
-                except:
+                except Exception:
                     pass
 
         self.commandSort.sort()
@@ -182,7 +182,7 @@ class console:
                 command = raw_input(self.prompt)
                 try:
                     self.execCommand(command)
-                except:
+                except Exception:
                     self.execute(command)
             except KeyboardInterrupt:
                 break
@@ -327,7 +327,7 @@ style choices:
                     tail, head = os.path.split(file)
                     try:
                         os.makedirs(tail)
-                    except:
+                    except Exception:
                         'do nothing, folders exist'
                     oFile = open(file, 'w')
                     oFile.write('TABLE: %s\n%s' % (table, dataTable))

@@ -703,7 +703,7 @@ def replace_components(text, env):
             b = match.group("b")
             try:
                 b = safe_eval(make_dict(b), env)
-            except:
+            except Exception:
                 pass
             try:
                 f = f(**b) if isinstance(b, dict) else f(b)

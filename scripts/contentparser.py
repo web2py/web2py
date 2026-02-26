@@ -53,7 +53,7 @@ class MIMEParser(dict):
 if __name__ == '__main__':
     try:
         path = sys.argv[1]
-    except:
+    except Exception:
         path = 'contenttype.py'
     vregex = re.compile('database version (?P<version>.+?)\.?\n')
     sys.stdout.write('Checking contenttype.py database version:')
@@ -82,7 +82,7 @@ if __name__ == '__main__':
         ftype = search.group('type')
         assert ftype is not None
         sys.stdout.write('\t[OK] version %s\n' % nversion)
-    except:
+    except Exception:
         sys.stdout.write('\t[ERROR] unknown version\n')
         exit()
     if cversion == nversion:
@@ -90,7 +90,7 @@ if __name__ == '__main__':
         exit()
     try:
         raw_input('\nContenttype.py database updates are available from:\n%s (approx. 0.5MB)\nPress enter to continue or CTRL-C to quit now\nWARNING: this will replace contenttype.py file content IN PLACE' % url)
-    except:
+    except Exception:
         exit()
     sys.stdout.write('\nDownloading new database:')
     sys.stdout.flush()

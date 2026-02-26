@@ -3220,7 +3220,7 @@ class SQLFORM(FORM):
             dbset = dbset(subquery)
         try:
             nrows = fetch_count(dbset)
-        except:
+        except Exception:
             nrows = 0
             error = T("Unsupported query")
 

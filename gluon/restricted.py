@@ -138,15 +138,15 @@ class RestrictedError(Exception):
             try:
                 try:
                     self.traceback = traceback.format_exc()
-                except:
+                except Exception:
                     self.traceback = traceback.format_exc(limit=1)
-            except:
+            except Exception:
                 self.traceback = "no traceback because template parsing error"
             try:
                 self.snapshot = snapshot(
                     context=10, code=code, environment=self.environment
                 )
-            except:
+            except Exception:
                 self.snapshot = {}
         else:
             self.traceback = "(no error)"
@@ -170,7 +170,7 @@ class RestrictedError(Exception):
             if cmd_opts and cmd_opts.errors_to_console:
                 logger.error(self.traceback)
             return request.uuid
-        except:
+        except Exception:
             logger.error(self.traceback)
             return None
 

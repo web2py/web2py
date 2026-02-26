@@ -73,7 +73,7 @@ def index():
                     finally:
                         metafile.close()
                     session.flash = T("The app exists, was created by wizard, continue to overwrite!")
-                except:
+                except Exception:
                     session.flash = T("The app exists, was NOT created by wizard, continue to overwrite!")
         redirect(URL('step1'))
     return dict(step='Start', form=form)
@@ -87,7 +87,7 @@ def step1():
         #try:
         #    data = urllib.urlopen(url).read()
         #    session.themes = ['Default'] + loads(data)['layouts']
-        #except:
+        #except Exception:
         session.themes = ['Default']
     themes = session.themes
     if not session.plugins:
@@ -95,7 +95,7 @@ def step1():
         #try:
         #    data = urllib.urlopen(url).read()
         #    session.plugins = loads(data)['plugins']
-        #except:
+        #except Exception:
         session.plugins = []
     plugins = [x.split('.')[2] for x in session.plugins]
     response.view = 'wizard/step.html'
@@ -507,7 +507,7 @@ def create(options):
             theme = urllib.urlopen(
                 LAYOUTS_APP + '/static/plugin_layouts/plugins/' + fn)
             plugin_install(app, theme, request, fn)
-        except:
+        except Exception:
             session.flash = T("unable to download layout")
 
     ### apply plugins

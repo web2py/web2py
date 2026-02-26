@@ -31,7 +31,7 @@ def hg_repo(path):
         os.environ['HGUSER'] = 'web2py@localhost'
     try:
         repo = hg.repository(ui=uio, path=path)
-    except:
+    except Exception:
         repo = hg.repository(ui=uio, path=path, create=True)
     hgignore = os.path.join(path, '.hgignore')
     if not os.path.exists(hgignore):
@@ -60,7 +60,7 @@ def commit():
             changes.append(TR(A(revision, _href=URL('revision',
                                                     args=(app, revision))),
                               description))
-    except:
+    except Exception:
         files = []
         changes = []
     return dict(form=form, files=files, changes=changes, repo=repo)

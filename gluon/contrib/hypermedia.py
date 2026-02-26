@@ -267,7 +267,7 @@ class Collection(object):
                 rows = db(query).select(
                     *fields, **dict(limitby=limitby, orderby=orderby)
                 )
-            except:
+            except Exception:
                 db.rollback()
                 return self.error(400, "BAD REQUEST", "Invalid Query")
             r["items_found"] = db(query).count()
@@ -325,7 +325,7 @@ class Collection(object):
                     n = db(query).delete()  # MAY FAIL
                     response.status = 204
                     return ""
-                except:
+                except Exception:
                     db.rollback()
                     return self.error(400, "BAD REQUEST", "Invalid Query")
             return response.json(r)
@@ -353,7 +353,7 @@ class Collection(object):
                     else:
                         response.status = 200
                         return ""
-                except:
+                except Exception:
                     db.rollback()
                     return self.error(400, "BAD REQUEST", "Invalid Query")
             else:  # create

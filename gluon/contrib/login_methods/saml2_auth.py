@@ -204,7 +204,7 @@ class Saml2Auth(object):
                 attributes = (
                     d["response"].assertions[0].attribute_statement[0].attribute
                 )
-            except:
+            except Exception:
                 attributes = d["response"].assertion.attribute_statement[0].attribute
             current.session.saml2_info = dict(
                 (a.name, [i.text for i in a.attribute_value]) for a in attributes

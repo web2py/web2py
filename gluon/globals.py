@@ -268,7 +268,7 @@ class Request(Storage):
         if is_json:
             try:
                 json_vars = json_parser.load(body)
-            except:
+            except Exception:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}
                 pass
@@ -1103,7 +1103,7 @@ class Session(Storage):
                         oc = response.session_filename.split("/")[-1].split("-")[0]
                         if check_client and response.session_client != oc:
                             raise Exception("cookie attack")
-                    except:
+                    except Exception:
                         response.session_id = None
             if not response.session_id:
                 uuid = web2py_uuid()
@@ -1166,7 +1166,7 @@ class Session(Storage):
                             session_data = pickle.loads(row["session_data"])
                             self.update(session_data)
                             response.session_new = False
-                        except:
+                        except Exception:
                             record_id = None
                     else:
                         record_id = None
@@ -1333,7 +1333,7 @@ class Session(Storage):
             try:
                 self._close(response)
                 os.unlink(target)
-            except:
+            except Exception:
                 pass
         elif response.session_storage_type == "db":
             table = response.session_db_table
@@ -1505,7 +1505,7 @@ class Session(Storage):
             try:
                 response.session_file.close()
                 del response.session_file
-            except:
+            except Exception:
                 pass
 
 

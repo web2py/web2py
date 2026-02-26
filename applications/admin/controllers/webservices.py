@@ -108,7 +108,7 @@ def detach_debugger():
     if gluon.debug.dbg_debugger:
         try:
             gluon.debug.dbg_debugger.do_quit()
-        except:
+        except Exception:
             pass
     if hasattr(gluon.debug, 'dbg_listener'):
         if gluon.debug.dbg_connection:

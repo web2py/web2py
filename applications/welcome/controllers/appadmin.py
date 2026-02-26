@@ -24,7 +24,7 @@ try:
     hosts = (http_host, socket.gethostname(),
              socket.gethostbyname(http_host),
              '::1', '127.0.0.1', '::ffff:127.0.0.1')
-except:
+except Exception:
     hosts = (http_host, )
 
 if request.is_https:
@@ -81,7 +81,7 @@ def get_databases(request):
     for (key, value) in global_env.items():
         try:
             cond = isinstance(value, GQLDB)
-        except:
+        except Exception:
             cond = isinstance(value, SQLDB)
         if cond:
             dbs[key] = value
@@ -626,7 +626,7 @@ def hooks():
                             if details['filename'] or with_build_it:
                                 functions.append(details)
                         # compiled app and windows build don't support code inspection
-                        except:
+                        except Exception:
                             pass
                 if len(functions):
                     method_hooks.append({'name': op, 'functions':functions})

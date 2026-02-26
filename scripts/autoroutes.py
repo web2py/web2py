@@ -44,7 +44,7 @@ if not config.strip():
             config = config_file.read()
         finally:
             config_file.close()
-    except:
+    except Exception:
         config = ""
 
 

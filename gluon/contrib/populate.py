@@ -263,7 +263,7 @@ def populate_generator(table, default=True, compute=False, contents=None, ell=No
                     record[fieldname] = random.randint(
                         field.requires.minimum, field.requires.maximum - 1
                     )
-                except:
+                except Exception:
                     if "day" in fieldname:
                         record[fieldname] = random.randint(1, 28)
                     elif "month" in fieldname:

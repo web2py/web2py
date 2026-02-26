@@ -184,7 +184,7 @@ class OAuthAccount(object):
 
                     try:
                         resp_type = open_url.info().get_content_type()
-                    except:
+                    except Exception:
                         # Old python 2 version. This does not work for python3
                         resp_type = open_url.info().gettype()
 

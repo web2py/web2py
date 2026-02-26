@@ -15,7 +15,7 @@ from gluon.dal import DAL, Field
 def tearDownModule():
     try:
         os.unlink("dummy.db")
-    except:
+    except Exception:
         pass
 
 

@@ -15,7 +15,7 @@ def get_databases(request):
     for key, value in global_env.items():
         try:
             cond = isinstance(value, GQLDB)
-        except:
+        except Exception:
             cond = isinstance(value, SQLDB)
         if cond:
             dbs[key] = value

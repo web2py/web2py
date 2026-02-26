@@ -254,7 +254,7 @@ def render(
                 html = "{\\ft %s}" % latex_escape(code)
         try:
             text = text + html + parts[i + 1]
-        except:
+        except Exception:
             text = text + "... WIKI PROCESSING ERROR ..."
             break
     text = text.replace(" ~\\cite", "~\\cite")

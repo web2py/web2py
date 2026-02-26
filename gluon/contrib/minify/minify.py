@@ -102,7 +102,7 @@ def minify(
                     if a != spath_info[i]:
                         u = i
                         break
-                except:
+                except Exception:
                     pass
             if concat_css:
                 contents = read_binary_file(abs_filename)

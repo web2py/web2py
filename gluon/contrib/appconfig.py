@@ -76,7 +76,7 @@ class AppConfigDict(dict):
                 return float(value)
             except Exception:
                 return value
-        except:
+        except Exception:
             return default
 
     def take(self, path, cast=None):

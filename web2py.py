@@ -47,7 +47,7 @@ def main():
         try:
             import coverage
             coverage.process_startup()
-        except:
+        except Exception:
             print("Coverage is not available")
             pass
     # start services

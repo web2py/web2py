@@ -88,7 +88,7 @@ def compare(a, b):
         for i in range(len(b)):
             result |= ord(a[i % len(a)]) ^ ord(b[i])
         return result == 0
-    except:
+    except Exception:
         return False
 
 

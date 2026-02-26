@@ -304,7 +304,7 @@ def create_welcome_w2p():
                     os.mkdir(amf)
             w2p_pack("welcome.w2p", app_path)
             logger.info("New installation: created welcome.w2p file")
-        except:
+        except Exception:
             logger.exception(
                 "New installation error: unable to create welcome.w2p file"
             )
@@ -313,7 +313,7 @@ def create_welcome_w2p():
             try:
                 os.unlink("NEWINSTALL")
                 logger.info("New installation: removed NEWINSTALL file")
-            except:
+            except Exception:
                 logger.exception(
                     "New installation error: unable to remove NEWINSTALL file"
                 )

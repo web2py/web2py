@@ -340,7 +340,7 @@ class CacheOnDisk(CacheAbstract):
                 try:
                     portalocker.lock(val_file, portalocker.LOCK_EX)
                     break
-                except:
+                except Exception:
                     time.sleep(self.file_lock_time_wait)
 
         def acquire(self, key):
@@ -399,7 +399,7 @@ class CacheOnDisk(CacheAbstract):
             try:
                 val_file = recfile.open(key, mode="r+b", path=self.folder)
                 exists = True
-            except:
+            except Exception:
                 val_file = recfile.open(key, mode="wb", path=self.folder)
             self.wait_portalock(val_file)
             if exists:
@@ -463,7 +463,7 @@ class CacheOnDisk(CacheAbstract):
 
         try:
             item = self.storage.get(key)
-        except:
+        except Exception:
             del self.storage[key]
             item = self.storage.get(key)
 
@@ -488,7 +488,7 @@ class CacheOnDisk(CacheAbstract):
         else:
             try:
                 value = f()
-            except:
+            except Exception:
                 self.storage.release(CacheAbstract.cache_stats_name)
                 self.storage.release(key)
                 raise

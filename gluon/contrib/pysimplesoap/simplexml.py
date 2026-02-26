@@ -67,7 +67,7 @@ class SimpleXMLElement(object):
         if text is not None:
             try:
                 self.__document = xml.dom.minidom.parseString(text)
-            except:
+            except Exception:
                 log.error(text)
                 raise
             self.__elements = [self.__document.documentElement]
@@ -290,7 +290,7 @@ class SimpleXMLElement(object):
                     jetty=self.__jetty,
                     namespaces_map=self.__namespaces_map,
                 )
-        except:
+        except Exception:
             raise
 
     def __dir__(self):
@@ -354,7 +354,7 @@ class SimpleXMLElement(object):
         """Returns the float value of the current element"""
         try:
             return float(self.__str__())
-        except:
+        except Exception:
             raise IndexError(self._element.toxml())
 
     _element = property(lambda self: self.__elements[0])
@@ -406,7 +406,7 @@ class SimpleXMLElement(object):
                             fn = [REVERSE_TYPE_MAP[xsd_type]]
                         else:
                             fn = REVERSE_TYPE_MAP[xsd_type]
-                    except:
+                    except Exception:
                         fn = None  # ignore multirefs!
                 elif xmlns == "http://www.w3.org/2001/XMLSchema":
                     # self-defined schema, return the SimpleXMLElement

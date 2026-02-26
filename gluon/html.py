@@ -544,7 +544,7 @@ def verifyURL(
             if hash_vars and not isinstance(hash_vars, (list, tuple)):
                 hash_vars = [hash_vars]
             h_vars = [(k, v) for (k, v) in list_vars if k in hash_vars]
-        except:
+        except Exception:
             # user has removed one of our vars! Immediate fail
             return False
     # build the full message string with both args & vars
@@ -1315,7 +1315,7 @@ class DIV(XmlComponent):
                     matches.append(c)
                     if first_only:
                         break
-            except:
+            except Exception:
                 pass
         return matches
 
@@ -2562,7 +2562,7 @@ class BEAUTIFY(DIV):
                         )
                     components.append(TABLE(*rows, **attributes))
                     continue
-                except:
+                except Exception:
                     pass
             if isinstance(c, str):
                 components.append(c)
@@ -2808,7 +2808,7 @@ class web2pyHTMLParser(HTMLParser):
             try:
                 parent_tagname = self.parent.tag
                 self.parent = self.parent.parent
-            except:
+            except Exception:
                 raise RuntimeError("unable to balance tag %s" % tagname)
             if parent_tagname[: len(tagname)] == tagname:
                 break

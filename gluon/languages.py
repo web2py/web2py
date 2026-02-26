@@ -1072,7 +1072,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
         for item in items:
             try:
                 message = safe_eval(item)
-            except:
+            except Exception:
                 continue  # silently ignore improperly formatted strings
             add_message(message)
     gluon_msg = [Auth.default_messages, Crud.default_messages]

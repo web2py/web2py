@@ -176,7 +176,7 @@ def oembed(url):
             try:
                 data = urllib.urlopen(oembed).read()
                 return loads(data)  # json!
-            except:
+            except Exception:
                 pass
     return {}
 

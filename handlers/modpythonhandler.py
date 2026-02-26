@@ -182,7 +182,7 @@ class Handler:
 
             if hasattr(result, 'close'):
                 result.close()
-        except:
+        except Exception:
             traceback.print_exc(None, self.environ['wsgi.errors'])
 
             if not self.started:

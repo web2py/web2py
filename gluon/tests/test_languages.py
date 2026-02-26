@@ -53,7 +53,7 @@ class TestLanguagesParallel(unittest.TestCase):
     def tearDown(self):
         try:
             os.remove(self.filename)
-        except:
+        except Exception:
             pass
 
     @unittest.skipIf(MP_WORKING == 0, "multiprocessing tests unavailable")

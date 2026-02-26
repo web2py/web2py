@@ -48,7 +48,7 @@ class BaseTestScheduler(unittest.TestCase):
     def tearDown(self):
         try:
             self.inner_teardown()
-        except:
+        except Exception:
             pass
         appdir = os.path.join("applications", test_app_name)
         if hasattr(self, 'db'):
@@ -616,7 +616,7 @@ class testForSchedulerRunnerBase(BaseTestScheduler):
         for f in additional_files:
             try:
                 os.unlink(f)
-            except:
+            except Exception:
                 pass
 
     def writeview(self, content, dest=None):

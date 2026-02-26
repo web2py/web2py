@@ -325,7 +325,7 @@ def run(
             if import_models:
                 BaseAdapter.close_all_instances("rollback")
             raise
-        except:
+        except Exception:
             print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances("rollback")
@@ -339,7 +339,7 @@ def run(
             if import_models:
                 BaseAdapter.close_all_instances("rollback")
             raise
-        except:
+        except Exception:
             print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances("rollback")
@@ -353,7 +353,7 @@ def run(
             if import_models:
                 BaseAdapter.close_all_instances("rollback")
             raise
-        except:
+        except Exception:
             print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances("rollback")
@@ -365,7 +365,7 @@ def run(
 
                     bpython.embed(locals_=_env)
                     return
-                except:
+                except Exception:
                     logger.warning("import bpython error; trying ipython...")
             else:
                 try:
@@ -396,7 +396,7 @@ def run(
                         shell = IPython.Shell.IPShell(argv=[], user_ns=_env)
                         shell.mainloop()
                         return
-                except:
+                except Exception:
                     logger.warning("import IPython error; use default python shell")
         enable_autocomplete_and_history(adir, _env)
         code.interact(local=_env)

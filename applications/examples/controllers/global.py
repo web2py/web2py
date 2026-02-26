@@ -8,7 +8,7 @@ def get(args):
         for k in range(1,len(args)):
             obj = getattr(obj,args[k])
         return obj
-    except:
+    except Exception:
         return None
 
 def vars():

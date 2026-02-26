@@ -31,7 +31,7 @@ def email_auth(server="smtp.gmail.com:587", domain="@gmail.com", tls_mode=None):
             server.login(email, password)
             server.quit()
             return True
-        except:
+        except Exception:
             logging.exception("email_auth() failed")
             if server:
                 try:

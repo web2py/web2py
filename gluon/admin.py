@@ -178,7 +178,7 @@ def app_create(app, request, force=False, key=None, info=False):
     if not os.path.exists(path):
         try:
             os.mkdir(path)
-        except:
+        except Exception:
             if info:
                 return False, traceback.format_exc()
             else:
@@ -194,7 +194,7 @@ def app_create(app, request, force=False, key=None, info=False):
             return True, None
         else:
             return True
-    except:
+    except Exception:
         rmtree(path)
         if info:
             return False, traceback.format_exc()

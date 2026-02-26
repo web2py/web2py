@@ -805,7 +805,7 @@ def load_config(config_file, opt_map):
                         continue
                     try:
                         val = opt_map[opt](ast.literal_eval(m.group(1)))
-                    except:
+                    except Exception:
                         die(
                             "cannot parse config file %r at line %d"
                             % (config_file, linenum)

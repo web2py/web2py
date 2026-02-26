@@ -820,10 +820,10 @@ class Sheet:
         else:
             try:
                 node.computed_value = int(node.value)
-            except:
+            except Exception:
                 try:
                     node.computed_value = float(node.value)
-                except:
+                except Exception:
                     node.computed_value = node.value
             self.environment[key] = node.computed_value
             if node.onchange:

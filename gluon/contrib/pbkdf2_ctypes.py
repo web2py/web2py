@@ -196,7 +196,7 @@ if __name__ == "__main__":
     try:
         crypto.SSLeay_version.restype = ctypes.c_char_p
         print(crypto.SSLeay_version(0))
-    except:
+    except Exception:
         pass
 
     import platform

@@ -20,7 +20,7 @@ def what():
     import urllib
     try:
         images = XML(urllib.urlopen('http://www.web2py.com/poweredby/default/images').read())
-    except:
+    except Exception:
         images = []
     return response.render(images=images)
 

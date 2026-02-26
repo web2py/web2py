@@ -53,7 +53,7 @@ from xml.dom import Node
 
 try:
     from xml.ns import XMLNS
-except:
+except Exception:
 
     class XMLNS:
         BASE = "http://www.w3.org/2000/xmlns/"

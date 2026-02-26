@@ -495,7 +495,7 @@ def uninstall():
                 redirect(URL('site'))
         try:
             filename = app_pack(app, request, raise_ex=True)
-        except:
+        except Exception:
             session.flash = T('unable to uninstall "%s"', app)
         else:
             if app_uninstall(app, request):
@@ -771,7 +771,7 @@ def edit():
                          offset + 1, 'lineno': e.lineno, 'offset': offset}
             try:
                 ex_name = e.__class__.__name__
-            except:
+            except Exception:
                 ex_name = 'unknown exception!'
             response.flash = DIV(T('failed to compile file because:'), BR(),
                                  B(ex_name), ' ' + T('at line %s', e.lineno),
@@ -1999,7 +1999,7 @@ def plugins():
                               "public/api.json/action/list/content/Package?package" +
                               "_type=plugin&search_index=false").read()
             session.plugins = loads_json(rawlist)
-        except:
+        except Exception:
             response.flash = T('Unable to download the list of plugins')
             session.plugins = []
     return dict(plugins=session.plugins["results"], app=request.args(0))

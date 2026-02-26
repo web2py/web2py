@@ -461,7 +461,7 @@ class FPDF(object):
 
     @check_page
     def dashed_line(self, x1, y1, x2, y2, dash_length=1, space_length=1):
-        """Draw a dashed line. Same interface as line() except:
+        """Draw a dashed line. Same interface as line() except Exception:
         - dash_length: Length of the dash
         - space_length: Length of the space between dashes"""
         self._set_dash(dash_length, space_length)
@@ -1190,7 +1190,7 @@ class FPDF(object):
                         info = pf(name)
                         succeed_parsing = True
                         break
-                    except:
+                    except Exception:
                         pass
                 # last resource
                 if not succeed_parsing:
@@ -2247,7 +2247,7 @@ class FPDF(object):
         # Read a 4-byte integer from file
         try:
             return struct.unpack(">I", f.read(4))[0]
-        except:
+        except Exception:
             return None
 
     def _textstring(self, s):

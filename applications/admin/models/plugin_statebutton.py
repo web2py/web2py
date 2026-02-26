@@ -4,7 +4,7 @@ response.files.append(URL('static','plugin_statebutton/css/bootstrap-switch.css'
 def stateWidget(field, value, data={'on-label':'Enabled', 'off-label':'Disabled', 'on':"primary", 'off':"default" }):
     try:
         fieldName = str(field).split('.')[1]
-    except:
+    except Exception:
         fieldName = field
 
     div = DIV(INPUT( _type='checkbox', _name='%s' % fieldName, _checked= 'checked' if value == 'true' else None, _value='true'),

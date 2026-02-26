@@ -77,7 +77,7 @@ class SessionSet(object):
                         self.expiration = session.auth.expiration
                     if session.auth.last_visit:
                         last_visit = session.auth.last_visit
-            except:
+            except Exception:
                 pass
 
             age = 0
@@ -161,7 +161,7 @@ class SessionDb(object):
                 return datetime.datetime.strptime(
                     self.row.modified_datetime, "%Y-%m-%d %H:%M:%S.%f"
                 )
-            except:
+            except Exception:
                 print(
                     "failed to retrieve last modified time (value: %s)"
                     % self.row.modified_datetime
@@ -180,7 +180,7 @@ class SessionFile(object):
     def delete(self):
         try:
             os.unlink(self.filename)
-        except:
+        except Exception:
             pass
 
     def get(self):
@@ -210,7 +210,7 @@ def single_loop(expiration=None, force=False, verbose=False):
     if expiration is None:
         try:
             expiration = auth.settings.expiration
-        except:
+        except Exception:
             expiration = EXPIRATION_MINUTES * 60
 
     set_files = SessionSetFiles(expiration, force, verbose)

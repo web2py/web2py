@@ -14,7 +14,7 @@ try:
     from mercurial import ui, hg, cmdutil
     try:
         from mercurial.scmutil import addremove
-    except:
+    except Exception:
         from mercurial.cmdutil import addremove
     have_mercurial = True
 except ImportError:

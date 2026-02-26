@@ -480,7 +480,7 @@ class Qdb(bdb.Bdb):
         "Return list of auto-completion options for expression"
         try:
             obj = self.do_eval(expression, safe=False)
-        except:
+        except Exception:
             return []
         else:
             return dir(obj)
@@ -532,7 +532,7 @@ class Qdb(bdb.Bdb):
             if isinstance(obj, collections.Callable):
                 try:
                     doc = inspect.getdoc(obj)
-                except:
+                except Exception:
                     pass
             return (name, argspec[1:-1], doc.strip())
 
@@ -637,7 +637,7 @@ class Qdb(bdb.Bdb):
             sys.stdin, sys.stdout, sys.stderr = self.old_stdio
         try:
             self.pipe.close()
-        except:
+        except Exception:
             pass
 
     def __del__(self):

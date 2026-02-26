@@ -1077,7 +1077,7 @@ class Recaptcha2(DIV):
         httpresp.close()
         try:
             response_dict = json.loads(content)
-        except:
+        except Exception:
             self.errors["captcha"] = self.error_message
             return False
         if response_dict.get("success", False):
@@ -2898,7 +2898,7 @@ class Auth(AuthAPI):
         passfield = settings.password_field
         try:
             table_user[passfield].requires[-1].min_length = 0
-        except:
+        except Exception:
             pass
 
         if onvalidation is DEFAULT:
@@ -3158,7 +3158,7 @@ class Auth(AuthAPI):
                             session.auth_two_factor = two_factor_method(
                                 user, session.auth_two_factor
                             )
-                        except:
+                        except Exception:
                             pass
                         else:
                             break
@@ -3219,7 +3219,7 @@ class Auth(AuthAPI):
                                 session.auth_two_factor_user,
                                 form.vars["authentication_code"],
                             )
-                        except:
+                        except Exception:
                             pass
                         else:
                             break
@@ -3398,7 +3398,7 @@ class Auth(AuthAPI):
             table_user[passfield].requires[
                 -1
             ].min_length = self.settings.password_min_length
-        except:
+        except Exception:
             pass
 
         if self.settings.register_verify_password:
@@ -4898,7 +4898,7 @@ class Crud(object):  # pragma: no cover
             return True
         try:
             record_id = record.id
-        except:
+        except Exception:
             record_id = record
         return self.settings.auth.has_permission(name, str(table), record_id)
 
@@ -4938,7 +4938,7 @@ class Crud(object):  # pragma: no cover
             table = self.db[table]
         try:
             record_id = record.id
-        except:
+        except Exception:
             record_id = record or 0
         if record_id and not self.has_permission("update", table, record_id):
             redirect(self.settings.auth.settings.on_failed_authorization)
@@ -5233,7 +5233,7 @@ class Crud(object):  # pragma: no cover
                     return field.like("%" + value + "%")
                 else:
                     return lambda row: value in row[field.name][format]
-        except:
+        except Exception:
             return None
 
     def search(self, *tables, **args):
@@ -5408,7 +5408,7 @@ def geocode(address):
         item = regex_geocode.search(txt)
         (la, lo) = (float(item.group("la")), float(item.group("lo")))
         return (la, lo)
-    except:
+    except Exception:
         return (0.0, 0.0)
 
 
@@ -5423,7 +5423,7 @@ def reverse_geocode(lat, lng, lang=None):
                 % locals()
             )
         )["results"][0]["formatted_address"]
-    except:
+    except Exception:
         return ""
 
 
@@ -5891,7 +5891,7 @@ class Service(object):
             return return_response(id, s)
         except Service.JsonRpcException as e:
             return return_error(id, e.code, e.info)
-        except:
+        except Exception:
             etype, eval, etb = sys.exc_info()
             message = "%s: %s" % (etype.__name__, eval)
             data = request.is_local and traceback.format_tb(etb)
@@ -5996,7 +5996,7 @@ class Service(object):
             raise e
         except Service.JsonRpcException as e:
             return return_error(id, e.code, e.info)
-        except:
+        except Exception:
             etype, eval, etb = sys.exc_info()
             data = "%s: %s\n" % (etype.__name__, eval) + str(
                 request.is_local and traceback.format_tb(etb)
@@ -6016,7 +6016,7 @@ class Service(object):
         try:
             import pyamf
             import pyamf.remoting.gateway
-        except:
+        except Exception:
             return "pyamf not installed or not in Python sys.path"
         request = current.request
         response = current.response
@@ -6041,7 +6041,7 @@ class Service(object):
     def serve_soap(self, version="1.1"):
         try:
             from gluon.contrib.pysimplesoap.server import SoapDispatcher
-        except:
+        except Exception:
             return "pysimplesoap not installed in contrib"
         request = current.request
         response = current.response
@@ -7473,7 +7473,7 @@ class Config(object):
         try:
             self.config.write(open(self.filename, "w"))
             result = True
-        except:
+        except Exception:
             current.session["settings_%s" % self.section] = dict(
                 self.config.items(self.section)
             )

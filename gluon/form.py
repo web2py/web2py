@@ -7,7 +7,7 @@ try:
     from gluon.current import current
     from gluon.helpers import *
     from gluon.url import URL
-except:
+except Exception:
     # web2py
     from gluon import current
     from gluon.html import *

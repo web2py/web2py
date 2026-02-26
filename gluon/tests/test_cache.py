@@ -18,7 +18,7 @@ try:
     import tempfile
 
     TemporaryDirectory = tempfile.TemporaryDirectory
-except:
+except Exception:
     from temporary_directory import TemporaryDirectory
 
 
@@ -37,7 +37,7 @@ def tearDownModule():
         oldcwd = None
     try:
         os.unlink("dummy.db")
-    except:
+    except Exception:
         pass
 
 

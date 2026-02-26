@@ -21,7 +21,7 @@ for f in b:
     for i in range(3, len(path)):
         try:
             os.mkdir(os.path.join('applications', dest, *path[2:i]))
-        except:
+        except Exception:
             pass
     path = os.path.join('applications', dest, *f.split('/')[2:])
     if os.path.isdir(f):

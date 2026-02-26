@@ -76,7 +76,7 @@ class TaskBarIcon:
                 icFH.close()
                 hicon = self.__loadFromFile(fp)
                 os.unlink(fp)
-            except:
+            except Exception:
                 print("Can't load web2py icons - using default")
                 hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
 
@@ -91,7 +91,7 @@ class TaskBarIcon:
         )
         try:
             win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
-        except:
+        except Exception:
             try:
                 win32gui.Shell_NotifyIcon(win32gui.NIM_ADD, nid)
             except win32api.error:

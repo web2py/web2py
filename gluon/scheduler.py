@@ -533,7 +533,7 @@ def executor(retq, task, outq):
                 f.write(result)
             result = RESULTINFILE + temp_path
         retq.put(TaskReport("COMPLETED", result=result))
-    except:
+    except Exception:
         tb = traceback.format_exc()
         retq.put(TaskReport("FAILED", tb=tb))
     finally:
@@ -574,7 +574,7 @@ class TYPE(object):
 
         try:
             obj = loads(value)
-        except:
+        except Exception:
             return (value, current.T("invalid json"))
         else:
             if isinstance(obj, self.myclass):
@@ -738,7 +738,7 @@ class Scheduler(threading.Thread):
                         logger.exception(" error while saving partial output")
                         task_output = task_output[: -len(tout)]
                 p.join(timeout=run_timeout)
-        except:
+        except Exception:
             logger.exception("    task stopped by general exception")
             self.terminate_process()
             tr = TaskReport(STOPPED)
@@ -1350,16 +1350,16 @@ class Scheduler(threading.Thread):
                     dead_workers.delete()
                     try:
                         self.is_a_ticker = self.being_a_ticker()
-                    except:
+                    except Exception:
                         logger.exception("Error coordinating TICKER")
                     with self.w_stats_lock:
                         if self.w_stats.status == ACTIVE:
                             self.do_assign_tasks = True
-                except:
+                except Exception:
                     logger.exception("Error cleaning up")
 
             db.commit()
-        except:
+        except Exception:
             logger.exception("Error retrieving status")
             try_rollback(db)
         self.adj_hibernation()
@@ -1389,7 +1389,7 @@ class Scheduler(threading.Thread):
                 try:
                     db(sw.worker_name == my_name).update(is_ticker=True)
                     db(sw.worker_name != my_name).update(is_ticker=False)
-                except:
+                except Exception:
                     logger.info("Deadlock detected")
                     return False
                 logger.info("TICKER: I'm a ticker")

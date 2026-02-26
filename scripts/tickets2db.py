@@ -22,7 +22,7 @@ try:
         .replace("\n", "")
         .strip()
     )
-except:
+except Exception:
     db_string = "sqlite://storage.db"
 
 db_path = os.path.join(request.folder, "databases")

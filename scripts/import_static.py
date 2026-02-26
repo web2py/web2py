@@ -58,7 +58,7 @@ def make_views(html_files, prefix):
             if stop is None:
                 if len(set(v[len(v) - k] for v in views.values())) > 1:
                     stop = k
-        except:
+        except Exception:
             if start is None:
                 start = k
             if stop is None:

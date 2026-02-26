@@ -519,7 +519,7 @@ class SoapClient(object):
             if not type(value) == struct and value is not None:
                 try:
                     struct(value)  # attempt to cast input to parameter type
-                except:
+                except Exception:
                     valid = False
                     errors.append(
                         "Type mismatch for argument value. parameter(%s): %s, value(%s): %s"

@@ -564,7 +564,7 @@ def ldap_auth(
                     .first()
                     .id
                 )
-            except:
+            except Exception:
                 try:
                     db_user_id = (
                         db(db.auth_user.email == username)
@@ -654,7 +654,7 @@ def ldap_auth(
                 for callback in manage_groups_callback:
                     callback()
 
-        except:
+        except Exception:
             logger.warning("[%s] Groups are not managed successfully!" % str(username))
             import traceback
 

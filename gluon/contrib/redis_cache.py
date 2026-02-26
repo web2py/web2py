@@ -5,7 +5,7 @@ Released under web2py license because includes gluon/cache.py source code
 
 try:
     import cPickle as pickle
-except:
+except Exception:
     import pickle
 
 import logging

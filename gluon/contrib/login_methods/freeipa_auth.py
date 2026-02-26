@@ -53,7 +53,7 @@ def freeipa_auth(server, basedn, group):
             if result == list():
                 return False
             return True
-        except:
+        except Exception:
             return False
 
     return freeipa_auth_aux

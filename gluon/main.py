@@ -553,7 +553,7 @@ def wsgibase(environ, responder):
                     web2py_error="ticket %s" % ticket,
                 )
 
-        except:
+        except Exception:
             if request.body:
                 request.body.close()
 
@@ -566,7 +566,7 @@ def wsgibase(environ, responder):
                     response._custom_rollback()
                 else:
                     BaseAdapter.close_all_instances("rollback")
-            except:
+            except Exception:
                 pass
             e = RestrictedError("Framework", "", "", locals())
             ticket = e.log(request) or "unrecoverable"
@@ -654,7 +654,7 @@ def appfactory(
         if not os.path.isdir(profiler_dir):
             try:
                 os.makedirs(profiler_dir)
-            except:
+            except Exception:
                 raise BaseException("Can't create dir %s" % profiler_dir)
         filepath = pjoin(profiler_dir, "wtest")
         try:
@@ -708,7 +708,7 @@ def appfactory(
                 write_file(logfilename, line, "a")
             else:
                 logfilename.write(line)
-        except:
+        except Exception:
             pass
         return ret[0]
 
@@ -817,7 +817,7 @@ class HttpServer(object):
         try:
             signal.signal(signal.SIGTERM, lambda a, b, s=self: s.stop())
             signal.signal(signal.SIGINT, lambda a, b, s=self: s.stop())
-        except:
+        except Exception:
             pass
         write_file(self.pid_filename, str(os.getpid()))
         self.server.start()
@@ -829,13 +829,13 @@ class HttpServer(object):
         if global_settings.web2py_crontype == "soft":
             try:
                 newcron.stopcron()
-            except:
+            except Exception:
                 pass
         try:
             os.unlink(self.pid_filename)
-        except:
+        except Exception:
             pass
         try:
             os.kill(os.getpid(), signal.SIGKILL)
-        except:
+        except Exception:
             pass

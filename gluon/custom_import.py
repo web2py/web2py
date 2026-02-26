@@ -144,7 +144,7 @@ class TrackImporter(object):
             mod_to_pack = False  # Module turning into a package? (special case)
             try:
                 new_date = os.path.getmtime(file)
-            except:
+            except Exception:
                 self._import_dates.pop(file, None)  # Clean up
                 # Handle module changing in package and
                 # package changing in module:

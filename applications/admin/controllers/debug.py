@@ -56,7 +56,7 @@ def interact():
         # prevent IOError 2 on some circuntances (EAFP instead of os.access)
         try:
             lines = open_file(filename, 'r').readlines()
-        except:
+        except Exception:
             lines = ""
         lines = dict([(i + 1, l) for (i, l) in enumerate(
             [l.strip("\n").strip("\r") for l in lines])])

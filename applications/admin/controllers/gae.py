@@ -8,7 +8,7 @@ try:
     import os
     import shutil
     from gluon.fileutils import read_file, write_file
-except:
+except Exception:
     session.flash = 'sorry, only on Unix systems'
     redirect(URL(request.application, 'default', 'site'))
 
@@ -60,7 +60,7 @@ def deploy():
     if form.accepts(request, session):
         try:
             kill()
-        except:
+        except Exception:
             pass
         ignore_apps = [item for item in apps
                        if not item in form.vars.applications]
@@ -96,10 +96,10 @@ def callback():
         return '<done/>'
     try:
         output = p.stdout.read()
-    except:
+    except Exception:
         output = ''
     try:
         errors = p.stderr.read()
-    except:
+    except Exception:
         errors = ''
     return (output + errors).replace('\n', '<br/>')

@@ -66,7 +66,7 @@ def run_system_tests(options):
     if options.with_coverage:
         try:
             import coverage
-        except:
+        except Exception:
             die("Coverage not installed")
     sys.stderr.write("Python %s\n" % sys.version)
     if options.with_coverage:
@@ -109,7 +109,7 @@ def start_browser(url, startup=False):
         import webbrowser
 
         webbrowser.open(url)
-    except:
+    except Exception:
         print("warning: unable to detect your browser")
 
 
@@ -444,22 +444,22 @@ class web2pyDialog(object):
                     scheds = list(self.scheduler_processes.keys())
                 for t in scheds:
                     self.try_stop_scheduler(t, skip_update=True)
-            except:
+            except Exception:
                 pass
             if self.options.with_cron and not self.options.soft_cron:
                 # shutting down hardcron
                 try:
                     newcron.stopcron()
-                except:
+                except Exception:
                     pass
             try:
                 # HttpServer.stop takes care of stopping softcron
                 self.server.stop()
-            except:
+            except Exception:
                 pass
             try:
                 self.tb.Destroy()
-            except:
+            except Exception:
                 pass
 
             self.root.destroy()
@@ -653,7 +653,7 @@ def start_schedulers(options):
             p.join()
         except (KeyboardInterrupt, SystemExit):
             print("Processes stopped")
-        except:
+        except Exception:
             p.terminate()
             p.join()
 
@@ -667,7 +667,7 @@ def start():
     if options.with_scheduler or len(options.schedulers) > 1:
         try:
             from multiprocessing import Process
-        except:
+        except Exception:
             die("Sorry, -K/--scheduler only supported for Python 2.6+")
 
     if options.gae:
@@ -799,7 +799,7 @@ def start():
         except (ImportError, OSError):
             logger.warning("GUI not available because Tk library is not installed")
             options.no_gui = True
-        except:
+        except Exception:
             logger.exception("cannot get Tk root window, GUI disabled")
             options.no_gui = True
 
@@ -825,7 +825,7 @@ end tell
 
         try:
             root.mainloop()
-        except:
+        except Exception:
             master.quit()
 
         sys.exit()
@@ -921,6 +921,6 @@ end tell
         if spt is not None:
             try:
                 spt.join()
-            except:
+            except Exception:
                 logger.exception("error terminating schedulers")
     logging.shutdown()

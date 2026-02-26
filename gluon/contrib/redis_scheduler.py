@@ -266,7 +266,7 @@ class RScheduler(Scheduler):
                             continue
                     try:
                         self.is_a_ticker = self.being_a_ticker(pipe)
-                    except:
+                    except Exception:
                         pass
                     if self.w_stats.status in (ACTIVE, POLLING):
                         self.do_assign_tasks = True
@@ -282,7 +282,7 @@ class RScheduler(Scheduler):
                         db = self.db_thread
                         self.wrapped_assign_tasks(db)
                         return None
-                except:
+                except Exception:
                     logger.error("Error assigning tasks")
 
     def being_a_ticker(self, pipe):
@@ -521,7 +521,7 @@ class RScheduler(Scheduler):
                 )
                 db.commit()
                 break
-            except:
+            except Exception:
                 time.sleep(0.5)
                 db.rollback()
         logger.info(
@@ -643,7 +643,7 @@ class RScheduler(Scheduler):
             except KeyboardInterrupt:
                 self.give_up()
                 break
-            except:
+            except Exception:
                 self.w_stats.errors += 1
                 db.rollback()
                 logger.error("    error popping tasks")
@@ -759,7 +759,7 @@ class RScheduler(Scheduler):
                 start_time = kwargs.get("start_time", self.now)
                 next_run_time = CronParser(cronline, start_time).get_next()
                 kwargs.update(start_time=start_time, next_run_time=next_run_time)
-            except:
+            except Exception:
                 pass
         rtn = self.db.scheduler_task.validate_and_insert(**kwargs)
         if not rtn.get('errors'):

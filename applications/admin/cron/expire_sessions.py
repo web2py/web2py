@@ -16,11 +16,11 @@ for path, dirs, files in os.walk(path, topdown=False):
             try:
                 session_data = pickle.load(open(fullpath, 'rb+'))
                 expiration = session_data['auth']['expiration']
-            except:
+            except Exception:
                 expiration = EXPIRATION_MINUTES * 60
             if (now - filetime) > expiration:
                 os.unlink(fullpath)
-        except:
+        except Exception:
             logging.exception('failure to check %s' % fullpath)
     for d in dirs:
         dd = os.path.join(path, d)

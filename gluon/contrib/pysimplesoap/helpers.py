@@ -553,7 +553,7 @@ def datetime_u(s):
             # parse microseconds
             try:
                 return _strptime(s, fmt + ".%f")
-            except:
+            except Exception:
                 return _strptime(s, fmt)
         except ValueError:
             # strip microseconds (not supported in this platform)

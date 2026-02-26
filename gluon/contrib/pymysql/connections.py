@@ -803,7 +803,7 @@ class Connection(object):
         if self._sock:
             try:
                 self._sock.close()
-            except:
+            except Exception:
                 pass
         self._sock = None
         self._rfile = None
@@ -1000,7 +1000,7 @@ class Connection(object):
             if sock is not None:
                 try:
                     sock.close()
-                except:
+                except Exception:
                     pass
 
             if isinstance(e, (OSError, IOError, socket.error)):
@@ -1094,7 +1094,7 @@ class Connection(object):
             try:
                 result = MySQLResult(self)
                 result.init_unbuffered_query()
-            except:
+            except Exception:
                 result.unbuffered_active = False
                 result.connection = None
                 raise
@@ -1463,7 +1463,7 @@ class MySQLResult(object):
         sender = LoadLocalFile(load_packet.filename, self.connection)
         try:
             sender.send_data()
-        except:
+        except Exception:
             self.connection._read_packet()  # skip ok packet
             raise
 
