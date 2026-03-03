@@ -1,1 +1,1 @@
-VERSION = "3.1.1-stable+timestamp.2025.12.19.23.27.05"
+VERSION = "3.2.1-stable+timestamp.2026.03.02.22.07.27"

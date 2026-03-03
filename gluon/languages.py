@@ -11,6 +11,7 @@ Translation system
 --------------------------------------------
 """
 
+import ast
 import builtins
 import copyreg
 import logging
@@ -92,14 +93,8 @@ def is_writable():
 
 
 def safe_eval(text):
-    if text.strip():
-        try:
-            import ast
-
-            return ast.literal_eval(text)
-        except ImportError:
-            return eval(text, {}, {})
-    return None
+    text = text.strip()
+    return ast.literal_eval(text) if text else None
 
 
 # used as default filter in translator.M()
