@@ -166,10 +166,13 @@ def truncate_string(text, length, dots="..."):
         text = text[: length - len(dots)] + dots
     return text
 
+
 class SafeString(str):
-    """ A string know to be safe that does not need to be escaped """
+    """A string know to be safe that does not need to be escaped"""
+
     def xml(self):
         return self
+
 
 def URL(
     a=None,
@@ -2526,11 +2529,7 @@ class BEAUTIFY(DIV):
         if level == 0:
             return
         for c in self.components:
-            if (
-                hasattr(c, "value")
-                and not callable(c.value)
-                and not hasattr(c, "file")
-            ):
+            if hasattr(c, "value") and not callable(c.value) and not hasattr(c, "file"):
                 if c.value:
                     components.append(c.value)
             if hasattr(c, "xml") and callable(c.xml):

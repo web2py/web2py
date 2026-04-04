@@ -33,8 +33,14 @@ from gluon import html, rewrite, validators
 from gluon.cache import Cache
 from gluon.cfs import getcfs
 from gluon.dal import DAL, Field
-from gluon.fileutils import (abspath, add_path_first, listdir, mktree,
-                             read_file, write_file)
+from gluon.fileutils import (
+    abspath,
+    add_path_first,
+    listdir,
+    mktree,
+    read_file,
+    write_file,
+)
 from gluon.globals import Response, current
 from gluon.http import HTTP, redirect
 from gluon.languages import TranslatorFactory
@@ -76,7 +82,7 @@ def LOAD(
     times=1,
     content="loading...",
     post_vars=Storage(),
-    **attr
+    **attr,
 ):
     """LOADs a component into the action's document
 
@@ -238,7 +244,7 @@ class LoadFactory(object):
         url=None,
         user_signature=False,
         content="loading...",
-        **attr
+        **attr,
     ):
         if args is None:
             args = []

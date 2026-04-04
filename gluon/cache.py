@@ -321,13 +321,13 @@ class CacheOnDisk(CacheAbstract):
                     Windows doesn't allow \ / : * ? "< > | in filenames.
                     To go around this encode the keys with base32.
                     """
-                    return base64.b32encode(key.encode('utf-8')).decode('utf-8')
+                    return base64.b32encode(key.encode("utf-8")).decode("utf-8")
 
                 def key_filter_out_windows(key):
                     """
                     We need to decode the keys so regex based removal works.
                     """
-                    return base64.b32decode(key.encode('utf-8')).decode('utf-8')
+                    return base64.b32decode(key.encode("utf-8")).decode("utf-8")
 
                 self.key_filter_in = key_filter_in_windows
                 self.key_filter_out = key_filter_out_windows

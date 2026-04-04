@@ -12,8 +12,16 @@ from gluon import current
 from gluon.settings import global_settings
 from gluon.storage import Messages, Settings, Storage
 from gluon.utils import web2py_uuid
-from gluon.validators import (CRYPT, IS_EMAIL, IS_EQUAL_TO, IS_INT_IN_RANGE,
-                              IS_LOWER, IS_MATCH, IS_NOT_EMPTY, IS_NOT_IN_DB)
+from gluon.validators import (
+    CRYPT,
+    IS_EMAIL,
+    IS_EQUAL_TO,
+    IS_INT_IN_RANGE,
+    IS_LOWER,
+    IS_MATCH,
+    IS_NOT_EMPTY,
+    IS_NOT_IN_DB,
+)
 
 DEFAULT = lambda: None
 
@@ -398,7 +406,7 @@ class AuthAPI(object):
                         migrate=self._get_migrate(settings.table_user_name, migrate),
                         fake_migrate=fake_migrate,
                         format="%(username)s",
-                    )
+                    ),
                 )
             else:
                 db.define_table(
@@ -461,7 +469,7 @@ class AuthAPI(object):
                         migrate=self._get_migrate(settings.table_user_name, migrate),
                         fake_migrate=fake_migrate,
                         format="%(first_name)s %(last_name)s (%(id)s)",
-                    )
+                    ),
                 )
         reference_table_user = "reference %s" % settings.table_user_name
         if settings.table_group_name not in db.tables:
@@ -484,7 +492,7 @@ class AuthAPI(object):
                     migrate=self._get_migrate(settings.table_group_name, migrate),
                     fake_migrate=fake_migrate,
                     format="%(role)s (%(id)s)",
-                )
+                ),
             )
         reference_table_group = "reference %s" % settings.table_group_name
         if settings.table_membership_name not in db.tables:
@@ -506,7 +514,7 @@ class AuthAPI(object):
                 **dict(
                     migrate=self._get_migrate(settings.table_membership_name, migrate),
                     fake_migrate=fake_migrate,
-                )
+                ),
             )
         if settings.table_permission_name not in db.tables:
             extra_fields = (
@@ -539,7 +547,7 @@ class AuthAPI(object):
                 **dict(
                     migrate=self._get_migrate(settings.table_permission_name, migrate),
                     fake_migrate=fake_migrate,
-                )
+                ),
             )
         if settings.table_event_name not in db.tables:
             db.define_table(
@@ -579,7 +587,7 @@ class AuthAPI(object):
                 **dict(
                     migrate=self._get_migrate(settings.table_event_name, migrate),
                     fake_migrate=fake_migrate,
-                )
+                ),
             )
 
         return self

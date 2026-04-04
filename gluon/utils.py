@@ -445,3 +445,17 @@ def unlocalised_http_header_date(data):
     return "{}, {} {} {}".format(
         short_weekday, day_of_month, short_month, year_and_time
     )
+
+
+def safe_path_join(*paths):
+    """Joins root and path and ensures the result is inside root.
+
+    Raises:
+        ValueError: if the resulting path is not a subfolder of root.
+    """
+    root = os.path.realpath(os.path.join(*paths[:-1]))
+    path = paths[-1]
+    result = os.path.realpath(os.path.join(root, path))
+    if not (result == root or result.startswith(root + os.sep)):
+        raise ValueError("Unsafe path: %s is not inside %s" % (result, root))
+    return result

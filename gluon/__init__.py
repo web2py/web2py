@@ -133,6 +133,7 @@ MESSAGE = (
     + "You can also download a complete copy from http://www.web2py.com."
 )
 
+
 def import_packages():
     for package in ["pydal", "yatl", "rocket3"]:
         try:
@@ -152,9 +153,9 @@ from .dal import DAL, Field
 from .globals import current
 from .html import *
 from .http import HTTP, redirect
+from .main import wsgibase
 from .sqlhtml import SQLFORM, SQLTABLE
 from .validators import *
-from .main import wsgibase
 
 # Dummy code to enable code completion in IDE's.
 if 0:

@@ -44,6 +44,7 @@ Usage:
 
 import copy
 import copyreg
+
 # from types import DictionaryType
 import datetime
 import hashlib
@@ -56,13 +57,12 @@ import sys
 import tempfile
 import threading
 import traceback
-from gluon.contrib.multipart import MultipartParser, parse_options_header, ParserError
 from http import cookies as Cookie
 from io import BytesIO, StringIO
 from pickle import DICT, EMPTY_DICT, MARK, Pickler
 from urllib import parse as urlparse
-from urllib.parse import quote as urllib_quote
 from urllib.parse import parse_qs
+from urllib.parse import quote as urllib_quote
 
 from pydal.contrib import portalocker
 from pydal.utils import utcnow
@@ -71,15 +71,15 @@ import gluon.settings as settings
 from gluon import recfile
 from gluon.cache import CacheInRam
 from gluon.contenttype import contenttype
+from gluon.contrib.multipart import MultipartParser, ParserError, parse_options_header
 from gluon.fileutils import up
 from gluon.html import PRE, TABLE, TR, URL, xmlescape
 from gluon.http import HTTP, redirect
 from gluon.serializers import custom_json, json
 from gluon.settings import global_settings
 from gluon.storage import List, Storage
-from gluon.streamer import (DEFAULT_CHUNK_SIZE, stream_file_or_304_or_206,
-                            streamer)
-from gluon.utils import secure_dumps, secure_loads, web2py_uuid
+from gluon.streamer import DEFAULT_CHUNK_SIZE, stream_file_or_304_or_206, streamer
+from gluon.utils import safe_path_join, secure_dumps, secure_loads, web2py_uuid
 
 FMT = "%a, %d-%b-%Y %H:%M:%S PST"
 PAST = "Sat, 1-Jan-1971 00:00:00"
@@ -308,19 +308,24 @@ class Request(Storage):
                 ct, opts = parse_options_header(content_type)
                 boundary = opts.get("boundary")
                 charset = opts.get("charset", "utf-8")
-                parser = iter(MultipartParser(body, boundary, content_length=content_length, charset=charset))
+                parser = iter(
+                    MultipartParser(
+                        body, boundary, content_length=content_length, charset=charset
+                    )
+                )
                 while True:
                     try:
                         part = next(parser)
                         if part.filename:  # file upload
                             post_vars[part.name] = Storage(
                                 filename=part.filename,  # already decoded properly
-                                file=BytesIO(part.raw)
+                                file=BytesIO(part.raw),
                             )
                         else:  # normal field
                             value = part.value  # decoded as UTF-8 automatically
                             post_vars[part.name] = (
-                                value if part.name not in post_vars
+                                value
+                                if part.name not in post_vars
                                 else listify(post_vars[part.name]) + [value]
                             )
                     except (StopIteration, ParserError):
@@ -351,8 +356,14 @@ class Request(Storage):
                 # its value else leave it alone
 
                 pvalue = listify(
-                    [(_dpk if isinstance(_dpk, dict) and "filename" in _dpk else _dpk)
-                    for _dpk in dpk]
+                    [
+                        (
+                            _dpk
+                            if isinstance(_dpk, dict) and "filename" in _dpk
+                            else _dpk
+                        )
+                        for _dpk in dpk
+                    ]
                     if isinstance(dpk, list)
                     else (dpk if isinstance(dpk, dict) and "filename" in dpk else dpk)
                 )
@@ -1089,10 +1100,13 @@ class Session(Storage):
                 if not re.match(self.REGEX_SESSION_FILE, response.session_id):
                     response.session_id = None
                 else:
-                    response.session_filename = os.path.join(
-                        up(request.folder), masterapp, "sessions", response.session_id
-                    )
                     try:
+                        response.session_filename = safe_path_join(
+                            up(request.folder),
+                            masterapp,
+                            "sessions",
+                            response.session_id,
+                        )
                         response.session_file = recfile.open(
                             response.session_filename, "rb+"
                         )
@@ -1103,7 +1117,7 @@ class Session(Storage):
                         oc = response.session_filename.split("/")[-1].split("-")[0]
                         if check_client and response.session_client != oc:
                             raise Exception("cookie attack")
-                    except:
+                    except Exception:
                         response.session_id = None
             if not response.session_id:
                 uuid = web2py_uuid()
@@ -1112,7 +1126,7 @@ class Session(Storage):
                 if separate:
                     prefix = separate(response.session_id)
                     response.session_id = "%s/%s" % (prefix, response.session_id)
-                response.session_filename = os.path.join(
+                response.session_filename = safe_path_join(
                     up(request.folder), masterapp, "sessions", response.session_id
                 )
                 response.session_new = True
@@ -1228,7 +1242,7 @@ class Session(Storage):
             if separate:
                 prefix = separate(response.session_id)
                 response.session_id = "%s/%s" % (prefix, response.session_id)
-            response.session_filename = os.path.join(
+            response.session_filename = safe_path_join(
                 up(request.folder), masterapp, "sessions", response.session_id
             )
             response.session_new = True

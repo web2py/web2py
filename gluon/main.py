@@ -22,9 +22,14 @@ import sys
 import time
 from urllib.parse import quote
 
-from gluon.fileutils import (abspath, add_path_first,
-                             create_missing_app_folders,
-                             create_missing_folders, read_file, write_file)
+from gluon.fileutils import (
+    abspath,
+    add_path_first,
+    create_missing_app_folders,
+    create_missing_folders,
+    read_file,
+    write_file,
+)
 from gluon.globals import current
 from gluon.settings import global_settings
 from gluon.utils import unlocalised_http_header_date, web2py_uuid
@@ -84,14 +89,19 @@ pjoin = os.path.join
 
 # monkey patch pydal
 import pydal
+
 pydal.get_default_represent = lambda value: value
 # end monkey patch
 
 from pydal.base import BaseAdapter
 
 from gluon import newcron
-from gluon.compileapp import (build_environment, run_controller_in,
-                              run_models_in, run_view_in)
+from gluon.compileapp import (
+    build_environment,
+    run_controller_in,
+    run_models_in,
+    run_view_in,
+)
 from gluon.contenttype import contenttype
 from gluon.globals import Request, Response, Session
 from gluon.html import URL, xmlescape
@@ -423,7 +433,9 @@ def wsgibase(environ, responder):
                 try:
                     create_missing_app_folders(request)
                 except OSError:
-                    print("Unable to create missing app folders - perhaps readonly filesystem")
+                    print(
+                        "Unable to create missing app folders - perhaps readonly filesystem"
+                    )
 
                 # ##################################################
                 # get the GET and POST data

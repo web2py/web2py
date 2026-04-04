@@ -17,8 +17,8 @@ from gluon.html import (ASSIGNJS, BEAUTIFY, BODY, BR, BUTTON, CAT, CENTER,
                         SPAN, STRONG, STYLE, TABLE, TAG, TBODY, TD, TEXTAREA,
                         TFOOT, TH, THEAD, TITLE, TR, TT, UL, URL, XHTML, XML,
                         A, B, I, P, TAG_pickler, TAG_unpickler, XML_pickle,
-                        XML_unpickle, xmlescape, truncate_string, verifyURL,
-                        web2pyHTMLParser)
+                        XML_unpickle, truncate_string, verifyURL,
+                        web2pyHTMLParser, xmlescape)
 from gluon.storage import Storage
 
 

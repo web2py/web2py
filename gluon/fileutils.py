@@ -24,6 +24,7 @@ from gluon import storage
 from gluon.http import HTTP
 from gluon.recfile import generate
 from gluon.settings import global_settings
+from gluon.utils import safe_path_join
 
 __all__ = (
     "parse_version",
@@ -407,7 +408,7 @@ def get_session(request, other_application="admin"):
         raise KeyError
     try:
         session_id = request.cookies["session_id_" + other_application].value
-        session_filename = os.path.join(
+        session_filename = safe_path_join(
             up(request.folder), other_application, "sessions", session_id
         )
         if not os.path.exists(session_filename):
@@ -423,7 +424,7 @@ def set_session(request, session, other_application="admin"):
     if request.application == other_application:
         raise KeyError
     session_id = request.cookies["session_id_" + other_application].value
-    session_filename = os.path.join(
+    session_filename = safe_math_join(
         up(request.folder), other_application, "sessions", session_id
     )
     storage.save_storage(session, session_filename)

@@ -34,9 +34,17 @@ from pydal.base import DEFAULT
 from pydal.objects import Query
 from pydal.utils import utcnow
 
-
-from gluon import (DAL, IS_DATETIME, IS_EMPTY_OR, IS_IN_DB, IS_IN_SET,
-                   IS_INT_IN_RANGE, IS_NOT_EMPTY, IS_NOT_IN_DB, Field)
+from gluon import (
+    DAL,
+    IS_DATETIME,
+    IS_EMPTY_OR,
+    IS_IN_DB,
+    IS_IN_SET,
+    IS_INT_IN_RANGE,
+    IS_NOT_EMPTY,
+    IS_NOT_IN_DB,
+    Field,
+)
 from gluon.storage import Storage
 from gluon.utils import web2py_uuid
 
