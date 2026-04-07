@@ -8,6 +8,7 @@
 
 import re
 import unittest
+from io import BytesIO
 
 from gluon import URL
 from gluon.globals import Request, Response, Session
@@ -303,3 +304,91 @@ class testResponse(unittest.TestCase):
         response.meta["meta_dict"] = {"tag_name": "tag_value"}
         response.include_meta()
         self.assertEqual(response.body.getvalue(), '\n<meta tag_name="tag_value" />\n')
+
+
+class testFileUpload(unittest.TestCase):
+    BOUNDARY = b"testboundary"
+
+    def _build_multipart(self, fields=None, files=None):
+        body = b""
+        for name, value in (fields or {}).items():
+            body += b"--" + self.BOUNDARY + b"\r\n"
+            body += b'Content-Disposition: form-data; name="' + name.encode() + b'"\r\n'
+            body += b"\r\n"
+            body += value.encode("utf-8") + b"\r\n"
+        for name, (filename, content) in (files or {}).items():
+            body += b"--" + self.BOUNDARY + b"\r\n"
+            body += (
+                b'Content-Disposition: form-data; name="'
+                + name.encode()
+                + b'"; filename="'
+                + filename.encode()
+                + b'"\r\n'
+            )
+            body += b"Content-Type: application/octet-stream\r\n"
+            body += b"\r\n"
+            body += content + b"\r\n"
+        body += b"--" + self.BOUNDARY + b"--\r\n"
+        return body
+
+    def _make_request(self, body):
+        boundary = self.BOUNDARY.decode()
+        env = {
+            "request_method": "POST",
+            "CONTENT_TYPE": "multipart/form-data; boundary=" + boundary,
+            "CONTENT_LENGTH": str(len(body)),
+            "wsgi.input": BytesIO(body),
+        }
+        return Request(env)
+
+    def test_file_upload_filename(self):
+        body = self._build_multipart(files={"upload": ("hello.txt", b"hello world")})
+        r = self._make_request(body)
+        self.assertEqual(r.post_vars["upload"].filename, "hello.txt")
+
+    def test_file_upload_content(self):
+        body = self._build_multipart(files={"upload": ("data.bin", b"binary\x00content")})
+        r = self._make_request(body)
+        self.assertEqual(r.post_vars["upload"].file.read(), b"binary\x00content")
+
+    def test_file_upload_with_text_field(self):
+        body = self._build_multipart(
+            fields={"description": "my description"},
+            files={"upload": ("report.pdf", b"%PDF content")},
+        )
+        r = self._make_request(body)
+        self.assertEqual(r.post_vars["description"], "my description")
+        self.assertEqual(r.post_vars["upload"].filename, "report.pdf")
+
+    def test_duplicate_field_names_become_list(self):
+        boundary = self.BOUNDARY
+        body = (
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="tag"\r\n\r\nfoo\r\n'
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="tag"\r\n\r\nbar\r\n'
+            b"--" + boundary + b"--\r\n"
+        )
+        r = self._make_request(body)
+        tags = r.post_vars["tag"]
+        self.assertIsInstance(tags, list)
+        self.assertIn("foo", tags)
+        self.assertIn("bar", tags)
+
+    def test_multiple_file_input(self):
+        boundary = self.BOUNDARY
+        body = (
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="files"; filename="a.txt"\r\n'
+            b"Content-Type: text/plain\r\n\r\nfile a content\r\n"
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="files"; filename="b.txt"\r\n'
+            b"Content-Type: text/plain\r\n\r\nfile b content\r\n"
+            b"--" + boundary + b"--\r\n"
+        )
+        r = self._make_request(body)
+        uploads = r.post_vars["files"]
+        self.assertIsInstance(uploads, list)
+        filenames = [u.filename for u in uploads]
+        self.assertIn("a.txt", filenames)
+        self.assertIn("b.txt", filenames)

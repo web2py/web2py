@@ -317,9 +317,14 @@ class Request(Storage):
                     try:
                         part = next(parser)
                         if part.filename:  # file upload
-                            post_vars[part.name] = Storage(
+                            file_storage = Storage(
                                 filename=part.filename,  # already decoded properly
                                 file=BytesIO(part.raw),
+                            )
+                            post_vars[part.name] = (
+                                file_storage
+                                if part.name not in post_vars
+                                else listify(post_vars[part.name]) + [file_storage]
                             )
                         else:  # normal field
                             value = part.value  # decoded as UTF-8 automatically
