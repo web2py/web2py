@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
+r"""
 To use, e.g. python .\web2py.py -S APPNAME --force_migrate
 To use, e.g. python .\web2py.py -S APPNAME --force_migrate --fake_migrate
 """
