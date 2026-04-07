@@ -691,16 +691,13 @@ class XML(XmlComponent):
     __repr__ = __str__
 
     def __eq__(self, other):
-        return self.text == other.text
+        return str(self) == str(other)
 
     def __add__(self, other):
         return "%s%s" % (self, other)
 
     def __radd__(self, other):
         return "%s%s" % (other, self)
-
-    def __cmp__(self, other):
-        return cmp(str(self), str(other))
 
     def __hash__(self):
         return hash(str(self))

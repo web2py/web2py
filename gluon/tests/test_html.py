@@ -262,6 +262,12 @@ class TestBareHelpers(unittest.TestCase):
     # TODO: def test_XmlComponent(self):
 
     def test_XML(self):
+        # comparison with string
+        self.assertEqual(XML('<div>foo</div>'), '<div>foo</div>')
+        self.assertNotEqual(XML('<div>foo</div>'), '<div>bar</div>')
+        # comparison with another XML instance
+        self.assertEqual(XML('a'), XML('a'))
+        self.assertNotEqual(XML('a'), XML('b'))
         # sanitization process
         self.assertEqual(
             XML('<h1>Hello<a data-hello="world">World</a></h1>').xml(),
