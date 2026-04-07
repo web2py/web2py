@@ -424,7 +424,7 @@ def set_session(request, session, other_application="admin"):
     if request.application == other_application:
         raise KeyError
     session_id = request.cookies["session_id_" + other_application].value
-    session_filename = safe_math_join(
+    session_filename = safe_path_join(
         up(request.folder), other_application, "sessions", session_id
     )
     storage.save_storage(session, session_filename)
