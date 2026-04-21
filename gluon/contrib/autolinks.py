@@ -45,11 +45,10 @@ viddler.com
 import html
 import re
 import sys
-import urllib
+import urllib.request
 import uuid
 from json import loads
 from urllib.parse import quote as urllib_quote
-from urllib.request import FancyURLopener
 
 try:
     from BeautifulSoup import BeautifulSoup, Comment
@@ -161,20 +160,13 @@ EXTENSION_MAPS = {
 }
 
 
-class VimeoURLOpener(FancyURLopener):
-    "Vimeo blocks the urllib user agent for some reason"
-    version = "Mozilla/4.0"
-
-
-urllib._urlopener = VimeoURLOpener()
-
-
 def oembed(url):
     for k, v in EMBED_MAPS:
         if k.match(url):
-            oembed = v + "?format=json&url=" + html.escape(url)
+            oembed_url = v + "?format=json&url=" + html.escape(url)
             try:
-                data = urllib.urlopen(oembed).read()
+                req = urllib.request.Request(oembed_url, headers={"User-Agent": "Mozilla/4.0"})
+                data = urllib.request.urlopen(req).read()
                 return loads(data)  # json!
             except:
                 pass
@@ -197,13 +189,13 @@ def expand_one(url, cdict):
             cdict[url] = r
     # if oembed service
     if "html" in r:
-        html = r["html"].encode("utf8")
-        if html.startswith("<object"):
-            return '<embed style="max-width:100%%">%s</embed>' % html
+        oembed_html = r["html"]
+        if oembed_html.startswith("<object"):
+            return '<embed style="max-width:100%%">%s</embed>' % oembed_html
         else:
-            return html
+            return oembed_html
     elif "url" in r:
-        url = r["url"].encode("utf8")
+        url = r["url"]
     # embed images, video, audio files
     ext = extension(url)
     if ext in EXTENSION_MAPS:
