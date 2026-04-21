@@ -8,13 +8,14 @@ from gluon.contrib.markmin.markmin2latex import markmin2latex
 from gluon.contrib.markmin.markmin2pdf import markmin2pdf
 from gluon.html import BODY, H1, HTML, TAG, UL, XML, markmin_serializer
 from gluon.sanitizer import sanitize
+from gluon.utils import safe_path_join
 
 
 def wrapper(f):
     def g(data):
         try:
             output = f(data)
-            return XML(ouput)
+            return XML(output)
         except (TypeError, ValueError) as e:
             raise HTTP(405, "%s serialization error" % e)
         except ImportError as e:
@@ -46,17 +47,26 @@ def pdflatex_from_html(html):
             return out
 
 
+def _resolve_pdf_image_path(path, request):
+    static_prefix = "/%s/static/" % request.application
+    if path.startswith(static_prefix):
+        relative_static_path = path[len(static_prefix):]
+        try:
+            return safe_path_join(request.folder, "static", relative_static_path)
+        except ValueError:
+            raise HTTP(403, "invalid static path")
+    return "http%s://%s%s" % (
+        request.is_https and "s" or "",
+        request.env.http_host,
+        path,
+    )
+
+
 def pyfpdf_from_html(html):
     request = current.request
 
     def image_map(path):
-        if path.startswith("/%s/static/" % request.application):
-            return os.path.join(request.folder, path.split("/", 2)[2])
-        return "http%s://%s%s" % (
-            request.is_https and "s" or "",
-            request.env.http_host,
-            path,
-        )
+        return _resolve_pdf_image_path(path, request)
 
     class MyFPDF(FPDF, HTMLMixin):
         pass
