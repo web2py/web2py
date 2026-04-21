@@ -6,6 +6,8 @@
 import os
 import unittest
 
+from gluon import HTTP
+from gluon.contrib.generics import _resolve_pdf_image_path
 from gluon.contrib import fpdf as fpdf
 from gluon.contrib import pyfpdf as pyfpdf
 from gluon.contrib.appconfig import AppConfig
@@ -63,3 +65,31 @@ class TestContribs(unittest.TestCase):
         self.assertEqual(myappconfig.take("config3.key2"), 2)
 
         current.request = {}
+
+    def test_pdf_image_map_allows_static_subpath(self):
+        request = Storage(
+            {
+                "application": "welcome",
+                "folder": os.path.join("applications", "welcome"),
+                "is_https": False,
+                "env": Storage({"http_host": "example.com"}),
+            }
+        )
+        result = _resolve_pdf_image_path("/welcome/static/img/logo.png", request)
+        expected_suffix = os.path.normpath(
+            os.path.join("applications", "welcome", "static", "img", "logo.png")
+        )
+        self.assertTrue(result.endswith(expected_suffix), result)
+
+    def test_pdf_image_map_rejects_static_traversal(self):
+        request = Storage(
+            {
+                "application": "welcome",
+                "folder": os.path.join("applications", "welcome"),
+                "is_https": False,
+                "env": Storage({"http_host": "example.com"}),
+            }
+        )
+        with self.assertRaises(HTTP) as ctx:
+            _resolve_pdf_image_path("/welcome/static/../../private/secret.txt", request)
+        self.assertEqual(ctx.exception.status, 403)
