@@ -263,8 +263,15 @@ class TestAuthJWT(unittest.TestCase):
         self.request.controller = "c"
         self.request.function = "f"
         self.request.folder = "applications/admin"
+        self.response = Response()
+        self.session = Session()
+        self.T = TranslatorFactory("", "en")
+        self.session.connect(self.request, self.response)
         self.current = current
         self.current.request = self.request
+        self.current.response = self.response
+        self.current.session = self.session
+        self.current.T = self.T
 
         self.db = DAL(DEFAULT_URI, check_reserved=["all"])
         self.auth = Auth(self.db)
@@ -310,6 +317,32 @@ class TestAuthJWT(unittest.TestCase):
             self.assertEqual(self.user_data["username"], self.auth.user.username)
 
         optional_auth()
+
+    def test_allows_jwt_rejects_oversized_token_required(self):
+        self.request.env.http_authorization = "Bearer " + (
+            "x" * self.jwtauth.max_header_length
+        )
+
+        @self.jwtauth.allows_jwt(required=True)
+        def protected_action():
+            return "ok"
+
+        with self.assertRaises(HTTP) as err:
+            protected_action()
+        self.assertEqual(err.exception.status, 400)
+
+    def test_allows_jwt_rejects_oversized_token_optional(self):
+        self.request.env.http_authorization = "Bearer " + (
+            "x" * self.jwtauth.max_header_length
+        )
+
+        @self.jwtauth.allows_jwt(required=False)
+        def optional_action():
+            return "ok"
+
+        with self.assertRaises(HTTP) as err:
+            optional_action()
+        self.assertEqual(err.exception.status, 400)
 
 
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")

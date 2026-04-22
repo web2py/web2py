@@ -1554,7 +1554,9 @@ class AuthJWT(object):
                     if required:
                         raise e
                     token = None
-                if token and len(token) < self.max_header_length:
+                if token and len(token) >= self.max_header_length:
+                    raise HTTP(400, "Invalid JWT header, token too long")
+                if token:
                     old_verify_expiration = self.verify_expiration
                     try:
                         self.verify_expiration = verify_expiration
