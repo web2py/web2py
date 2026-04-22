@@ -103,6 +103,18 @@ class TestAppAdmin(unittest.TestCase):
     def test_index(self):
         self._test_index()
 
+    def test_index_rejects_host_header_spoofing(self):
+        request = self.env["request"]
+        request.env.http_host = "127.0.0.1:8000"
+        request.env.remote_addr = "203.0.113.10"
+        request.is_https = False
+        request.env.trusted_lan_prefix = None
+        with self.assertRaises(HTTP) as ctx:
+            self.run_function()
+        error = ctx.exception
+        self.assertEqual(error.status, 200)
+        self.assertIn("appadmin is disabled because insecure channel", str(error.body))
+
     def test_index_compiled(self):
         appname_path = os.path.join(os.getcwd(), "applications", "welcome")
         compile_application(appname_path)
