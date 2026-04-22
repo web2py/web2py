@@ -360,14 +360,6 @@ def wsgibase(environ, responder):
                             local_hosts.update(
                                 [addrinfo[4][0] for addrinfo in getipaddrinfo(fqdn)]
                             )
-                            if env.server_name:
-                                local_hosts.add(env.server_name)
-                                local_hosts.update(
-                                    [
-                                        addrinfo[4][0]
-                                        for addrinfo in getipaddrinfo(env.server_name)
-                                    ]
-                                )
                         except (socket.gaierror, TypeError):
                             pass
                     global_settings.local_hosts = list(local_hosts)
