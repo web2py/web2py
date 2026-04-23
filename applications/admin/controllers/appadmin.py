@@ -17,19 +17,12 @@ is_gae = request.env.web2py_runtime_gae or False
 global_env = copy.copy(globals())
 global_env['datetime'] = datetime
 
-remote_addr = request.env.remote_addr
-
-
-def is_loopback_address(ip_address):
-    return ip_address in ('::1', '127.0.0.1', '::ffff:127.0.0.1')
-
 if request.is_https:
     session.secure()
 elif request.env.trusted_lan_prefix and \
-     remote_addr.startswith(request.env.trusted_lan_prefix):
+     request.env.remote_addr.startswith(request.env.trusted_lan_prefix):
     request.is_local = True
-elif (not is_loopback_address(remote_addr)) and \
-    (request.function != 'manage'):
+elif not request.is_local and request.function != 'manage':
     raise HTTP(200, T('appadmin is disabled because insecure channel'))
 
 if request.function == 'manage':
