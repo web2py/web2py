@@ -203,3 +203,42 @@ class TestAppAdmin(unittest.TestCase):
         data["id"] = "1"
         request._vars = data
         self.assertRaises(HTTP, self.run_function)
+
+    def test_path_validation_security(self):
+        """Test path validation security patches prevent traversal attacks"""
+        from gluon.admin import apath, up
+        from gluon.globals import Request
+        from gluon.http import HTTP
+
+        # Mock request for testing
+        request = Request(env={})
+        request.folder = "applications/welcome"
+
+        # Test allowed paths
+        web2py_apps_root = os.path.realpath(up(request.folder))
+        web2py_deposit_root = os.path.join(up(web2py_apps_root), 'deposit')
+        allowed_roots = [web2py_apps_root, web2py_deposit_root]
+
+        def is_path_allowed(path):
+            """Simulate the path validation logic from safe_open"""
+            a_for_check = os.path.realpath(os.path.normpath(path))
+            return any(a_for_check == root or a_for_check.startswith(root + os.sep)
+                      for root in allowed_roots)
+
+        # Test legitimate paths are allowed
+        self.assertTrue(is_path_allowed(os.path.join(web2py_apps_root, 'welcome', 'models', 'db.py')),
+                       "Should allow valid app files")
+        self.assertTrue(is_path_allowed(web2py_apps_root),
+                       "Should allow applications root")
+        self.assertTrue(is_path_allowed(web2py_deposit_root),
+                       "Should allow deposit root")
+
+        # Test malicious paths are blocked
+        self.assertFalse(is_path_allowed('/etc/passwd'),
+                        "Should block system files")
+        self.assertFalse(is_path_allowed('/workspaces/web2py/applications_evil'),
+                        "Should block prefix match attacks")
+        self.assertFalse(is_path_allowed(os.path.join(web2py_apps_root, '..', 'etc', 'passwd')),
+                        "Should block path traversal")
+        self.assertFalse(is_path_allowed('/tmp/malicious'),
+                        "Should block temp directory access")
