@@ -47,6 +47,8 @@ class TestAppAdmin(unittest.TestCase):
         request.folder = "applications/welcome"
         request.env.http_host = "127.0.0.1:8000"
         request.env.remote_addr = "127.0.0.1"
+        request.client = request.env.remote_addr
+        request.is_local = True
         response = Response()
         session = Session()
         T = TranslatorFactory("", "en")
@@ -107,6 +109,8 @@ class TestAppAdmin(unittest.TestCase):
         request = self.env["request"]
         request.env.http_host = "127.0.0.1:8000"
         request.env.remote_addr = "203.0.113.10"
+        request.client = request.env.remote_addr
+        request.is_local = False
         request.is_https = False
         request.env.trusted_lan_prefix = None
         with self.assertRaises(HTTP) as ctx:
