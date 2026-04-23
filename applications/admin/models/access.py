@@ -13,12 +13,9 @@ from pydal.contrib import portalocker
 # ###########################################################
 
 
-http_host = request.env.http_host.split(':')[0]
-
 if request.env.web2py_runtime_gae:
     session_db = DAL('gae')
     session.connect(request, response, db=session_db)
-    hosts = (http_host, )
     is_gae = True
 else:
     is_gae = False
