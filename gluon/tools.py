@@ -830,7 +830,7 @@ class Mail(object):
             to.extend(cc)
         if bcc:
             to.extend(bcc)
-        payload["Subject"] = subject
+        payload["Subject"] = encode_header(subject)
         payload["Date"] = email.utils.formatdate()
         for k, v in headers.items():
             payload[k] = v
