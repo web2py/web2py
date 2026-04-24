@@ -9,6 +9,8 @@ Restricted environment to execute application's code
 -----------------------------------------------------
 """
 
+import builtins
+import io
 import logging
 import os
 import pickle
@@ -23,7 +25,52 @@ from gluon.storage import Storage
 
 logger = logging.getLogger("web2py")
 
-__all__ = ["RestrictedError", "restricted", "TicketStorage", "compile2"]
+__all__ = [
+    "RestrictedError",
+    "restricted",
+    "TicketStorage",
+    "compile2",
+    "SafeUnpickler",
+    "safe_load",
+    "safe_loads",
+]
+
+
+class SafeUnpickler(pickle.Unpickler):
+    """
+    Restricted unpickler that only allows a small set of safe builtins.
+    """
+
+    safe_builtins = {
+        "dict",
+        "list",
+        "tuple",
+        "set",
+        "frozenset",
+        "str",
+        "bytes",
+        "bytearray",
+        "int",
+        "float",
+        "complex",
+        "bool",
+        "NoneType",
+    }
+
+    def find_class(self, module, name):
+        if module == "builtins" and name in self.safe_builtins:
+            return getattr(builtins, name)
+        raise pickle.UnpicklingError("global '%s.%s' is forbidden" % (module, name))
+
+
+def safe_load(file_obj):
+    return SafeUnpickler(file_obj).load()
+
+
+def safe_loads(data):
+    if isinstance(data, str):
+        data = data.encode("latin-1")
+    return SafeUnpickler(io.BytesIO(data)).load()
 
 
 class TicketStorage(Storage):
@@ -102,13 +149,20 @@ class TicketStorage(Storage):
             except IOError:
                 return {}
             try:
-                return pickle.load(ef)
+                return safe_load(ef)
+            except (pickle.UnpicklingError, EOFError):
+                return {}
             finally:
                 ef.close()
         else:
             table = self._get_table(self.db, self.tablename, app)
             rows = self.db(table.ticket_id == ticket_id).select()
-            return pickle.loads(rows[0].ticket_data) if rows else {}
+            if not rows:
+                return {}
+            try:
+                return safe_loads(rows[0].ticket_data)
+            except (pickle.UnpicklingError, EOFError):
+                return {}
 
 
 class RestrictedError(Exception):
