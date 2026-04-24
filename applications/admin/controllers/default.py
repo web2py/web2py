@@ -78,6 +78,10 @@ def log_progress(app, mode='EDIT', filename=None, progress=0):
             '[%s] %s %s: %s\n' % (now, mode, filename, progress))
 
 
+def _is_within_root(path, root):
+    return path == root or path.startswith(root + os.sep)
+
+
 def safe_open(a, b):
     if (DEMO_MODE or is_gae) and ('w' in b or 'a' in b):
         class tmp:
@@ -89,13 +93,13 @@ def safe_open(a, b):
                 pass
         return tmp()
 
-    a_for_check = os.path.realpath(os.path.normpath(a))
+    a_for_check = os.path.abspath(os.path.normpath(a))
 
-    web2py_apps_root = os.path.realpath(up(request.folder))
+    web2py_apps_root = os.path.abspath(up(request.folder))
     web2py_deposit_root = os.path.join(up(web2py_apps_root), 'deposit')
 
     allowed_roots = [web2py_apps_root, web2py_deposit_root]
-    if not any(a_for_check == root or a_for_check.startswith(root + os.sep) for root in allowed_roots):
+    if not any(_is_within_root(a_for_check, root) for root in allowed_roots):
         raise HTTP(403)
 
     if 'b' in b:
@@ -124,9 +128,9 @@ def get_app(name=None):
     app = name or request.args(0)
     if app:
         path = apath(app, r=request)
-        web2py_apps_root = os.path.realpath(up(request.folder))
-        path_abs = os.path.realpath(path)
-        if not (path_abs == web2py_apps_root or path_abs.startswith(web2py_apps_root + os.sep)):
+        web2py_apps_root = os.path.abspath(up(request.folder))
+        path_abs = os.path.abspath(path)
+        if not _is_within_root(path_abs, web2py_apps_root):
             session.flash = T('App does not exist or you are not authorized')
             redirect(URL('site'))
         if (os.path.exists(path) and
@@ -1530,9 +1534,9 @@ def create_file():
 
 def listfiles(app, dir, regexp=r'.*\.py$'):
     path = apath('%(app)s/%(dir)s/' % {'app': app, 'dir': dir}, r=request)
-    web2py_apps_root = os.path.realpath(up(request.folder))
-    path_abs = os.path.realpath(path)
-    if not (path_abs == web2py_apps_root or path_abs.startswith(web2py_apps_root + os.sep)):
+    web2py_apps_root = os.path.abspath(up(request.folder))
+    path_abs = os.path.abspath(path)
+    if not _is_within_root(path_abs, web2py_apps_root):
         return []
     files = sorted(
         listdir(path, regexp))
