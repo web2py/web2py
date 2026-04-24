@@ -483,9 +483,8 @@ class Mail(object):
             else:
                 return key
 
-        # encoded or raw text
         def encoded_or_raw(text):
-            if raw:
+            if not raw:
                 text = encode_header(text)
             return text
 
@@ -817,23 +816,23 @@ class Mail(object):
             payload = payload_in
 
         if from_address:
-            payload["From"] = from_address
+            payload["From"] = encoded_or_raw(from_address)
         else:
-            payload["From"] = sender
+            payload["From"] = encoded_or_raw(sender)
         origTo = to[:]
         if to:
-            payload["To"] = ", ".join(to)
+            payload["To"] = encoded_or_raw(", ".join(to))
         if reply_to:
-            payload["Reply-To"] = ", ".join(reply_to)
+            payload["Reply-To"] = encoded_or_raw(", ".join(reply_to))
         if cc:
-            payload["Cc"] = ", ".join(cc)
+            payload["Cc"] = encoded_or_raw(", ".join(cc))
             to.extend(cc)
         if bcc:
             to.extend(bcc)
-        payload["Subject"] = subject
+        payload["Subject"] = encoded_or_raw(subject)
         payload["Date"] = email.utils.formatdate()
         for k, v in headers.items():
-            payload[k] = v
+            payload[k] = encoded_or_raw(v) if isinstance(v, str) else v
 
         dkim = dkim or self.settings.dkim
         list_unsubscribe = list_unsubscribe or self.settings.list_unsubscribe
