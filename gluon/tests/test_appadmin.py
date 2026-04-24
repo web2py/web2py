@@ -119,6 +119,18 @@ class TestAppAdmin(unittest.TestCase):
         self.assertEqual(error.status, 200)
         self.assertIn("appadmin is disabled because insecure channel", str(error.body))
 
+    def test_index_allows_shell(self):
+        request = self.env["request"]
+        request.env.remote_addr = "203.0.113.10"
+        request.client = request.env.remote_addr
+        request.is_local = False
+        request.is_https = False
+        request.is_shell = True
+        request.env.trusted_lan_prefix = None
+        # should not raise HTTP — shell execution must bypass the channel check
+        result = self.run_function()
+        self.assertIn("db", result["databases"])
+
     def test_index_compiled(self):
         appname_path = os.path.join(os.getcwd(), "applications", "welcome")
         compile_application(appname_path)
