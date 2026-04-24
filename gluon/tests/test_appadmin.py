@@ -231,13 +231,13 @@ class TestAppAdmin(unittest.TestCase):
         request.folder = "applications/welcome"
 
         # Test allowed paths
-        web2py_apps_root = os.path.realpath(up(request.folder))
+        web2py_apps_root = os.path.abspath(up(request.folder))
         web2py_deposit_root = os.path.join(up(web2py_apps_root), 'deposit')
         allowed_roots = [web2py_apps_root, web2py_deposit_root]
 
         def is_path_allowed(path):
             """Simulate the path validation logic from safe_open"""
-            a_for_check = os.path.realpath(os.path.normpath(path))
+            a_for_check = os.path.abspath(os.path.normpath(path))
             return any(a_for_check == root or a_for_check.startswith(root + os.sep)
                       for root in allowed_roots)
 
