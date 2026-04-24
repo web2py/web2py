@@ -251,6 +251,60 @@ class TestMail(unittest.TestCase):
         self.assertTrue("Content-Type: tra/lala" in message.payload)
         self.assertTrue("Content-Id: <trololo>" in message.payload)
 
+    def test_nonascii_subject(self):
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        self.assertTrue(
+            mail.send(
+                to=["somebody@example.com"],
+                subject="Ünïcödé subject: äöü",
+                message="world",
+            )
+        )
+        message = TestMail.DummySMTP.inbox.pop()
+        # Must be RFC 2047 encoded, not a raw unicode string
+        self.assertIn("=?utf-8?", message.payload)
+        # Decoded subject must round-trip correctly
+        import email.header
+        parsed = message.parsed_payload
+        decoded = email.header.decode_header(parsed["Subject"])
+        subject = "".join(
+            part.decode(enc or "utf-8") if isinstance(part, bytes) else part
+            for part, enc in decoded
+        )
+        self.assertEqual(subject, "Ünïcödé subject: äöü")
+
+    def test_nonascii_from(self):
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        self.assertTrue(
+            mail.send(
+                to=["somebody@example.com"],
+                subject="hello",
+                message="world",
+                from_address="Ünïcödé Sender <you@example.com>",
+            )
+        )
+        message = TestMail.DummySMTP.inbox.pop()
+        self.assertIn("=?utf-8?", message.payload)
+
+    def test_nonascii_custom_header(self):
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        self.assertTrue(
+            mail.send(
+                to=["somebody@example.com"],
+                subject="hello",
+                message="world",
+                headers={"X-Custom": "Héllo"},
+            )
+        )
+        message = TestMail.DummySMTP.inbox.pop()
+        self.assertIn("=?utf-8?", message.payload)
+
 
 # TODO: class TestAuthJWT(unittest.TestCase):
 class TestAuthJWT(unittest.TestCase):
