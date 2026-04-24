@@ -22,7 +22,7 @@ if request.is_https:
 elif request.env.trusted_lan_prefix and \
      request.env.remote_addr.startswith(request.env.trusted_lan_prefix):
     request.is_local = True
-elif not request.is_local and request.function != 'manage':
+elif not request.is_local and not request.is_shell and request.function != 'manage':
     raise HTTP(200, T('appadmin is disabled because insecure channel'))
 
 if request.function == 'manage':
