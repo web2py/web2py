@@ -71,6 +71,7 @@ import gluon.settings as settings
 from gluon import recfile
 from gluon.cache import CacheInRam
 from gluon.contenttype import contenttype
+from gluon.restricted import safe_load, safe_loads
 from gluon.contrib.multipart import MultipartParser, ParserError, parse_options_header
 from gluon.fileutils import up
 from gluon.html import PRE, TABLE, TR, URL, xmlescape
@@ -1117,7 +1118,7 @@ class Session(Storage):
                         )
                         portalocker.lock(response.session_file, portalocker.LOCK_EX)
                         response.session_locked = True
-                        self.update(pickle.load(response.session_file))
+                        self.update(safe_load(response.session_file))
                         response.session_file.seek(0)
                         oc = response.session_filename.split("/")[-1].split("-")[0]
                         if check_client and response.session_client != oc:
@@ -1182,10 +1183,10 @@ class Session(Storage):
                         # rows[0].update_record(locked=True)
                         # Unpickle the data
                         try:
-                            session_data = pickle.loads(row["session_data"])
+                            session_data = safe_loads(row["session_data"])
                             self.update(session_data)
                             response.session_new = False
-                        except:
+                        except (pickle.UnpicklingError, EOFError, ValueError):
                             record_id = None
                     else:
                         record_id = None
