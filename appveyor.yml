@@ -1,4 +1,5 @@
 build: false
+image: Visual Studio 2022
 before_build:
   - choco install redis-64
   - redis-server --service-install
@@ -6,15 +7,19 @@ before_build:
 
 environment:
   matrix:
-    - PYTHON: "C:/Python36"
+    - PYTHON: "C:/Python39-x64"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
 
-    - PYTHON: "C:/Python37"
+    - PYTHON: "C:/Python311-x64"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
 
-    - PYTHON: "C:/Python314"
+    - PYTHON: "C:/Python312-x64"
+      COVERAGE_PROCESS_START: gluon/tests/coverage.ini
+      PYTHON_ARCH: "64"
+
+    - PYTHON: "C:/Python314-x64"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
 
