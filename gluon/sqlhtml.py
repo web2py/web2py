@@ -2283,8 +2283,9 @@ class SQLFORM(FORM):
         if query:
             session[name] = query.db(query).select().first().as_dict()
         elif os.path.exists(filename):
-            env = {"datetime": datetime}
-            session[name] = eval(open(filename).read(), {}, env)
+            session[name] = eval(
+                open(filename).read(), {"__builtins__": {}}, {"datetime": datetime}
+            )
         form = SQLFORM.dictform(session[name])
         if form.process().accepted:
             session[name].update(form.vars)
