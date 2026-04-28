@@ -144,7 +144,14 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     return b"hmac256:" + signature + b":" + encrypted_data
 
 
-def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+def secure_loads(
+    data,
+    encryption_key,
+    hash_key=None,
+    compression_level=None,
+    safe_unpickle=True,
+    allowed_classes=None,
+):
     """loads a signed data dump"""
     components = data.count(b":")
     if components == 1:
@@ -171,6 +178,10 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         data = unpad(AES_dec(cipher, encrypted_data))
         if compression_level:
             data = zlib.decompress(data)
+        if safe_unpickle:
+            from gluon.restricted import safe_loads as safe_loads_restricted
+
+            return safe_loads_restricted(data, allowed_classes=allowed_classes)
         return pickle.loads(data)
     except Exception:
         return None
