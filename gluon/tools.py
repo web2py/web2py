@@ -147,6 +147,15 @@ def prevent_open_redirect(url, host=None):
     if not url:
         return None
 
+    # Reject C0 control characters (U+0000-U+001F) and DEL (U+007F).
+    # str.strip() only removes whitespace, so e.g. a leading "\x01" survives
+    # and bypasses the prefix checks below; urlparse then treats the value as
+    # a relative path with no netloc, so it is returned unchanged. Browsers
+    # often discard these bytes from the Location header, turning
+    # "\x01//evil.com" into "//evil.com" and enabling open redirects.
+    if any(ord(c) < 0x20 or ord(c) == 0x7F for c in url):
+        return None
+
     if all(c in "~/:." for c in url):
         return None
 

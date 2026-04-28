@@ -1795,3 +1795,10 @@ class Test_OpenRedirectPrevention(unittest.TestCase):
         # extra corner cases
         self.assertEqual(prevent_open_redirect("https:/example.com"), None)
         self.assertEqual(prevent_open_redirect("/%09/www.example.org/"), None)
+        # C0 control characters / DEL must be rejected: they can bypass the
+        # prefix checks and be stripped by browsers from the Location header.
+        for c in ("\x00", "\x01", "\x08", "\x0e", "\x1f", "\x7f"):
+            self.assertEqual(
+                prevent_open_redirect(c + "//evil.com", "test.com"), None)
+            self.assertEqual(
+                prevent_open_redirect("/foo" + c + "bar", "test.com"), None)
