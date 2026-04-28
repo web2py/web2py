@@ -9,6 +9,7 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
+import gluon.utils
 
 is_gae = request.env.web2py_runtime_gae or False
 
@@ -104,6 +105,9 @@ def get_query(request):
         return eval_in_global_env(request.vars.query)
     except Exception:
         return None
+
+
+safe_eval_dict = gluon.utils.safe_eval_dict
 
 
 def query_by_table_type(tablename, db, request=request):
@@ -233,7 +237,7 @@ def select():
             nrows = db(query, ignore_common_filters=True).count()
             if form.vars.update_check and form.vars.update_fields:
                 db(query, ignore_common_filters=True).update(
-                    **eval_in_global_env('dict(%s)' % form.vars.update_fields))
+                    **safe_eval_dict(form.vars.update_fields))
                 response.flash = T('%s %%{row} updated', nrows)
             elif form.vars.delete_check:
                 db(query, ignore_common_filters=True).delete()
