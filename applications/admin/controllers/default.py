@@ -16,7 +16,7 @@ import importlib
 
 from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
-from gluon.restricted import safe_load, safe_loads
+from gluon.restricted import safe_load, safe_loads, TicketStorage
 from gluon.utils import web2py_uuid
 from gluon.tools import Config, prevent_open_redirect
 from gluon.compileapp import find_exposed_functions
@@ -1655,7 +1655,7 @@ def errors():
             try:
                 fullpath_file = safe_open(fullpath, 'rb')
                 try:
-                    error = safe_load(fullpath_file)
+                    error = safe_load(fullpath_file, allowed_classes=TicketStorage.TICKET_ALLOWED_CLASSES)
                 finally:
                     fullpath_file.close()
             except (IOError, pickle.UnpicklingError, EOFError):
@@ -1695,7 +1695,7 @@ def errors():
 
         for fn in tk_db(tk_table.id > 0).select():
             try:
-                error = safe_loads(fn.ticket_data)
+                error = safe_loads(fn.ticket_data, allowed_classes=TicketStorage.TICKET_ALLOWED_CLASSES)
                 hash = hashlib.md5(error['traceback']).hexdigest()
 
                 if hash in delete_hashes:

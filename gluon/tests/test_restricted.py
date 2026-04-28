@@ -113,6 +113,73 @@ class CustomClass(object):
         with self.assertRaises(Exception):
             safe_loads(b"")
 
+    def test_ticket_allowed_classes_permits_xml(self):
+        """TicketStorage.load must round-trip ticket data containing XML objects."""
+        from gluon.html import XML
+        from gluon.restricted import TicketStorage
+
+        payload = {
+            "layer": "test",
+            "traceback": "ZeroDivisionError: division by zero",
+            "output": "error",
+            "code": "a = 1/0",
+            "snapshot": {
+                "session": XML("<b>session data</b>"),
+                "request": XML("<b>request data</b>"),
+            },
+        }
+        pickled = pickle.dumps(payload, pickle.HIGHEST_PROTOCOL)
+        result = safe_loads(pickled, allowed_classes=TicketStorage.TICKET_ALLOWED_CLASSES)
+        self.assertEqual(str(result["snapshot"]["session"]), "<b>session data</b>")
+        self.assertEqual(str(result["snapshot"]["request"]), "<b>request data</b>")
+
+    def test_ticket_allowed_classes_still_blocks_unsafe(self):
+        """TICKET_ALLOWED_CLASSES must not open the door to arbitrary classes."""
+        from gluon.restricted import TicketStorage
+        malicious = pickle.dumps({"bad": subprocess.Popen}, pickle.HIGHEST_PROTOCOL)
+        with self.assertRaises(pickle.UnpicklingError):
+            safe_loads(malicious, allowed_classes=TicketStorage.TICKET_ALLOWED_CLASSES)
+
+    def test_snapshot_returns_expected_structure(self):
+        """snapshot() must return frame/locals/exception keys without cgitb."""
+        from gluon.restricted import snapshot
+
+        try:
+            sentinel = 42
+            raise ZeroDivisionError("division by zero")
+        except ZeroDivisionError:
+            s = snapshot(context=5, code="", environment={})
+
+        self.assertEqual(s["etype"], "ZeroDivisionError")
+        self.assertEqual(s["evalue"], "division by zero")
+        self.assertIn("frames", s)
+        self.assertTrue(len(s["frames"]) > 0)
+        # locals of the faulting frame must include our sentinel variable
+        self.assertIn("sentinel", s["locals"])
+        self.assertIn("pyver", s)
+        self.assertIn("date", s)
+
+    def test_snapshot_stores_environment_as_xml(self):
+        """snapshot() must store request/response/session as XML objects."""
+        from gluon.html import XML
+        from gluon.restricted import snapshot
+
+        env = {
+            "request": {"application": "welcome"},
+            "response": {"status": 200},
+            "session": {"user": "test"},
+            "db": object(),  # non-web2py key — must be ignored
+        }
+        try:
+            raise ValueError("test")
+        except ValueError:
+            s = snapshot(context=5, code="", environment=env)
+
+        self.assertIsInstance(s["request"], XML)
+        self.assertIsInstance(s["response"], XML)
+        self.assertIsInstance(s["session"], XML)
+        self.assertNotIn("db", s)
+
     def test_session_file_blocks_rce_payload(self):
         """Session file loading must not execute malicious pickle."""
         from gluon.globals import Request, Session, Response
@@ -285,3 +352,55 @@ class TestTicketStorageFilePath(unittest.TestCase):
         self._write_raw_ticket("truncated", b"\x80\x05\x95")
         result = self.storage.load(self.request, "welcome", "truncated")
         self.assertEqual(result, {})
+
+
+class TestRestrictedErrorSnapshot(unittest.TestCase):
+    """Integration tests: RestrictedError captures snapshot data correctly."""
+
+    def test_snapshot_non_empty_after_exception(self):
+        """RestrictedError.snapshot must be populated when an exception is active."""
+        from gluon.restricted import RestrictedError
+
+        try:
+            raise ZeroDivisionError("division by zero")
+        except ZeroDivisionError:
+            e = RestrictedError(layer="test", code="a = 1/0", output="error", environment={})
+
+        self.assertIsInstance(e.snapshot, dict)
+        self.assertNotEqual(e.snapshot, {})
+        self.assertEqual(e.snapshot["etype"], "ZeroDivisionError")
+
+    def test_snapshot_xml_survives_pickle_roundtrip(self):
+        """A ticket dict with XML snapshot values must survive safe_loads with TICKET_ALLOWED_CLASSES.
+
+        This is the end-to-end proof that the two bugs are fixed together:
+        snapshot() producing XML objects (cgitb fix) + TICKET_ALLOWED_CLASSES allowing
+        them through safe_loads (allowlist fix).
+        """
+        from gluon.html import XML
+        from gluon.restricted import RestrictedError, TicketStorage
+
+        env = {
+            "request": {"application": "welcome"},
+            "response": {"status": 200},
+            "session": {"user": "alice"},
+        }
+        try:
+            raise ZeroDivisionError("division by zero")
+        except ZeroDivisionError:
+            e = RestrictedError(layer="test", code="a = 1/0", output="error", environment=env)
+
+        self.assertIsInstance(e.snapshot.get("request"), XML)
+        self.assertIsInstance(e.snapshot.get("session"), XML)
+
+        ticket_dict = {
+            "layer": e.layer,
+            "code": e.code,
+            "output": e.output,
+            "traceback": e.traceback,
+            "snapshot": e.snapshot,
+        }
+        pickled = pickle.dumps(ticket_dict, pickle.HIGHEST_PROTOCOL)
+        result = safe_loads(pickled, allowed_classes=TicketStorage.TICKET_ALLOWED_CLASSES)
+        self.assertIsInstance(result["snapshot"]["request"], XML)
+        self.assertIsInstance(result["snapshot"]["session"], XML)
