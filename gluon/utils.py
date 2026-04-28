@@ -11,6 +11,7 @@ This file specifically includes utilities for security.
 --------------------------------------------------------
 """
 
+import ast
 import base64
 import hashlib
 import hmac
@@ -107,6 +108,38 @@ def get_callable_argspec(fn):
     else:
         inspectable = fn
     return inspect.getargspec(inspectable)
+
+
+def safe_eval_dict(s):
+    """Parse keyword-style arguments into a dict.
+
+    Example: 'foo="hello, world", bar=1'
+    """
+    if not s:
+        return {}
+    source = "f(%s)" % s
+    try:
+        node = ast.parse(source, mode="eval")
+    except SyntaxError:
+        return {}
+    if not isinstance(node, ast.Expression) or not isinstance(node.body, ast.Call):
+        return {}
+    result = {}
+    for kw in node.body.keywords:
+        if kw.arg is None:
+            continue
+        try:
+            result[kw.arg] = ast.literal_eval(kw.value)
+        except (ValueError, SyntaxError):
+            if hasattr(ast, "get_source_segment"):
+                result[kw.arg] = ast.get_source_segment(source, kw.value)
+            elif isinstance(kw.value, ast.Name):
+                result[kw.arg] = kw.value.id
+            elif isinstance(kw.value, ast.Constant):
+                result[kw.arg] = kw.value.value
+            else:
+                result[kw.arg] = None
+    return result
 
 
 def pad(s, n=32):

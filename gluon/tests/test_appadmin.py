@@ -18,6 +18,7 @@ from gluon.fileutils import open_file
 from gluon.http import HTTP
 from gluon.languages import TranslatorFactory
 from gluon.storage import List, Storage
+from gluon import utils
 
 DEFAULT_URI = os.getenv("DB", "sqlite:memory")
 
@@ -168,6 +169,16 @@ class TestAppAdmin(unittest.TestCase):
 
             print(traceback.format_exc())
             self.fail("Could not make the view")
+
+    def test_safe_eval_dict_handles_commas(self):
+        self.assertEqual(
+            utils.safe_eval_dict('foo="hello world", bar="hello, world"'),
+            {"foo": "hello world", "bar": "hello, world"},
+        )
+        self.assertEqual(
+            utils.safe_eval_dict("a=1, b='x,y', c=foo"),
+            {"a": 1, "b": "x,y", "c": "foo"},
+        )
 
     def test_insert(self):
         request = self.env["request"]

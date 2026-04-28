@@ -9,7 +9,7 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
-import ast
+import gluon.utils
 
 is_gae = request.env.web2py_runtime_gae or False
 
@@ -107,26 +107,7 @@ def get_query(request):
         return None
 
 
-def safe_eval_dict(s):
-    d = {}
-    for pair in s.split(','):
-        pair = pair.strip()
-        if '=' in pair:
-            key, val = pair.split('=', 1)
-            key = key.strip()
-            val = val.strip()
-            try:
-                d[key] = ast.literal_eval(val)
-            except (ValueError, SyntaxError):
-                # treat as string if quoted
-                if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
-                    try:
-                        d[key] = ast.literal_eval(val)
-                    except:
-                        d[key] = val
-                else:
-                    d[key] = val
-    return d
+safe_eval_dict = gluon.utils.safe_eval_dict
 
 
 def query_by_table_type(tablename, db, request=request):
