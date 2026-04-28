@@ -56,7 +56,7 @@ def deploy():
               label=T('web2py apps to deploy')),
         Field('email', requires=IS_EMAIL(), label=T('GAE Email')),
         Field('password', 'password', requires=IS_NOT_EMPTY(), label=T('GAE Password')))
-    cmd = output = errors = ""
+    cmd_str = output = errors = ""
     if form.accepts(request, session):
         try:
             kill()
@@ -76,18 +76,28 @@ def deploy():
             '(applications/(%s)/.*)|' % '|'.join(ignore_apps), data)
         write_file(yaml, data)
 
+        import shlex
         path = request.env.applications_parent
-        cmd = '%s --email=%s --passin update %s' % \
-            (form.vars.appcfg, form.vars.email, path)
+        # Use argument list to avoid shell interpretation
+        cmd_args = shlex.split(form.vars.appcfg) + [
+            '--email=%s' % form.vars.email,
+            '--passin',
+            'update',
+            path
+        ]
+        cmd_str = ' '.join(map(str, cmd_args))
         p = cache.ram('gae_upload',
-                      lambda s=subprocess, c=cmd: s.Popen(c, shell=True,
-                                                          stdin=s.PIPE,
-                                                          stdout=s.PIPE,
-                                                          stderr=s.PIPE, close_fds=True), -1)
+                      lambda s=subprocess, c=cmd_args: s.Popen(
+                          c, shell=False,
+                          stdin=s.PIPE,
+                          stdout=s.PIPE,
+                          stderr=s.PIPE,
+                          close_fds=True), -1)
+
         p.stdin.write(form.vars.password + '\n')
         fcntl.fcntl(p.stdout.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
         fcntl.fcntl(p.stderr.fileno(), fcntl.F_SETFL, os.O_NONBLOCK)
-    return dict(form=form, command=cmd)
+    return dict(form=form, command=cmd_str)
 
 
 def callback():
