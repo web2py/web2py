@@ -284,7 +284,7 @@ def read_possible_languages(langpath):
 def read_plural_dict_aux(filename):
     lang_text = read_locked(filename).decode("utf8").replace("\r\n", "\n")
     try:
-        return eval(lang_text) or {}
+        return safe_eval(lang_text) or {}
     except Exception:
         e = sys.exc_info()[1]
         status = "Syntax error in %s (%s)" % (filename, e)

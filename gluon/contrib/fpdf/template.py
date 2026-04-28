@@ -8,6 +8,7 @@ __author__ = "Mariano Reingart <reingart@gmail.com>"
 __copyright__ = "Copyright (C) 2010 Mariano Reingart"
 __license__ = "LGPL 3.0"
 
+import ast
 import csv
 import os
 import sys
@@ -95,7 +96,7 @@ class Template:
                     if v == "":
                         v = None
                     else:
-                        v = eval(v.strip())
+                        v = ast.literal_eval(v.strip())
                     kargs[keys[i]] = v
                 self.elements.append(kargs)
         self.keys = [v["name"].lower() for v in self.elements]
