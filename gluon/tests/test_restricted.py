@@ -54,6 +54,52 @@ class TestRestrictedPickle(unittest.TestCase):
         self.assertEqual(safe_loads(pickled), payload)
         self.assertEqual(safe_load(io.BytesIO(pickled)), payload)
 
+    def test_safe_unpickler_loads_safe_standard_types(self):
+        import datetime
+        import decimal
+        import uuid
+
+        payload = {
+            "date": datetime.date(2026, 4, 24),
+            "datetime": datetime.datetime(2026, 4, 24, 12, 34, 56),
+            "time": datetime.time(12, 34, 56),
+            "timedelta": datetime.timedelta(days=1, seconds=5),
+            "uuid": uuid.UUID("12345678123456781234567812345678"),
+            "decimal": decimal.Decimal("1.23"),
+        }
+        pickled = pickle.dumps(payload, pickle.HIGHEST_PROTOCOL)
+        self.assertEqual(safe_loads(pickled), payload)
+        self.assertEqual(safe_load(io.BytesIO(pickled)), payload)
+
+    def test_safe_unpickler_allows_custom_allowed_class(self):
+        import sys
+        import types
+
+        module_name = "safe_unpickler_custom_module"
+        module = types.ModuleType(module_name)
+        exec(
+            """
+class CustomClass(object):
+    def __init__(self, value):
+        self.value = value
+
+    def __eq__(self, other):
+        return isinstance(other, CustomClass) and self.value == other.value
+""",
+            module.__dict__,
+        )
+        sys.modules[module_name] = module
+        try:
+            payload = module.CustomClass(42)
+            pickled = pickle.dumps(payload, pickle.HIGHEST_PROTOCOL)
+            result = safe_loads(
+                pickled,
+                allowed_classes={module_name: {"CustomClass"}},
+            )
+            self.assertEqual(result, payload)
+        finally:
+            del sys.modules[module_name]
+
     def test_safe_unpickler_rejects_malicious_file_payload(self):
         """safe_load must reject a pickle stream containing an unsafe global."""
         malicious = pickle.dumps({"bad": subprocess.Popen}, pickle.HIGHEST_PROTOCOL)
@@ -66,6 +112,105 @@ class TestRestrictedPickle(unittest.TestCase):
             safe_load(io.BytesIO(b""))
         with self.assertRaises(Exception):
             safe_loads(b"")
+
+    def test_session_file_blocks_rce_payload(self):
+        """Session file loading must not execute malicious pickle."""
+        from gluon.globals import Request, Session, Response
+
+        class Exploit:
+            def __reduce__(self):
+                import os
+                return (os.system, ("echo hacked_session > /tmp/web2py_session",))
+
+        tmpdir = tempfile.mkdtemp()
+        app_dir = os.path.join(tmpdir, "welcome")
+        sessions_dir = os.path.join(app_dir, "sessions")
+        os.makedirs(sessions_dir)
+
+        request = Request(env={})
+        request.folder = app_dir
+        request.application = "welcome"
+
+        session_file = os.path.join(sessions_dir, "testsession")
+
+        with open(session_file, "wb") as f:
+            pickle.dump(Exploit(), f, pickle.HIGHEST_PROTOCOL)
+
+        if os.path.exists("/tmp/web2py_session"):
+            os.remove("/tmp/web2py_session")
+
+        s = Session()
+        response = Response()
+        s.connect(request, response, safe_unpickle=True)
+
+        self.assertFalse(os.path.exists("/tmp/web2py_session"))
+
+    def test_session_connect_legacy_unpickle_allows_custom_objects(self):
+        import sys
+        import types
+
+        from gluon.globals import Request, Session, Response
+
+        module_name = "legacy_unpickle_custom_module"
+        module = types.ModuleType(module_name)
+        exec(
+            """
+class CustomClass(object):
+    def __init__(self, value):
+        self.value = value
+
+    def __eq__(self, other):
+        return isinstance(other, CustomClass) and self.value == other.value
+""",
+            module.__dict__,
+        )
+        sys.modules[module_name] = module
+        try:
+            tmpdir = tempfile.mkdtemp()
+            app_dir = os.path.join(tmpdir, "welcome")
+            sessions_dir = os.path.join(app_dir, "sessions")
+            os.makedirs(sessions_dir)
+
+            request = Request(env={})
+            request.folder = app_dir
+            request.application = "welcome"
+            request.client = "127.0.0.1"
+            session_id = "127.0.0.1-1234"
+            cookie = type("Cookie", (), {"value": session_id})()
+            request.cookies = {"session_id_welcome": cookie}
+
+            session_file = os.path.join(sessions_dir, session_id)
+            with open(session_file, "wb") as f:
+                pickle.dump({"data": module.CustomClass(123)}, f, pickle.HIGHEST_PROTOCOL)
+
+            s = Session()
+            response = Response()
+            s.connect(request, response, safe_unpickle=False)
+            if getattr(response, "session_file", None):
+                response.session_file.close()
+
+            self.assertEqual(s["data"], module.CustomClass(123))
+        finally:
+            del sys.modules[module_name]
+
+    def test_secure_loads_blocks_rce_payload(self):
+        """secure_loads must not execute malicious pickle after decryption."""
+        from gluon.utils import secure_loads
+
+        class Exploit:
+            def __reduce__(self):
+                import os
+                return (os.system, ("echo hacked_utils > /tmp/web2py_utils",))
+
+        payload = pickle.dumps(Exploit(), pickle.HIGHEST_PROTOCOL)
+
+        if os.path.exists("/tmp/web2py_utils"):
+         os.remove("/tmp/web2py_utils")
+
+        result = secure_loads(payload, encryption_key=None)
+
+        self.assertIsNone(result)
+        self.assertFalse(os.path.exists("/tmp/web2py_utils"))
 
 
 class TestTicketStorageFilePath(unittest.TestCase):

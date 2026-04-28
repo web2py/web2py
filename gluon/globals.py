@@ -71,6 +71,7 @@ import gluon.settings as settings
 from gluon import recfile
 from gluon.cache import CacheInRam
 from gluon.contenttype import contenttype
+from gluon.restricted import safe_load, safe_loads
 from gluon.contrib.multipart import MultipartParser, ParserError, parse_options_header
 from gluon.fileutils import up
 from gluon.html import PRE, TABLE, TR, URL, xmlescape
@@ -1021,6 +1022,8 @@ class Session(Storage):
         cookie_key=None,
         cookie_expires=None,
         compression_level=None,
+        safe_unpickle=False,
+        pickle_allowed_classes=None,
     ):
         """
         Used in models, allows to customize Session handling
@@ -1043,6 +1046,11 @@ class Session(Storage):
             cookie_expires: sets the expiration of the cookie
             compression_level(int): 0-9, sets zlib compression on the data
                 before the encryption
+            safe_unpickle(bool): if True, session data is loaded through a
+                restricted safe unpickler. When False, legacy pickle loading
+                is used for compatibility.
+            pickle_allowed_classes(dict): allowed classes for restricted
+                unpickling when safe_unpickle=True.
         """
         request = request or current.request
         response = response or current.response
@@ -1089,9 +1097,20 @@ class Session(Storage):
             else:
                 session_cookie_data = None
             if session_cookie_data:
-                data = secure_loads(
-                    session_cookie_data, cookie_key, compression_level=compression_level
-                )
+                if safe_unpickle:
+                    data = secure_loads(
+                        session_cookie_data,
+                        cookie_key,
+                        compression_level=compression_level,
+                        allowed_classes=pickle_allowed_classes,
+                    )
+                else:
+                    data = secure_loads(
+                        session_cookie_data,
+                        cookie_key,
+                        compression_level=compression_level,
+                        safe_unpickle=False,
+                    )
                 if data:
                     self.update(data)
             response.session_id = True
@@ -1117,7 +1136,15 @@ class Session(Storage):
                         )
                         portalocker.lock(response.session_file, portalocker.LOCK_EX)
                         response.session_locked = True
-                        self.update(pickle.load(response.session_file))
+                        session_data = (
+                            safe_load(
+                                response.session_file,
+                                allowed_classes=pickle_allowed_classes,
+                            )
+                            if safe_unpickle
+                            else pickle.load(response.session_file)
+                        )
+                        self.update(session_data)
                         response.session_file.seek(0)
                         oc = response.session_filename.split("/")[-1].split("-")[0]
                         if check_client and response.session_client != oc:
@@ -1182,10 +1209,22 @@ class Session(Storage):
                         # rows[0].update_record(locked=True)
                         # Unpickle the data
                         try:
-                            session_data = pickle.loads(row["session_data"])
+                            if safe_unpickle:
+                                session_data = safe_loads(
+                                    row["session_data"],
+                                    allowed_classes=pickle_allowed_classes,
+                                )
+                            else:
+                                session_data = pickle.loads(row["session_data"])
                             self.update(session_data)
                             response.session_new = False
-                        except:
+                        except (
+                            pickle.UnpicklingError,
+                            EOFError,
+                            ValueError,
+                            AttributeError,
+                            ImportError,
+                        ):
                             record_id = None
                     else:
                         record_id = None

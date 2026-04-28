@@ -10,6 +10,7 @@ Restricted environment to execute application's code
 """
 
 import builtins
+import importlib
 import io
 import logging
 import os
@@ -35,10 +36,18 @@ __all__ = [
     "safe_loads",
 ]
 
+DEFAULT_SAFE_GLOBALS = {
+    "decimal": {"Decimal"},
+    "datetime": {"date", "datetime", "time", "timedelta"},
+    "uuid": {"UUID"},
+    "pydal.objects": {"Row", "Rows"},
+}
+
 
 class SafeUnpickler(pickle.Unpickler):
     """
-    Restricted unpickler that only allows a small set of safe builtins.
+    Restricted unpickler that only allows a small set of safe builtins
+    and a small set of safe globals.
     """
 
     safe_builtins = {
@@ -57,20 +66,52 @@ class SafeUnpickler(pickle.Unpickler):
         "NoneType",
     }
 
+    def __init__(self, file_obj, allowed_classes=None):
+        super(SafeUnpickler, self).__init__(file_obj)
+        self.allowed_classes = self._normalize_allowed_classes(allowed_classes)
+
+    @staticmethod
+    def _normalize_allowed_classes(allowed_classes):
+        if not allowed_classes:
+            return {}
+        normalized = {}
+        for module, names in allowed_classes.items():
+            if isinstance(names, str):
+                normalized[module] = {names}
+            else:
+                normalized[module] = set(names)
+        return normalized
+
     def find_class(self, module, name):
         if module == "builtins" and name in self.safe_builtins:
             return getattr(builtins, name)
+        if module in DEFAULT_SAFE_GLOBALS and name in DEFAULT_SAFE_GLOBALS[module]:
+            try:
+                mod = importlib.import_module(module)
+            except ImportError:
+                raise pickle.UnpicklingError(
+                    "global '%s.%s' is forbidden" % (module, name)
+                )
+            return getattr(mod, name)
+        if module in self.allowed_classes and name in self.allowed_classes[module]:
+            try:
+                mod = importlib.import_module(module)
+            except ImportError:
+                raise pickle.UnpicklingError(
+                    "global '%s.%s' is forbidden" % (module, name)
+                )
+            return getattr(mod, name)
         raise pickle.UnpicklingError("global '%s.%s' is forbidden" % (module, name))
 
 
-def safe_load(file_obj):
-    return SafeUnpickler(file_obj).load()
+def safe_load(file_obj, allowed_classes=None):
+    return SafeUnpickler(file_obj, allowed_classes=allowed_classes).load()
 
 
-def safe_loads(data):
+def safe_loads(data, allowed_classes=None):
     if isinstance(data, str):
         data = data.encode("latin-1")
-    return SafeUnpickler(io.BytesIO(data)).load()
+    return SafeUnpickler(io.BytesIO(data), allowed_classes=allowed_classes).load()
 
 
 class TicketStorage(Storage):
