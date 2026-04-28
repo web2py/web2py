@@ -109,7 +109,6 @@ def get_query(request):
 
 safe_eval_dict = gluon.utils.safe_eval_dict
 
-
 def query_by_table_type(tablename, db, request=request):
     keyed = hasattr(db[tablename], '_primarykey')
     if keyed:
