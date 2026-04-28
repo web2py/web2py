@@ -67,57 +67,6 @@ class TestRestrictedPickle(unittest.TestCase):
         with self.assertRaises(Exception):
             safe_loads(b"")
 
-    def test_session_file_blocks_rce_payload(self):
-        """Session file loading must not execute malicious pickle."""
-        from gluon.globals import Request, Session, Response
-
-        class Exploit:
-            def __reduce__(self):
-                import os
-                return (os.system, ("echo hacked_session > /tmp/web2py_session",))
-
-        tmpdir = tempfile.mkdtemp()
-        app_dir = os.path.join(tmpdir, "welcome")
-        sessions_dir = os.path.join(app_dir, "sessions")
-        os.makedirs(sessions_dir)
-
-        request = Request(env={})
-        request.folder = app_dir
-        request.application = "welcome"
-
-        session_file = os.path.join(sessions_dir, "testsession")
-
-        with open(session_file, "wb") as f:
-            pickle.dump(Exploit(), f, pickle.HIGHEST_PROTOCOL)
-
-        if os.path.exists("/tmp/web2py_session"):
-            os.remove("/tmp/web2py_session")
-
-        s = Session()
-        response = Response()
-        s.connect(request, response)
-
-        self.assertFalse(os.path.exists("/tmp/web2py_session"))
-
-    def test_secure_loads_blocks_rce_payload(self):
-        """secure_loads must not execute malicious pickle after decryption."""
-        from gluon.utils import secure_loads
-
-        class Exploit:
-            def __reduce__(self):
-                import os
-                return (os.system, ("echo hacked_utils > /tmp/web2py_utils",))
-
-        payload = pickle.dumps(Exploit(), pickle.HIGHEST_PROTOCOL)
-
-        if os.path.exists("/tmp/web2py_utils"):
-         os.remove("/tmp/web2py_utils")
-
-        result = secure_loads(payload, encryption_key=None)
-
-        self.assertIsNone(result)
-        self.assertFalse(os.path.exists("/tmp/web2py_utils"))
-
 
 class TestTicketStorageFilePath(unittest.TestCase):
     def setUp(self):

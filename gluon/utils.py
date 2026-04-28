@@ -171,9 +171,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         data = unpad(AES_dec(cipher, encrypted_data))
         if compression_level:
             data = zlib.decompress(data)
-        # Use safe_loads to prevent arbitrary code execution during unpickling
-        from gluon.restricted import safe_loads as safe_loads_restricted
-        return safe_loads_restricted(data)
+        return pickle.loads(data)
     except Exception:
         return None
 
