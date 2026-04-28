@@ -18,6 +18,14 @@ from gluon.utils import web2py_uuid
 class TestRedis(unittest.TestCase):
     """Tests the Redis contrib packages"""
 
+    @classmethod
+    def setUpClass(cls):
+        try:
+            import redis
+            redis.StrictRedis(host="localhost").ping()
+        except Exception:
+            raise unittest.SkipTest("Redis not available")
+
     def setUp(self):
         request = Request(env={})
         request.application = "a"
