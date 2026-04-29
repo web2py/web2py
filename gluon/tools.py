@@ -497,6 +497,12 @@ class Mail(object):
                 text = encode_header(text)
             return text
 
+        def read_body(x):
+            if isinstance(x, str):
+                return x
+            result = x.read()
+            return result.decode("utf8") if isinstance(result, bytes) else result
+
         sender = sender or self.settings.sender
 
         if not isinstance(self.settings.server, str):
@@ -509,9 +515,7 @@ class Mail(object):
             payload_in = MIMEMultipart("mixed")
         elif raw:
             # no encoding configuration for raw messages
-            if not isinstance(message, str):
-                message = message.read().decode("utf8")
-            text = message
+            text = read_body(message)
             # No charset passed to avoid transport encoding
             # NOTE: some unicode encoded strings will produce
             # unreadable mail contents.
@@ -545,11 +549,9 @@ class Mail(object):
 
         if (text is not None or html is not None) and (not raw):
             if text is not None:
-                if not isinstance(text, str):
-                    text = text.read().decode("utf8")
+                text = read_body(text)
             if html is not None:
-                if not isinstance(html, str):
-                    html = html.read().decode("utf8")
+                html = read_body(html)
 
             # Construct mime part only if needed
             if text is not None and html:
