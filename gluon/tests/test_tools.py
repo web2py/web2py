@@ -305,6 +305,57 @@ class TestMail(unittest.TestCase):
         message = TestMail.DummySMTP.inbox.pop()
         self.assertIn("=?utf-8?", message.payload)
 
+    def test_lazyt_message(self):
+        """lazyT passed as message should not raise AttributeError (issue #2524)."""
+        T = TranslatorFactory("", "en")
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        lazy_body = T("Hello, please verify your email")
+        self.assertTrue(
+            mail.send(
+                to=["somebody@example.com"],
+                subject=T("Email verification"),
+                message=lazy_body,
+            )
+        )
+        message = TestMail.DummySMTP.inbox.pop()
+        self.assertIn("Hello, please verify your email", message.payload)
+
+    def test_lazyt_html_message(self):
+        """lazyT passed as html part of message should not raise AttributeError."""
+        T = TranslatorFactory("", "en")
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        lazy_html = T("<html><body>Verify your email</body></html>")
+        self.assertTrue(
+            mail.send(
+                to=["somebody@example.com"],
+                subject=T("Email verification"),
+                message=(None, lazy_html),
+            )
+        )
+        message = TestMail.DummySMTP.inbox.pop()
+        self.assertIn("Content-Type: text/html", message.payload)
+
+    def test_lazyt_raw_message(self):
+        """lazyT passed as raw message should not raise AttributeError."""
+        T = TranslatorFactory("", "en")
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        self.assertTrue(
+            mail.send(
+                to=["somebody@example.com"],
+                subject="hello",
+                message=T("raw body text"),
+                raw=True,
+            )
+        )
+        message = TestMail.DummySMTP.inbox.pop()
+        self.assertIn("raw body text", message.payload)
+
 
 # TODO: class TestAuthJWT(unittest.TestCase):
 class TestAuthJWT(unittest.TestCase):
