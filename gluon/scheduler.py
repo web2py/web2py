@@ -483,11 +483,6 @@ def executor(retq, task, outq):
 
         def close(self):
             sys.stdout = self.stdout
-            if self.written:
-                # see "Joining processes that use queues" section in
-                # https://docs.python.org/2/library/multiprocessing.html#programming-guidelines
-                # https://docs.python.org/3/library/multiprocessing.html#programming-guidelines
-                self.out_queue.cancel_join_thread()
 
         def flush(self):
             pass
@@ -751,6 +746,18 @@ class Scheduler(threading.Thread):
             self.terminate_process()
             tr = TaskReport(STOPPED)
         else:
+            # Final drain: collect any output written just before the process exited
+            # that wasn't picked up in the main loop due to timing.
+            while True:
+                try:
+                    tout += outq.get_nowait()
+                except Queue.Empty:
+                    break
+            if tout:
+                if CLEAROUT in tout:
+                    task_output = tout[tout.rfind(CLEAROUT) + len(CLEAROUT):]
+                else:
+                    task_output += tout
             if p.is_alive():
                 logger.debug("    task timeout")
                 self.terminate_process(flush_ret=False)
