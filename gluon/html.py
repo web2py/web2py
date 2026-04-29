@@ -1505,6 +1505,19 @@ class SCRIPT(DIV):
     tag = "script"
     tagname = tag
 
+    def _xml(self):
+        if not self.attributes.get("_nonce"):
+            from gluon.globals import current
+
+            if (
+                current.response
+                and getattr(current.response, "_csp_enabled", False)
+            ):
+                n = current.response.nonce
+                if n:
+                    self["_nonce"] = n
+        return DIV._xml(self)
+
     def xml(self):
         (fa, co) = self._xml()
         # no escaping of subcomponents
@@ -1528,6 +1541,19 @@ class SCRIPT(DIV):
 class STYLE(DIV):
     tag = "style"
     tagname = tag
+
+    def _xml(self):
+        if not self.attributes.get("_nonce"):
+            from gluon.globals import current
+
+            if (
+                current.response
+                and getattr(current.response, "_csp_enabled", False)
+            ):
+                n = current.response.nonce
+                if n:
+                    self["_nonce"] = n
+        return DIV._xml(self)
 
     def xml(self):
         (fa, co) = self._xml()
