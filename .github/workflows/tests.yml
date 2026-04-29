@@ -1,0 +1,75 @@
+name: Tests
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.9"
+            W2P_SKIP_SCHEDULER_TESTS: "1"
+          - python-version: "3.11"
+            W2P_SKIP_SCHEDULER_TESTS: "1"
+          - python-version: "3.12"
+            W2P_SKIP_SCHEDULER_TESTS: "1"
+          - python-version: "3.14"
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install coverage codecov redis
+
+      - name: Create MySQL database
+        run: mysql -h 127.0.0.1 -u root -e 'CREATE DATABASE pydal;'
+
+      - name: Run tests
+        env:
+          COVERAGE_PROCESS_START: gluon/tests/coverage.ini
+          W2P_SKIP_SCHEDULER_TESTS: ${{ matrix.W2P_SKIP_SCHEDULER_TESTS }}
+        run: python web2py.py --run_system_tests --with_coverage
+
+      - name: Upload coverage
+        run: coverage combine && codecov

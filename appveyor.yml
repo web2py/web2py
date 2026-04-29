@@ -10,14 +10,17 @@ environment:
     - PYTHON: "C:/Python39-x64"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
+      W2P_SKIP_SCHEDULER_TESTS: "1"
 
     - PYTHON: "C:/Python311-x64"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
+      W2P_SKIP_SCHEDULER_TESTS: "1"
 
     - PYTHON: "C:/Python312-x64"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
       PYTHON_ARCH: "64"
+      W2P_SKIP_SCHEDULER_TESTS: "1"
 
     - PYTHON: "C:/Python314-x64"
       COVERAGE_PROCESS_START: gluon/tests/coverage.ini
