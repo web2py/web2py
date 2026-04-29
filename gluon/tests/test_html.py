@@ -20,6 +20,7 @@ from gluon.html import (ASSIGNJS, BEAUTIFY, BODY, BR, BUTTON, CAT, CENTER,
                         XML_unpickle, truncate_string, verifyURL,
                         web2pyHTMLParser, xmlescape)
 from gluon.storage import Storage
+from gluon.globals import current, Request, Response
 
 
 class TestBareHelpers(unittest.TestCase):
@@ -398,6 +399,48 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(CAT().xml(), "")
         # CAT('')
         self.assertEqual(CAT("").xml(), "")
+
+    def test_csp_nonce_injection(self):
+        # setup request/response
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response = Response()
+
+        # no nonce when CSP not enabled
+        s = SCRIPT('alert(1)')
+        self.assertNotIn('nonce="', s.xml())
+        st = STYLE('body { color: red }')
+        self.assertNotIn('nonce="', st.xml())
+
+        # include_files without CSP shouldn't add nonce
+        current.response.files = []
+        current.response.body = Storage()
+        # use existing pattern from other tests: append URL
+        current.response.files.append(URL("a", "static", "css/file.css"))
+        # clear body and call include_files
+        current.response.body = __import__('io').StringIO()
+        current.response.include_files()
+        content = current.response.body.getvalue()
+        self.assertNotIn('nonce="', content)
+
+        # enable CSP and check nonce appears in SCRIPT and STYLE
+        current.response = Response()
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response.enable_csp()
+
+        s = SCRIPT('console.log(1)')
+        self.assertIn('nonce="%s"' % current.response.nonce, s.xml())
+        st = STYLE('body { color: blue }')
+        self.assertIn('nonce="%s"' % current.response.nonce, st.xml())
+
+        # include_files should inject nonce into link when enabled
+        current.response.files = []
+        current.response.files.append(URL("a", "static", "css/file.css"))
+        current.response.body = __import__('io').StringIO()
+        current.response.include_files()
+        content = current.response.body.getvalue()
+        self.assertIn('nonce="%s"' % current.response.nonce, content)
         # CAT(' ')
         self.assertEqual(CAT(" ").xml(), " ")
 

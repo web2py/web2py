@@ -568,6 +568,48 @@ class Response(Storage):
         self.delimiters = ("{{", "}}")
         self.formstyle = "table3cols"
         self.form_label_separator = ": "
+        self._csp_enabled = False
+
+    @property
+    def nonce(self):
+        if "nonce" not in self:
+            self["nonce"] = web2py_uuid()
+        return self["nonce"]
+
+    def enable_csp(self, nonce=True, **policies):
+        self._csp_enabled = True
+        existing = self.headers.get("Content-Security-Policy")
+        p = {}
+        if existing:
+            for directive in existing.split(";"):
+                directive = directive.strip()
+                if not directive:
+                    continue
+                bits = directive.split()
+                if bits:
+                    p[bits[0]] = bits[1:]
+
+        def merge(directive, sources):
+            if isinstance(sources, str):
+                sources = sources.split()
+            if directive not in p:
+                p[directive] = []
+            for s in sources:
+                if s not in p[directive]:
+                    p[directive].append(s)
+
+        if "default-src" not in p:
+            merge("default-src", ["'self'"])
+        if nonce:
+            n = self.nonce
+            merge("script-src", ["'self'", "'nonce-%s'" % n])
+            merge("style-src", ["'self'", "'nonce-%s'" % n])
+        for k, v in policies.items():
+            merge(k.replace("_", "-"), v)
+
+        self.headers["Content-Security-Policy"] = "; ".join(
+            "%s %s" % (k, " ".join(v)) for k, v in p.items()
+        )
 
     def write(self, data, escape=True):
         if not escape:
@@ -713,11 +755,31 @@ class Response(Storage):
                     )
                 tmpl = template_mapping.get(ext)
                 if tmpl:
+                    if (
+                        self._csp_enabled
+                        and (
+                            tmpl.startswith("<script")
+                            or tmpl.startswith("<style")
+                            or tmpl.startswith("<link")
+                        )
+                    ):
+                        tmpl = tmpl.replace(">", ' nonce="{0}">'.format(self.nonce), 1)
                     s.append(tmpl % item)
             elif isinstance(item, (list, tuple)):
                 f = item[0]
                 tmpl = template_mapping.get(f)
                 if tmpl:
+                    if (
+                        self._csp_enabled
+                        and (
+                            tmpl.startswith("<script")
+                            or tmpl.startswith("<style")
+                            or tmpl.startswith("<link")
+                        )
+                    ):
+                        tmpl = tmpl.replace(
+                            ">", ' nonce="{0}">'.format(self.nonce), 1
+                        )
                     s.append(tmpl % item[1])
 
         s = []

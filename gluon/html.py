@@ -1517,6 +1517,15 @@ class SCRIPT(DIV):
     tag = "script"
     tagname = tag
 
+    def _xml(self):
+        fa, co = DIV._xml(self)
+        if not self.attributes.get("_nonce"):
+            from gluon.globals import current
+            response = getattr(current, "response", None)
+            if response and response._csp_enabled:
+                fa += ' nonce="%s"' % response.nonce
+        return fa, co
+
     def xml(self):
         (fa, co) = self._xml()
         # no escaping of subcomponents
@@ -1540,6 +1549,15 @@ class SCRIPT(DIV):
 class STYLE(DIV):
     tag = "style"
     tagname = tag
+
+    def _xml(self):
+        fa, co = DIV._xml(self)
+        if not self.attributes.get("_nonce"):
+            from gluon.globals import current
+            response = getattr(current, "response", None)
+            if response and response._csp_enabled:
+                fa += ' nonce="%s"' % response.nonce
+        return fa, co
 
     def xml(self):
         (fa, co) = self._xml()
