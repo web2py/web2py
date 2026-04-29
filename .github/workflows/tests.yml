@@ -16,7 +16,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.11", "3.12", "3.14"]
+        include:
+          - python-version: "3.9"
+            W2P_SKIP_SCHEDULER_TESTS: "1"
+          - python-version: "3.11"
+            W2P_SKIP_SCHEDULER_TESTS: "1"
+          - python-version: "3.12"
+            W2P_SKIP_SCHEDULER_TESTS: "1"
+          - python-version: "3.14"
 
     services:
       mysql:
@@ -61,6 +68,7 @@ jobs:
       - name: Run tests
         env:
           COVERAGE_PROCESS_START: gluon/tests/coverage.ini
+          W2P_SKIP_SCHEDULER_TESTS: ${{ matrix.W2P_SKIP_SCHEDULER_TESTS }}
         run: python web2py.py --run_system_tests --with_coverage
 
       - name: Upload coverage

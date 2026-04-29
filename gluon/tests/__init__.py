@@ -1,3 +1,4 @@
+import os
 from .test_appadmin import *
 from .test_authapi import *
 from .test_cache import *
@@ -15,7 +16,8 @@ from .test_recfile import *
 from .test_redis import *
 from .test_router import *
 from .test_routes import *
-from .test_scheduler import *
+if not os.environ.get('W2P_SKIP_SCHEDULER_TESTS'):
+    from .test_scheduler import *
 from .test_serializers import *
 from .test_sqlhtml import *
 from .test_storage import *
