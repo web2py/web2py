@@ -35,6 +35,17 @@ from gluon.fileutils import (
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 
+
+def _safe_extract_path(base_dir, member_name):
+    """Return an absolute safe extraction path inside base_dir."""
+    target = os.path.normpath(os.path.join(base_dir, member_name))
+    root = os.path.abspath(base_dir)
+    target_abspath = os.path.abspath(target)
+    if not (target_abspath == root or target_abspath.startswith(root + os.sep)):
+        raise RuntimeError("Attempted path traversal in zip file")
+    return target_abspath
+
+
 # TODO: move into add_path_first
 if not global_settings.web2py_runtime_gae:
     pass
@@ -384,20 +395,24 @@ def unzip(filename, dir, subfolder=""):
     filename = abspath(filename)
     if not zipfile.is_zipfile(filename):
         raise RuntimeError("Not a valid zipfile")
-    zf = zipfile.ZipFile(filename)
-    if not subfolder.endswith("/"):
-        subfolder += "/"
-    n = len(subfolder)
-    for name in sorted(zf.namelist()):
-        if not name.startswith(subfolder):
-            continue
-        # print(name[n:])
-        if name.endswith("/"):
-            folder = os.path.join(dir, name[n:])
-            if not os.path.exists(folder):
-                os.mkdir(folder)
-        else:
-            write_file(os.path.join(dir, name[n:]), zf.read(name), "wb")
+    with zipfile.ZipFile(filename) as zf:
+        if not subfolder.endswith("/"):
+            subfolder += "/"
+        n = len(subfolder)
+        for name in sorted(zf.namelist()):
+            if not name.startswith(subfolder):
+                continue
+            entry_name = name[n:]
+            if not entry_name:
+                continue
+            target_path = _safe_extract_path(dir, entry_name)
+            if name.endswith("/"):
+                os.makedirs(target_path, exist_ok=True)
+            else:
+                target_dir = os.path.dirname(target_path)
+                if target_dir and not os.path.exists(target_dir):
+                    os.makedirs(target_dir, exist_ok=True)
+                write_file(target_path, zf.read(name), "wb")
 
 
 def upgrade(request, url="http://web2py.com"):

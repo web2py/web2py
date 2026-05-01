@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import zipfile
 
 from gluon.admin import (app_cleanup, app_compile, app_create, app_uninstall,
                          check_new_version)
@@ -76,3 +77,22 @@ class TestPack(unittest.TestCase):
     def test_check_new_version(self):
         vert = check_new_version(global_settings.web2py_version, WEB2PY_VERSION_URL)
         self.assertNotEqual(vert[0], -1)
+
+    def test_admin_unzip_path_traversal(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            zip_path = os.path.join(tmpdir, "evil.zip")
+            with zipfile.ZipFile(zip_path, "w") as zf:
+                zf.writestr("web2py/../evil.txt", "bad")
+                zf.writestr("web2py/subdir/../../evil2.txt", "bad")
+                zf.writestr("web2py/safe.txt", "good")
+
+            from gluon.admin import unzip
+
+            with self.assertRaises(RuntimeError):
+                unzip(zip_path, tmpdir, subfolder="web2py")
+
+            self.assertFalse(os.path.exists(os.path.join(tmpdir, "evil.txt")))
+            self.assertFalse(os.path.exists(os.path.join(tmpdir, "evil2.txt")))
+        finally:
+            shutil.rmtree(tmpdir)
