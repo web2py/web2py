@@ -635,8 +635,8 @@ def _TEST():
     html = '<h2>Testing controller "%s.py" ... done.</h2><br/>\n' \
         % request.controller
     for key in sorted([key for key in globals() if not key in __symbols__+['_TEST']]):
-        eval_key = eval(key)
-        if type(eval_key) == types.FunctionType:
+        eval_key = globals().get(key)
+        if isinstance(eval_key, types.FunctionType):
             number_doctests = sum([len(ds.examples) for ds in doctest.DocTestFinder().find(eval_key)])
             if number_doctests>0:
                 sys.stdout = io.StringIO()
