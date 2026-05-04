@@ -11,6 +11,7 @@ from .test_fileutils import *
 from .test_globals import *
 from .test_html import *
 from .test_http import *
+from .test_jsjson import *
 from .test_languages import *
 from .test_recfile import *
 from .test_redis import *
