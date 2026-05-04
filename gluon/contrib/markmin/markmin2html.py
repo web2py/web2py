@@ -715,7 +715,12 @@ def replace_components(text, env):
     return text
 
 def is_unsafe(url):
-    return (url or "").lower().replace(" ", "").startswith("javascript:")
+    # Remove HTML5 whitespace: space, tab, newline, carriage return, form feed
+    # This prevents bypasses like java\nscript: or java\tscript:
+    url_cleaned = (url or "").lower()
+    for ws_char in (' ', '\t', '\n', '\r', '\f'):
+        url_cleaned = url_cleaned.replace(ws_char, '')
+    return url_cleaned.startswith("javascript:")
 
 def autolinks_simple(url):
     """
