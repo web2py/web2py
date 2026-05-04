@@ -27,6 +27,7 @@ from urllib.parse import quote as urllib_quote
 from urllib.parse import urlencode
 
 from yatl import sanitizer
+import json as _json
 
 from gluon import decoder
 from gluon.highlight import highlight
@@ -126,6 +127,7 @@ __all__ = [
     "URL",
     "XHTML",
     "XML",
+    "jsjson",
     "xmlescape",
     "embed64",
 ]
@@ -152,6 +154,27 @@ def xmlescape(data, quote=True):
     # ... and do the escaping
     data = local_html_escape(data, quote)
     return data
+
+
+def jsjson(obj):
+    """
+    Safely JSON-encode `obj` for embedding into JavaScript contexts.
+
+    Returns a `SafeString` containing the JSON literal. To mitigate XSS risks
+    when embedding JSON inside a <script> tag, the sequence '</' is escaped
+    as '\\u003c/' so that injected '</script>' sequences cannot prematurely
+    close the script element.
+    """
+
+    try:
+        s = _json.dumps(obj, ensure_ascii=False)
+    except Exception:
+        # Fallback to string representation if object not serializable
+        s = _json.dumps(str(obj), ensure_ascii=False)
+
+    # Prevent closing </script> or similar sequences from appearing raw
+    s = s.replace("</", "\\u003c/")
+    return SafeString(s)
 
 
 def call_as_list(f, *a, **b):
