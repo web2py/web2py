@@ -1024,6 +1024,43 @@ class TestBareHelpers(unittest.TestCase):
             "<code class=\"python\">hello_world = 'Hello World!'</code>",
         )
         self.assertEqual(MARKMIN("<>").flatten(), "<>")
+        
+        # Test XSS protection: javascript: URLs must be blocked
+        # Regression test for is_unsafe() function with HTML5 whitespace handling
+        # Block basic javascript: URLs in MARKMIN syntax
+        output = MARKMIN("[[link javascript:alert(1)]]").xml()
+        self.assertIn("markmin_unsafe", output)
+        self.assertNotIn("<a href=\"javascript:", output)
+        
+        # Allow safe HTTP URLs
+        output = MARKMIN("[[link http://example.com]]").xml()
+        self.assertIn('<a href="http://example.com"', output)
+        self.assertNotIn("markmin_unsafe", output)
+    
+    def test_MARKMIN_is_unsafe_whitespace_bypass(self):
+        # Test that the is_unsafe() function properly handles HTML5 whitespace
+        # This tests the fix for whitespace bypass in javascript: protocol detection
+        from gluon.contrib.markmin.markmin2html import is_unsafe
+        
+        # Basic javascript: should be detected
+        self.assertTrue(is_unsafe("javascript:alert(1)"))
+        
+        # javascript: with newline should be detected (HTML5 whitespace bypass prevention)
+        self.assertTrue(is_unsafe("java\nscript:alert(1)"))
+        
+        # javascript: with tab should be detected
+        self.assertTrue(is_unsafe("java\tscript:alert(1)"))
+        
+        # javascript: with form feed should be detected
+        self.assertTrue(is_unsafe("java\fscript:alert(1)"))
+        
+        # javascript: with carriage return should be detected
+        self.assertTrue(is_unsafe("java\rscript:alert(1)"))
+        
+        # Safe URLs should not be detected as unsafe
+        self.assertFalse(is_unsafe("http://example.com"))
+        self.assertFalse(is_unsafe("https://example.com"))
+        self.assertFalse(is_unsafe("mailto:test@example.com"))
 
     def test_ASSIGNJS(self):
         # empty assignation
