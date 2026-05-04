@@ -1022,7 +1022,7 @@ class Session(Storage):
         cookie_key=None,
         cookie_expires=None,
         compression_level=None,
-        safe_unpickle=False,
+        safe_unpickle=True,
         pickle_allowed_classes=None,
     ):
         """
@@ -1066,6 +1066,14 @@ class Session(Storage):
         response.session_client = str(request.client).replace(":", ".")
         current._session_cookie_key = cookie_key
         response.session_cookie_compression_level = compression_level
+
+        if safe_unpickle:
+            if pickle_allowed_classes is None:
+                pickle_allowed_classes = {"gluon.globals": {"Session"}}
+            else:
+                pickle_allowed_classes.setdefault("gluon.globals", set()).add(
+                    "Session"
+                )
 
         # check if there is a session_id in cookies
         try:
