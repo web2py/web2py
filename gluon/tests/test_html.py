@@ -5,6 +5,7 @@
     Unit tests for gluon.html
 """
 
+import io
 import re
 import unittest
 
@@ -418,7 +419,7 @@ class TestBareHelpers(unittest.TestCase):
         # use existing pattern from other tests: append URL
         current.response.files.append(URL("a", "static", "css/file.css"))
         # clear body and call include_files
-        current.response.body = __import__('io').StringIO()
+        current.response.body = io.StringIO()
         current.response.include_files()
         content = current.response.body.getvalue()
         self.assertNotIn('nonce="', content)
@@ -437,10 +438,33 @@ class TestBareHelpers(unittest.TestCase):
         # include_files should inject nonce into link when enabled
         current.response.files = []
         current.response.files.append(URL("a", "static", "css/file.css"))
-        current.response.body = __import__('io').StringIO()
+        current.response.body = io.StringIO()
         current.response.include_files()
         content = current.response.body.getvalue()
         self.assertIn('nonce="%s"' % current.response.nonce, content)
+        # nonce must appear as a proper attribute, not mangled into "/>"
+        # e.g. '<link ... / nonce="x">' would be invalid HTML
+        self.assertNotIn('/ nonce=', content)
+        self.assertIn('/>', content)
+
+        # same check for .less files
+        current.response.files = []
+        current.response.files.append(URL("a", "static", "css/file.less"))
+        current.response.body = io.StringIO()
+        current.response.include_files()
+        less_content = current.response.body.getvalue()
+        self.assertIn('nonce="%s"' % current.response.nonce, less_content)
+        self.assertNotIn('/ nonce=', less_content)
+        self.assertIn('/>', less_content)
+
+        # .js files should also get a nonce
+        current.response.files = []
+        current.response.files.append(URL("a", "static", "js/file.js"))
+        current.response.body = io.StringIO()
+        current.response.include_files()
+        js_content = current.response.body.getvalue()
+        self.assertIn('nonce="%s"' % current.response.nonce, js_content)
+
         # CAT(' ')
         self.assertEqual(CAT(" ").xml(), " ")
 

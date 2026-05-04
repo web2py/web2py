@@ -117,6 +117,16 @@ template_mapping = {
     "js:inline": js_inline,
 }
 
+template_mapping_csp = {
+    "css": '<link nonce="%s" href="%s" rel="stylesheet" type="text/css" />',
+    "js": '<script nonce="%s" src="%s" type="text/javascript"></script>',
+    "coffee": '<script nonce="%s" src="%s" type="text/coffee"></script>',
+    "ts": '<script nonce="%s" src="%s" type="text/typescript"></script>',
+    "less": '<link nonce="%s" href="%s" rel="stylesheet/less" type="text/css" />',
+    "css:inline": '<style nonce="%s" type="text/css">\n%s\n</style>',
+    "js:inline": '<script nonce="%s" type="text/javascript">\n%s\n</script>',
+}
+
 
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
@@ -753,34 +763,29 @@ class Response(Storage):
                     item = item.replace(
                         "/static/", "/static/_%s/" % self.static_version, 1
                     )
-                tmpl = template_mapping.get(ext)
+                if self._csp_enabled:
+                    tmpl = template_mapping_csp.get(ext)
+                else:
+                    tmpl = template_mapping.get(ext)
                 if tmpl:
-                    if (
-                        self._csp_enabled
-                        and (
-                            tmpl.startswith("<script")
-                            or tmpl.startswith("<style")
-                            or tmpl.startswith("<link")
-                        )
-                    ):
-                        tmpl = tmpl.replace(">", ' nonce="{0}">'.format(self.nonce), 1)
-                    s.append(tmpl % item)
+                    if self._csp_enabled:
+                        s.append(tmpl % (self.nonce, item))
+                    else:
+                        s.append(tmpl % item)
             elif isinstance(item, (list, tuple)):
                 f = item[0]
-                tmpl = template_mapping.get(f)
+                if self._csp_enabled:
+                    tmpl = template_mapping_csp.get(f)
+                else:
+                    tmpl = template_mapping.get(f)
                 if tmpl:
-                    if (
-                        self._csp_enabled
-                        and (
-                            tmpl.startswith("<script")
-                            or tmpl.startswith("<style")
-                            or tmpl.startswith("<link")
-                        )
-                    ):
-                        tmpl = tmpl.replace(
-                            ">", ' nonce="{0}">'.format(self.nonce), 1
-                        )
-                    s.append(tmpl % item[1])
+                    if self._csp_enabled:
+                        if isinstance(item[1], tuple):
+                            s.append(tmpl % ((self.nonce,) + item[1]))
+                        else:
+                            s.append(tmpl % (self.nonce, item[1]))
+                    else:
+                        s.append(tmpl % item[1])
 
         s = []
         for item in files:
