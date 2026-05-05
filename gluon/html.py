@@ -27,7 +27,6 @@ from urllib.parse import quote as urllib_quote
 from urllib.parse import urlencode
 
 from yatl import sanitizer
-
 from gluon import decoder
 from gluon.highlight import highlight
 from gluon.storage import Storage
@@ -126,6 +125,7 @@ __all__ = [
     "URL",
     "XHTML",
     "XML",
+    "SAFEJSON",
     "xmlescape",
     "embed64",
 ]
@@ -152,6 +152,18 @@ def xmlescape(data, quote=True):
     # ... and do the escaping
     data = local_html_escape(data, quote)
     return data
+
+
+def SAFEJSON(obj):
+    """
+    Safely JSON-encode `obj` for embedding into JavaScript contexts.
+
+    Uses serializers.json which employs JSONEncoderForHTML to escape
+    HTML-unsafe characters like &, <, >, and invalid JS line terminators.
+    """
+    from gluon.serializers import json as serializers_json
+
+    return SafeString(serializers_json(obj))
 
 
 def call_as_list(f, *a, **b):
@@ -2958,11 +2970,11 @@ def ASSIGNJS(**kargs):
         Javascript vars assignations for the key/value passed.
 
     """
-    from gluon.serializers import json
+    from gluon.serializers import json as serializers_json
 
     s = ""
     for key, value in kargs.items():
-        s += "var %s = %s;\n" % (key, json(value))
+        s += "var %s = %s;\n" % (key, serializers_json(value))
     return XML(s)
 
 
