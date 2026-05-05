@@ -31,6 +31,7 @@ import json as _json
 
 from gluon import decoder
 from gluon.highlight import highlight
+from gluon.serializers import json
 from gluon.storage import Storage
 from gluon.utils import compare, web2py_uuid
 from gluon.validators import simple_hash
@@ -128,6 +129,7 @@ __all__ = [
     "XHTML",
     "XML",
     "jsjson",
+    "json",
     "xmlescape",
     "embed64",
 ]
