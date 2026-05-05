@@ -922,6 +922,13 @@ class TestBareHelpers(unittest.TestCase):
         # TODO check tags content
         self.assertEqual(len(FORM("<>", _a="1", _b="2").as_xml()), 326)
 
+    def test_FORM_add_button_escapes_redirect_url(self):
+        form = FORM(INPUT(_type="submit", _value="Go"))
+        form.add_button("Cancel", "/path?x=bar'")
+        html = form.xml()
+        self.assertIn('window.location=&quot;/path?x=bar&#x27;&quot;;return false', html)
+        self.assertNotIn("window.location='", html)
+
     def test_BEAUTIFY(self):
         # self.assertEqual(BEAUTIFY(['a', 'b', {'hello': 'world'}]).xml(),
         #                 '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">hello</td><td style="vertical-align:top;">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>')
