@@ -2376,7 +2376,16 @@ class FORM(DIV):
         self.validate(**kwargs)
         return self
 
-    REDIRECT_JS = "window.location='%s';return false"
+    REDIRECT_JS = "window.location=%s;return false"
+
+    @staticmethod
+    def _redirect_js(url):
+        if url.startswith("javascript:"):
+            return url
+
+        from gluon.serializers import json
+
+        return FORM.REDIRECT_JS % json(url)
 
     def add_button(self, value, url, _class=None):
         submit = self.element(_type="submit")
@@ -2385,9 +2394,7 @@ class FORM(DIV):
             TAG["button"](
                 value,
                 _class=_class,
-                _onclick=(
-                    url if url.startswith("javascript:") else self.REDIRECT_JS % url
-                ),
+                _onclick=self._redirect_js(url),
             )
         )
 
@@ -2398,7 +2405,7 @@ class FORM(DIV):
         if not hidden:
             hidden = {}
         inputs = [
-            INPUT(_type="button", _value=name, _onclick=FORM.REDIRECT_JS % link)
+            INPUT(_type="button", _value=name, _onclick=FORM._redirect_js(link))
             for name, link in buttons.items()
         ]
         inputs += [
