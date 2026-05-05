@@ -31,7 +31,6 @@ import json as _json
 
 from gluon import decoder
 from gluon.highlight import highlight
-from gluon.serializers import json
 from gluon.storage import Storage
 from gluon.utils import compare, web2py_uuid
 from gluon.validators import simple_hash
@@ -2982,6 +2981,14 @@ def ASSIGNJS(**kargs):
     for key, value in kargs.items():
         s += "var %s = %s;\n" % (key, json(value))
     return XML(s)
+
+
+def __getattr__(name):
+    """Lazy-load json from serializers to avoid circular imports."""
+    if name == "json":
+        from gluon.serializers import json
+        return json
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 if __name__ == "__main__":
