@@ -27,8 +27,6 @@ from urllib.parse import quote as urllib_quote
 from urllib.parse import urlencode
 
 from yatl import sanitizer
-import json as _json
-
 from gluon import decoder
 from gluon.highlight import highlight
 from gluon.storage import Storage
@@ -127,8 +125,7 @@ __all__ = [
     "URL",
     "XHTML",
     "XML",
-    "jsjson",
-    "json",
+    "SAFEJSON",
     "xmlescape",
     "embed64",
 ]
@@ -157,7 +154,7 @@ def xmlescape(data, quote=True):
     return data
 
 
-def jsjson(obj):
+def SAFEJSON(obj):
     """
     Safely JSON-encode `obj` for embedding into JavaScript contexts.
 
@@ -167,15 +164,20 @@ def jsjson(obj):
     close the script element.
     """
 
+    from gluon.serializers import json as serializers_json
+
     try:
-        s = _json.dumps(obj, ensure_ascii=False)
+        s = serializers_json(obj)
     except Exception:
         # Fallback to string representation if object not serializable
-        s = _json.dumps(str(obj), ensure_ascii=False)
+        s = serializers_json(str(obj))
 
     # Prevent closing </script> or similar sequences from appearing raw
     s = s.replace("</", "\\u003c/")
     return SafeString(s)
+
+
+jsjson = SAFEJSON
 
 
 def call_as_list(f, *a, **b):
@@ -2975,20 +2977,12 @@ def ASSIGNJS(**kargs):
         Javascript vars assignations for the key/value passed.
 
     """
-    from gluon.serializers import json
+    from gluon.serializers import json as serializers_json
 
     s = ""
     for key, value in kargs.items():
-        s += "var %s = %s;\n" % (key, json(value))
+        s += "var %s = %s;\n" % (key, serializers_json(value))
     return XML(s)
-
-
-def __getattr__(name):
-    """Lazy-load json from serializers to avoid circular imports."""
-    if name == "json":
-        from gluon.serializers import json
-        return json
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 if __name__ == "__main__":
