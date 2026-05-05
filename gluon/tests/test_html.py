@@ -16,7 +16,7 @@ from gluon.html import (ASSIGNJS, BEAUTIFY, BODY, BR, BUTTON, CAT, CENTER,
                         OBJECT, OL, OPTGROUP, OPTION, PRE, SCRIPT, SELECT,
                         SPAN, STRONG, STYLE, TABLE, TAG, TBODY, TD, TEXTAREA,
                         TFOOT, TH, THEAD, TITLE, TR, TT, UL, URL, XHTML, XML,
-                        A, B, I, P, TAG_pickler, TAG_unpickler, XML_pickle,
+                        A, B, I, P, SAFEJSON, SafeString, TAG_pickler, TAG_unpickler, XML_pickle,
                         XML_unpickle, truncate_string, verifyURL,
                         web2pyHTMLParser, xmlescape)
 from gluon.storage import Storage
@@ -1069,6 +1069,16 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(ASSIGNJS(var1="1").xml(), 'var var1 = "1";\n')
         # int assignation
         self.assertEqual(ASSIGNJS(var2=2).xml(), "var var2 = 2;\n")
+
+    def test_SAFEJSON(self):
+        obj = {"x": "</script><img src=x onerror=alert(1)>"}
+        s = SAFEJSON(obj)
+        assert isinstance(s, SafeString)
+        xml = s.xml()
+        # ensure raw '</' does not appear
+        assert "</" not in xml
+        # ensure we used the unicode-escaped form
+        assert "\\u003c/" in xml
 
 
 class TestData(unittest.TestCase):

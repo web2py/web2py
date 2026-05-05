@@ -158,26 +158,12 @@ def SAFEJSON(obj):
     """
     Safely JSON-encode `obj` for embedding into JavaScript contexts.
 
-    Returns a `SafeString` containing the JSON literal. To mitigate XSS risks
-    when embedding JSON inside a <script> tag, the sequence '</' is escaped
-    as '\\u003c/' so that injected '</script>' sequences cannot prematurely
-    close the script element.
+    Uses serializers.json which employs JSONEncoderForHTML to escape
+    HTML-unsafe characters like &, <, >, and invalid JS line terminators.
     """
-
     from gluon.serializers import json as serializers_json
 
-    try:
-        s = serializers_json(obj)
-    except Exception:
-        # Fallback to string representation if object not serializable
-        s = serializers_json(str(obj))
-
-    # Prevent closing </script> or similar sequences from appearing raw
-    s = s.replace("</", "\\u003c/")
-    return SafeString(s)
-
-
-jsjson = SAFEJSON
+    return SafeString(serializers_json(obj))
 
 
 def call_as_list(f, *a, **b):
