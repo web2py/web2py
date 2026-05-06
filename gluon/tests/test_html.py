@@ -465,6 +465,28 @@ class TestBareHelpers(unittest.TestCase):
         js_content = current.response.body.getvalue()
         self.assertIn('nonce="%s"' % current.response.nonce, js_content)
 
+        # extra policies are merged alongside the nonce
+        current.response = Response()
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response.enable_csp(script_src="'unsafe-inline'")
+        csp = current.response.headers["Content-Security-Policy"]
+        self.assertIn("'nonce-%s'" % current.response.nonce, csp)
+        self.assertIn("'unsafe-inline'", csp)
+        # nonce is still injected into SCRIPT tags
+        self.assertIn('nonce="%s"' % current.response.nonce, SCRIPT('alert(1)').xml())
+
+        # pre-existing CSP header is merged, not overwritten
+        current.response = Response()
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response.headers["Content-Security-Policy"] = "img-src 'self' https://cdn.example.com"
+        current.response.enable_csp()
+        csp = current.response.headers["Content-Security-Policy"]
+        self.assertIn("img-src", csp)
+        self.assertIn("https://cdn.example.com", csp)
+        self.assertIn("'nonce-%s'" % current.response.nonce, csp)
+
         # CAT(' ')
         self.assertEqual(CAT(" ").xml(), " ")
 

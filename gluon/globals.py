@@ -586,7 +586,7 @@ class Response(Storage):
             self["nonce"] = web2py_uuid()
         return self["nonce"]
 
-    def enable_csp(self, nonce=True, **policies):
+    def enable_csp(self, **policies):
         self._csp_enabled = True
         existing = self.headers.get("Content-Security-Policy")
         p = {}
@@ -610,10 +610,9 @@ class Response(Storage):
 
         if "default-src" not in p:
             merge("default-src", ["'self'"])
-        if nonce:
-            n = self.nonce
-            merge("script-src", ["'self'", "'nonce-%s'" % n])
-            merge("style-src", ["'self'", "'nonce-%s'" % n])
+        n = self.nonce
+        merge("script-src", ["'self'", "'nonce-%s'" % n])
+        merge("style-src", ["'self'", "'nonce-%s'" % n])
         for k, v in policies.items():
             merge(k.replace("_", "-"), v)
 
