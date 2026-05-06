@@ -117,6 +117,16 @@ template_mapping = {
     "js:inline": js_inline,
 }
 
+template_mapping_csp = {
+    "css": '<link nonce="%s" href="%s" rel="stylesheet" type="text/css" />',
+    "js": '<script nonce="%s" src="%s" type="text/javascript"></script>',
+    "coffee": '<script nonce="%s" src="%s" type="text/coffee"></script>',
+    "ts": '<script nonce="%s" src="%s" type="text/typescript"></script>',
+    "less": '<link nonce="%s" href="%s" rel="stylesheet/less" type="text/css" />',
+    "css:inline": '<style nonce="%s" type="text/css">\n%s\n</style>',
+    "js:inline": '<script nonce="%s" type="text/javascript">\n%s\n</script>',
+}
+
 
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
@@ -568,6 +578,47 @@ class Response(Storage):
         self.delimiters = ("{{", "}}")
         self.formstyle = "table3cols"
         self.form_label_separator = ": "
+        self._csp_enabled = False
+
+    @property
+    def nonce(self):
+        if "nonce" not in self:
+            self["nonce"] = web2py_uuid()
+        return self["nonce"]
+
+    def enable_csp(self, **policies):
+        self._csp_enabled = True
+        existing = self.headers.get("Content-Security-Policy")
+        p = {}
+        if existing:
+            for directive in existing.split(";"):
+                directive = directive.strip()
+                if not directive:
+                    continue
+                bits = directive.split()
+                if bits:
+                    p[bits[0]] = bits[1:]
+
+        def merge(directive, sources):
+            if isinstance(sources, str):
+                sources = sources.split()
+            if directive not in p:
+                p[directive] = []
+            for s in sources:
+                if s not in p[directive]:
+                    p[directive].append(s)
+
+        if "default-src" not in p:
+            merge("default-src", ["'self'"])
+        n = self.nonce
+        merge("script-src", ["'self'", "'nonce-%s'" % n])
+        merge("style-src", ["'self'", "'nonce-%s'" % n])
+        for k, v in policies.items():
+            merge(k.replace("_", "-"), v)
+
+        self.headers["Content-Security-Policy"] = "; ".join(
+            "%s %s" % (k, " ".join(v)) for k, v in p.items()
+        )
 
     def write(self, data, escape=True):
         if not escape:
@@ -711,14 +762,29 @@ class Response(Storage):
                     item = item.replace(
                         "/static/", "/static/_%s/" % self.static_version, 1
                     )
-                tmpl = template_mapping.get(ext)
+                if self._csp_enabled:
+                    tmpl = template_mapping_csp.get(ext)
+                else:
+                    tmpl = template_mapping.get(ext)
                 if tmpl:
-                    s.append(tmpl % item)
+                    if self._csp_enabled:
+                        s.append(tmpl % (self.nonce, item))
+                    else:
+                        s.append(tmpl % item)
             elif isinstance(item, (list, tuple)):
                 f = item[0]
-                tmpl = template_mapping.get(f)
+                if self._csp_enabled:
+                    tmpl = template_mapping_csp.get(f)
+                else:
+                    tmpl = template_mapping.get(f)
                 if tmpl:
-                    s.append(tmpl % item[1])
+                    if self._csp_enabled:
+                        if isinstance(item[1], tuple):
+                            s.append(tmpl % ((self.nonce,) + item[1]))
+                        else:
+                            s.append(tmpl % (self.nonce, item[1]))
+                    else:
+                        s.append(tmpl % item[1])
 
         s = []
         for item in files:

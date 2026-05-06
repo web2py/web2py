@@ -5,6 +5,7 @@
     Unit tests for gluon.html
 """
 
+import io
 import re
 import unittest
 
@@ -20,6 +21,7 @@ from gluon.html import (ASSIGNJS, BEAUTIFY, BODY, BR, BUTTON, CAT, CENTER,
                         XML_unpickle, truncate_string, verifyURL,
                         web2pyHTMLParser, xmlescape)
 from gluon.storage import Storage
+from gluon.globals import current, Request, Response
 
 
 class TestBareHelpers(unittest.TestCase):
@@ -398,6 +400,93 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(CAT().xml(), "")
         # CAT('')
         self.assertEqual(CAT("").xml(), "")
+
+    def test_csp_nonce_injection(self):
+        # setup request/response
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response = Response()
+
+        # no nonce when CSP not enabled
+        s = SCRIPT('alert(1)')
+        self.assertNotIn('nonce="', s.xml())
+        st = STYLE('body { color: red }')
+        self.assertNotIn('nonce="', st.xml())
+
+        # include_files without CSP shouldn't add nonce
+        current.response.files = []
+        current.response.body = Storage()
+        # use existing pattern from other tests: append URL
+        current.response.files.append(URL("a", "static", "css/file.css"))
+        # clear body and call include_files
+        current.response.body = io.StringIO()
+        current.response.include_files()
+        content = current.response.body.getvalue()
+        self.assertNotIn('nonce="', content)
+
+        # enable CSP and check nonce appears in SCRIPT and STYLE
+        current.response = Response()
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response.enable_csp()
+
+        s = SCRIPT('console.log(1)')
+        self.assertIn('nonce="%s"' % current.response.nonce, s.xml())
+        st = STYLE('body { color: blue }')
+        self.assertIn('nonce="%s"' % current.response.nonce, st.xml())
+
+        # include_files should inject nonce into link when enabled
+        current.response.files = []
+        current.response.files.append(URL("a", "static", "css/file.css"))
+        current.response.body = io.StringIO()
+        current.response.include_files()
+        content = current.response.body.getvalue()
+        self.assertIn('nonce="%s"' % current.response.nonce, content)
+        # nonce must appear as a proper attribute, not mangled into "/>"
+        # e.g. '<link ... / nonce="x">' would be invalid HTML
+        self.assertNotIn('/ nonce=', content)
+        self.assertIn('/>', content)
+
+        # same check for .less files
+        current.response.files = []
+        current.response.files.append(URL("a", "static", "css/file.less"))
+        current.response.body = io.StringIO()
+        current.response.include_files()
+        less_content = current.response.body.getvalue()
+        self.assertIn('nonce="%s"' % current.response.nonce, less_content)
+        self.assertNotIn('/ nonce=', less_content)
+        self.assertIn('/>', less_content)
+
+        # .js files should also get a nonce
+        current.response.files = []
+        current.response.files.append(URL("a", "static", "js/file.js"))
+        current.response.body = io.StringIO()
+        current.response.include_files()
+        js_content = current.response.body.getvalue()
+        self.assertIn('nonce="%s"' % current.response.nonce, js_content)
+
+        # extra policies are merged alongside the nonce
+        current.response = Response()
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response.enable_csp(script_src="'unsafe-inline'")
+        csp = current.response.headers["Content-Security-Policy"]
+        self.assertIn("'nonce-%s'" % current.response.nonce, csp)
+        self.assertIn("'unsafe-inline'", csp)
+        # nonce is still injected into SCRIPT tags
+        self.assertIn('nonce="%s"' % current.response.nonce, SCRIPT('alert(1)').xml())
+
+        # pre-existing CSP header is merged, not overwritten
+        current.response = Response()
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response.headers["Content-Security-Policy"] = "img-src 'self' https://cdn.example.com"
+        current.response.enable_csp()
+        csp = current.response.headers["Content-Security-Policy"]
+        self.assertIn("img-src", csp)
+        self.assertIn("https://cdn.example.com", csp)
+        self.assertIn("'nonce-%s'" % current.response.nonce, csp)
+
         # CAT(' ')
         self.assertEqual(CAT(" ").xml(), " ")
 
