@@ -127,6 +127,44 @@ template_mapping_csp = {
     "js:inline": '<script nonce="%s" type="text/javascript">\n%s\n</script>',
 }
 
+CSP_DIRECTIVE = re.compile(r"^[A-Za-z0-9-]+$")
+CSP_DIRECTIVE_TOKEN = re.compile(r"^[\x21-\x2B\x2D-\x3A\x3C-\x7E]+$")
+CSP_STANDARD_DIRECTIVES = frozenset(
+    (
+        "base-uri",
+        "block-all-mixed-content",
+        "child-src",
+        "connect-src",
+        "default-src",
+        "fenced-frame-src",
+        "font-src",
+        "form-action",
+        "frame-ancestors",
+        "frame-src",
+        "img-src",
+        "manifest-src",
+        "media-src",
+        "navigate-to",
+        "object-src",
+        "prefetch-src",
+        "report-to",
+        "report-uri",
+        "require-sri-for",
+        "require-trusted-types-for",
+        "sandbox",
+        "script-src",
+        "script-src-attr",
+        "script-src-elem",
+        "style-src",
+        "style-src-attr",
+        "style-src-elem",
+        "trusted-types",
+        "upgrade-insecure-requests",
+        "webrtc",
+        "worker-src",
+    )
+)
+
 
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
@@ -146,6 +184,38 @@ def sorting_dumps(obj, protocol=None):
     file = StringIO()
     SortingPickler(file, protocol).dump(obj)
     return file.getvalue()
+
+
+def _validate_csp_directive(directive):
+    if not CSP_DIRECTIVE.match(directive):
+        raise ValueError("invalid CSP directive: %r" % directive)
+
+
+def _split_serialized_csp_list(serialized):
+    policies = []
+    start = 0
+    for match in re.finditer(r",([\t\n\f\r ]*)([A-Za-z0-9-]+)", serialized):
+        directive = match.group(2)
+        if match.group(1) or directive in CSP_STANDARD_DIRECTIVES or "-" in directive:
+            policies.append(serialized[start : match.start()].strip())
+            start = match.end(1)
+    policies.append(serialized[start:].strip())
+    return [policy for policy in policies if policy]
+
+
+def _normalize_csp_tokens(sources):
+    if isinstance(sources, str):
+        sources = sources.split()
+    elif sources is None:
+        sources = []
+    else:
+        sources = list(sources)
+    for source in sources:
+        if not isinstance(source, str):
+            raise TypeError("CSP directive tokens must be strings: %r" % (source,))
+        if not CSP_DIRECTIVE_TOKEN.match(source):
+            raise ValueError("invalid CSP directive token: %r" % source)
+    return sources
 
 
 # END #####################################################################
@@ -591,17 +661,19 @@ class Response(Storage):
         existing = self.headers.get("Content-Security-Policy")
         p = {}
         if existing:
-            for directive in existing.split(";"):
-                directive = directive.strip()
-                if not directive:
-                    continue
-                bits = directive.split()
-                if bits:
-                    p[bits[0]] = bits[1:]
+            for policy in _split_serialized_csp_list(existing):
+                for directive in policy.split(";"):
+                    directive = directive.strip()
+                    if not directive:
+                        continue
+                    bits = directive.split()
+                    if bits:
+                        _validate_csp_directive(bits[0])
+                        p[bits[0]] = _normalize_csp_tokens(bits[1:])
 
         def merge(directive, sources):
-            if isinstance(sources, str):
-                sources = sources.split()
+            _validate_csp_directive(directive)
+            sources = _normalize_csp_tokens(sources)
             if directive not in p:
                 p[directive] = []
             for s in sources:
