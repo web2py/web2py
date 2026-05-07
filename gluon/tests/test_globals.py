@@ -232,6 +232,106 @@ class testResponse(unittest.TestCase):
         content = return_includes(response)
         self.assertEqual(content, "")
 
+    def test_enable_csp_rejects_injected_policy_tokens(self):
+        response = Response()
+        with self.assertRaises(ValueError):
+            response.enable_csp(script_src="'self'; img-src *")
+
+        response = Response()
+        response.headers["Content-Security-Policy"] = "script>src 'self'"
+        with self.assertRaises(ValueError):
+            response.enable_csp()
+
+        response = Response()
+        response.headers["Content-Security-Policy"] = "report-to group,name"
+        with self.assertRaises(ValueError):
+            response.enable_csp()
+
+        response = Response()
+        with self.assertRaises(ValueError):
+            response.enable_csp(report_to="group,name")
+
+        response = Response()
+        response.headers["Content-Security-Policy"] = "report-to group,name"
+        with self.assertRaises(ValueError):
+            response.enable_csp()
+
+        response = Response()
+        with self.assertRaises(ValueError):
+            response.enable_csp(script_src="https://good.example/\x00evil")
+
+        response = Response()
+        response.headers["Content-Security-Policy"] = "default-src 'self'; report-to group,name"
+        with self.assertRaises(ValueError):
+            response.enable_csp()
+
+    def test_enable_csp_rejects_non_string_iterable_tokens(self):
+        for invalid in ([None], [123], [b"foo"]):
+            response = Response()
+            with self.assertRaises(TypeError):
+                response.enable_csp(script_src=invalid)
+
+    def test_enable_csp_accepts_valid_policy_tokens(self):
+        response = Response()
+        response.enable_csp(
+            script_src=(
+                "'self' 'none' 'unsafe-inline' 'unsafe-eval' "
+                "'nonce-abcDEF0123+/_=' "
+                "'sha256-abcDEF0123+/_=' "
+                "*.example.com https://cdn.example.com blob: data: ws: wss:"
+            ),
+            report_uri="https://example.com/report",
+            report_to="csp-endpoint",
+            sandbox="allow-scripts allow-same-origin",
+            upgrade_insecure_requests="",
+        )
+        csp = response.headers["Content-Security-Policy"]
+        self.assertIn("'self'", csp)
+        self.assertIn("'unsafe-inline'", csp)
+        self.assertIn("'nonce-abcDEF0123+/_='", csp)
+        self.assertIn("'sha256-abcDEF0123+/_='", csp)
+        self.assertIn("*.example.com", csp)
+        self.assertIn("blob:", csp)
+        self.assertIn("data:", csp)
+        self.assertIn("ws:", csp)
+        self.assertIn("wss:", csp)
+        self.assertIn("report-uri https://example.com/report", csp)
+        self.assertIn("report-to csp-endpoint", csp)
+        self.assertIn("sandbox allow-scripts allow-same-origin", csp)
+        self.assertIn("upgrade-insecure-requests", csp)
+
+    def test_enable_csp_accepts_existing_policy_lists(self):
+        response = Response()
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self', report-uri https://example.com/report"
+        )
+        response.enable_csp(report_to="csp-endpoint")
+        csp = response.headers["Content-Security-Policy"]
+        self.assertIn("default-src 'self'", csp)
+        self.assertIn("report-uri https://example.com/report", csp)
+        self.assertIn("report-to csp-endpoint", csp)
+        self.assertIn("script-src 'self'", csp)
+        self.assertIn("style-src 'self'", csp)
+
+        response = Response()
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self',report-uri https://example.com/report"
+        )
+        response.enable_csp(report_to="csp-endpoint")
+        csp = response.headers["Content-Security-Policy"]
+        self.assertIn("default-src 'self'", csp)
+        self.assertIn("report-uri https://example.com/report", csp)
+        self.assertIn("report-to csp-endpoint", csp)
+
+        response = Response()
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self',x-foo bar"
+        )
+        response.enable_csp()
+        csp = response.headers["Content-Security-Policy"]
+        self.assertIn("default-src 'self'", csp)
+        self.assertIn("x-foo bar", csp)
+
     def test_cookies(self):
         current = setup_clean_session()
         cookie = str(current.response.cookies)
