@@ -100,7 +100,11 @@ class TestAppAdmin(unittest.TestCase):
         """Assert that expr evaluates safely; optionally compare str()."""
         res = safe_eval_expression(expr, {"db": self.env["db"]})
         if expected_str is not None:
-            self.assertEqual(str(res), expected_str)
+            # DAL string representations may include SQL quoting
+            # Normalize by removing double quotes so tests remain
+            # robust across adapters (e.g. "auth_user"."id" -> auth_user.id)
+            normalized = str(res).replace('"', '')
+            self.assertEqual(normalized, expected_str)
 
     def _test_index(self):
         result = self.run_function()
