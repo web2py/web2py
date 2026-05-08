@@ -19,6 +19,7 @@ from gluon.http import HTTP
 from gluon.languages import TranslatorFactory
 from gluon.storage import List, Storage
 from gluon import utils
+from gluon.utils import safe_eval_expression
 
 DEFAULT_URI = os.getenv("DB", "sqlite:memory")
 
@@ -89,6 +90,17 @@ class TestAppAdmin(unittest.TestCase):
         view_path = os.path.join(self.env["request"].folder, "views", "appadmin.html")
         self.env["response"].view = open_file(view_path, "r")
         return run_view_in(self.env)
+
+    def assertUnsafe(self, expr):
+        """Assert that evaluating expr raises a ValueError (unsafe)."""
+        with self.assertRaises(ValueError):
+            safe_eval_expression(expr, {"db": self.env["db"]})
+
+    def assertSafe(self, expr, expected_str=None):
+        """Assert that expr evaluates safely; optionally compare str()."""
+        res = safe_eval_expression(expr, {"db": self.env["db"]})
+        if expected_str is not None:
+            self.assertEqual(str(res), expected_str)
 
     def _test_index(self):
         result = self.run_function()
@@ -281,3 +293,47 @@ class TestAppAdmin(unittest.TestCase):
                         "Should block path traversal")
         self.assertFalse(is_path_allowed('/tmp/malicious'),
                         "Should block temp directory access")
+
+    def test_safe_eval_expression_legitimate_queries(self):
+        """Test that safe_eval_expression allows legitimate database queries"""
+        # Test legitimate expressions using the test DB created in setUp
+        self.assertSafe('db.auth_user.id', 'auth_user.id')
+        self.assertSafe('db.auth_user.id > 0', '(auth_user.id > 0)')
+        self.assertSafe('db.auth_user.username', 'auth_user.username')
+
+    def test_safe_eval_expression_blocks_function_calls(self):
+        """Test that safe_eval_expression blocks arbitrary function calls (RCE)"""
+        self.assertUnsafe('__import__("os").system("id")')
+
+    def test_safe_eval_expression_blocks_subscript(self):
+        """Test that safe_eval_expression blocks subscript access (introspection)"""
+        self.assertUnsafe('db.__class__[0]')
+
+    def test_safe_eval_expression_blocks_dunder_access(self):
+        """Test that safe_eval_expression blocks dunder attribute access"""
+        self.assertUnsafe('db.__class__')
+        self.assertUnsafe('db.auth_user.__dict__')
+
+    def test_safe_eval_expression_blocks_private_access(self):
+        """Test that safe_eval_expression blocks private attribute access"""
+        self.assertUnsafe('db._internals')
+
+    def test_safe_eval_expression_blocks_lambda(self):
+        """Test that safe_eval_expression blocks lambda functions"""
+        self.assertUnsafe('lambda x: x > 0')
+
+    def test_safe_eval_expression_blocks_comprehensions(self):
+        """Test that safe_eval_expression blocks list/dict/set comprehensions"""
+        self.assertUnsafe('[x for x in range(10)]')
+
+    def test_safe_eval_expression_blocks_imports(self):
+        """Test that safe_eval_expression blocks import statements"""
+        self.assertUnsafe('__import__("os")')
+
+    def test_safe_eval_expression_blocks_undefined_names(self):
+        """Test that safe_eval_expression blocks undefined variable names"""
+        self.assertUnsafe('undefined_var > 0')
+
+    def test_safe_eval_expression_blocks_getattr(self):
+        """Test that safe_eval_expression blocks getattr (attribute crawling)"""
+        self.assertUnsafe('getattr(db, "__class__")')

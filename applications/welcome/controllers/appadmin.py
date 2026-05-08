@@ -79,6 +79,9 @@ def get_databases(request):
 
 databases = get_databases(None)
 
+from gluon.utils import safe_eval_expression
+
+
 def eval_in_global_env(text):
     exec ('_ret=%s' % text, {}, global_env)
     return global_env['_ret']
@@ -102,7 +105,7 @@ def get_table(request):
 
 def get_query(request):
     try:
-        return eval_in_global_env(request.vars.query)
+        return safe_eval_expression(request.vars.query, databases)
     except Exception:
         return None
 
@@ -251,7 +254,7 @@ def select():
             if orderby:
                 rows = db(query, ignore_common_filters=True).select(
                               *fields, limitby=(start, stop),
-                              orderby=eval_in_global_env(orderby))
+                              orderby=safe_eval_expression(orderby, databases))
             else:
                 rows = db(query, ignore_common_filters=True).select(
                     *fields, limitby=(start, stop))
