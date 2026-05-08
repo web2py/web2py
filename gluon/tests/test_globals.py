@@ -293,6 +293,78 @@ class testResponse(unittest.TestCase):
         cookie = str(current.response.cookies)
         self.assertTrue("samesite=strict" in cookie.lower())
 
+    def test_stream_attachment_filename_encodes_quote(self):
+        response = Response()
+        request = Request(env={})
+        payload = BytesIO(b"hello")
+        filename = 'a"b.txt'
+
+        response.stream(payload, request=request, attachment=True, filename=filename)
+
+        disposition = response.headers["Content-Disposition"]
+        self.assertEqual(
+            disposition,
+            'attachment; filename="a%22b.txt"',
+        )
+
+    def test_stream_attachment_filename_encodes_semicolon(self):
+        response = Response()
+        request = Request(env={})
+        payload = BytesIO(b"hello")
+        filename = "a; filename=evil.txt"
+
+        response.stream(payload, request=request, attachment=True, filename=filename)
+
+        disposition = response.headers["Content-Disposition"]
+        self.assertEqual(
+            disposition,
+            'attachment; filename="a%3B%20filename%3Devil.txt"',
+        )
+        self.assertEqual(disposition.count(";"), 1)
+        self.assertNotIn("filename=evil.txt", disposition)
+
+    def test_stream_attachment_filename_encodes_crlf(self):
+        response = Response()
+        request = Request(env={})
+        payload = BytesIO(b"hello")
+        filename = "a.txt\r\nX-Evil: yes"
+
+        response.stream(payload, request=request, attachment=True, filename=filename)
+
+        disposition = response.headers["Content-Disposition"]
+        self.assertEqual(
+            disposition,
+            'attachment; filename="a.txt%0D%0AX-Evil%3A%20yes"',
+        )
+        self.assertNotIn("\r", disposition)
+        self.assertNotIn("\n", disposition)
+
+    def test_stream_attachment_safe_filenames_compatibility(self):
+        request = Request(env={})
+        payload = BytesIO(b"hello")
+        cases = [
+            ("report.csv", 'attachment; filename="report.csv"'),
+            ("my report.txt", 'attachment; filename="my%20report.txt"'),
+            ("caf\u00e9.txt", 'attachment; filename="caf%C3%A9.txt"'),
+            ("100%done.txt", 'attachment; filename="100%25done.txt"'),
+        ]
+        for filename, expected in cases:
+            response = Response()
+            response.stream(payload, request=request, attachment=True, filename=filename)
+            self.assertEqual(response.headers["Content-Disposition"], expected)
+
+    def test_stream_attachment_bytes_filename_compatibility(self):
+        response = Response()
+        request = Request(env={})
+        payload = BytesIO(b"hello")
+
+        response.stream(payload, request=request, attachment=True, filename=b"caf\xc3\xa9.txt")
+
+        self.assertEqual(
+            response.headers["Content-Disposition"],
+            'attachment; filename="caf%C3%A9.txt"',
+        )
+
     def test_include_meta(self):
         response = Response()
         response.meta["web2py"] = "web2py"

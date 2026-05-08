@@ -128,6 +128,16 @@ template_mapping_csp = {
 }
 
 
+def _content_disposition_filename(filename):
+    if filename is None:
+        filename = ""
+    # Keep historical semantics for normal values while ensuring dangerous
+    # bytes are encoded before insertion in a quoted header parameter.
+    if isinstance(filename, bytes):
+        return urllib_quote(filename, safe=b"")
+    return urllib_quote(str(filename), safe="")
+
+
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
 # are sorted and web2py can detect without ambiguity when a session changes
@@ -829,11 +839,7 @@ class Response(Storage):
         # for attachment settings and backward compatibility
         keys = [item.lower() for item in headers]
         if attachment:
-            # FIXME: should be done like in next download method
-            if filename is None:
-                attname = ""
-            else:
-                attname = filename
+            attname = _content_disposition_filename(filename)
             headers["Content-Disposition"] = 'attachment; filename="%s"' % attname
 
         if not request:
@@ -924,9 +930,9 @@ class Response(Storage):
         if attachment:
             # Browsers still don't have a simple uniform way to have non ascii
             # characters in the filename so for now we are percent encoding it
-            download_filename = urllib_quote(download_filename)
+            download_filename = _content_disposition_filename(download_filename)
             headers["Content-Disposition"] = (
-                'attachment; filename="%s"' % download_filename.replace('"', '\\"')
+                'attachment; filename="%s"' % download_filename
             )
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
