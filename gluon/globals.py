@@ -1135,10 +1135,16 @@ class Session(Storage):
 
         if safe_unpickle:
             if pickle_allowed_classes is None:
-                pickle_allowed_classes = {"gluon.globals": {"Session"}}
+                pickle_allowed_classes = {
+                    "gluon.globals": {"Session"},
+                    "gluon.storage": {"Storage"}
+                }
             else:
                 pickle_allowed_classes.setdefault("gluon.globals", set()).add(
                     "Session"
+                )
+                pickle_allowed_classes.setdefault("gluon.storage", set()).add(
+                    "Storage"
                 )
 
         # check if there is a session_id in cookies
