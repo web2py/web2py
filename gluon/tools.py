@@ -25,6 +25,7 @@ import os
 import pickle
 import random
 import re
+import secrets
 import smtplib
 import sys
 import time
@@ -3148,7 +3149,7 @@ class Auth(AuthAPI):
                 session.auth_two_factor_user = (
                     user  # store the validated user and associate with this session
                 )
-                session.auth_two_factor = random.randint(100000, 999999)
+                session.auth_two_factor = secrets.randbelow(900000) + 100000
                 session.auth_two_factor_tries_left = (
                     self.settings.auth_two_factor_tries_left
                 )
@@ -3665,17 +3666,17 @@ class Auth(AuthAPI):
         return form
 
     def random_password(self):
-        import random
         import string
 
-        password = ""
         specials = r"!#$*"
+        chars = []
         for i in range(0, 3):
-            password += random.choice(string.ascii_lowercase)
-            password += random.choice(string.ascii_uppercase)
-            password += random.choice(string.digits)
-            password += random.choice(specials)
-        return "".join(random.sample(password, len(password)))
+            chars.append(secrets.choice(string.ascii_lowercase))
+            chars.append(secrets.choice(string.ascii_uppercase))
+            chars.append(secrets.choice(string.digits))
+            chars.append(secrets.choice(specials))
+        secrets.SystemRandom().shuffle(chars)
+        return "".join(chars)
 
     def reset_password_deprecated(
         self,
