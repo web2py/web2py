@@ -529,7 +529,37 @@ def executor(retq, task, outq):
             result = dumps(_function(*args, **vars))
         else:
             # for testing purpose only
-            result = eval(task.function)(*loads(task.args), **loads(task.vars))
+            # Resolve the callable without using eval() to avoid executing
+            # arbitrary code. Support dotted module paths like
+            # 'package.module.func' or simple names present in globals,
+            # locals or builtins.
+            func_name = task.function
+            callable_obj = None
+            try:
+                if isinstance(func_name, str) and "." in func_name:
+                    import importlib
+
+                    mod_name, attr = func_name.rsplit(".", 1)
+                    mod = importlib.import_module(mod_name)
+                    callable_obj = getattr(mod, attr, None)
+                else:
+                    # Check common namespaces for the callable
+                    callable_obj = globals().get(func_name)
+                    if callable_obj is None:
+                        callable_obj = locals().get(func_name)
+                    if callable_obj is None:
+                        callable_obj = getattr(builtins, func_name, None)
+
+                if not isinstance(callable_obj, CALLABLETYPES):
+                    raise NameError(
+                        "name '%s' not found or not callable in scheduler's environment"
+                        % func_name
+                    )
+
+                result = dumps(callable_obj(*loads(task.args), **loads(task.vars)))
+            except Exception:
+                # Let outer exception handler capture traceback and mark task failed
+                raise
         if len(result) >= 1024:
             fd, temp_path = tempfile.mkstemp(suffix=".w2p_sched")
             with os.fdopen(fd, "w") as f:
