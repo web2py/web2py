@@ -105,6 +105,7 @@ class TestAppAdmin(unittest.TestCase):
             # robust across adapters (e.g. "auth_user"."id" -> auth_user.id)
             normalized = str(res).replace('"', '')
             self.assertEqual(normalized, expected_str)
+        return res
 
     def _test_index(self):
         result = self.run_function()
@@ -298,13 +299,6 @@ class TestAppAdmin(unittest.TestCase):
         self.assertFalse(is_path_allowed('/tmp/malicious'),
                         "Should block temp directory access")
 
-    def test_safe_eval_expression_legitimate_queries(self):
-        """Test that safe_eval_expression allows legitimate database queries"""
-        # Test legitimate expressions using the test DB created in setUp
-        self.assertSafe('db.auth_user.id', 'auth_user.id')
-        self.assertSafe('db.auth_user.id > 0', '(auth_user.id > 0)')
-        self.assertSafe('db.auth_user.username', 'auth_user.username')
-
     def test_safe_eval_expression_blocks_function_calls(self):
         """Test that safe_eval_expression blocks arbitrary function calls (RCE)"""
         self.assertUnsafe('__import__("os").system("id")')
@@ -321,6 +315,9 @@ class TestAppAdmin(unittest.TestCase):
     def test_safe_eval_expression_blocks_private_access(self):
         """Test that safe_eval_expression blocks private attribute access"""
         self.assertUnsafe('db._internals')
+        # calling an unsafe underscore method must also be blocked
+        self.assertUnsafe('db._execute("DROP TABLE auth_user")')
+        self.assertUnsafe('db.auth_user._filter_fields({})')
 
     def test_safe_eval_expression_blocks_lambda(self):
         """Test that safe_eval_expression blocks lambda functions"""
@@ -341,3 +338,70 @@ class TestAppAdmin(unittest.TestCase):
     def test_safe_eval_expression_blocks_getattr(self):
         """Test that safe_eval_expression blocks getattr (attribute crawling)"""
         self.assertUnsafe('getattr(db, "__class__")')
+
+    def test_safe_eval_expression_blocks_set_dict_comprehension(self):
+        """Set and dict comprehensions are blocked."""
+        self.assertUnsafe('{x for x in range(10)}')
+        self.assertUnsafe('{x: x for x in range(10)}')
+
+    def test_safe_eval_expression_blocks_generator(self):
+        """Generator expressions are blocked."""
+        self.assertUnsafe('(x for x in range(10))')
+
+    def test_safe_eval_expression_blocks_ternary(self):
+        """Ternary (if-else) expressions are blocked."""
+        self.assertUnsafe('db.auth_user.id if True else db.auth_user.email')
+
+    def test_safe_eval_expression_blocks_walrus(self):
+        """Walrus operator (:=) is blocked."""
+        self.assertUnsafe('(x := db.auth_user.id)')
+
+    def test_safe_eval_expression_blocks_fstring(self):
+        """f-strings are blocked."""
+        self.assertUnsafe('f"hello {db.auth_user.id}"')
+
+    def test_safe_eval_expression_blocks_extra_undefined_names(self):
+        """Any name not in the allowed set is blocked."""
+        self.assertUnsafe('os.getcwd()')
+
+    def test_safe_eval_expression_empty_allowed_names(self):
+        """With no allowed names, even 'db' is rejected."""
+        with self.assertRaises(ValueError):
+            safe_eval_expression('db.auth_user.id', {})
+
+    def test_safe_eval_expression_invalid_syntax(self):
+        """Unparseable input raises ValueError."""
+        with self.assertRaises(ValueError):
+            safe_eval_expression('db.auth_user.id >', {"db": self.env["db"]})
+
+    def test_safe_eval_expression_allowed_dal_expressions(self):
+        """Positive test: all DAL expression patterns used in appadmin are allowed."""
+        db_names = {"db": self.env["db"]}
+        # simple field reference and comparison
+        self.assertSafe('db.auth_user.id', 'auth_user.id')
+        self.assertSafe('db.auth_user.id > 0', '(auth_user.id > 0)')
+        self.assertSafe('db.auth_user.username', 'auth_user.username')
+        # compound AND / OR conditions
+        self.assertIsNotNone(self.assertSafe(
+            '(db.auth_membership.user_id == db.auth_user.id) & (db.auth_user.id > 0)'
+        ))
+        self.assertIsNotNone(self.assertSafe(
+            '(db.auth_user.id > 0) | (db.auth_user.id == 0)'
+        ))
+        # cross-table join condition
+        self.assertIsNotNone(self.assertSafe(
+            'db.auth_membership.user_id == db.auth_user.id'
+        ))
+        # DAL unary operators: ~ (NOT/DESC) and | (multi-field orderby)
+        self.assertIn('auth_user', str(self.assertSafe('~db.auth_user.id')).replace('"', ''))
+        self.assertIsNotNone(self.assertSafe('db.auth_user.id|db.auth_user.username'))
+        # DAL query methods: belongs, like, startswith, contains
+        safe_eval_expression('db.auth_user.id.belongs([1, 2, 3])', db_names)
+        safe_eval_expression('db.auth_user.username.like("admin%")', db_names)
+        safe_eval_expression('db.auth_user.email.startswith("test@")', db_names)
+        safe_eval_expression('db.auth_user.first_name.contains("John")', db_names)
+        # belongs() with _select() subquery
+        self.assertIsNotNone(safe_eval_expression(
+            'db.auth_user.id.belongs(db()._select(db.auth_membership.user_id))',
+            db_names,
+        ))

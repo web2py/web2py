@@ -505,7 +505,6 @@ def safe_path_join(*paths):
     return result
 
 def safe_eval_expression(text, allowed_names=None):
-    
     """Security utilities for web2py.
 
     This module provides a shared, hardened expression evaluator used by
@@ -538,8 +537,28 @@ def safe_eval_expression(text, allowed_names=None):
     else:
         allowed_names = set(allowed_names)
 
+    SAFE_FIELD_METHODS = frozenset({
+        "belongs", "like", "ilike", "startswith", "endswith",
+        "contains", "upper", "lower", "year", "month", "day",
+        "hour", "minutes", "seconds", "regexp",
+    })
+    # DAL Set methods (underscore-prefixed) allowed only when called on a chain
+    # rooted in a name from allowed_names (e.g. db()._select(...) is fine;
+    # untrusted_obj._select(...) is not).
+    SAFE_SET_METHODS = frozenset({"_select"})
+
+    def ast_root_name(node):
+        while True:
+            if isinstance(node, ast.Name):
+                return node.id
+            elif isinstance(node, ast.Attribute):
+                node = node.value
+            elif isinstance(node, ast.Call):
+                node = node.func
+            else:
+                return None
+
     DANGEROUS_NODES = (
-        ast.Call,
         ast.Lambda,
         ast.Subscript,
         ast.ListComp,
@@ -570,6 +589,8 @@ def safe_eval_expression(text, allowed_names=None):
         ast.Await,
         ast.FormattedValue,
         ast.JoinedStr,
+        ast.IfExp,            # ternary: a if b else c
+        ast.NamedExpr,        # walrus :=
     )
 
     try:
@@ -577,15 +598,32 @@ def safe_eval_expression(text, allowed_names=None):
     except SyntaxError as e:
         raise ValueError("Invalid expression: %s" % str(e))
 
-    # Validate AST nodes
     for node in ast.walk(tree):
         if isinstance(node, DANGEROUS_NODES):
             raise ValueError("unsafe appadmin expression")
         if isinstance(node, ast.Attribute):
             if node.attr.startswith("_"):
-                raise ValueError("unsafe appadmin expression")
+                if not (node.attr in SAFE_SET_METHODS
+                        and ast_root_name(node.value) in allowed_names):
+                    raise ValueError("unsafe appadmin expression")
         if isinstance(node, ast.Name):
             if node.id not in allowed_names:
+                raise ValueError("unsafe appadmin expression")
+        if isinstance(node, ast.Call):
+            func = node.func
+            if isinstance(func, ast.Name):
+                # e.g. db() — calling a trusted object directly
+                if func.id not in allowed_names:
+                    raise ValueError("unsafe appadmin expression")
+            elif isinstance(func, ast.Attribute):
+                if func.attr in SAFE_FIELD_METHODS:
+                    pass  # safe DAL query method
+                elif (func.attr in SAFE_SET_METHODS
+                      and ast_root_name(func.value) in allowed_names):
+                    pass  # _select on a trusted Set chain
+                else:
+                    raise ValueError("unsafe appadmin expression")
+            else:
                 raise ValueError("unsafe appadmin expression")
 
 
