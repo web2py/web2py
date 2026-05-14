@@ -749,8 +749,8 @@ class Response(Storage):
                 )
             else:
                 s += '<meta name="%s" content="%s" />\n' % (
-                    k,
-                    xmlescape(str(v)),
+                    xmlescape(k),
+                    xmlescape(v),
                 )  # FIXME
         self.write(s, escape=False)
 

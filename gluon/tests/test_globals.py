@@ -10,7 +10,7 @@ import re
 import unittest
 from io import BytesIO
 
-from gluon import URL
+from gluon.html import XML, URL
 from gluon.globals import Request, Response, Session
 from gluon.rewrite import regex_url_in
 
@@ -473,9 +473,24 @@ class testResponse(unittest.TestCase):
             response.body.getvalue(), '\n<meta name="web2py" content="web2py" />\n'
         )
         response = Response()
+        response.meta['description" onload="alert(1)'] = "<x>"
+        response.include_meta()
+        self.assertEqual(
+            response.body.getvalue(),
+            '\n<meta name="description&quot; onload=&quot;alert(1)" content="&lt;x&gt;" />\n',
+        )
+        response = Response()
         response.meta["meta_dict"] = {"tag_name": "tag_value"}
         response.include_meta()
         self.assertEqual(response.body.getvalue(), '\n<meta tag_name="tag_value" />\n')
+
+        # regression test for XML object support (preserves trusted HTML)
+        response = Response()
+        response.meta["description"] = XML("<b>bold</b>")
+        response.include_meta()
+        self.assertEqual(
+            response.body.getvalue(), '\n<meta name="description" content="<b>bold</b>" />\n'
+        )
 
 
 class testFileUpload(unittest.TestCase):
