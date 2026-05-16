@@ -7,12 +7,16 @@
 
 
 import re
+import os
+import tempfile
 import unittest
 from io import BytesIO
 
 from gluon.html import XML, URL
 from gluon.globals import Request, Response, Session
+from gluon.http import HTTP
 from gluon.rewrite import regex_url_in
+from gluon.streamer import stream_file_or_304_or_206
 
 
 def setup_clean_session():
@@ -464,6 +468,40 @@ class testResponse(unittest.TestCase):
             response.headers["Content-Disposition"],
             'attachment; filename="caf%C3%A9.txt"',
         )
+
+    def test_stream_file_range(self):
+        fd, path = tempfile.mkstemp()
+        try:
+            os.write(fd, b"0123456789")
+            os.close(fd)
+            request = Request(env={})
+            request.env.http_if_modified_since = None
+            request.env.http_accept_encoding = ""
+            request.env.web2py_use_wsgi_file_wrapper = False
+
+            # Invalid ranges -> 416
+            for r in ["bytes=8-3", "bytes=999-", "bytes=10-10"]:
+                request.env.http_range = r
+                with self.assertRaises(HTTP) as ctx:
+                    stream_file_or_304_or_206(path, request=request, headers={})
+                self.assertEqual(ctx.exception.status, 416)
+                self.assertEqual(ctx.exception.headers.get("Content-Range"), "bytes */10")
+
+            # Valid range -> 206
+            request.env.http_range = "bytes=0-4"
+            with self.assertRaises(HTTP) as ctx:
+                stream_file_or_304_or_206(path, request=request, headers={})
+            self.assertEqual(ctx.exception.status, 206)
+            self.assertEqual(ctx.exception.headers.get("Content-Range"), "bytes 0-4/10")
+            self.assertEqual(ctx.exception.headers.get("Content-Length"), "5")
+
+        finally:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+            if os.path.exists(path):
+                os.remove(path)
 
     def test_include_meta(self):
         response = Response()
