@@ -91,6 +91,9 @@ def stream_file_or_304_or_206(
             if not stop_items or int(stop_items[0]) > fsize - 1:
                 stop_items = [fsize - 1]
             part = (int(start_items[0]), int(stop_items[0]), fsize)
+            if part[0] > part[1] or part[0] >= fsize:
+                headers["Content-Range"] = "bytes */%i" % fsize
+                raise HTTP(416, **headers)
             bytes = part[1] - part[0] + 1
             try:
                 stream = open(static_file, "rb")
