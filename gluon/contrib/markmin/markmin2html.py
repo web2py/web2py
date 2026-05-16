@@ -550,7 +550,8 @@ html_colors = [
 META = "\x06"
 LINK = "\x07"
 DISABLED_META = "\x08"
-LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
+#LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
+LATEX = '<img src="https://latex.codecogs.com/png.latex?%s" />' 
 regex_URL = re.compile(
     r"@/(?P<a>\w*)/(?P<c>\w*)/(?P<f>\w*(\.\w+)?)(/(?P<args>[\w\.\-/]+))?"
 )
