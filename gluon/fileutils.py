@@ -213,11 +213,42 @@ def cleanpath(path):
     return path
 
 
+def _is_within_path(target, root):
+    return target == root or target.startswith(root + os.sep)
+
+
 def _extractall(filename, path=".", members=None):
+    path = os.path.abspath(path)
     tar = tarfile.TarFile(filename, "r")
-    ret = tar.extractall(path, members)
-    tar.close()
-    return ret
+    try:
+        safe_members = []
+        for member in members or tar.getmembers():
+            # Check for path traversal and absolute paths
+            target = os.path.abspath(os.path.join(path, member.name))
+            if os.path.isabs(member.name) or not _is_within_path(target, path):
+                raise RuntimeError("Attempted path traversal in tar file")
+
+            # Check for unsafe special files (devices, FIFOs)
+            if member.isdev() or member.isfifo():
+                raise RuntimeError("Attempted unsafe special file in tar file")
+
+            # Check for symlinks/hardlinks escaping extraction root
+            if member.issym():
+                link_target = member.linkname
+                if not os.path.isabs(link_target):
+                    link_target = os.path.join(os.path.dirname(target), link_target)
+                link_target = os.path.abspath(link_target)
+                if not _is_within_path(link_target, path):
+                    raise RuntimeError("Attempted path traversal in tar file")
+            elif member.islnk():
+                link_target = os.path.abspath(os.path.join(path, member.linkname))
+                if not _is_within_path(link_target, path):
+                    raise RuntimeError("Attempted path traversal in tar file")
+
+            safe_members.append(member)
+        return tar.extractall(path, safe_members)
+    finally:
+        tar.close()
 
 
 def tar(file, dir, expression="^.+$", filenames=None, exclude_content_from=None):

@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import datetime
+import io
 import os
+import tarfile
 import tempfile
 import unittest
 
-from gluon.fileutils import fix_newlines, get_session, parse_version, set_session
+from gluon.fileutils import fix_newlines, get_session, parse_version, set_session, untar
 from gluon.storage import Storage, load_storage, save_storage
 
 
@@ -35,6 +37,101 @@ class TestFileUtils(unittest.TestCase):
 
     def test_fix_newlines(self):
         fix_newlines(os.path.dirname(os.path.abspath(__file__)))
+
+    def _make_tar(self, tarname, members):
+        with tarfile.open(tarname, "w") as tar:
+            for member in members:
+                tar.addfile(member, io.BytesIO(b"test"))
+
+    def _regular_member(self, name):
+        member = tarfile.TarInfo(name)
+        member.size = 4
+        return member
+
+    def test_untar_extracts_safe_members(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarname = os.path.join(tmpdir, "safe.tar")
+            extract_to = os.path.join(tmpdir, "app")
+            os.mkdir(extract_to)
+            self._make_tar(tarname, [self._regular_member("models/db.py")])
+
+            untar(tarname, extract_to)
+
+            with open(os.path.join(extract_to, "models", "db.py"), "rb") as stream:
+                self.assertEqual(stream.read(), b"test")
+
+    def test_untar_extracts_safe_symlink(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarname = os.path.join(tmpdir, "safe_link.tar")
+            extract_to = os.path.join(tmpdir, "app")
+            os.mkdir(extract_to)
+            member = tarfile.TarInfo("models/link")
+            member.type = tarfile.SYMTYPE
+            member.linkname = "db.py"
+
+            with tarfile.open(tarname, "w") as tar:
+                tar.addfile(self._regular_member("models/db.py"), io.BytesIO(b"test"))
+                tar.addfile(member)
+
+            try:
+                untar(tarname, extract_to)
+            except OSError:
+                self.skipTest("Symlink extraction requires additional privileges")
+
+            # Verify extraction if skip didn't trigger
+            if os.path.islink(os.path.join(extract_to, "models", "link")):
+                self.assertTrue(os.path.exists(os.path.join(extract_to, "models", "link")))
+
+    def test_untar_rejects_parent_traversal_member(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarname = os.path.join(tmpdir, "traversal.tar")
+            extract_to = os.path.join(tmpdir, "app")
+            os.mkdir(extract_to)
+            self._make_tar(tarname, [self._regular_member("../outside.py")])
+
+            with self.assertRaises(RuntimeError):
+                untar(tarname, extract_to)
+            self.assertFalse(os.path.exists(os.path.join(tmpdir, "outside.py")))
+
+    def test_untar_rejects_absolute_member(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarname = os.path.join(tmpdir, "absolute.tar")
+            extract_to = os.path.join(tmpdir, "app")
+            os.mkdir(extract_to)
+            member_name = os.path.join(tmpdir, "outside.py")
+            self._make_tar(tarname, [self._regular_member(member_name)])
+
+            with self.assertRaises(RuntimeError):
+                untar(tarname, extract_to)
+
+    def test_untar_rejects_escaping_symlink(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarname = os.path.join(tmpdir, "link.tar")
+            extract_to = os.path.join(tmpdir, "app")
+            os.mkdir(extract_to)
+            member = tarfile.TarInfo("models/link")
+            member.type = tarfile.SYMTYPE
+            member.linkname = "../../outside.py"
+
+            with tarfile.open(tarname, "w") as tar:
+                tar.addfile(member)
+
+            with self.assertRaises(RuntimeError):
+                untar(tarname, extract_to)
+
+    def test_untar_rejects_special_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarname = os.path.join(tmpdir, "special.tar")
+            extract_to = os.path.join(tmpdir, "app")
+            os.mkdir(extract_to)
+            member = tarfile.TarInfo("models/fifo")
+            member.type = tarfile.FIFOTYPE
+
+            with tarfile.open(tarname, "w") as tar:
+                tar.addfile(member)
+
+            with self.assertRaises(RuntimeError):
+                untar(tarname, extract_to)
 
     def _make_session_request(self, application, folder, session_id, other_application="admin"):
         return Storage(
