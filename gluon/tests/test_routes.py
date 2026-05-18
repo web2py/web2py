@@ -86,6 +86,18 @@ class TestRoutes(unittest.TestCase):
             filter_url("http://domain.com/welcome/static/path/to/static"),
             norm_root("%s/applications/welcome/static/path/to/static" % root),
         )
+        self.assertEqual(
+            filter_url("http://domain.com/welcome/static/css/deep/style.css"),
+            norm_root("%s/applications/welcome/static/css/deep/style.css" % root),
+        )
+        sibling_static = os.path.join(root, "applications", "welcome", "static_evil")
+        if not os.path.exists(sibling_static):
+            os.mkdir(sibling_static)
+        self.assertRaises(
+            HTTP,
+            filter_url,
+            "http://domain.com/welcome/static/_/../../static_evil/secret.txt",
+        )
         # no more necessary since explcit check for directory traversal attacks
         """
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
