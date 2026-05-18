@@ -119,6 +119,21 @@ class TestFileUtils(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 untar(tarname, extract_to)
 
+    def test_untar_rejects_escaping_hardlink(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarname = os.path.join(tmpdir, "hardlink.tar")
+            extract_to = os.path.join(tmpdir, "app")
+            os.mkdir(extract_to)
+            member = tarfile.TarInfo("models/link")
+            member.type = tarfile.LNKTYPE
+            member.linkname = "../outside.py"
+
+            with tarfile.open(tarname, "w") as tar:
+                tar.addfile(member)
+
+            with self.assertRaises(RuntimeError):
+                untar(tarname, extract_to)
+
     def test_untar_rejects_special_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tarname = os.path.join(tmpdir, "special.tar")
