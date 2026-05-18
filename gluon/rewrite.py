@@ -727,7 +727,7 @@ def regex_url_in(request, environ):
             global_settings.applications_parent, "applications", application, "static"
         )
         static_file = os.path.abspath(pjoin(static_folder, filename))
-        if not static_file.startswith(static_folder):
+        if not (static_file == static_folder or static_file.startswith(static_folder + os.sep)):
             invalid_url(routes)
         return (static_file, version, environ)
     else:
