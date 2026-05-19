@@ -8,6 +8,7 @@
 import io
 import re
 import unittest
+from html.parser import HTMLParser
 
 from gluon.decoder import decoder
 from gluon.html import (ASSIGNJS, BEAUTIFY, BODY, BR, BUTTON, CAT, CENTER,
@@ -310,6 +311,36 @@ class TestBareHelpers(unittest.TestCase):
             XML("<p>Test</p><br/><p>Test</p><br/>", sanitize=True).xml(),
             XML("<p>Test</p><br/><p>Test</p><br/>").xml(),
         )
+        # sanitizer must not allow attribute-breakout XSS via
+        # entity-encoded quotes inside href/src/background. HTMLParser
+        # decodes &quot; into " in attribute values; the sanitizer must
+        # re-escape (or otherwise contain) those quotes when emitting
+        # the attribute, otherwise an attacker can inject extra
+        # attributes such as event handlers.
+        for raw in (
+            '<a href="https://example.com/&quot; onclick=&quot;alert(1)">x</a>',
+            '<a href="http://a.b/&quot; onmouseover=&quot;alert(1)">x</a>',
+            '<img src="http://a.b/&quot; onerror=&quot;alert(1)" alt="x">',
+            "<a href='http://a.b/&quot; onclick=&quot;alert(1)'>x</a>",
+        ):
+            cleaned = XML(raw, sanitize=True).xml()
+            seen_attrs = []
+
+            class _Spy(HTMLParser):
+                def handle_starttag(self, tag, attrs):
+                    seen_attrs.extend(name.lower() for name, _ in attrs)
+
+                handle_startendtag = handle_starttag
+
+            spy = _Spy()
+            spy.feed(cleaned)
+            for handler in (
+                "onclick", "onerror", "onmouseover", "onload",
+                "onfocus", "onmouseout",
+            ):
+                self.assertNotIn(handler, seen_attrs,
+                    "sanitize() leaked %s via attribute-breakout: %r"
+                    % (handler, cleaned))
         # basic flatten test
         self.assertEqual(XML("<p>Test</p>").flatten(), "<p>Test</p>")
         self.assertEqual(
