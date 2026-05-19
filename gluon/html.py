@@ -27,6 +27,9 @@ from urllib.parse import quote as urllib_quote
 from urllib.parse import urlencode
 
 from yatl import sanitizer
+# Importing gluon.sanitizer installs an XSS-hardening patch on
+# yatl.sanitizer.XssCleaner; do not remove.
+from gluon import sanitizer as _gluon_sanitizer  # noqa: F401
 from gluon import decoder
 from gluon.highlight import highlight
 from gluon.storage import Storage
