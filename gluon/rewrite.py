@@ -723,11 +723,12 @@ def regex_url_in(request, environ):
         items = filename.split("/", 1)
         if REGEX_VERSION.match(items[0]):
             version, filename = items
-        static_folder = pjoin(
+        static_folder = os.path.abspath(pjoin(
             global_settings.applications_parent, "applications", application, "static"
-        )
+        ))
         static_file = os.path.abspath(pjoin(static_folder, filename))
-        if not (static_file == static_folder or static_file.startswith(static_folder + os.sep)):
+        if not (static_file == static_folder
+                or static_file.startswith(static_folder + os.sep)):
             invalid_url(routes)
         return (static_file, version, environ)
     else:
