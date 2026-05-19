@@ -503,3 +503,29 @@ routes_out = [
             filter_url("http://domain.com/index/a%20bc", env=True).request_uri,
             "/init/default/index/a bc",
         )
+
+    def test_static_traversal_prefix_sibling(self):
+        """A sibling directory whose name shares the 'static' prefix must
+        not be reachable from /<app>/static/... — the boundary check must
+        enforce a path-separator after the static root, not bare startswith.
+
+        REGEX_URL forces the first path segment after /<app>/static/ to
+        match \\w+, so the traversal is hidden behind a valid-looking
+        filename. Without an os.sep boundary in the safety check, the
+        abspath result <root>/applications/welcome/staticbackup/secret.txt
+        passes startswith(<root>/applications/welcome/static) and the
+        file is served outside the static root."""
+        load(data="")
+        sibling = os.path.join(root, "applications", "welcome", "staticbackup")
+        os.mkdir(sibling)
+        try:
+            with open(os.path.join(sibling, "secret.txt"), "w") as fp:
+                fp.write("secret")
+            self.assertRaises(
+                HTTP,
+                filter_url,
+                "http://domain.com/welcome/static/"
+                "x.txt/../../staticbackup/secret.txt",
+            )
+        finally:
+            shutil.rmtree(sibling)
