@@ -15,6 +15,7 @@ import io
 import importlib
 
 from gluon.admin import *
+from gluon.admin import _check_app_path, _is_within_root, _join_app_path
 from gluon.fileutils import abspath, read_file, write_file
 from gluon.restricted import safe_load, safe_loads, TicketStorage
 from gluon.utils import web2py_uuid
@@ -77,10 +78,6 @@ def log_progress(app, mode='EDIT', filename=None, progress=0):
     if filename:
         safe_open(progress_file, 'a').write(
             '[%s] %s %s: %s\n' % (now, mode, filename, progress))
-
-
-def _is_within_root(path, root):
-    return path == root or path.startswith(root + os.sep)
 
 
 def safe_open(a, b):
@@ -1378,6 +1375,7 @@ def create_file():
                 request.vars.location += request.vars.dir + '/'
             app = get_app(name=request.vars.location.split('/')[0])
             path = apath(request.vars.location, r=request)
+        path = _check_app_path(request, app, path)
         filename = re.sub(r'[^\w./-]+', '_', request.vars.filename)
         if path[-7:] == '/rules/':
             # Handle plural rules files
@@ -1413,7 +1411,7 @@ def create_file():
                 raise SyntaxError
             if not filename[-3:] == '.py':
                 filename += '.py'
-            path = os.path.join(apath(app, r=request), 'languages', filename)
+            path = _join_app_path(request, app, os.path.join(apath(app, r=request), 'languages'), filename)
             if not os.path.exists(path):
                 safe_write(path, '')
             # create language xx[-yy].py file:
@@ -1492,7 +1490,7 @@ def create_file():
         else:
             redirect(request.vars.sender + anchor)
 
-        full_filename = os.path.join(path, filename)
+        full_filename = _join_app_path(request, app, path, filename)
         dirpath = os.path.dirname(full_filename)
 
         if not os.path.exists(dirpath):
@@ -1598,7 +1596,7 @@ def upload_file():
         if path[-11:] == '/languages/' and not filename[-3:] == '.py':
             filename += '.py'
 
-        filename = os.path.join(path, filename)
+        filename = _join_app_path(request, app, path, filename)
         dirpath = os.path.dirname(filename)
 
         if not os.path.exists(dirpath):
