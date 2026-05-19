@@ -5,6 +5,8 @@
     Unit tests for gluon.tools
 """
 import datetime
+import io
+import json
 import os
 import shutil
 import smtplib
@@ -1453,7 +1455,51 @@ class TestAuth(unittest.TestCase):
 # It deprecated so far from a priority
 
 
-# TODO: class TestService(unittest.TestCase):
+class TestService(unittest.TestCase):
+    def setUp(self):
+        self.old_request = getattr(current, "request", None)
+        self.old_response = getattr(current, "response", None)
+
+    def tearDown(self):
+        if self.old_request is None:
+            del current.request
+        else:
+            current.request = self.old_request
+        if self.old_response is None:
+            del current.response
+        else:
+            current.response = self.old_response
+
+    def test_jsonrpc2_does_not_mutate_registered_methods(self):
+        service = tools.Service()
+
+        @service.jsonrpc
+        def legacy():
+            return "legacy"
+
+        @service.jsonrpc2
+        def modern():
+            return "modern"
+
+        current.request = Storage(
+            body=io.BytesIO(
+                json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "legacy",
+                        "params": [],
+                    }
+                ).encode("utf8")
+            ),
+            is_local=False,
+        )
+        current.response = Storage(headers={})
+
+        service.serve_jsonrpc2()
+
+        self.assertEqual(set(service.jsonrpc_procedures), {"legacy"})
+        self.assertEqual(set(service.jsonrpc2_procedures), {"modern"})
 
 
 # TODO: class TestPluginManager(unittest.TestCase):

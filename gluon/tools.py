@@ -6050,7 +6050,7 @@ class Service(object):
                 return ""
             else:
                 return "[" + ",".join(retlist) + "]"
-        methods = self.jsonrpc2_procedures
+        methods = dict(self.jsonrpc2_procedures)
         methods.update(self.jsonrpc_procedures)
 
         try:
