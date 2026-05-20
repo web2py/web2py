@@ -12,6 +12,7 @@ import unittest
 from gluon.html import SPAN
 # careful with the import path 'cause of isinstance() checks
 from gluon.languages import TranslatorFactory
+import gluon.serializers as serializers
 from gluon.serializers import *
 from gluon.storage import Storage
 
@@ -19,6 +20,40 @@ from .fix_path import fix_sys_path
 
 
 class TestSerializers(unittest.TestCase):
+    def testYAMLUsesSafeLoader(self):
+        class FakeYaml(object):
+            def load(self, data):
+                raise AssertionError("unsafe YAML loader was called")
+
+            def safe_load(self, data):
+                return {"safe": data}
+
+        original_have_yaml = serializers.have_yaml
+        original_yamlib = serializers.yamlib if serializers.have_yaml else None
+        try:
+            serializers.have_yaml = True
+            serializers.yamlib = FakeYaml()
+            self.assertEqual(serializers.loads_yaml("x: 1"), {"safe": "x: 1"})
+        finally:
+            serializers.have_yaml = original_have_yaml
+            if original_yamlib is not None:
+                serializers.yamlib = original_yamlib
+
+    def testYAML(self):
+        if not have_yaml:
+            self.skipTest("No YAML serializer available")
+
+        data = {"a": [1, 2], "b": {"c": True}}
+        self.assertEqual(loads_yaml(yaml(data)), data)
+
+    def testYAMLRejectsPythonObjectTags(self):
+        if not have_yaml:
+            self.skipTest("No YAML serializer available")
+
+        payload = "!!python/object/apply:builtins.exec ['x = 1']"
+        with self.assertRaises(yamlib.YAMLError):
+            loads_yaml(payload)
+
     def testJSON(self):
         # the main and documented "way" is to use the json() function
         # it has a few corner-cases that make json() be somewhat
