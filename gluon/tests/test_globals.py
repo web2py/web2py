@@ -229,6 +229,39 @@ class testResponse(unittest.TestCase):
             '<script src="http://maps.google.com/maps/api/js?sensor=false" type="text/javascript"></script>',
         )
 
+    def test_include_files_escapes_url_attributes(self):
+        def return_includes(response):
+            response.include_files()
+            return response.body.getvalue()
+
+        malicious = 'https://cdn.example.com/app.js?x=" onerror="alert(1)'
+
+        response = Response()
+        response.files.append(malicious)
+        content = return_includes(response)
+        self.assertIn(
+            "https://cdn.example.com/app.js?x=&quot; onerror=&quot;alert(1)", content
+        )
+        self.assertNotIn('onerror="alert(1)', content)
+
+        response = Response()
+        response.files.append(("js", malicious))
+        content = return_includes(response)
+        self.assertIn(
+            "https://cdn.example.com/app.js?x=&quot; onerror=&quot;alert(1)", content
+        )
+        self.assertNotIn('onerror="alert(1)', content)
+
+        response = Response()
+        response.enable_csp()
+        response.files.append(("js", malicious))
+        content = return_includes(response)
+        self.assertIn('nonce="%s"' % response.nonce, content)
+        self.assertIn(
+            "https://cdn.example.com/app.js?x=&quot; onerror=&quot;alert(1)", content
+        )
+        self.assertNotIn('onerror="alert(1)', content)
+
         response = Response()
         response.files.append(
             ("js1", "http://maps.google.com/maps/api/js?sensor=false")
