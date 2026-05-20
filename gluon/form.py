@@ -1,3 +1,5 @@
+import hmac
+
 from gluon.dal import DAL
 from gluon.storage import Storage
 from gluon.utils import web2py_uuid
@@ -136,7 +138,7 @@ class Form(object):
             for field in table:
                 field.tablename = getattr(field, "tablename", formname)
 
-        if isinstance(record, (int, long, basestring)):
+        if isinstance(record, (int, str)):
             record_id = int(str(record))
             self.record = table[record_id]
         else:
@@ -170,8 +172,17 @@ class Form(object):
             # check for CSRF
             if csrf and self.formname in (current.session._formkeys or {}):
                 self.formkey = current.session._formkeys[self.formname]
-            # validate fields
-            if not csrf or post_vars._formkey == self.formkey:
+            submitted_formkey = post_vars._formkey
+            # validate fields. A missing/no-prior-form state must NOT pass CSRF:
+            # without an explicit identity check, both sides default to None and
+            # `None == None` would silently bypass the token check on the very
+            # first POST to a form the session has never issued.
+            csrf_ok = (
+                self.formkey is not None
+                and isinstance(submitted_formkey, str)
+                and hmac.compare_digest(submitted_formkey, self.formkey)
+            )
+            if not csrf or csrf_ok:
                 if not post_vars._delete:
                     for field in self.table:
                         if field.writable:
