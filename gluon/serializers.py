@@ -222,6 +222,6 @@ def yaml(data):
 
 def loads_yaml(data):
     if have_yaml:
-        return yamlib.load(data)
+        return yamlib.safe_load(data)
     else:
         raise ImportError("No YAML serializer available")
