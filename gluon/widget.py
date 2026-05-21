@@ -69,7 +69,7 @@ def run_system_tests(options):
             die("Coverage not installed")
     sys.stderr.write("Python %s\n" % sys.version)
     if options.with_coverage:
-        coverage_exec = "coverage3"
+        coverage_exec = "coverage"
         coverage_config_file = os.path.join("gluon", "tests", "coverage.ini")
         coverage_config = os.environ.setdefault(
             "COVERAGE_PROCESS_START", coverage_config_file

@@ -69,7 +69,7 @@ class TestMail(unittest.TestCase):
 
         def login(self, username, password):
             if username not in self.users or self.users[username] != password:
-                raise smtplib.SMTPAuthenticationError
+                raise smtplib.SMTPAuthenticationError(535, b"Authentication failed")
             self.username = username
             self.password = password
 
