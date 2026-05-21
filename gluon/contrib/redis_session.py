@@ -181,7 +181,7 @@ class MockTable(object):
             # add it to the index
             pipe.sadd(self.id_idx, key)
             # set a hash key with the Storage
-            pipe.hmset(key, kwargs)
+            pipe.hset(key, mapping=kwargs)
             if self.session_expiry:
                 pipe.expire(key, self.session_expiry)
             pipe.execute()
@@ -268,7 +268,7 @@ class MockQuery(object):
             if not self.db.r_server.exists(key):
                 return None
             with self.db.r_server.pipeline() as pipe:
-                pipe.hmset(key, kwargs)
+                pipe.hset(key, mapping=kwargs)
                 if self.session_expiry:
                     pipe.expire(key, self.session_expiry)
                 rtn = pipe.execute()[0]
