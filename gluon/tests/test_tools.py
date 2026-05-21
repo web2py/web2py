@@ -1451,6 +1451,113 @@ class TestAuth(unittest.TestCase):
     # End Auth test
 
 
+class TestAuthHostHeaderPoisoning(unittest.TestCase):
+    """
+    Regression tests for Host-header poisoning in Auth.url(scheme=True).
+
+    Without this guard, an attacker can submit a password-reset request
+    with `Host: attacker.com` and the framework emails the victim a reset
+    link rooted at attacker.com -- the token leaks on click (CWE-640).
+    """
+
+    def _make_auth(self, http_host, host_names=None):
+        request = Request(env={})
+        request.application = "a"
+        request.controller = "c"
+        request.function = "f"
+        request.folder = "applications/admin"
+        request.env.http_host = http_host
+        response = Response()
+        session = Session()
+        T = TranslatorFactory("", "en")
+        session.connect(request, response)
+        current.request = request
+        current.response = response
+        current.session = session
+        current.T = T
+        db = DAL(DEFAULT_URI, check_reserved=["all"])
+        auth = Auth(db, host_names=host_names)
+        auth.define_tables(username=True, signature=False)
+        auth.settings.function = "user"
+        return auth, db
+
+    def tearDown(self):
+        # cleanup any tables this test left behind
+        try:
+            db = getattr(self, "_db", None)
+            if db is not None:
+                for t in (
+                    "auth_cas",
+                    "auth_event",
+                    "auth_membership",
+                    "auth_permission",
+                    "auth_group",
+                    "auth_user",
+                ):
+                    if t in db:
+                        db[t].drop()
+        except Exception:
+            pass
+
+    def test_absolute_url_refuses_request_host_without_allowlist(self):
+        # Default config: no settings.host, no host_names. The pre-fix
+        # behavior used request.env.http_host directly, allowing the
+        # attacker to poison absolute URLs. Post-fix: HTTP 500.
+        auth, self._db = self._make_auth("attacker.example")
+        self.assertIsNone(auth.settings.host)
+        with self.assertRaises(HTTP) as cm:
+            auth.url("user", args=("reset_password",), scheme=True)
+        self.assertEqual(cm.exception.status, 500)
+
+    def test_absolute_url_uses_explicit_settings_host(self):
+        # If the developer pinned settings.host, that wins regardless of
+        # the attacker's Host header.
+        auth, self._db = self._make_auth("attacker.example")
+        auth.settings.host = "good.example"
+        url = auth.url("user", args=("reset_password",), scheme=True)
+        self.assertIn("//good.example", str(url))
+        self.assertNotIn("attacker.example", str(url))
+
+    def test_absolute_url_with_host_names_allowlist_accepts_match(self):
+        # Host header is in the allowlist -> validated, URL minted.
+        auth, self._db = self._make_auth(
+            "good.example", host_names=["good.example"]
+        )
+        url = auth.url("user", args=("reset_password",), scheme=True)
+        self.assertIn("//good.example", str(url))
+
+    def test_absolute_url_with_host_names_allowlist_rejects_mismatch(self):
+        # Host header is NOT in the allowlist. Auth.__init__ raises 403
+        # via select_host before Auth.url() is ever reached -- this is
+        # the existing behavior we are relying on, and the test guards
+        # against a regression.
+        with self.assertRaises(HTTP) as cm:
+            self._make_auth("attacker.example", host_names=["good.example"])
+        self.assertEqual(cm.exception.status, 403)
+
+    def test_relative_url_unaffected_by_missing_host(self):
+        # scheme=False is the common case and must still work without
+        # any host configuration -- we are not breaking that.
+        auth, self._db = self._make_auth("attacker.example")
+        url = auth.url("user", args=("login",))
+        self.assertTrue(str(url).startswith("/"))
+        self.assertNotIn("attacker.example", str(url))
+
+    def test_email_reset_password_link_not_poisoned(self):
+        # End-to-end: the password-reset link that would have been
+        # emailed must not contain the attacker's Host header.
+        auth, self._db = self._make_auth("attacker.example")
+        auth.settings.host = "good.example"
+        link = auth.url(
+            "user",
+            args=("reset_password",),
+            vars={"key": "abc"},
+            scheme=True,
+        )
+        self.assertIn("//good.example", str(link))
+        self.assertNotIn("attacker.example", str(link))
+
+
 # TODO: class TestCrud(unittest.TestCase):
 # It deprecated so far from a priority
 
