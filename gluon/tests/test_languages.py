@@ -59,8 +59,8 @@ class TestLanguagesParallel(unittest.TestCase):
     @unittest.skipIf(MP_WORKING == 0, "multiprocessing tests unavailable")
     def test_reads_and_writes(self):
         readwriters = 10
-        pool = multiprocessing.Pool(processes=readwriters)
-        results = pool.map(read_write, [[self.filename, 10]] * readwriters)
+        with multiprocessing.Pool(processes=readwriters) as pool:
+            results = pool.map(read_write, [[self.filename, 10]] * readwriters)
         for result in results:
             self.assertTrue(result)
 
