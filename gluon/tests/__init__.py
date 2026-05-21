@@ -8,6 +8,7 @@ from .test_contribs import *
 from .test_cron import *
 from .test_dal import *
 from .test_fileutils import *
+from .test_form import *
 from .test_globals import *
 from .test_html import *
 from .test_http import *
