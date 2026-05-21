@@ -301,7 +301,7 @@ class TestAppAdmin(unittest.TestCase):
 
     def test_admin_file_manager_boundaries(self):
         """Test that admin file manager enforces app boundaries."""
-        from gluon.admin import _join_app_path
+        from gluon.admin import join_app_path
         from gluon.globals import Request
         from gluon.http import HTTP
         request = Request(env={})
@@ -311,16 +311,16 @@ class TestAppAdmin(unittest.TestCase):
         app_root = os.path.join(web2py_apps_root, "welcome")
 
         base = os.path.join(app_root, "views")
-        res = _join_app_path(request, "welcome", base, "default/index.html")
+        res = join_app_path(request, "welcome", base, "default/index.html")
         self.assertTrue(res.endswith(os.path.join("welcome", "views", "default", "index.html")))
 
         static_base = os.path.join(app_root, "static")
-        static_res = _join_app_path(request, "welcome", static_base, "js/app.js")
+        static_res = join_app_path(request, "welcome", static_base, "js/app.js")
         self.assertTrue(static_res.endswith(os.path.join("welcome", "static", "js", "app.js")))
 
         self.assertRaises(
             HTTP,
-            _join_app_path,
+            join_app_path,
             request,
             "welcome",
             os.path.join(app_root, "views"),
@@ -329,7 +329,7 @@ class TestAppAdmin(unittest.TestCase):
 
         self.assertRaises(
             HTTP,
-            _join_app_path,
+            join_app_path,
             request,
             "welcome",
             os.path.join(app_root, "static"),
@@ -338,7 +338,7 @@ class TestAppAdmin(unittest.TestCase):
 
         self.assertRaises(
             HTTP,
-            _join_app_path,
+            join_app_path,
             request,
             "welcome",
             os.path.join(app_root, "static"),

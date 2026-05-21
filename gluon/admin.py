@@ -74,22 +74,22 @@ def apath(path="", r=None):
     return os.path.join(opath, path).replace("\\", "/")
 
 
-def _is_within_root(path, root):
+def is_within_root(path, root):
     return path == root or path.startswith(root + os.sep)
 
 
-def _check_app_path(request, app, path):
+def check_app_path(request, app, path):
     app_root = os.path.abspath(apath(app, r=request))
     path = os.path.abspath(os.path.normpath(path))
-    if not _is_within_root(path, app_root):
+    if not is_within_root(path, app_root):
         raise HTTP(403)
     return path
 
 
-def _join_app_path(request, app, base, *paths):
-    base = _check_app_path(request, app, base)
+def join_app_path(request, app, base, *paths):
+    base = check_app_path(request, app, base)
     path = os.path.abspath(os.path.normpath(os.path.join(base, *paths)))
-    if not _is_within_root(path, base):
+    if not is_within_root(path, base):
         raise HTTP(403)
     return path
 
