@@ -88,8 +88,12 @@ class TestAppAdmin(unittest.TestCase):
 
     def run_view_file_stream(self):
         view_path = os.path.join(self.env["request"].folder, "views", "appadmin.html")
-        self.env["response"].view = open_file(view_path, "r")
-        return run_view_in(self.env)
+        view_file = open_file(view_path, "r")
+        self.env["response"].view = view_file
+        try:
+            return run_view_in(self.env)
+        finally:
+            view_file.close()
 
     def assertUnsafe(self, expr):
         """Assert that evaluating expr raises a ValueError (unsafe)."""

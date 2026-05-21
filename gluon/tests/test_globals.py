@@ -494,6 +494,7 @@ class testResponse(unittest.TestCase):
             self.assertEqual(ctx.exception.status, 206)
             self.assertEqual(ctx.exception.headers.get("Content-Range"), "bytes 0-4/10")
             self.assertEqual(ctx.exception.headers.get("Content-Length"), "5")
+            b"".join(ctx.exception.body)  # exhaust the streamer so its finally: stream.close() runs cleanly
 
         finally:
             try:
@@ -564,7 +565,9 @@ class testFileUpload(unittest.TestCase):
             "CONTENT_LENGTH": str(len(body)),
             "wsgi.input": BytesIO(body),
         }
-        return Request(env)
+        r = Request(env)
+        self.addCleanup(lambda: r._body.close() if r._body is not None else None)
+        return r
 
     def test_file_upload_filename(self):
         body = self._build_multipart(files={"upload": ("hello.txt", b"hello world")})

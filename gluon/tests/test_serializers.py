@@ -15,8 +15,6 @@ from gluon.languages import TranslatorFactory
 from gluon.serializers import *
 from gluon.storage import Storage
 
-from .fix_path import fix_sys_path
-
 
 class TestSerializers(unittest.TestCase):
     def testJSON(self):
