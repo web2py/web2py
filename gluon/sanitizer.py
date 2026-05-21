@@ -70,4 +70,21 @@ def _safe_handle_starttag(self, tag, attrs):
         self.open_tags.insert(0, tag)
 
 
-XssCleaner.handle_starttag = _safe_handle_starttag
+def _yatl_is_vulnerable():
+    """Return True if yatl's XssCleaner has the href attribute-breakout bug.
+
+    Tests with the known exploit payload so the patch is skipped automatically
+    once yatl fixes the bug upstream.
+    """
+    probe = XssCleaner(
+        permitted_tags=["a"],
+        allowed_attributes={"a": ["href"]},
+    )
+    result = probe.strip(
+        '<a href="http://x.com/&quot; onclick=&quot;alert(1)">x</a>'
+    )
+    return "onclick" in result
+
+
+if _yatl_is_vulnerable():
+    XssCleaner.handle_starttag = _safe_handle_starttag
