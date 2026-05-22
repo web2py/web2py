@@ -9,7 +9,8 @@ import unittest
 import zipfile
 
 from gluon.admin import (app_cleanup, app_compile, app_create, app_uninstall,
-                         check_new_version)
+                         check_new_version, safe_join_admin_app_path,
+                         safe_join_admin_path)
 from gluon.compileapp import TEST_CODE, compile_application, remove_compiled_application
 from gluon.fileutils import create_app, w2p_pack, w2p_unpack
 from gluon.globals import Request
@@ -97,5 +98,65 @@ class TestPack(unittest.TestCase):
 
             self.assertFalse(os.path.exists(os.path.join(tmpdir, "evil.txt")))
             self.assertFalse(os.path.exists(os.path.join(tmpdir, "evil2.txt")))
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_admin_safe_join_rejects_sibling_app_traversal(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            apps_root = os.path.join(tmpdir, "applications")
+            owned_static = os.path.join(apps_root, "owned", "static")
+            victim_controllers = os.path.join(apps_root, "victim", "controllers")
+            os.makedirs(owned_static)
+            os.makedirs(victim_controllers)
+
+            old_target = os.path.abspath(
+                os.path.join(owned_static, "../../victim/controllers/pwn.py")
+            )
+            self.assertTrue(old_target.startswith(os.path.abspath(apps_root) + os.sep))
+            self.assertEqual(
+                old_target,
+                os.path.join(os.path.abspath(victim_controllers), "pwn.py"),
+            )
+
+            with self.assertRaises(RuntimeError):
+                safe_join_admin_path(owned_static, "../../victim/controllers/pwn.py")
+
+            self.assertFalse(
+                os.path.exists(os.path.join(victim_controllers, "pwn.py"))
+            )
+        finally:
+            shutil.rmtree(tmpdir)
+
+    def test_admin_app_location_stays_under_selected_app(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            app_root = os.path.join(tmpdir, "applications", "owned")
+            os.makedirs(os.path.join(app_root, "controllers"))
+            target = safe_join_admin_app_path(
+                app_root, "owned", "owned/controllers", "default.py"
+            )
+            self.assertEqual(
+                target,
+                os.path.join(os.path.abspath(app_root), "controllers", "default.py"),
+            )
+
+            target = safe_join_admin_app_path(
+                app_root, "owned", os.path.join(app_root, "static"), "file.txt"
+            )
+            self.assertEqual(
+                target, os.path.join(os.path.abspath(app_root), "static", "file.txt")
+            )
+
+            with self.assertRaises(RuntimeError):
+                safe_join_admin_app_path(
+                    app_root, "owned", "owned/static/../../victim/controllers"
+                )
+            with self.assertRaises(RuntimeError):
+                safe_join_admin_app_path(
+                    app_root,
+                    "owned",
+                    os.path.join(tmpdir, "applications", "victim", "controllers"),
+                )
         finally:
             shutil.rmtree(tmpdir)
