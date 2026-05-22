@@ -32,7 +32,7 @@ from pydal.helpers.methods import _repr_ref, bar_encode, merge_tablemaps, smart_
 from pydal.objects import Expression, Field, Row, Rows, Set, Table
 
 import gluon.serializers as serializers
-from gluon.globals import current
+from gluon.globals import _content_disposition_filename, current
 from gluon.html import (
     BR,
     CAT,
@@ -3157,10 +3157,20 @@ class SQLFORM(FORM):
                 rows.colnames = expcolumns
                 oExp = clazz(rows)
                 export_filename = request.vars.get("_export_filename") or "rows"
-                filename = ".".join((export_filename, oExp.file_ext))
+                # `_export_filename` is taken verbatim from the query string.
+                # Concatenating it raw into Content-Disposition let an
+                # attacker inject extra directives (e.g. a second `filename=`)
+                # by submitting `_export_filename=a";filename=evil.exe`. The
+                # http layer only strips CR/LF, so `"` and `;` would survive.
+                # Percent-encode via the same helper used by Response.stream
+                # / Response.download (see commit 3e656ed7).
+                filename = "%s.%s" % (
+                    _content_disposition_filename(export_filename),
+                    oExp.file_ext,
+                )
                 response.headers["Content-Type"] = oExp.content_type
                 response.headers["Content-Disposition"] = (
-                    "attachment;filename=" + filename + ";"
+                    'attachment; filename="%s"' % filename
                 )
                 raise HTTP(200, oExp.export(), **response.headers)
 

@@ -350,6 +350,73 @@ class TestSQLFORM(unittest.TestCase):
         smartgrid_form = SQLFORM.smartgrid(self.db.auth_user)
         self.assertEqual(smartgrid_form.xml()[:4], "<div")
 
+    def _grid_export_disposition(self, export_filename):
+        # SQLFORM.grid raises HTTP(200, body, **headers) when an export is
+        # triggered via `_export_type`. Drive that path and return the
+        # Content-Disposition header that would be emitted.
+        from gluon.globals import current
+
+        current.request.vars._export_type = "csv"
+        if export_filename is not None:
+            current.request.vars._export_filename = export_filename
+        with self.assertRaises(HTTP) as cm:
+            SQLFORM.grid(self.db.auth_user)
+        # Cleanup so the next test sees a clean request.vars
+        del current.request.vars._export_type
+        if "_export_filename" in current.request.vars:
+            del current.request.vars._export_filename
+        return cm.exception.headers["Content-Disposition"]
+
+    def test_grid_export_filename_encodes_quote(self):
+        # Pre-fix: `_export_filename=a"b` produced
+        #   attachment;filename=a"b.csv;
+        # which is a broken-out quoted-string and lets the attacker close
+        # the quote and append directives. Must be percent-encoded.
+        disposition = self._grid_export_disposition('a"b')
+        self.assertEqual(disposition, 'attachment; filename="a%22b.csv"')
+
+    def test_grid_export_filename_encodes_semicolon(self):
+        # Pre-fix: `_export_filename=a; filename=evil.exe` produced
+        #   attachment;filename=a; filename=evil.exe.csv;
+        # which browsers parse as two directives -- a classic filename
+        # spoof / RFD primitive. The injected directive must not survive.
+        disposition = self._grid_export_disposition("a; filename=evil.exe")
+        self.assertEqual(
+            disposition,
+            'attachment; filename="a%3B%20filename%3Devil.exe.csv"',
+        )
+        # exactly one ";" separator between "attachment" and "filename="
+        self.assertEqual(disposition.count(";"), 1)
+        self.assertNotIn("filename=evil.exe", disposition)
+
+    def test_grid_export_filename_encodes_crlf(self):
+        # The http layer already strips CR/LF from header values, but the
+        # filename must also lose them before that happens so the header
+        # stays well-formed (defense in depth, matches Response.stream).
+        disposition = self._grid_export_disposition("a\r\nX-Evil: yes")
+        self.assertEqual(
+            disposition,
+            'attachment; filename="a%0D%0AX-Evil%3A%20yes.csv"',
+        )
+        self.assertNotIn("\r", disposition)
+        self.assertNotIn("\n", disposition)
+
+    def test_grid_export_filename_safe_values_compatibility(self):
+        # Plain values keep working; only unsafe characters are encoded.
+        # The default ("rows", no _export_filename) must still produce the
+        # historical filename, just now in canonical quoted form.
+        cases = [
+            (None, 'attachment; filename="rows.csv"'),
+            ("report", 'attachment; filename="report.csv"'),
+            ("my report", 'attachment; filename="my%20report.csv"'),
+            ("café", 'attachment; filename="caf%C3%A9.csv"'),
+            ("100%done", 'attachment; filename="100%25done.csv"'),
+        ]
+        for export_filename, expected in cases:
+            self.assertEqual(
+                self._grid_export_disposition(export_filename), expected
+            )
+
 
 class TestSQLTABLE(unittest.TestCase):
     def setUp(self):
