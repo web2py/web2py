@@ -4,12 +4,20 @@
 
 import os
 import shutil
+from io import BytesIO
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
 
-from gluon.admin import (app_cleanup, app_compile, app_create, app_uninstall,
-                         check_new_version)
+from gluon.admin import (
+    app_cleanup,
+    app_compile,
+    app_create,
+    app_uninstall,
+    check_new_version,
+    plugin_install,
+)
 from gluon.compileapp import TEST_CODE, compile_application, remove_compiled_application
 from gluon.fileutils import create_app, w2p_pack, w2p_unpack
 from gluon.globals import Request
@@ -20,6 +28,63 @@ test_app2_name = "_test_compileapp_admin"
 test_unpack_dir = None
 
 WEB2PY_VERSION_URL = "http://web2py.com/examples/default/version"
+
+
+class TestAdminPaths(unittest.TestCase):
+    def _make_request(self):
+        request = Request(env={})
+        request.folder = os.path.join("applications", "admin")
+        return request
+
+    def test_plugin_install_rejects_traversal_filename_with_false(self):
+        request = self._make_request()
+
+        with patch("gluon.admin.w2p_unpack_plugin") as unpack_plugin:
+            result = plugin_install(
+                "welcome",
+                BytesIO(b"payload"),
+                request,
+                "web2py.plugin.evil/../../pwn.w2p",
+            )
+
+        self.assertFalse(result)
+        unpack_plugin.assert_not_called()
+        self.assertFalse(os.path.exists(os.path.join("applications", "pwn.w2p")))
+
+    def test_plugin_install_rejects_dot_names_with_false(self):
+        request = self._make_request()
+
+        for candidate in ("", ".", ".."):
+            with patch("gluon.admin.w2p_unpack_plugin") as unpack_plugin:
+                result = plugin_install("welcome", BytesIO(b"payload"), request, candidate)
+            self.assertFalse(result)
+            unpack_plugin.assert_not_called()
+
+    def test_plugin_install_accepts_safe_basename(self):
+        request = self._make_request()
+
+        with patch("gluon.admin.w2p_unpack_plugin") as unpack_plugin, patch(
+            "gluon.admin.fix_newlines"
+        ) as fix_newlines:
+            result = plugin_install(
+                "welcome", BytesIO(b"payload"), request, "web2py.plugin.safe.w2p"
+            )
+
+        self.assertTrue(result.endswith("deposit/web2py.plugin.safe.w2p"))
+        self.assertTrue(os.path.exists(result))
+        unpack_plugin.assert_called_once()
+        fix_newlines.assert_called_once()
+        os.unlink(result)
+
+    def test_plugin_install_cleanup_does_not_raise_when_open_fails(self):
+        request = self._make_request()
+
+        with patch("gluon.admin.open", side_effect=IOError("boom")):
+            result = plugin_install(
+                "welcome", BytesIO(b"payload"), request, "web2py.plugin.safe.w2p"
+            )
+
+        self.assertFalse(result)
 
 
 class TestPack(unittest.TestCase):
