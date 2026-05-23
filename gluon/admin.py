@@ -47,6 +47,14 @@ def _safe_extract_path(base_dir, member_name):
     return target_abspath
 
 
+def _safe_deposit_path(request, filename):
+    """Return a safe path for a temporary file in the deposit folder."""
+    basename = os.path.basename(filename)
+    if basename != filename or basename in ("", os.curdir, os.pardir):
+        raise RuntimeError("Invalid upload filename")
+    return apath("../deposit/%s" % basename, request)
+
+
 # TODO: move into add_path_first
 if not global_settings.web2py_runtime_gae:
     pass
@@ -348,9 +356,10 @@ def plugin_install(app, fobj, request, filename):
         or `False` on failure
 
     """
-    upname = apath("../deposit/%s" % filename, request)
+    upname = None
 
     try:
+        upname = _safe_deposit_path(request, filename)
         with open(upname, "wb") as appfp:
             copyfileobj(fobj, appfp, 4194304)  # 4 MB buffer
         path = apath(app, request)
@@ -358,7 +367,8 @@ def plugin_install(app, fobj, request, filename):
         fix_newlines(path)
         return upname
     except Exception:
-        os.unlink(upname)
+        if upname and os.path.exists(upname):
+            os.unlink(upname)
         return False
 
 
