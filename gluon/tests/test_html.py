@@ -518,6 +518,21 @@ class TestBareHelpers(unittest.TestCase):
         self.assertIn("https://cdn.example.com", csp)
         self.assertIn("'nonce-%s'" % current.response.nonce, csp)
 
+    def test_csp_nonce_rejects_attribute_injection(self):
+        current.request = Request(env={})
+        current.request.application = "a"
+        current.response = Response()
+        current.response["nonce"] = 'abc" onload="alert(1)'
+        current.response._csp_enabled = True
+
+        with self.assertRaises(ValueError):
+            current.response.files = [("js", "/a/static/app.js")]
+            current.response.include_files()
+        with self.assertRaises(ValueError):
+            SCRIPT("alert(1)").xml()
+        with self.assertRaises(ValueError):
+            STYLE("body { color: red }").xml()
+
         # CAT(' ')
         self.assertEqual(CAT(" ").xml(), " ")
 
