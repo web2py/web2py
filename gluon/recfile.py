@@ -13,6 +13,35 @@ import builtins
 import os
 
 
+def _safe_join(root, *paths):
+    root = os.path.realpath(root)
+    target = os.path.realpath(os.path.join(root, *paths))
+    if not _is_within(target, root):
+        raise IOError("unsafe recfile path")
+    return target
+
+
+def _is_within(target, root):
+    target = os.path.normcase(os.path.realpath(target))
+    root = os.path.normcase(os.path.realpath(root))
+    if hasattr(os.path, "commonpath"):
+        try:
+            return os.path.commonpath([target, root]) == root
+        except ValueError:
+            return False
+    try:
+        relative = os.path.relpath(target, root)
+    except ValueError:
+        return False
+    return relative == os.curdir or not relative.startswith(os.pardir + os.sep)
+
+
+def _existing_inside_root(filename, path):
+    root = os.path.realpath(path)
+    target = os.path.realpath(filename)
+    return _is_within(target, root) and os.path.exists(target)
+
+
 def generate(filename, depth=2, base=512):
     if os.path.sep in filename:
         path, filename = os.path.split(filename)
@@ -32,22 +61,33 @@ def generate(filename, depth=2, base=512):
 
 
 def exists(filename, path=None):
-    if os.path.exists(filename):
+    if path is None and os.path.exists(filename):
         return True
     if path is None:
         path, filename = os.path.split(filename)
-    fullfilename = os.path.join(path, generate(filename))
+        fullfilename = os.path.join(path, generate(filename))
+    else:
+        if _existing_inside_root(filename, path):
+            return True
+        try:
+            fullfilename = _safe_join(path, generate(filename))
+        except IOError:
+            return False
     if os.path.exists(fullfilename):
         return True
     return False
 
 
 def remove(filename, path=None):
-    if os.path.exists(filename):
+    if path is None and os.path.exists(filename):
         return os.unlink(filename)
     if path is None:
         path, filename = os.path.split(filename)
-    fullfilename = os.path.join(path, generate(filename))
+        fullfilename = os.path.join(path, generate(filename))
+    else:
+        if _existing_inside_root(filename, path):
+            return os.unlink(os.path.realpath(filename))
+        fullfilename = _safe_join(path, generate(filename))
     if os.path.exists(fullfilename):
         return os.unlink(fullfilename)
     raise IOError
@@ -56,13 +96,18 @@ def remove(filename, path=None):
 def open(filename, mode="r", path=None):
     if not path:
         path, filename = os.path.split(filename)
+        join = os.path.join
+    else:
+        join = lambda root, name: _safe_join(root, name)
+        if not mode.startswith("w") and _existing_inside_root(filename, path):
+            return builtins.open(os.path.realpath(filename), mode)
     fullfilename = None
     if not mode.startswith("w"):
-        fullfilename = os.path.join(path, filename)
+        fullfilename = join(path, filename)
         if not os.path.exists(fullfilename):
             fullfilename = None
     if not fullfilename:
-        fullfilename = os.path.join(path, generate(filename))
+        fullfilename = join(path, generate(filename))
         if mode.startswith("w") and not os.path.exists(os.path.dirname(fullfilename)):
             os.makedirs(os.path.dirname(fullfilename))
     return builtins.open(fullfilename, mode)
