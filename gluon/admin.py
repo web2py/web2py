@@ -37,14 +37,33 @@ from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 
 
-def _safe_extract_path(base_dir, member_name):
-    """Return an absolute safe extraction path inside base_dir."""
-    target = os.path.normpath(os.path.join(base_dir, member_name))
+def safe_join_admin_path(base_dir, *members):
+    """Return an absolute path after verifying it remains inside base_dir."""
     root = os.path.abspath(base_dir)
+    target = os.path.normpath(os.path.join(root, *members))
     target_abspath = os.path.abspath(target)
     if not (target_abspath == root or target_abspath.startswith(root + os.sep)):
-        raise RuntimeError("Attempted path traversal in zip file")
+        raise RuntimeError("Attempted path traversal in admin path")
     return target_abspath
+
+
+def safe_join_admin_app_path(app_root, app_name, location="", *members):
+    """Return an absolute admin path scoped to a single application root."""
+    app_root = os.path.abspath(app_root)
+    location = (location or "").replace("\\", "/")
+    if app_name and (location == app_name or location.startswith(app_name + "/")):
+        location = location[len(app_name):].lstrip("/")
+    if os.path.isabs(location):
+        location = os.path.relpath(location, app_root)
+    return safe_join_admin_path(app_root, location, *members)
+
+
+def _safe_extract_path(base_dir, member_name):
+    """Return an absolute safe extraction path inside base_dir."""
+    try:
+        return safe_join_admin_path(base_dir, member_name)
+    except RuntimeError:
+        raise RuntimeError("Attempted path traversal in zip file")
 
 
 # TODO: move into add_path_first

@@ -122,6 +122,31 @@ def safe_write(a, value, b='w'):
         safe_file.close()
 
 
+def safe_app_path(app, *members):
+    try:
+        return safe_join_admin_path(apath(app, r=request), *members)
+    except RuntimeError:
+        raise HTTP(403)
+
+
+def safe_app_location_path(app, location, *members):
+    try:
+        app_root = apath(app, r=request)
+        return safe_join_admin_app_path(app_root, app, location, *members)
+    except RuntimeError:
+        raise HTTP(403)
+
+
+def safe_request_args_path(app):
+    filename = '/'.join(request.args)
+    relative_filename = filename if request.vars.app else '/'.join(request.args[1:])
+    return filename, safe_app_path(app, relative_filename)
+
+
+def path_endswith_dir(path, dirname):
+    return path.replace('\\', '/').rstrip('/').endswith('/' + dirname)
+
+
 def get_app(name=None):
     app = name or request.args(0)
     if app:
@@ -565,7 +590,7 @@ def delete():
 
     if dialog.accepted:
         try:
-            full_path = apath(filename, r=request)
+            full_path = safe_app_path(app, '/'.join(request.args[1:]))
             lineno = count_lines(safe_open(full_path, 'r').read())
             os.unlink(full_path)
             log_progress(app, 'DELETE', filename, progress=-lineno)
@@ -595,11 +620,7 @@ def enable():
 def peek():
     """ Visualize object code """
     app = get_app(request.vars.app)
-    filename = '/'.join(request.args)
-    if request.vars.app:
-        path = abspath(filename)
-    else:
-        path = apath(filename, r=request)
+    filename, path = safe_request_args_path(app)
     try:
         data = safe_read(path).replace('\r', '')
     except IOError:
@@ -685,12 +706,8 @@ def edit():
     """ File edit handler """
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
-    filename = '/'.join(request.args)
+    filename, path = safe_request_args_path(app)
     realfilename = request.args[-1]
-    if request.vars.app:
-        path = abspath(filename)
-    else:
-        path = apath(filename, r=request)
     # Try to discover the file type
     if filename[-3:] == '.py':
         filetype = 'python'
@@ -923,9 +940,10 @@ def resolve():
     """
     """
 
+    app = get_app()
     filename = '/'.join(request.args)
     # ## check if file is not there
-    path = apath(filename, r=request)
+    path = safe_app_path(app, '/'.join(request.args[1:]))
     a = safe_read(path).split('\n')
     try:
         b = safe_read(path + '.1').split('\n')
@@ -985,8 +1003,9 @@ def edit_language():
     """ Edit language file """
     app = get_app()
     filename = '/'.join(request.args)
+    path = safe_app_path(app, '/'.join(request.args[1:]))
     response.title = request.args[-1]
-    strings = read_dict(apath(filename, r=request))
+    strings = read_dict(path)
 
     if '__corrupted__' in strings:
         form = SPAN(strings['__corrupted__'], _class='error')
@@ -1034,7 +1053,7 @@ def edit_language():
             if form.vars[name] == chr(127):
                 continue
             strs[key] = form.vars[name]
-        write_dict(apath(filename, r=request), strs)
+        write_dict(path, strs)
         session.flash = T('file saved on %(time)s', dict(time=time.ctime()))
         redirect(URL(r=request, args=request.args))
     return dict(app=request.args[0], filename=filename, form=form)
@@ -1044,8 +1063,9 @@ def edit_plurals():
     """ Edit plurals file """
     app = get_app()
     filename = '/'.join(request.args)
+    path = safe_app_path(app, '/'.join(request.args[1:]))
     plurals = read_plural_dict(
-        apath(filename, r=request))  # plural forms dictionary
+        path)  # plural forms dictionary
     nplurals = int(request.vars.nplurals) - 1  # plural forms quantity
     xnplurals = range(nplurals)
 
@@ -1085,7 +1105,7 @@ def edit_plurals():
                 continue
             new_plurals[key] = [form.vars[name + '_' + str(n)]
                                 for n in xnplurals]
-        write_plural_dict(apath(filename, r=request), new_plurals)
+        write_plural_dict(path, new_plurals)
         session.flash = T('file saved on %(time)s', dict(time=time.ctime()))
         redirect(URL(r=request, args=request.args, vars=dict(
             nplurals=request.vars.nplurals)))
@@ -1365,19 +1385,19 @@ def create_file():
     """ Create files handler """
     if request.vars and not request.vars.token == session.token:
         redirect(URL('logout'))
+    result = T('cannot create file')
     try:
         anchor = '#' + request.vars.id if request.vars.id else ''
         if request.vars.app:
             app = get_app(request.vars.app)
-            path = abspath(request.vars.location)
+            path = safe_app_location_path(app, request.vars.location)
         else:
             if request.vars.dir:
                 request.vars.location += request.vars.dir + '/'
             app = get_app(name=request.vars.location.split('/')[0])
-            path = apath(request.vars.location, r=request)
-        path = check_app_path(request, app, path)
+            path = safe_app_location_path(app, request.vars.location)
         filename = re.sub(r'[^\w./-]+', '_', request.vars.filename)
-        if path[-7:] == '/rules/':
+        if path_endswith_dir(path, 'rules'):
             # Handle plural rules files
             if len(filename) == 0:
                 raise SyntaxError
@@ -1405,13 +1425,13 @@ def create_file():
                    construct_plural_form = lambda word, plural_id: word
                    """)[1:] % dict(lang=langinfo[0], langname=langinfo[1])
 
-        elif path[-11:] == '/languages/':
+        elif path_endswith_dir(path, 'languages'):
             # Handle language files
             if len(filename) == 0:
                 raise SyntaxError
             if not filename[-3:] == '.py':
                 filename += '.py'
-            path = join_app_path(request, app, os.path.join(apath(app, r=request), 'languages'), filename)
+            path = safe_app_path(app, 'languages', filename)
             if not os.path.exists(path):
                 safe_write(path, '')
             # create language xx[-yy].py file:
@@ -1420,7 +1440,7 @@ def create_file():
                               dict(filename=filename))
             redirect(request.vars.sender + anchor)
 
-        elif path[-8:] == '/models/':
+        elif path_endswith_dir(path, 'models'):
             # Handle python models
             if not filename[-3:] == '.py':
                 filename += '.py'
@@ -1430,7 +1450,7 @@ def create_file():
 
             text = '# -*- coding: utf-8 -*-\n'
 
-        elif path[-13:] == '/controllers/':
+        elif path_endswith_dir(path, 'controllers'):
             # Handle python controllers
             if not filename[-3:] == '.py':
                 filename += '.py'
@@ -1441,7 +1461,7 @@ def create_file():
             text = '# -*- coding: utf-8 -*-\n# %s\ndef index(): return dict(message="hello from %s")'
             text = text % (T('try something like'), filename)
 
-        elif path[-7:] == '/views/':
+        elif path_endswith_dir(path, 'views'):
             if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             # Handle template (html) views
@@ -1466,7 +1486,7 @@ def create_file():
                 else:
                     text = ''
 
-        elif path[-9:] == '/modules/':
+        elif path_endswith_dir(path, 'modules'):
             if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             # Handle python module files
@@ -1481,7 +1501,7 @@ def create_file():
                    # -*- coding: utf-8 -*-
                    from gluon import *\n""")[1:]
 
-        elif (path[-8:] == '/static/') or (path[-9:] == '/private/'):
+        elif path_endswith_dir(path, 'static') or path_endswith_dir(path, 'private'):
             if (request.vars.plugin and
                     not filename.startswith('plugin_%s/' % request.vars.plugin)):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
@@ -1518,6 +1538,7 @@ def create_file():
     except Exception as e:
         if not isinstance(e, HTTP):
             session.flash = T('cannot create file')
+        result = T('cannot create file')
 
     if request.vars.dir:
         response.flash = result
@@ -1532,11 +1553,7 @@ def create_file():
 
 
 def listfiles(app, dir, regexp=r'.*\.py$'):
-    path = apath('%(app)s/%(dir)s/' % {'app': app, 'dir': dir}, r=request)
-    web2py_apps_root = os.path.abspath(up(request.folder))
-    path_abs = os.path.abspath(path)
-    if not is_within_root(path_abs, web2py_apps_root):
-        return []
+    path = safe_app_path(app, dir)
     files = sorted(
         listdir(path, regexp))
     files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
@@ -1550,7 +1567,7 @@ def editfile(path, file, vars={}, app=None):
 
 
 def files_menu():
-    app = request.vars.app or 'welcome'
+    app = get_app(request.vars.app or 'welcome')
     dirs = [{'name': 'models', 'reg': r'.*\.py$'},
             {'name': 'controllers', 'reg': r'.*\.py$'},
             {'name': 'views', 'reg': r'[\w/\-]+(\.\w+)+$'},
@@ -1574,26 +1591,26 @@ def upload_file():
     try:
         filename = None
         app = get_app(name=request.vars.location.split('/')[0])
-        path = apath(request.vars.location, r=request)
+        path = safe_app_location_path(app, request.vars.location)
 
         if request.vars.filename:
             filename = re.sub(r'[^\w\./]+', '_', request.vars.filename)
         else:
             filename = os.path.split(request.vars.file.filename)[-1]
 
-        if path[-8:] == '/models/' and not filename[-3:] == '.py':
+        if path_endswith_dir(path, 'models') and not filename[-3:] == '.py':
             filename += '.py'
 
-        if path[-9:] == '/modules/' and not filename[-3:] == '.py':
+        if path_endswith_dir(path, 'modules') and not filename[-3:] == '.py':
             filename += '.py'
 
-        if path[-13:] == '/controllers/' and not filename[-3:] == '.py':
+        if path_endswith_dir(path, 'controllers') and not filename[-3:] == '.py':
             filename += '.py'
 
-        if path[-7:] == '/views/' and not filename[-5:] == '.html':
+        if path_endswith_dir(path, 'views') and not filename[-5:] == '.html':
             filename += '.html'
 
-        if path[-11:] == '/languages/' and not filename[-3:] == '.py':
+        if path_endswith_dir(path, 'languages') and not filename[-3:] == '.py':
             filename += '.py'
 
         filename = join_app_path(request, app, path, filename)
