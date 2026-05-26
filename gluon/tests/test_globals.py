@@ -308,6 +308,20 @@ class testResponse(unittest.TestCase):
             with self.assertRaises(TypeError):
                 response.enable_csp(script_src=invalid)
 
+    def test_enable_csp_rejects_malformed_nonce_values(self):
+        response = Response()
+        response["nonce"] = 'abc" onload="alert(1)'
+        response.files.append(("js", "/a/static/app.js"))
+        with self.assertRaises(ValueError):
+            response.enable_csp()
+
+        response = Response()
+        # This payload has no whitespace, so the pre-existing CSP token parser
+        # does not reject it before the nonce validator runs.
+        response["nonce"] = 'abc"onload="alert(1)'
+        with self.assertRaises(ValueError):
+            response.enable_csp()
+
     def test_enable_csp_accepts_valid_policy_tokens(self):
         response = Response()
         response.enable_csp(

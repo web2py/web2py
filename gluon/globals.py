@@ -129,6 +129,7 @@ template_mapping_csp = {
 
 CSP_DIRECTIVE = re.compile(r"^[A-Za-z0-9-]+$")
 CSP_DIRECTIVE_TOKEN = re.compile(r"^[\x21-\x2B\x2D-\x3A\x3C-\x7E]+$")
+CSP_NONCE_VALUE = re.compile(r"^[A-Za-z0-9+/_=-]+$")
 CSP_STANDARD_DIRECTIVES = frozenset(
     (
         "base-uri",
@@ -199,6 +200,11 @@ def sorting_dumps(obj, protocol=None):
 def _validate_csp_directive(directive):
     if not CSP_DIRECTIVE.match(directive):
         raise ValueError("invalid CSP directive: %r" % directive)
+
+
+def _validate_csp_nonce(nonce):
+    if not isinstance(nonce, str) or not CSP_NONCE_VALUE.match(nonce):
+        raise ValueError("invalid CSP nonce: %r" % nonce)
 
 
 def _split_serialized_csp_list(serialized):
@@ -661,6 +667,7 @@ class Response(Storage):
     def nonce(self):
         if "nonce" not in self:
             self["nonce"] = web2py_uuid()
+        _validate_csp_nonce(self["nonce"])
         return self["nonce"]
 
     def enable_csp(self, **policies):
