@@ -129,6 +129,7 @@ template_mapping_csp = {
 
 CSP_DIRECTIVE = re.compile(r"^[A-Za-z0-9-]+$")
 CSP_DIRECTIVE_TOKEN = re.compile(r"^[\x21-\x2B\x2D-\x3A\x3C-\x7E]+$")
+CONTENT_DISPOSITION_TYPE = re.compile(r"^[A-Za-z0-9!#$%&'*+.^_`|~-]+$")
 CSP_STANDARD_DIRECTIVES = frozenset(
     (
         "base-uri",
@@ -174,6 +175,15 @@ def _content_disposition_filename(filename):
     if isinstance(filename, bytes):
         return urllib_quote(filename, safe=b"")
     return urllib_quote(str(filename), safe="")
+
+
+def _content_disposition_header(filename, disposition="attachment"):
+    if not CONTENT_DISPOSITION_TYPE.fullmatch(disposition):
+        raise ValueError("invalid Content-Disposition type: %r" % disposition)
+    return '%s; filename="%s"' % (
+        disposition,
+        _content_disposition_filename(filename),
+    )
 
 
 # IMPORTANT:
@@ -913,8 +923,7 @@ class Response(Storage):
         # for attachment settings and backward compatibility
         keys = [item.lower() for item in headers]
         if attachment:
-            attname = _content_disposition_filename(filename)
-            headers["Content-Disposition"] = 'attachment; filename="%s"' % attname
+            headers["Content-Disposition"] = _content_disposition_header(filename)
 
         if not request:
             request = current.request
@@ -1002,11 +1011,8 @@ class Response(Storage):
         if download_filename is None:
             download_filename = filename
         if attachment:
-            # Browsers still don't have a simple uniform way to have non ascii
-            # characters in the filename so for now we are percent encoding it
-            download_filename = _content_disposition_filename(download_filename)
-            headers["Content-Disposition"] = (
-                'attachment; filename="%s"' % download_filename
+            headers["Content-Disposition"] = _content_disposition_header(
+                download_filename
             )
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
