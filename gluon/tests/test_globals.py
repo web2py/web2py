@@ -653,3 +653,23 @@ class testFileUpload(unittest.TestCase):
         filenames = [u.filename for u in uploads]
         self.assertIn("a.txt", filenames)
         self.assertIn("b.txt", filenames)
+
+    def test_malformed_multipart_is_rejected(self):
+        boundary = self.BOUNDARY
+        body = (
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="token"\r\n\r\nabc\r\n'
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="amount"\r\n\r\n10\r\n'
+        )
+        r = self._make_request(body)
+
+        with self.assertRaises(HTTP) as ctx:
+            r.post_vars
+        self.assertEqual(ctx.exception.status, 400)
+        self.assertIsNone(r._post_vars)
+
+        with self.assertRaises(HTTP) as second_ctx:
+            r.post_vars
+        self.assertEqual(second_ctx.exception.status, 400)
+        self.assertIsNone(r._post_vars)

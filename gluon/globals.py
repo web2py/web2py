@@ -347,7 +347,7 @@ class Request(Storage):
         post_vars. application/json is also automatically parsed
         """
         env = self.env
-        post_vars = self._post_vars = Storage()
+        post_vars = Storage()
         body = self.body
 
         # if content-type is application/json, we must read the body
@@ -421,8 +421,10 @@ class Request(Storage):
                                 if part.name not in post_vars
                                 else listify(post_vars[part.name]) + [value]
                             )
-                    except (StopIteration, ParserError):
+                    except StopIteration:
                         break
+                    except ParserError:
+                        raise HTTP(400)
                 body.seek(0)
             # Handle application/x-www-form-urlencoded
             elif content_type.startswith("application/x-www-form-urlencoded"):
@@ -464,6 +466,7 @@ class Request(Storage):
                     post_vars[key] = (len(pvalue) > 1 and pvalue) or pvalue[0]
         # Reset body for reuse
         body.seek(0)
+        self._post_vars = post_vars
 
     @property
     def body(self):
