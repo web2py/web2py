@@ -189,7 +189,12 @@ def secure_loads(
     components = data.count(b":")
     if components == 1:
         return secure_loads_deprecated(
-            data, encryption_key, hash_key, compression_level
+            data,
+            encryption_key,
+            hash_key,
+            compression_level,
+            safe_unpickle=safe_unpickle,
+            allowed_classes=allowed_classes,
         )
     if components != 2:
         return None
@@ -249,7 +254,12 @@ def secure_dumps_deprecated(
 
 
 def secure_loads_deprecated(
-    data, encryption_key, hash_key=None, compression_level=None
+    data,
+    encryption_key,
+    hash_key=None,
+    compression_level=None,
+    safe_unpickle=True,
+    allowed_classes=None,
 ):
     """loads signed data (deprecated because of incorrect padding)"""
     encryption_key = encryption_key.encode("utf8")
@@ -275,6 +285,10 @@ def secure_loads_deprecated(
         data = data.rstrip(b" ")
         if compression_level:
             data = zlib.decompress(data)
+        if safe_unpickle:
+            from gluon.restricted import safe_loads as safe_loads_restricted
+
+            return safe_loads_restricted(data, allowed_classes=allowed_classes)
         return pickle.loads(data)
     except Exception:
         return None
