@@ -17,6 +17,7 @@ import importlib
 from gluon.admin import *
 from gluon.admin import check_app_path, is_within_root, join_app_path
 from gluon.fileutils import abspath, read_file, write_file
+from gluon.globals import _content_disposition_header
 from gluon.restricted import safe_load, safe_loads, TicketStorage
 from gluon.utils import web2py_uuid
 from gluon.tools import Config, prevent_open_redirect
@@ -386,8 +387,7 @@ def pack():
 
     if filename:
         response.headers['Content-Type'] = 'application/w2p'
-        disposition = 'attachment; filename=%s' % fname
-        response.headers['Content-Disposition'] = disposition
+        response.headers['Content-Disposition'] = _content_disposition_header(fname)
         return safe_read(filename, 'rb')
     else:
         session.flash = T('internal error: %s', pferror)
@@ -401,8 +401,7 @@ def pack_plugin():
         filename = plugin_pack(app, request.args[1], request)
     if filename:
         response.headers['Content-Type'] = 'application/w2p'
-        disposition = 'attachment; filename=%s' % fname
-        response.headers['Content-Disposition'] = disposition
+        response.headers['Content-Disposition'] = _content_disposition_header(fname)
         return safe_read(filename, 'rb')
     else:
         session.flash = T('internal error')
@@ -428,7 +427,9 @@ def pack_exe(app, base, filenames=None):
         web2py_win.write(fname, arcname)
     web2py_win.close()
     response.headers['Content-Type'] = 'application/zip'
-    response.headers['Content-Disposition'] = 'attachment; filename=web2py.app.%s.zip' % app
+    response.headers['Content-Disposition'] = _content_disposition_header(
+        'web2py.app.%s.zip' % app
+    )
     out.seek(0)
     return response.stream(out)
 
@@ -458,8 +459,7 @@ def pack_custom():
                 filename = None
             if filename:
                 response.headers['Content-Type'] = 'application/w2p'
-                disposition = 'attachment; filename=%s' % fname
-                response.headers['Content-Disposition'] = disposition
+                response.headers['Content-Disposition'] = _content_disposition_header(fname)
                 return safe_read(filename, 'rb')
             else:
                 session.flash = T('internal error: %s', e)
