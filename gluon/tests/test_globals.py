@@ -13,7 +13,7 @@ import unittest
 from io import BytesIO
 
 from gluon.html import XML, URL
-from gluon.globals import Request, Response, Session
+from gluon.globals import Request, Response, Session, _content_disposition_header
 from gluon.http import HTTP
 from gluon.rewrite import regex_url_in
 from gluon.streamer import stream_file_or_304_or_206
@@ -501,6 +501,24 @@ class testResponse(unittest.TestCase):
             response.headers["Content-Disposition"],
             'attachment; filename="caf%C3%A9.txt"',
         )
+
+    def test_content_disposition_header_encodes_admin_csv_filename(self):
+        filename = 'auth_user"; filename=evil.exe.csv'
+
+        disposition = _content_disposition_header(filename)
+
+        self.assertEqual(
+            disposition,
+            'attachment; filename="auth_user%22%3B%20filename%3Devil.exe.csv"',
+        )
+        self.assertEqual(disposition.count(";"), 1)
+        self.assertNotIn("filename=evil.exe", disposition)
+
+    def test_content_disposition_header_rejects_invalid_disposition_type(self):
+        with self.assertRaises(ValueError):
+            _content_disposition_header("report.csv", "attachment\r\nX-Evil: yes")
+        with self.assertRaises(ValueError):
+            _content_disposition_header("report.csv", 'attachment"; filename=evil')
 
     def test_stream_file_range(self):
         fd, path = tempfile.mkstemp()
