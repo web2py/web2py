@@ -529,6 +529,15 @@ class testResponse(unittest.TestCase):
             self.assertEqual(ctx.exception.headers.get("Content-Length"), "5")
             b"".join(ctx.exception.body)  # exhaust the streamer so its finally: stream.close() runs cleanly
 
+            # Suffix byte ranges request the last N bytes.
+            request.env.http_range = "bytes=-4"
+            with self.assertRaises(HTTP) as ctx:
+                stream_file_or_304_or_206(path, request=request, headers={})
+            self.assertEqual(ctx.exception.status, 206)
+            self.assertEqual(ctx.exception.headers.get("Content-Range"), "bytes 6-9/10")
+            self.assertEqual(ctx.exception.headers.get("Content-Length"), "4")
+            self.assertEqual(b"".join(ctx.exception.body), b"6789")
+
         finally:
             try:
                 os.close(fd)
