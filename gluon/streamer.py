@@ -84,16 +84,25 @@ def stream_file_or_304_or_206(
             raise HTTP(304, **{"Content-Type": headers["Content-Type"]})
 
         elif request and request.env.http_range:
-            start_items = regex_start_range.findall(request.env.http_range)
-            if not start_items:
-                start_items = [0]
-            stop_items = regex_stop_range.findall(request.env.http_range)
-            if not stop_items or int(stop_items[0]) > fsize - 1:
-                stop_items = [fsize - 1]
-            part = (int(start_items[0]), int(stop_items[0]), fsize)
-            if part[0] > part[1]:
-                headers["Content-Range"] = "bytes */%i" % fsize
-                raise HTTP(416, **headers)
+            range_header = request.env.http_range
+            suffix = re.match(r"^bytes=-(\d+)$", range_header)
+            if suffix:
+                length = int(suffix.group(1))
+                if length > 0:
+                    part = (max(fsize - length, 0), fsize - 1, fsize)
+                else:
+                    suffix = None
+            if not suffix:
+                start_items = regex_start_range.findall(range_header)
+                if not start_items:
+                    start_items = [0]
+                stop_items = regex_stop_range.findall(range_header)
+                if not stop_items or int(stop_items[0]) > fsize - 1:
+                    stop_items = [fsize - 1]
+                part = (int(start_items[0]), int(stop_items[0]), fsize)
+                if part[0] > part[1]:
+                    headers["Content-Range"] = "bytes */%i" % fsize
+                    raise HTTP(416, **headers)
             bytes = part[1] - part[0] + 1
             try:
                 stream = open(static_file, "rb")
