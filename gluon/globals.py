@@ -1465,14 +1465,8 @@ class Session(Storage):
             else:
                 response.session_new = True
 
-    def _fixup_before_save(self):
-        response = current.response
-        rcookies = response.cookies
-        scookies = rcookies.get(response.session_id_name)
-        if not scookies:
-            return
+    def _set_cookie_security_attrs(self, scookies):
         if self._forget:
-            del rcookies[response.session_id_name]
             return
         if self.get("httponly_cookies", True):
             scookies["HttpOnly"] = True
@@ -1488,6 +1482,20 @@ class Session(Storage):
                 # Python version 3.7 and lower needs this
                 Cookie.Morsel._reserved["samesite"] = "SameSite"
             scookies["samesite"] = self._same_site
+
+    def _fixup_before_save(self):
+        response = current.response
+        rcookies = response.cookies
+        scookies = rcookies.get(response.session_id_name)
+        if self._forget:
+            if scookies:
+                del rcookies[response.session_id_name]
+            return
+        if scookies:
+            self._set_cookie_security_attrs(scookies)
+        data_cookie = rcookies.get(response.session_data_name)
+        if data_cookie:
+            self._set_cookie_security_attrs(data_cookie)
 
     def clear_session_cookies(self):
         request = current.request
