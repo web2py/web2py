@@ -97,6 +97,8 @@ class testResponse(unittest.TestCase):
             raise self.failureException(msg)
 
     def test_include_files(self):
+        setup_clean_session()
+
         def return_includes(response, extensions=None):
             response.include_files(extensions)
             return response.body.getvalue()
@@ -230,6 +232,8 @@ class testResponse(unittest.TestCase):
         )
 
     def test_include_files_escapes_url_attributes(self):
+        setup_clean_session()
+
         def return_includes(response):
             response.include_files()
             return response.body.getvalue()
@@ -255,6 +259,24 @@ class testResponse(unittest.TestCase):
         response = Response()
         response.enable_csp()
         response.files.append(("js", malicious))
+        content = return_includes(response)
+        self.assertIn('nonce="%s"' % response.nonce, content)
+        self.assertIn(
+            "https://cdn.example.com/app.js?x=&quot; onerror=&quot;alert(1)", content
+        )
+        self.assertNotIn('onerror="alert(1)', content)
+
+        response = Response()
+        response.files.append(("js", (malicious,)))
+        content = return_includes(response)
+        self.assertIn(
+            "https://cdn.example.com/app.js?x=&quot; onerror=&quot;alert(1)", content
+        )
+        self.assertNotIn('onerror="alert(1)', content)
+
+        response = Response()
+        response.enable_csp()
+        response.files.append(("js", (malicious,)))
         content = return_includes(response)
         self.assertIn('nonce="%s"' % response.nonce, content)
         self.assertIn(
