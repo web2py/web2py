@@ -819,6 +819,13 @@ class Response(Storage):
                         files[i] = call_minify()
 
         def static_map(s, item):
+            def template_values(file_type, values):
+                if not isinstance(values, tuple):
+                    values = (values,)
+                if not file_type.endswith(":inline"):
+                    values = tuple(xmlescape(value) for value in values)
+                return values
+
             if isinstance(item, str):
                 f = item.lower().split("?")[0]
                 ext = f.rpartition(".")[2]
@@ -847,17 +854,9 @@ class Response(Storage):
                     tmpl = template_mapping.get(f)
                 if tmpl:
                     if self._csp_enabled:
-                        if isinstance(item[1], tuple):
-                            s.append(tmpl % ((self.nonce,) + item[1]))
-                        else:
-                            value = item[1] if f.endswith(":inline") else xmlescape(item[1])
-                            s.append(tmpl % (self.nonce, value))
+                        s.append(tmpl % ((self.nonce,) + template_values(f, item[1])))
                     else:
-                        if isinstance(item[1], tuple):
-                            s.append(tmpl % item[1])
-                        else:
-                            value = item[1] if f.endswith(":inline") else xmlescape(item[1])
-                            s.append(tmpl % value)
+                        s.append(tmpl % template_values(f, item[1]))
 
         s = []
         for item in files:
