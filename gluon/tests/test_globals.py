@@ -36,6 +36,24 @@ def setup_clean_session():
     return current
 
 
+def setup_clean_cookie_session():
+    request = Request(env={})
+    request.application = "a"
+    request.controller = "c"
+    request.function = "f"
+    request.folder = "applications/admin"
+    response = Response()
+    session = Session()
+
+    from gluon.globals import current
+
+    current.request = request
+    current.response = response
+    current.session = session
+    session.connect(request, response, cookie_key="secret")
+    return current
+
+
 class testRequest(unittest.TestCase):
     def setUp(self):
         from gluon.globals import current
@@ -429,6 +447,36 @@ class testResponse(unittest.TestCase):
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
         self.assertTrue("samesite=strict" in cookie.lower())
+
+    def test_cookie_session_data_cookie_gets_security_attributes(self):
+        current = setup_clean_cookie_session()
+        current.session.user_id = 1
+
+        self.assertTrue(
+            current.session._try_store_in_cookie_or_file(
+                current.request, current.response
+            )
+        )
+        current.session._fixup_before_save()
+
+        cookie = str(
+            current.response.cookies[current.response.session_data_name]
+        ).lower()
+        self.assertIn("httponly", cookie)
+        self.assertIn("samesite=lax", cookie)
+
+    def test_cookie_session_data_cookie_gets_secure_attribute(self):
+        current = setup_clean_cookie_session()
+        current.session.user_id = 1
+        current.session.secure()
+
+        current.session._try_store_in_cookie_or_file(current.request, current.response)
+        current.session._fixup_before_save()
+
+        cookie = str(
+            current.response.cookies[current.response.session_data_name]
+        ).lower()
+        self.assertIn("secure", cookie)
 
     def test_stream_attachment_filename_encodes_quote(self):
         response = Response()
