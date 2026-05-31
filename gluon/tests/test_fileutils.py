@@ -82,6 +82,23 @@ class TestFileUtils(unittest.TestCase):
             if os.path.islink(os.path.join(extract_to, "models", "link")):
                 self.assertTrue(os.path.exists(os.path.join(extract_to, "models", "link")))
 
+    def test_untar_rejects_preexisting_escaping_symlink_directory(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarname = os.path.join(tmpdir, "link_directory.tar")
+            extract_to = os.path.join(tmpdir, "app")
+            outside = os.path.join(tmpdir, "outside")
+            os.mkdir(extract_to)
+            os.mkdir(outside)
+            try:
+                os.symlink(outside, os.path.join(extract_to, "models"))
+            except OSError:
+                self.skipTest("Symlink creation requires additional privileges")
+            self._make_tar(tarname, [self._regular_member("models/evil.py")])
+
+            with self.assertRaises(RuntimeError):
+                untar(tarname, extract_to)
+            self.assertFalse(os.path.exists(os.path.join(outside, "evil.py")))
+
     def test_untar_rejects_parent_traversal_member(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tarname = os.path.join(tmpdir, "traversal.tar")
