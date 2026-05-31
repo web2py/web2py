@@ -225,7 +225,11 @@ def _extractall(filename, path=".", members=None):
         for member in members or tar.getmembers():
             # Check for path traversal and absolute paths
             target = os.path.abspath(os.path.join(path, member.name))
-            if os.path.isabs(member.name) or not _is_within_path(target, path):
+            if os.path.isabs(member.name):
+                raise RuntimeError("Attempted path traversal in tar file")
+            try:
+                safe_path_join(path, member.name)
+            except ValueError:
                 raise RuntimeError("Attempted path traversal in tar file")
 
             # Check for unsafe special files (devices, FIFOs)
