@@ -6565,6 +6565,12 @@ class Expose(object):
         if not self.in_base(filename):
             raise HTTP(401, "NOT AUTHORIZED")
         if allow_download and not os.path.isdir(filename):
+            # Files hidden from the directory listing by isprivate() (dotfiles,
+            # "private" components, editor backups) must not be retrievable by
+            # requesting them directly either, otherwise the filtering only
+            # provides a false sense of protection.
+            if self.isprivate(filename):
+                raise HTTP(404, "FILE NOT FOUND")
             current.response.headers["Content-Type"] = contenttype(filename)
             raise HTTP(200, open(filename, "rb"), **current.response.headers)
         self.path = path = os.path.join(filename, "*")
@@ -6636,12 +6642,26 @@ class Expose(object):
         """True if f is a symlink and is pointing outside of self.base"""
         return os.path.islink(f) and not self.in_base(f)
 
-    @staticmethod
-    def isprivate(f):
-        # remove '/private' prefix to deal with symbolic links on OSX
-        if f.startswith("/private/"):
-            f = f[8:]
-        return "private" in f or f.startswith(".") or f.endswith("~")
+    def isprivate(self, f):
+        # A file/folder is considered private when any of its path components
+        # *below base* is a dotfile, an editor backup ("~"), or named
+        # "private". Only the portion under base is examined: the previous
+        # implementation tested the absolute path, which meant
+        #   - f.startswith(".") was dead code (an absolute path never starts
+        #     with "."), so dotfiles such as ".git" or ".env" were exposed; and
+        #   - "private" in f / the macOS "/private" prefix could match a
+        #     component of the base directory and hide everything.
+        try:
+            rel = os.path.relpath(f, self.base)
+        except ValueError:
+            # e.g. different drive on Windows: not under base, treat as private
+            return True
+        parts = rel.replace("\\", "/").split("/")
+        return any(
+            part == "private" or part.startswith(".") or part.endswith("~")
+            for part in parts
+            if part not in ("", ".", "..")
+        )
 
     @staticmethod
     def isimage(f):

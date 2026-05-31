@@ -1958,6 +1958,46 @@ class TestExpose(unittest.TestCase):
         with self.assertRaises(HTTP):
             self.make_expose(base="inside", show="link_to_file3")
 
+    def test_private_entries_hidden_from_listing(self):
+        # Guard that the relative-path isprivate() keeps filtering "private"
+        # components and editor backups (*~) out of the listing (dotfiles are
+        # also excluded by glob itself).
+        inside = pjoin(self.base_dir, "inside")
+        for name in (".hidden", ".env", "secret.txt~"):
+            with open(pjoin(inside, name), "a"):
+                pass
+        os.mkdir(pjoin(inside, ".git"))
+        os.mkdir(pjoin(inside, "private"))
+        expose = self.make_expose(base="inside", show="")
+        self.assertNotIn(".hidden", expose.filenames)
+        self.assertNotIn(".env", expose.filenames)
+        self.assertNotIn("secret.txt~", expose.filenames)
+        self.assertNotIn(".git", expose.folders)
+        self.assertNotIn("private", expose.folders)
+        # non-private entries must still be listed
+        self.assertIn("README", expose.filenames)
+        self.assertEqual(sorted(expose.folders), ["dir1", "dir2"])
+
+    def test_private_file_not_downloadable(self):
+        # Regression: the direct-download branch never applied isprivate(), so
+        # a file hidden from the listing was still served on a direct request.
+        inside = pjoin(self.base_dir, "inside")
+        with open(pjoin(inside, ".env"), "w") as fp:
+            fp.write("SECRET=1")
+        with self.assertRaises(HTTP) as ctx:
+            self.make_expose(base="inside", show=".env")
+        self.assertEqual(ctx.exception.status, 404)
+
+    def test_base_with_private_component_lists_files(self):
+        # Regression: "private" in <absolute path> previously hid every file
+        # when the base directory itself contained a "private" component.
+        os.mkdir(pjoin(self.base_dir, "private"))
+        os.mkdir(pjoin(self.base_dir, "private", "pub"))
+        with open(pjoin(self.base_dir, "private", "pub", "visible.txt"), "a"):
+            pass
+        expose = self.make_expose(base=pjoin("private", "pub"), show="")
+        self.assertIn("visible.txt", expose.filenames)
+
 
 class Test_OpenRedirectPrevention(unittest.TestCase):
     def test_open_redirect(self):
