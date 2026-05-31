@@ -177,3 +177,26 @@ class TestPack(unittest.TestCase):
             self.assertFalse(os.path.exists(os.path.join(tmpdir, "evil2.txt")))
         finally:
             shutil.rmtree(tmpdir)
+
+    def test_admin_unzip_rejects_preexisting_escaping_symlink_directory(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            extract_to = os.path.join(tmpdir, "web2py")
+            outside = os.path.join(tmpdir, "outside")
+            os.mkdir(extract_to)
+            os.mkdir(outside)
+            try:
+                os.symlink(outside, os.path.join(extract_to, "models"))
+            except OSError:
+                self.skipTest("Symlink creation requires additional privileges")
+            zip_path = os.path.join(tmpdir, "evil.zip")
+            with zipfile.ZipFile(zip_path, "w") as zf:
+                zf.writestr("web2py/models/evil.py", "bad")
+
+            from gluon.admin import unzip
+
+            with self.assertRaises(RuntimeError):
+                unzip(zip_path, extract_to, subfolder="web2py")
+            self.assertFalse(os.path.exists(os.path.join(outside, "evil.py")))
+        finally:
+            shutil.rmtree(tmpdir)
