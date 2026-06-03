@@ -1998,6 +1998,22 @@ class TestExpose(unittest.TestCase):
         expose = self.make_expose(base=pjoin("private", "pub"), show="")
         self.assertIn("visible.txt", expose.filenames)
 
+    def test_isprivate_fails_closed_when_relpath_raises(self):
+        # When the path cannot be made relative to base (e.g. a different
+        # drive on Windows raises ValueError), isprivate() must fail closed
+        # and treat the entry as private.
+        expose = self.make_expose(base="inside", show="")
+        real_relpath = os.path.relpath
+
+        def boom(*args, **kwargs):
+            raise ValueError("path is on mount '%s', start on '%s'" % args[:2])
+
+        os.path.relpath = boom
+        try:
+            self.assertTrue(expose.isprivate(pjoin(self.base_dir, "inside", "x")))
+        finally:
+            os.path.relpath = real_relpath
+
 
 class Test_OpenRedirectPrevention(unittest.TestCase):
     def test_open_redirect(self):
