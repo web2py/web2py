@@ -200,6 +200,20 @@ class TestUtils(unittest.TestCase):
             secure_loads(secured, testkey, safe_unpickle=False),
         )
 
+    def test_secure_loads_deprecated_handles_compressed_payload(self):
+        """Legacy compressed data round-trips through the restricted unpickler."""
+        testobj = {"a": 1, "b": 2}
+        testkey = "mysecret"
+        secured = gluon.utils.secure_dumps_deprecated(
+            testobj, testkey, compression_level=9
+        )
+        self.assertEqual(secured.count(b":"), 1)
+
+        self.assertEqual(
+            testobj,
+            secure_loads(secured, testkey, compression_level=9),
+        )
+
     # TODO: def test_initialize_urandom(self):
 
     # TODO: def test_fast_urandom16(self):

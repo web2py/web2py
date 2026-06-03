@@ -1,4 +1,39 @@
+## 3.1 - 3.3.X
 
+Security hardening since 3.0.x. Two opt-in features are worth calling out:
+
+- Opt-in safe-unpickle sessions: `session.connect(..., safe_unpickle=True)`
+  loads session data through a restricted unpickler instead of raw
+  `pickle.loads()`. Pass `pickle_allowed_classes={module: [names]}` to allow
+  specific classes. Defaults to `False` for backward compatibility; legacy
+  one-colon `secure_loads` payloads now honor the same flag.
+- Opt-in Content-Security-Policy: `response.enable_csp(**directives)` emits a
+  per-request nonce-based CSP header (`default-src 'self'`, nonce'd
+  `script-src`/`style-src`), with directive/token validation. Use
+  `response.nonce` on inline `<script>`/`<style>` tags.
+
+Breaking change:
+
+- `Auth.url(scheme=True)` (absolute URLs, used for password-reset and
+  verification emails) no longer derives the host from the client-supplied
+  `Host:` header. You must configure a trusted host via
+  `auth.settings.host` or an allowlist in `auth.settings.host_names`;
+  otherwise an `HTTP 500` is raised.
+
+Other security fixes in this range:
+
+- Hardened ticket deserialization with the restricted unpickler
+- `safe_load()` used for YAML deserialization in `loads_yaml`
+- Fixed XSS sanitizer attribute-breakout in `XML(..., sanitize=True)`
+- Escaped include file URLs and meta names before HTML attribute rendering
+- Added `SAFEJSON` helper for safe JSON embedding in script contexts
+- Removed `eval` on user-controlled input in appadmin; AST-validated expressions
+- Fixed directory traversal in admin unzip and hardened tar extraction paths
+- Prevented sibling-prefix traversal in static file routing
+- Hardened `Content-Disposition` filenames (attachments and SQLFORM.grid export)
+- Hardened temporary plugin filename handling in `plugin_install()`
+- CAS service allowlist validation
+- `secrets` module used for secure password generation
 
 ## 2.99 - 3.0.X
 
