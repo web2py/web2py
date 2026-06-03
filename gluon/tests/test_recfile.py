@@ -208,8 +208,13 @@ class TestRecfile(unittest.TestCase):
 
         self.assertFalse(recfile.exists(link_path, path=sandbox))
         self.assertRaises(IOError, recfile.open, link_path, "r", path=sandbox)
-        self.assertRaises(IOError, recfile.open, link_path, "w", path=sandbox)
         self.assertRaises(IOError, recfile.remove, link_path, path=sandbox)
+
+        # Write mode rewrites the name to a generated (hashed) path, so it never
+        # follows the symlink. The write is confined inside the sandbox and the
+        # outside file is left untouched.
+        with recfile.open(link_path, "w", path=sandbox) as f:
+            f.write("confined")
 
         with open(outside_file) as g:
             self.assertEqual(g.read(), "outside")
