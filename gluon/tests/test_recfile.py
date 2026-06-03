@@ -161,10 +161,29 @@ class TestRecfile(unittest.TestCase):
             os.mkdir(outside_root)
             inside = os.path.join(root, "inside.test")
             outside = os.path.join(outside_root, "outside.test")
-            self.assertTrue(recfile._is_within(inside, root))
-            self.assertFalse(recfile._is_within(outside, root))
+            parent = os.path.dirname(root)
+            self.assertTrue(recfile.is_within(inside, root))
+            self.assertFalse(recfile.is_within(outside, root))
+            self.assertFalse(recfile.is_within(parent, root))
         finally:
             recfile.os.path = original_path
+
+    def test_is_within_commonpath_handles_value_error(self):
+        """commonpath raises ValueError on incompatible paths (e.g. different drives
+        on Windows); is_within must return False rather than propagate it."""
+        original_commonpath = os.path.commonpath
+
+        def raising_commonpath(paths):
+            raise ValueError("paths on different drives")
+
+        try:
+            os.path.commonpath = raising_commonpath
+            sandbox = tempfile.mkdtemp(dir=os.getcwd())
+            self.addCleanup(lambda s=sandbox: shutil.rmtree(s, ignore_errors=True))
+            inside = os.path.join(sandbox, "file.test")
+            self.assertFalse(recfile.is_within(inside, sandbox))
+        finally:
+            os.path.commonpath = original_commonpath
 
     def test_path_argument_rejects_symlink_escapes(self):
         if not hasattr(os, "symlink"):
