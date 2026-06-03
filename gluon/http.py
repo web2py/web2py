@@ -11,8 +11,18 @@ HTTP statuses helpers
 """
 
 import re
+from urllib.parse import quote as urllib_quote
 
-__all__ = ["HTTP", "redirect"]
+__all__ = [
+    "HTTP",
+    "redirect",
+    "content_disposition_filename",
+    "content_disposition_header",
+]
+
+# RFC 7230 token characters: the only bytes allowed in a Content-Disposition
+# disposition type (e.g. "attachment", "inline").
+CONTENT_DISPOSITION_TYPE = re.compile(r"^[A-Za-z0-9!#$%&'*+.^_`|~-]+$")
 
 defined_status = {
     200: "OK",
@@ -190,3 +200,22 @@ def redirect(location="", how=303, client_side=False, headers=None):
         if client_side and current.request.ajax:
             headers["web2py-component-command"] = "window.location.reload(true)"
             raise HTTP(200, **headers)
+
+
+def content_disposition_filename(filename):
+    if filename is None:
+        filename = ""
+    # Keep historical semantics for normal values while ensuring dangerous
+    # bytes are encoded before insertion in a quoted header parameter.
+    if isinstance(filename, bytes):
+        return urllib_quote(filename, safe=b"")
+    return urllib_quote(str(filename), safe="")
+
+
+def content_disposition_header(filename, disposition="attachment"):
+    if not CONTENT_DISPOSITION_TYPE.fullmatch(disposition):
+        raise ValueError("invalid Content-Disposition type: %r" % disposition)
+    return '%s; filename="%s"' % (
+        disposition,
+        content_disposition_filename(filename),
+    )

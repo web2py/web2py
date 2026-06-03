@@ -10,7 +10,7 @@ import copy
 import gluon.contenttype
 import gluon.fileutils
 import gluon.utils
-from gluon.globals import _content_disposition_header
+from gluon.http import content_disposition_header
 
 is_gae = request.env.web2py_runtime_gae or False
 
@@ -167,7 +167,7 @@ def csv():
     query = get_query(request)
     if not query:
         return None
-    response.headers['Content-disposition'] = _content_disposition_header(
+    response.headers['Content-disposition'] = content_disposition_header(
         '%s_%s.csv' % tuple(request.vars.query.split('.')[:2])
     )
     return str(db(query, ignore_common_filters=True).select())

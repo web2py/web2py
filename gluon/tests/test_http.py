@@ -5,7 +5,7 @@
 
 import unittest
 
-from gluon.http import HTTP, defined_status
+from gluon.http import HTTP, content_disposition_header, defined_status
 
 
 class TestHTTP(unittest.TestCase):
@@ -36,3 +36,25 @@ class TestHTTP(unittest.TestCase):
             )
 
         # test wrong call detection
+
+
+class TestContentDisposition(unittest.TestCase):
+    """Tests http.content_disposition_header"""
+
+    def test_content_disposition_header_encodes_admin_csv_filename(self):
+        filename = 'auth_user"; filename=evil.exe.csv'
+
+        disposition = content_disposition_header(filename)
+
+        self.assertEqual(
+            disposition,
+            'attachment; filename="auth_user%22%3B%20filename%3Devil.exe.csv"',
+        )
+        self.assertEqual(disposition.count(";"), 1)
+        self.assertNotIn("filename=evil.exe", disposition)
+
+    def test_content_disposition_header_rejects_invalid_disposition_type(self):
+        with self.assertRaises(ValueError):
+            content_disposition_header("report.csv", "attachment\r\nX-Evil: yes")
+        with self.assertRaises(ValueError):
+            content_disposition_header("report.csv", 'attachment"; filename=evil')
