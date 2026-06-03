@@ -538,6 +538,15 @@ class testResponse(unittest.TestCase):
             self.assertEqual(ctx.exception.headers.get("Content-Length"), "4")
             self.assertEqual(b"".join(ctx.exception.body), b"6789")
 
+            # A suffix larger than the file is clamped to the whole file.
+            request.env.http_range = "bytes=-9999"
+            with self.assertRaises(HTTP) as ctx:
+                stream_file_or_304_or_206(path, request=request, headers={})
+            self.assertEqual(ctx.exception.status, 206)
+            self.assertEqual(ctx.exception.headers.get("Content-Range"), "bytes 0-9/10")
+            self.assertEqual(ctx.exception.headers.get("Content-Length"), "10")
+            self.assertEqual(b"".join(ctx.exception.body), b"0123456789")
+
         finally:
             try:
                 os.close(fd)
