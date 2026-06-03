@@ -62,7 +62,6 @@ from io import BytesIO, StringIO
 from pickle import DICT, EMPTY_DICT, MARK, Pickler
 from urllib import parse as urlparse
 from urllib.parse import parse_qs
-from urllib.parse import quote as urllib_quote
 
 from pydal.contrib import portalocker
 from pydal.utils import utcnow
@@ -75,7 +74,7 @@ from gluon.restricted import safe_load, safe_loads
 from gluon.contrib.multipart import MultipartParser, ParserError, parse_options_header
 from gluon.fileutils import up
 from gluon.html import PRE, TABLE, TR, URL, xmlescape
-from gluon.http import HTTP, redirect
+from gluon.http import HTTP, content_disposition_header, redirect
 from gluon.serializers import custom_json, json
 from gluon.settings import global_settings
 from gluon.storage import List, Storage
@@ -129,7 +128,6 @@ template_mapping_csp = {
 
 CSP_DIRECTIVE = re.compile(r"^[A-Za-z0-9-]+$")
 CSP_DIRECTIVE_TOKEN = re.compile(r"^[\x21-\x2B\x2D-\x3A\x3C-\x7E]+$")
-CONTENT_DISPOSITION_TYPE = re.compile(r"^[A-Za-z0-9!#$%&'*+.^_`|~-]+$")
 CSP_STANDARD_DIRECTIVES = frozenset(
     (
         "base-uri",
@@ -165,25 +163,6 @@ CSP_STANDARD_DIRECTIVES = frozenset(
         "worker-src",
     )
 )
-
-
-def _content_disposition_filename(filename):
-    if filename is None:
-        filename = ""
-    # Keep historical semantics for normal values while ensuring dangerous
-    # bytes are encoded before insertion in a quoted header parameter.
-    if isinstance(filename, bytes):
-        return urllib_quote(filename, safe=b"")
-    return urllib_quote(str(filename), safe="")
-
-
-def _content_disposition_header(filename, disposition="attachment"):
-    if not CONTENT_DISPOSITION_TYPE.fullmatch(disposition):
-        raise ValueError("invalid Content-Disposition type: %r" % disposition)
-    return '%s; filename="%s"' % (
-        disposition,
-        _content_disposition_filename(filename),
-    )
 
 
 # IMPORTANT:
@@ -923,7 +902,7 @@ class Response(Storage):
         # for attachment settings and backward compatibility
         keys = [item.lower() for item in headers]
         if attachment:
-            headers["Content-Disposition"] = _content_disposition_header(filename)
+            headers["Content-Disposition"] = content_disposition_header(filename)
 
         if not request:
             request = current.request
@@ -1011,7 +990,7 @@ class Response(Storage):
         if download_filename is None:
             download_filename = filename
         if attachment:
-            headers["Content-Disposition"] = _content_disposition_header(
+            headers["Content-Disposition"] = content_disposition_header(
                 download_filename
             )
         return self.stream(stream, chunk_size=chunk_size, request=request)
