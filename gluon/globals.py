@@ -1466,8 +1466,6 @@ class Session(Storage):
                 response.session_new = True
 
     def _set_cookie_security_attrs(self, scookies):
-        if self._forget:
-            return
         if self.get("httponly_cookies", True):
             scookies["HttpOnly"] = True
         if self._secure:

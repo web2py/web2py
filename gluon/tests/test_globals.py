@@ -478,6 +478,19 @@ class testResponse(unittest.TestCase):
         ).lower()
         self.assertIn("secure", cookie)
 
+    def test_forget_deletes_session_id_cookie(self):
+        current = setup_clean_session()
+        current.session._fixup_before_save()
+        self.assertIn(
+            current.response.session_id_name, current.response.cookies
+        )
+
+        current.session.forget()
+        current.session._fixup_before_save()
+        self.assertNotIn(
+            current.response.session_id_name, current.response.cookies
+        )
+
     def test_stream_attachment_filename_encodes_quote(self):
         response = Response()
         request = Request(env={})
