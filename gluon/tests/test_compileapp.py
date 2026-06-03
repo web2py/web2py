@@ -17,6 +17,7 @@ from gluon.admin import (
     app_uninstall,
     check_new_version,
     plugin_install,
+    safe_deposit_path,
 )
 from gluon.compileapp import TEST_CODE, compile_application, remove_compiled_application
 from gluon.fileutils import create_app, w2p_pack, w2p_unpack
@@ -85,6 +86,18 @@ class TestAdminPaths(unittest.TestCase):
             )
 
         self.assertFalse(result)
+
+    def test_plugin_install_cleanup_removes_file_when_unpack_fails(self):
+        request = self._make_request()
+
+        with patch("gluon.admin.w2p_unpack_plugin", side_effect=RuntimeError("bad zip")):
+            result = plugin_install(
+                "welcome", BytesIO(b"payload"), request, "web2py.plugin.safe.w2p"
+            )
+
+        self.assertFalse(result)
+        deposit_path = safe_deposit_path(request, "web2py.plugin.safe.w2p")
+        self.assertFalse(os.path.exists(deposit_path))
 
 
 class TestPack(unittest.TestCase):

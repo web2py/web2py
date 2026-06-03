@@ -47,7 +47,7 @@ def _safe_extract_path(base_dir, member_name):
     return target_abspath
 
 
-def _safe_deposit_path(request, filename):
+def safe_deposit_path(request, filename):
     """Return a safe path for a temporary file in the deposit folder."""
     basename = os.path.basename(filename)
     if basename != filename or basename in ("", os.curdir, os.pardir):
@@ -359,7 +359,7 @@ def plugin_install(app, fobj, request, filename):
     upname = None
 
     try:
-        upname = _safe_deposit_path(request, filename)
+        upname = safe_deposit_path(request, filename)
         with open(upname, "wb") as appfp:
             copyfileobj(fobj, appfp, 4194304)  # 4 MB buffer
         path = apath(app, request)
