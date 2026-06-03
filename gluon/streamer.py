@@ -22,6 +22,7 @@ from gluon.utils import unlocalised_http_header_date
 
 regex_start_range = re.compile(r"\d+(?=\-)")
 regex_stop_range = re.compile(r"(?<=\-)\d+")
+regex_suffix_range = re.compile(r"^bytes=-(\d+)$")
 
 DEFAULT_CHUNK_SIZE = 64 * 1024
 
@@ -85,7 +86,7 @@ def stream_file_or_304_or_206(
 
         elif request and request.env.http_range:
             range_header = request.env.http_range
-            suffix_range = re.match(r"^bytes=-(\d+)$", range_header)
+            suffix_range = regex_suffix_range.match(range_header)
             if suffix_range:
                 suffix_length = int(suffix_range.group(1))
                 part = (max(fsize - suffix_length, 0), fsize - 1, fsize)
