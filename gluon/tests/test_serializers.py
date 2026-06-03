@@ -52,6 +52,57 @@ class TestSerializers(unittest.TestCase):
         with self.assertRaises(yamlib.YAMLError):
             loads_yaml(payload)
 
+    def testICSEscapesUntrustedFields(self):
+        # a newline in an attacker-controlled field must not be able to close
+        # the current property/component and inject new iCalendar content
+        events = [
+            {
+                "id": "1",
+                "title": "Lunch\nEND:VEVENT\nBEGIN:VEVENT\nUID:evil\n"
+                "SUMMARY:INJECTED\nATTENDEE:mailto:victim@example.com",
+                "start_datetime": datetime.datetime(2024, 1, 1, 10, 0, 0),
+                "stop_datetime": datetime.datetime(2024, 1, 1, 11, 0, 0),
+            }
+        ]
+        out = ics(events, title="My Cal")
+        lines = out.split("\n")
+        # exactly one real event, and no injected ATTENDEE/extra UID lines
+        self.assertEqual(len([ln for ln in lines if ln == "BEGIN:VEVENT"]), 1)
+        self.assertEqual(len([ln for ln in lines if ln == "END:VEVENT"]), 1)
+        self.assertEqual(len([ln for ln in lines if ln.startswith("ATTENDEE")]), 0)
+        self.assertEqual(len([ln for ln in lines if ln.startswith("UID:")]), 1)
+        # the smuggled payload survives only as escaped TEXT on the SUMMARY line
+        summary = [ln for ln in lines if ln.startswith("SUMMARY:")][-1]
+        self.assertIn("\\n", summary)
+
+    def testICSTextEscaping(self):
+        # RFC 5545 section 3.3.11: backslash, semicolon and comma are escaped
+        events = [
+            {
+                "id": "a;b,c",
+                "title": "Tea, Coffee; and back\\slash",
+                "start_datetime": datetime.datetime(2024, 1, 1, 0, 0, 0),
+                "stop_datetime": datetime.datetime(2024, 1, 1, 1, 0, 0),
+            }
+        ]
+        out = ics(events)
+        self.assertIn("UID:a\\;b\\,c", out)
+        self.assertIn("SUMMARY:Tea\\, Coffee\\; and back\\\\slash", out)
+
+    def testICSUriStripsNewlines(self):
+        # a URL property value must not be able to inject a new line either
+        events = [
+            {
+                "id": "1",
+                "title": "ok",
+                "start_datetime": datetime.datetime(2024, 1, 1, 0, 0, 0),
+                "stop_datetime": datetime.datetime(2024, 1, 1, 1, 0, 0),
+            }
+        ]
+        out = ics(events, link="http://x/[id]\r\nATTENDEE:mailto:victim@example.com")
+        self.assertEqual(len([ln for ln in out.split("\n") if ln.startswith("ATTENDEE")]), 0)
+        self.assertIn("URL:http://x/1ATTENDEE:mailto:victim@example.com", out)
+
     def testJSON(self):
         # the main and documented "way" is to use the json() function
         # it has a few corner-cases that make json() be somewhat
