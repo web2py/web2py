@@ -12,6 +12,7 @@ HTTP statuses helpers
 
 import re
 from urllib.parse import quote as urllib_quote
+from xml.sax.saxutils import escape as xml_escape
 
 __all__ = [
     "HTTP",
@@ -192,7 +193,10 @@ def redirect(location="", how=303, client_side=False, headers=None):
         else:
             headers["Location"] = loc
             raise HTTP(
-                how, 'You are being redirected <a href="%s">here</a>' % loc, **headers
+                how,
+                'You are being redirected <a href="%s">here</a>'
+                % xml_escape(loc, {'"': "&quot;"}),
+                **headers,
             )
     else:
         from gluon.globals import current
