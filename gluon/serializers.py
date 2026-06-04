@@ -95,13 +95,47 @@ def custom_json(o):
         raise TypeError(repr(o) + " is not JSON serializable")
 
 
+# a tag name that is already a valid XML element name (a Name per XML 1.0,
+# restricted here to a conservative ASCII-plus-unicode-word subset) is emitted
+# verbatim; anything else has to be neutralised before it reaches a tag name
+_XML_NAME_RE = re.compile(r"^[A-Za-z_:][\w.\-:]*$", re.UNICODE)
+_XML_NAME_BADCHAR_RE = re.compile(r"[^\w.\-]", re.UNICODE)
+
+
+def xml_safe_key(key):
+    """Coerce a dict key into a value safe to use as an XML element name.
+
+    ``xml_rec`` turns dict keys into tag names (``TAG[key]``); ``TAG`` emits the
+    name verbatim, so a key carrying ``<``, ``>``, ``"`` or whitespace would let
+    (possibly attacker-controlled) data break out of the element and inject
+    arbitrary XML/markup. Keys that are already valid XML names are returned
+    unchanged; every other key has the offending characters replaced so the
+    serialiser always emits well-formed, non-injectable XML.
+    """
+    name = key if isinstance(key, str) else str(key)
+    if name == "":
+        # empty key is the "no wrapper element" sentinel used by xml_rec
+        return ""
+    if _XML_NAME_RE.match(name):
+        return name
+    name = _XML_NAME_BADCHAR_RE.sub("_", name)
+    # a valid XML name may not start with a digit, '.', '-' or be empty
+    if not name or not re.match(r"[A-Za-z_]", name):
+        name = "_" + name
+    return name
+
+
 def xml_rec(value, key, quote=True):
     if hasattr(value, "custom_xml") and callable(value.custom_xml):
         return value.custom_xml()
     elif isinstance(value, (dict, Storage)):
-        return TAG[key](*[TAG[k](xml_rec(v, "", quote)) for k, v in value.items()])
+        return TAG[xml_safe_key(key)](
+            *[TAG[xml_safe_key(k)](xml_rec(v, "", quote)) for k, v in value.items()]
+        )
     elif isinstance(value, list):
-        return TAG[key](*[TAG.item(xml_rec(item, "", quote)) for item in value])
+        return TAG[xml_safe_key(key)](
+            *[TAG.item(xml_rec(item, "", quote)) for item in value]
+        )
     elif hasattr(value, "as_list") and callable(value.as_list):
         return str(xml_rec(value.as_list(), "", quote))
     elif hasattr(value, "as_dict") and callable(value.as_dict):
