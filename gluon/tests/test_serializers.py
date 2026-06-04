@@ -103,6 +103,37 @@ class TestSerializers(unittest.TestCase):
         self.assertEqual(len([ln for ln in out.split("\n") if ln.startswith("ATTENDEE")]), 0)
         self.assertIn("URL:http://x/1ATTENDEE:mailto:victim@example.com", out)
 
+    def testXMLEscapesUntrustedKeys(self):
+        # xml_rec turns dict keys into tag names; an attacker-controlled key
+        # must not be able to break out of the element and inject markup
+        out = serializers.xml({"data": {'k]><script>alert(1)</script><x y=': "v"}})
+        self.assertNotIn("<script>", out)
+        self.assertNotIn("</script>", out)
+        # whatever survives must still be well-formed XML
+        import xml.dom.minidom
+
+        xml.dom.minidom.parseString(out)
+
+    def testXMLKeepsValidKeys(self):
+        # keys that are already valid XML names are emitted verbatim
+        out = serializers.xml({"book": {"title": "ok", "qty": 3}})
+        self.assertIn("<book>", out)
+        self.assertIn("<title>ok</title>", out)
+        self.assertIn("<qty>3</qty>", out)
+        # values are still xml-escaped as before
+        self.assertIn("&", serializers.xml({"a": "x & y"}))
+
+    def testXMLSafeKey(self):
+        # already-valid names pass through unchanged
+        self.assertEqual(serializers.xml_safe_key("book"), "book")
+        self.assertEqual(serializers.xml_safe_key("ns:item"), "ns:item")
+        # the empty-key "no wrapper element" sentinel is preserved
+        self.assertEqual(serializers.xml_safe_key(""), "")
+        # breakout characters are neutralised and the name stays valid
+        self.assertNotRegex(serializers.xml_safe_key('a"><b'), r'[<>"\s]')
+        # a name may not start with a digit
+        self.assertTrue(serializers.xml_safe_key("1x").startswith("_"))
+
     def testJSON(self):
         # the main and documented "way" is to use the json() function
         # it has a few corner-cases that make json() be somewhat
