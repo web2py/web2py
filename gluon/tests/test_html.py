@@ -1189,6 +1189,36 @@ class TestBareHelpers(unittest.TestCase):
         self.assertFalse(is_unsafe("https://example.com"))
         self.assertFalse(is_unsafe("mailto:test@example.com"))
 
+    def test_MARKMIN_attribute_breakout_xss(self):
+        # A double quote inside a link target/title/alt/anchor must be escaped,
+        # otherwise it closes the surrounding "..." attribute and lets an
+        # attacker inject an event handler (XSS) -- a bypass of the
+        # javascript:-only is_unsafe() check. The quote belongs in markup, not
+        # attribute syntax, so it must come out as &quot; everywhere.
+
+        # image src: <img onerror=...> fires automatically (no user interaction)
+        output = MARKMIN('[[alt http://x"onerror="alert(1) img]]').xml()
+        self.assertNotIn('"onerror="alert(1)', output)
+        self.assertIn("&quot;onerror=&quot;alert(1)", output)
+
+        # link href
+        output = MARKMIN('[[click http://x"onmouseover="alert(1)]]').xml()
+        self.assertNotIn('"onmouseover="alert(1)', output)
+        self.assertIn("&quot;onmouseover=&quot;alert(1)", output)
+
+        # link title (the [extra] field)
+        output = MARKMIN('[[click [t"onmouseover="alert(1)] http://x]]').xml()
+        self.assertNotIn('"onmouseover="alert(1)', output)
+        self.assertIn('href="http://x"', output)
+
+        # anchor id
+        output = MARKMIN('[[name"onmouseover="alert(1)]]').xml()
+        self.assertNotIn('"onmouseover="alert(1)', output)
+
+        # legitimate links keep working unchanged
+        output = MARKMIN("[[web2py http://web2py.com]]").xml()
+        self.assertIn('<a href="http://web2py.com">web2py</a>', output)
+
     def test_ASSIGNJS(self):
         # empty assignation
         self.assertEqual(ASSIGNJS().xml(), "")
