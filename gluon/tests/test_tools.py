@@ -25,7 +25,7 @@ from gluon.globals import Request, Response, Session
 from gluon.http import HTTP
 from gluon.languages import TranslatorFactory
 from gluon.storage import Storage
-from gluon.tools import (Auth, Expose, Mail, Recaptcha2, prettydate,
+from gluon.tools import (Auth, Expose, Mail, Recaptcha2, csv_safe, prettydate,
                          prevent_open_redirect)
 
 IS_IMAP = "imap" in DEFAULT_URI
@@ -1608,6 +1608,37 @@ class TestService(unittest.TestCase):
         self.assertEqual(set(service.jsonrpc_procedures), {"legacy"})
         self.assertEqual(set(service.jsonrpc2_procedures), {"modern"})
 
+    def test_serve_csv_neutralizes_formula_injection(self):
+        service = tools.Service()
+
+        @service.csv
+        def evil():
+            # attacker-controlled values that reached the database / response
+            return [
+                {"name": "=cmd|'/c calc'!A1", "note": "ok"},
+                {"name": "+danger", "note": "-2+3"},
+            ]
+
+        current.request = Storage(args=["evil"], vars=Storage())
+        current.response = Storage(headers={})
+
+        out = service.serve_csv()
+
+        # the dangerous leading characters must be defused with a leading quote
+        self.assertIn("'=cmd", out)
+        self.assertIn("'+danger", out)
+        self.assertIn("'-2+3", out)
+        # a benign value is preserved verbatim
+        self.assertIn("ok", out)
+        # and no raw formula survives at the start of a field
+        for field in out.replace("\r", "").split("\n"):
+            for cell in field.split(","):
+                cell = cell.strip().strip('"')
+                self.assertFalse(
+                    cell[:1] in ("=", "+", "-", "@"),
+                    "unescaped formula cell: %r" % cell,
+                )
+
 
 # TODO: class TestPluginManager(unittest.TestCase):
 
@@ -1622,6 +1653,18 @@ class TestToolsFunctions(unittest.TestCase):
     """
     Test suite for all the tools.py functions
     """
+
+    def test_csv_safe_neutralizes_formula_prefixes(self):
+        # string cells starting with a formula trigger get quoted ...
+        for payload in ("=1+1", "+1", "-1+cmd", "@SUM(A1)", "\tx", "\rx"):
+            self.assertEqual(csv_safe(payload), "'" + payload)
+        # ... while harmless strings and non-strings are left untouched
+        self.assertEqual(csv_safe("hello"), "hello")
+        self.assertEqual(csv_safe("a=b"), "a=b")
+        self.assertEqual(csv_safe(""), "")
+        self.assertEqual(csv_safe(-5), -5)
+        self.assertEqual(csv_safe(3.14), 3.14)
+        self.assertEqual(csv_safe(None), None)
 
     def test_prettydate(self):
         # plain
