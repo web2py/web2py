@@ -30,6 +30,7 @@ import smtplib
 import sys
 import time
 import traceback
+from io import StringIO
 from email import encoders as Encoders
 from email import message_from_string
 from email.charset import QP as charset_QP
@@ -181,6 +182,26 @@ def prevent_open_redirect(url, host=None):
     elif parsed.path.startswith("~") or parsed.path.startswith(":~"):
         return None
     return original
+
+
+# Leading characters that make spreadsheet software (Excel, LibreOffice,
+# Google Sheets, ...) treat a CSV/TSV cell as a formula. A value beginning
+# with one of these can execute arbitrary spreadsheet expressions when the
+# exported file is opened -- this is "CSV/formula injection" (CWE-1236).
+CSV_INJECTION_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def csv_safe(value):
+    """Neutralize a single CSV/TSV cell against formula injection.
+
+    A string cell that starts with a formula-triggering character is prefixed
+    with a single quote so spreadsheet software renders it as literal text.
+    Non-string values (numbers, dates, ...) are returned unchanged, so genuine
+    numeric cells such as ``-5`` keep their type and meaning.
+    """
+    if isinstance(value, str) and value.startswith(CSV_INJECTION_PREFIXES):
+        return "'" + value
+    return value
 
 
 class Mail(object):
@@ -5881,15 +5902,17 @@ class Service(object):
                 import csv
 
                 writer = csv.writer(s)
-                writer.writerow(list(r[0].keys()))
+                writer.writerow([csv_safe(k) for k in r[0].keys()])
                 for line in r:
-                    writer.writerow([none_exception(v) for v in line.values()])
+                    writer.writerow(
+                        [csv_safe(none_exception(v)) for v in line.values()]
+                    )
             else:
                 import csv
 
                 writer = csv.writer(s)
                 for line in r:
-                    writer.writerow(line)
+                    writer.writerow([csv_safe(v) for v in line])
             return s.getvalue()
         self.error()
 

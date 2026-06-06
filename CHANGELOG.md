@@ -33,6 +33,8 @@ Other security fixes in this range:
 - Hardened `Content-Disposition` filenames (attachments and SQLFORM.grid export)
 - Hardened temporary plugin filename handling in `plugin_install()`
 - CAS service allowlist validation
+- Neutralized CSV/formula injection in `Service.serve_csv` exports (and restored
+  its missing `StringIO` import, which had broken every `@service.csv` endpoint)
 - `secrets` module used for secure password generation
 
 ## 2.99 - 3.0.X
