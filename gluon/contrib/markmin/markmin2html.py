@@ -1413,11 +1413,14 @@ def render(
         t, a, k, p, w = m.group("t", "a", "k", "p", "w")
         if not k:
             return m.group(0)
-        k = local_html_escape(k)
+        # quote=True: k is emitted inside src="..."/href="..."; without escaping
+        # the double quote an attacker URL like http://x"onerror="alert(1) would
+        # break out of the attribute and inject an event handler (XSS).
+        k = local_html_escape(k, quote=True)
         t = t or ""
         style = "width:%s" % w if w else ""
         title = (
-            ' title="%s"' % local_html_escape(a).replace(META, DISABLED_META)
+            ' title="%s"' % local_html_escape(a, quote=True).replace(META, DISABLED_META)
             if a
             else ""
         )
@@ -1459,7 +1462,9 @@ def render(
                 % dict(p=p, title=title, style=style, k=k, t=t)
             )
         alt = (
-            ' alt="%s"' % local_html_escape(t).replace(META, DISABLED_META) if t else ""
+            ' alt="%s"' % local_html_escape(t, quote=True).replace(META, DISABLED_META)
+            if t
+            else ""
         )
         return '%(begin)s<img src="%(k)s"%(alt)s%(title)s%(style)s />%(end)s' % dict(
             begin=p_begin, k=k, alt=alt, title=title, style=style, end=p_end
@@ -1472,12 +1477,15 @@ def render(
         if is_unsafe(k):
             return f'<span class="markmin_unsafe">{html_module.escape(t)}</span>'
         t = t or ""
-        a = local_html_escape(a) if a else ""
+        # quote=True: a is emitted inside title="..." and k inside href="...".
+        # Escaping the double quote prevents attribute breakout / event-handler
+        # injection (XSS) from attacker-controlled link targets and titles.
+        a = local_html_escape(a, quote=True) if a else ""
         if k:
             if "#" in k and ":" not in k.split("#")[0]:
                 # wikipage, not external url
                 k = k.replace("#", "#" + id_prefix)
-            k = local_html_escape(k)
+            k = local_html_escape(k, quote=True)
             title = ' title="%s"' % a.replace(META, DISABLED_META) if a else ""
             target = ' target="_blank"' if p == "popup" else ""
             t = (
@@ -1504,7 +1512,7 @@ def render(
         if t == "NEWLINE" and not a:
             return "<br />" + pp
         return '<span class="anchor" id="%s">%s</span>' % (
-            local_html_escape(id_prefix + t),
+            local_html_escape(id_prefix + t, quote=True),
             render(
                 a,
                 {},
