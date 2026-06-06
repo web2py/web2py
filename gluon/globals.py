@@ -71,7 +71,7 @@ from gluon import recfile
 from gluon.cache import CacheInRam
 from gluon.contenttype import contenttype
 from gluon.restricted import safe_load, safe_loads
-from gluon.contrib.multipart import MultipartParser, ParserError, parse_options_header
+from gluon.contrib.multipart import MultipartParser, MultipartError, parse_options_header
 from gluon.fileutils import up
 from gluon.html import PRE, TABLE, TR, URL, xmlescape
 from gluon.http import HTTP, content_disposition_header, redirect
@@ -385,11 +385,20 @@ class Request(Storage):
                 ct, opts = parse_options_header(content_type)
                 boundary = opts.get("boundary")
                 charset = opts.get("charset", "utf-8")
-                parser = iter(
-                    MultipartParser(
-                        body, boundary, content_length=content_length, charset=charset
+                # The boundary is a required Content-Type parameter. Without it
+                # the parser cannot be constructed (and would raise TypeError),
+                # so a missing boundary simply yields no parseable parts.
+                if boundary:
+                    parser = iter(
+                        MultipartParser(
+                            body,
+                            boundary,
+                            content_length=content_length,
+                            charset=charset,
+                        )
                     )
-                )
+                else:
+                    parser = iter([])
                 while True:
                     try:
                         part = next(parser)
@@ -410,7 +419,15 @@ class Request(Storage):
                                 if part.name not in post_vars
                                 else listify(post_vars[part.name]) + [value]
                             )
-                    except (StopIteration, ParserError):
+                    except StopIteration:
+                        break
+                    except (MultipartError, UnicodeError, LookupError):
+                        # A malformed multipart body, a reached parser limit
+                        # (e.g. too many parts), or an invalid/unknown charset in
+                        # a part header. Stop parsing and keep whatever was
+                        # decoded so far, instead of letting the parser exception
+                        # escape parse_post_vars as an HTTP 500. This matches the
+                        # lenient behaviour previously applied to ParserError.
                         break
                 body.seek(0)
             # Handle application/x-www-form-urlencoded

@@ -754,3 +754,67 @@ class testFileUpload(unittest.TestCase):
         filenames = [u.filename for u in uploads]
         self.assertIn("a.txt", filenames)
         self.assertIn("b.txt", filenames)
+
+    def _make_request_with_content_type(self, body, content_type):
+        env = {
+            "request_method": "POST",
+            "CONTENT_TYPE": content_type,
+            "CONTENT_LENGTH": str(len(body)),
+            "wsgi.input": BytesIO(body),
+        }
+        r = Request(env)
+        self.addCleanup(lambda: r._body.close() if r._body is not None else None)
+        return r
+
+    def test_missing_boundary_does_not_raise(self):
+        # A multipart/form-data Content-Type with no boundary parameter must not
+        # blow up the request parser (previously raised TypeError -> HTTP 500).
+        r = self._make_request_with_content_type(
+            b"whatever", "multipart/form-data"
+        )
+        self.assertEqual(dict(r.post_vars), {})
+
+    def test_invalid_part_charset_does_not_raise(self):
+        # An attacker-controlled, unknown charset in a part header must not
+        # escape as a LookupError -> HTTP 500. Parsing degrades gracefully.
+        boundary = self.BOUNDARY
+        body = (
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="a"\r\n'
+            b"Content-Type: text/plain; charset=bogus-enc\r\n\r\nhello\r\n"
+            b"--" + boundary + b"--\r\n"
+        )
+        r = self._make_request(body)
+        # access must not raise; the undecodable part is simply dropped
+        self.assertNotIn("a", r.post_vars)
+
+    def test_too_many_parts_does_not_raise(self):
+        # Exceeding the parser's part limit raises ParserLimitReached (a sibling
+        # of ParserError), which previously escaped as HTTP 500. The request now
+        # degrades to the parts decoded before the limit was hit.
+        boundary = self.BOUNDARY
+        body = b""
+        for i in range(200):
+            body += (
+                b"--" + boundary + b"\r\n"
+                b'Content-Disposition: form-data; name="f' + str(i).encode() + b'"\r\n'
+                b"\r\nv\r\n"
+            )
+        body += b"--" + boundary + b"--\r\n"
+        r = self._make_request(body)
+        # no exception; some fields were captured before the limit was reached
+        self.assertTrue(len(r.post_vars) > 0)
+
+    def test_truncated_body_keeps_partial_fields(self):
+        # A body that ends before the closing boundary raises a ParserError on
+        # close; the historical lenient behaviour (keep what was parsed) must be
+        # preserved.
+        boundary = self.BOUNDARY
+        body = (
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="ok"\r\n\r\ngood\r\n'
+            b"--" + boundary + b"\r\n"
+            b'Content-Disposition: form-data; name="truncated"\r\n\r\nincomp'
+        )
+        r = self._make_request(body)
+        self.assertEqual(r.post_vars.get("ok"), "good")
