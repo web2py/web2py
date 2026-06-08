@@ -62,7 +62,7 @@ from gluon.contrib.markmin.markmin2html import (
 )
 from gluon.fileutils import check_credentials, read_file
 from gluon.storage import Messages, Settings, Storage, StorageList
-from gluon.utils import compare, web2py_uuid
+from gluon.utils import compare, csv_safe, csv_safe_text, web2py_uuid
 
 Table = DAL.Table
 Field = DAL.Field
@@ -184,24 +184,9 @@ def prevent_open_redirect(url, host=None):
     return original
 
 
-# Leading characters that make spreadsheet software (Excel, LibreOffice,
-# Google Sheets, ...) treat a CSV/TSV cell as a formula. A value beginning
-# with one of these can execute arbitrary spreadsheet expressions when the
-# exported file is opened -- this is "CSV/formula injection" (CWE-1236).
-CSV_INJECTION_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
-
-
-def csv_safe(value):
-    """Neutralize a single CSV/TSV cell against formula injection.
-
-    A string cell that starts with a formula-triggering character is prefixed
-    with a single quote so spreadsheet software renders it as literal text.
-    Non-string values (numbers, dates, ...) are returned unchanged, so genuine
-    numeric cells such as ``-5`` keep their type and meaning.
-    """
-    if isinstance(value, str) and value.startswith(CSV_INJECTION_PREFIXES):
-        return "'" + value
-    return value
+# ``csv_safe`` and ``csv_safe_text`` are defined in gluon.utils (security
+# utilities, reused by gluon.sqlhtml's grid exporters) and re-exported here for
+# backward compatibility.
 
 
 class Mail(object):
@@ -5893,7 +5878,11 @@ class Service(object):
             )
             s = StringIO()
             if hasattr(r, "export_to_csv_file"):
+                # DAL Rows are written by pydal's csv writer, which we cannot
+                # neutralize cell-by-cell; sanitize the serialized text instead
+                # so this path is protected like the dict/list branches below.
                 r.export_to_csv_file(s)
+                return csv_safe_text(s.getvalue())
             elif (
                 r
                 and not isinstance(r, types.GeneratorType)

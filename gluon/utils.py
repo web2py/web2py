@@ -13,9 +13,11 @@ This file specifically includes utilities for security.
 
 import ast
 import base64
+import csv
 import hashlib
 import hmac
 import inspect
+import io
 import logging
 import os
 import pickle
@@ -96,6 +98,62 @@ def compare(a, b):
 def md5_hash(text):
     """Generate an md5 hash with the given text."""
     return hashlib.md5(text.encode("utf8")).hexdigest()
+
+
+# Leading characters that make spreadsheet software (Excel, LibreOffice,
+# Google Sheets, ...) treat a CSV/TSV cell as a formula. A value beginning
+# with one of these can execute arbitrary spreadsheet expressions when the
+# exported file is opened -- this is "CSV/formula injection" (CWE-1236).
+CSV_INJECTION_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def csv_safe(value):
+    """Neutralize a single CSV/TSV cell against formula injection.
+
+    A string cell that starts with a formula-triggering character is prefixed
+    with a single quote so spreadsheet software renders it as literal text.
+    Non-string values (numbers, dates, ...) are returned unchanged, so genuine
+    numeric cells such as ``-5`` keep their type and meaning.
+    """
+    if isinstance(value, str) and value.startswith(CSV_INJECTION_PREFIXES):
+        return "'" + value
+    return value
+
+
+def _csv_safe_cell_text(cell):
+    """:func:`csv_safe` for a cell that has already been stringified.
+
+    At the text level every cell is a string, so :func:`csv_safe` could no
+    longer tell a genuine negative/positive number (``-5``, ``+3.14``) from a
+    formula and would wrongly quote it. Numeric literals can never be formulas,
+    so they are left untouched; anything else starting with a formula-triggering
+    character is prefixed with a single quote.
+    """
+    if cell.startswith(CSV_INJECTION_PREFIXES):
+        try:
+            float(cell)
+        except ValueError:
+            return "'" + cell
+    return cell
+
+
+def csv_safe_text(text, delimiter=","):
+    """Neutralize already-serialized CSV/TSV text against formula injection.
+
+    Some export paths hand the row data to a writer we do not control (e.g.
+    pydal's ``Rows.export_to_csv_file``), so the cells cannot be passed through
+    :func:`csv_safe` individually. Re-parsing the produced text and re-emitting
+    every cell keeps the exact CSV structure (same delimiter, quoting and line
+    endings) while making dangerous cells render as literal text. ``text`` may be
+    empty/None, in which case it is returned as-is.
+    """
+    if not text:
+        return text
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=delimiter)
+    for row in csv.reader(io.StringIO(text), delimiter=delimiter):
+        writer.writerow([_csv_safe_cell_text(cell) for cell in row])
+    return out.getvalue()
 
 
 def get_callable_argspec(fn):
