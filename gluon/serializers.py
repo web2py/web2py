@@ -95,33 +95,29 @@ def custom_json(o):
         raise TypeError(repr(o) + " is not JSON serializable")
 
 
-# a tag name that is already a valid XML element name (a Name per XML 1.0,
-# restricted here to a conservative ASCII-plus-unicode-word subset) is emitted
-# verbatim; anything else has to be neutralised before it reaches a tag name
+# a valid XML element name (a Name per XML 1.0, restricted here to a
+# conservative ASCII-plus-unicode-word subset). A key carrying '<', '>', '"' or
+# whitespace would otherwise let (possibly attacker-controlled) data break out
+# of the element and inject arbitrary XML/markup.
 _XML_NAME_RE = re.compile(r"^[A-Za-z_:][\w.\-:]*$", re.UNICODE)
-_XML_NAME_BADCHAR_RE = re.compile(r"[^\w.\-]", re.UNICODE)
 
 
 def xml_safe_key(key):
-    """Coerce a dict key into a value safe to use as an XML element name.
+    """Validate that a dict key is usable as an XML element name.
 
-    ``xml_rec`` turns dict keys into tag names (``TAG[key]``); ``TAG`` emits the
-    name verbatim, so a key carrying ``<``, ``>``, ``"`` or whitespace would let
-    (possibly attacker-controlled) data break out of the element and inject
-    arbitrary XML/markup. Keys that are already valid XML names are returned
-    unchanged; every other key has the offending characters replaced so the
-    serialiser always emits well-formed, non-injectable XML.
+    ``xml_rec`` turns dict keys into tag names (``TAG[key]``) and ``TAG`` emits
+    the name verbatim, so an invalid key would produce malformed and, with
+    attacker-controlled keys, injectable XML. Rather than silently rewriting the
+    key -- which would corrupt the serialised data and could collapse distinct
+    keys onto the same tag -- reject any key that is not a valid XML name so the
+    serialiser fails closed.
     """
     name = key if isinstance(key, str) else str(key)
     if name == "":
         # empty key is the "no wrapper element" sentinel used by xml_rec
         return ""
-    if _XML_NAME_RE.match(name):
-        return name
-    name = _XML_NAME_BADCHAR_RE.sub("_", name)
-    # a valid XML name may not start with a digit, '.', '-' or be empty
-    if not name or not re.match(r"[A-Za-z_]", name):
-        name = "_" + name
+    if not _XML_NAME_RE.match(name):
+        raise ValueError("invalid XML element name: %r" % (key,))
     return name
 
 
