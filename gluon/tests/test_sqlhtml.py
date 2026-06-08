@@ -9,7 +9,8 @@ import os
 import sys
 import unittest
 
-from gluon.sqlhtml import SQLFORM, SQLTABLE, safe_int
+from gluon.sqlhtml import (SQLFORM, SQLTABLE, ExporterCSV, ExporterCSV_hidden,
+                           ExporterTSV, ExporterTSV_hidden, safe_int)
 
 DEFAULT_URI = os.getenv("DB", "sqlite:memory")
 
@@ -51,6 +52,42 @@ class Test_safe_int(unittest.TestCase):
         self.assertEqual(safe_int("1x"), 0)
         # not safe int (alternate default)
         self.assertEqual(safe_int("1x", 1), 1)
+
+
+class TestGridExportFormulaInjection(unittest.TestCase):
+    # The grid's CSV/TSV "export" buttons serve attacker-storable DB values to
+    # spreadsheet software. A cell starting with =, +, -, @, TAB or CR is run as
+    # a formula when opened (CSV/formula injection, CWE-1236); the exporters
+    # must neutralize it while leaving genuine numbers and structure intact.
+    def setUp(self):
+        self.db = DAL("sqlite:memory")
+        self.db.define_table("t", Field("name"), Field("score", "integer"))
+        self.db.t.insert(name="=cmd|'/C calc'!A0", score=-5)
+        self.db.t.insert(name="@SUM(1+1)", score=10)
+        self.db.t.insert(name="plain, comma", score=3)
+        self.rows = self.db(self.db.t).select()
+
+    def tearDown(self):
+        self.db.close()
+
+    def test_csv_exporters_neutralize_formulas(self):
+        for cls in (ExporterCSV, ExporterCSV_hidden):
+            out = cls(self.rows).export()
+            self.assertIn("'=cmd|'/C calc'!A0", out)
+            self.assertIn("'@SUM(1+1)", out)
+            self.assertNotIn(",=cmd", out)
+            # genuine negative number is preserved (not quoted as text)
+            self.assertIn(",-5", out)
+            # value containing the delimiter still round-trips
+            self.assertIn('"plain, comma"', out)
+
+    def test_tsv_exporters_neutralize_formulas(self):
+        for cls in (ExporterTSV, ExporterTSV_hidden):
+            out = cls(self.rows).export()
+            self.assertIn("\t'=cmd|'/C calc'!A0", out)
+            self.assertIn("\t'@SUM(1+1)", out)
+            self.assertNotIn("\t=cmd", out)
+            self.assertIn("\t-5", out)
 
 
 # class Test_safe_float(unittest.TestCase):

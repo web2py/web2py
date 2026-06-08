@@ -69,7 +69,7 @@ from gluon.html import (
 )
 from gluon.http import HTTP, content_disposition_header, redirect
 from gluon.storage import Storage
-from gluon.utils import md5_hash
+from gluon.utils import csv_safe_text, md5_hash
 from gluon.validators import (
     IS_DATE,
     IS_DATETIME,
@@ -4402,7 +4402,7 @@ class ExporterTSV(ExportClass):
             self.rows.export_to_csv_file(
                 s, represent=True, delimiter="\t", newline="\n"
             )
-            return s.getvalue()
+            return csv_safe_text(s.getvalue(), delimiter="\t")
         else:
             return None
 
@@ -4419,7 +4419,7 @@ class ExporterTSV_hidden(ExportClass):
         if self.rows:
             s = io.StringIO()
             self.rows.export_to_csv_file(s, delimiter="\t", newline="\n")
-            return s.getvalue()
+            return csv_safe_text(s.getvalue(), delimiter="\t")
         else:
             return None
 
@@ -4437,7 +4437,7 @@ class ExporterCSV(ExportClass):
         if self.rows:
             s = io.StringIO()
             self.rows.export_to_csv_file(s, represent=True)
-            return s.getvalue()
+            return csv_safe_text(s.getvalue())
         else:
             return None
 
@@ -4453,7 +4453,7 @@ class ExporterCSV_hidden(ExportClass):
 
     def export(self):
         if self.rows:
-            return self.rows.as_csv()
+            return csv_safe_text(self.rows.as_csv())
         else:
             return ""
 
