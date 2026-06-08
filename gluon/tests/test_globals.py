@@ -818,3 +818,17 @@ class testFileUpload(unittest.TestCase):
         )
         r = self._make_request(body)
         self.assertEqual(r.post_vars.get("ok"), "good")
+
+    def test_malicious_content_type_does_not_redos(self):
+        # The Content-Type header is parsed (parse_options_header) on every
+        # multipart POST before any authentication. An unterminated quoted
+        # boundary value made of backslashes used to backtrack exponentially
+        # in the option-value regex, so a tiny header could burn minutes of
+        # CPU. Parsing such a header must now stay fast.
+        import time
+
+        content_type = "multipart/form-data; boundary=" + '"' + "\\" * 64
+        start = time.time()
+        r = self._make_request_with_content_type(b"whatever", content_type)
+        self.assertEqual(dict(r.post_vars), {})
+        self.assertLess(time.time() - start, 5)
