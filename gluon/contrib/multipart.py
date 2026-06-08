@@ -217,8 +217,12 @@ _token = "[a-zA-Z0-9-!#$%&'*+.^_`|~]+"
 _re_token = re.compile(_token, re.ASCII)
 _hname = "[a-zA-Z0-9-_]+"
 _re_hname = re.compile(_hname, re.ASCII)
-# A token or quoted-string (simple qs | token | slow qs)
-_value = r'"[^\\"]*"|%s|"(?:\\.|[^"])*"' % _token
+# A token or quoted-string (simple qs | token | slow qs).
+# In the slow-qs branch a backslash must be consumed by the escape
+# alternative (\\.) only; letting [^"] also match it makes the two
+# alternatives overlap, so an unterminated value full of backslashes
+# backtracks exponentially (ReDoS). [^"\\] keeps them disjoint.
+_value = r'"[^\\"]*"|%s|"(?:\\.|[^"\\])*"' % _token
 # A "; key=value" pair from content-disposition header
 _option = r"; *(%s) *= *(%s)" % (_hname, _value)
 _re_option = re.compile(_option)
