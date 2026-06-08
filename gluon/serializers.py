@@ -95,13 +95,56 @@ def custom_json(o):
         raise TypeError(repr(o) + " is not JSON serializable")
 
 
+# Characters that are not valid in an XML element name (XML 1.0 "Name").
+# Besides keeping the document well-formed, stripping these also removes every
+# markup-significant character (<, >, /, ", ', =, &, whitespace) an attacker
+# could otherwise smuggle through a mapping key to break out of the
+# ``<name ...>`` tag and inject arbitrary elements (XML injection). ``\w`` with
+# re.UNICODE keeps ASCII identifiers, digits, ``_`` and the unicode letters that
+# are legal in XML names.
+_XML_NAME_INVALID = re.compile(r"[^\w.\-:]", re.UNICODE)
+
+
+def _is_xml_name_start(ch):
+    # an XML Name must start with a letter, '_' or ':' (never a digit, '-' or
+    # '.'); ``str.isalpha`` keeps the unicode letters that are legal name starts
+    return ch in "_:" or ch.isalpha()
+
+
+def xml_tag_name(key, default="item"):
+    """Coerce an arbitrary mapping key into a safe XML element name.
+
+    ``xml_rec`` escapes element *values* with ``xmlescape`` but used dict keys
+    verbatim as tag names, so a key such as ``"a><script>"`` produced raw,
+    unescaped markup in the serialized output (XML injection). A tag name cannot
+    simply be html-escaped (``&lt;`` is itself illegal inside a name), so instead
+    we drop characters that are not valid in an XML Name and guarantee a valid
+    name-start character. The result is always well-formed and cannot escape the
+    surrounding tag.
+    """
+    # an empty key means "no wrapper element" (TAG[""]); preserve that behaviour
+    if key == "":
+        return ""
+    name = _XML_NAME_INVALID.sub("", str(key))
+    if not name or not _is_xml_name_start(name[0]):
+        name = default if not name else "%s_%s" % (default, name)
+    return name
+
+
 def xml_rec(value, key, quote=True):
     if hasattr(value, "custom_xml") and callable(value.custom_xml):
         return value.custom_xml()
     elif isinstance(value, (dict, Storage)):
-        return TAG[key](*[TAG[k](xml_rec(v, "", quote)) for k, v in value.items()])
+        return TAG[xml_tag_name(key)](
+            *[
+                TAG[xml_tag_name(k)](xml_rec(v, "", quote))
+                for k, v in value.items()
+            ]
+        )
     elif isinstance(value, list):
-        return TAG[key](*[TAG.item(xml_rec(item, "", quote)) for item in value])
+        return TAG[xml_tag_name(key)](
+            *[TAG.item(xml_rec(item, "", quote)) for item in value]
+        )
     elif hasattr(value, "as_list") and callable(value.as_list):
         return str(xml_rec(value.as_list(), "", quote))
     elif hasattr(value, "as_dict") and callable(value.as_dict):

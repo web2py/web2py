@@ -103,6 +103,38 @@ class TestSerializers(unittest.TestCase):
         self.assertEqual(len([ln for ln in out.split("\n") if ln.startswith("ATTENDEE")]), 0)
         self.assertIn("URL:http://x/1ATTENDEE:mailto:victim@example.com", out)
 
+    def testXMLEscapesUntrustedKeys(self):
+        # xml() escapes element *values* but used dict keys verbatim as tag
+        # names; an attacker-influenced key must not be able to break out of the
+        # surrounding tag and inject arbitrary markup (XML injection). This is
+        # the path used by the generic.xml view: XML(xml(response._vars)).
+        payload = "</document><script>alert(1)</script><x"
+        out = xml({payload: "v"}, quote=False)
+        self.assertNotIn("<script", out)
+        self.assertNotIn("</document><script", out)
+        # the closing </document> only appears once: the real one at the end
+        self.assertEqual(out.count("</document>"), 1)
+        # an attribute-breakout attempt in a key is neutralised too: the quote
+        # and space are stripped, so no new attribute / event handler is formed
+        # (the leftover letters are inert inside the single tag name)
+        out = xml({'a"oncopy="alert(1)': "v"}, quote=False)
+        self.assertNotIn('oncopy="', out)
+        self.assertIn(">v<", out)  # value stays element content, not an attribute
+
+    def testXMLPreservesValidKeys(self):
+        # legitimate keys (incl. unicode letters legal in XML names) are
+        # unchanged; only injection-relevant / invalid characters are stripped
+        self.assertEqual(
+            xml({"a": {"b": [1, 2]}}),
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            "<document><a><b><item>1</item><item>2</item></b></a></document>",
+        )
+        self.assertIn("<è>1</è>", xml({"è": 1}))
+        # names cannot legally start with a digit -> made valid, not dropped
+        self.assertIn("<item_123>", xml({"123": "v"}))
+        # non-string keys no longer crash the serializer
+        self.assertIn("<item_5>x</item_5>", xml({5: "x"}))
+
     def testJSON(self):
         # the main and documented "way" is to use the json() function
         # it has a few corner-cases that make json() be somewhat
