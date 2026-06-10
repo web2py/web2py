@@ -1436,8 +1436,14 @@ def render(
             p_end = "</p>" + pp
         elif p in ("left", "right"):
             style = ("float:%s" % p) + (";%s" % style if style else "")
-        if t and regex_auto.match(t):
-            p_begin = p_begin + '<a href="%s">' % t
+        if t and regex_auto.match(t) and not is_unsafe(t):
+            # t is an auto-url reused as the wrapping link target. regex_auto
+            # is matched with re.match (not anchored at the end), so a value
+            # like http://x" onmouseover="alert(1) still satisfies the guard;
+            # escape it (quote=True) so it cannot break out of href="..." and
+            # inject an event handler (XSS), and reject javascript: targets the
+            # same way sub_link does.
+            p_begin = p_begin + '<a href="%s">' % local_html_escape(t, quote=True)
             p_end = "</a>" + p_end
             t = ""
         if style:

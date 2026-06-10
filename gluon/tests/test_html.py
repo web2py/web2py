@@ -1219,6 +1219,32 @@ class TestBareHelpers(unittest.TestCase):
         output = MARKMIN("[[web2py http://web2py.com]]").xml()
         self.assertIn('<a href="http://web2py.com">web2py</a>', output)
 
+    def test_MARKMIN_media_autolink_title_xss(self):
+        # When a media item's title is itself an auto-url, it is reused as the
+        # target of a wrapping <a href="...">. The guard uses re.match (not
+        # anchored at the end), so a value like http://x" onmouseover="alert(1)
+        # still satisfies it; the title must be escaped so the double quote
+        # cannot break out of href="..." and inject an event handler (XSS).
+        output = MARKMIN(
+            '[[http://x.com" onmouseover="alert(1) http://img.com/a.png img]]'
+        ).xml()
+        self.assertNotIn('" onmouseover="alert(1)', output)
+        self.assertIn("&quot; onmouseover=&quot;alert(1)", output)
+
+        # A javascript: pseudo-url title must not become a clickable link;
+        # sub_media must reject it like sub_link does for the link target.
+        output = MARKMIN(
+            "[[javascript://%0aalert(1) http://img.com/a.png img]]"
+        ).xml()
+        self.assertNotIn('href="javascript:', output)
+
+        # legitimate auto-url title still wraps the image in a link
+        output = MARKMIN("[[http://example.com http://img.com/a.png img]]").xml()
+        self.assertIn(
+            '<a href="http://example.com"><img src="http://img.com/a.png" /></a>',
+            output,
+        )
+
     def test_ASSIGNJS(self):
         # empty assignation
         self.assertEqual(ASSIGNJS().xml(), "")
