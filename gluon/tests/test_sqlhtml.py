@@ -534,3 +534,51 @@ class TestSQLTABLE(unittest.TestCase):
 
 #     def test_represented(self):
 #         pass
+
+
+class TestCSVExportFormulaInjection(unittest.TestCase):
+    """SQLFORM.grid CSV/TSV exports must defuse formula cells (CWE-1236) from
+    attacker-controlled string values, while preserving numeric columns."""
+
+    def setUp(self):
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
+        self.db.define_table("doc", Field("name"), Field("amount", "integer"))
+        self.db.doc.insert(name="=cmd|'/c calc'!A1", amount=-5)
+        self.db.doc.insert(name="plain", amount=3)
+        self.db.commit()
+
+    def tearDown(self):
+        self.db.doc.drop()
+        self.db.close()
+
+    def test_grid_exporters_defuse_strings_keep_numbers(self):
+        from gluon.sqlhtml import (
+            ExporterCSV,
+            ExporterCSV_hidden,
+            ExporterTSV,
+            ExporterTSV_hidden,
+        )
+
+        for exporter, sep in (
+            (ExporterCSV, ","),
+            (ExporterCSV_hidden, ","),
+            (ExporterTSV, "\t"),
+            (ExporterTSV_hidden, "\t"),
+        ):
+            rows = self.db(self.db.doc).select()  # fresh rows per exporter
+            out = exporter(rows).export()
+            # string formula neutralized
+            self.assertIn("'=cmd", out, exporter.__name__)
+            # genuine negative number preserved, not turned into text
+            self.assertNotIn("'-5", out, exporter.__name__)
+            self.assertTrue(
+                ("%s-5" % sep) in out or out.strip().endswith("-5") or "-5%s" % sep in out,
+                "%s dropped numeric -5: %r" % (exporter.__name__, out),
+            )
+            for line in out.replace("\r", "").split("\n"):
+                for cell in line.split(sep):
+                    cell = cell.strip().strip('"')
+                    self.assertFalse(
+                        cell[:1] in ("=", "+", "@"),
+                        "%s leaked formula: %r" % (exporter.__name__, cell),
+                    )

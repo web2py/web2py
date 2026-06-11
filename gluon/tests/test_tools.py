@@ -1639,6 +1639,55 @@ class TestService(unittest.TestCase):
                     "unescaped formula cell: %r" % cell,
                 )
 
+    def test_serve_csv_rows_branch_defuses_strings_keeps_numbers(self):
+        # serve_csv delegates DAL Rows to Rows.export_to_csv_file(); that path
+        # must defuse string formula cells WITHOUT corrupting numeric columns
+        # (csv_safe(-5) -> -5, not '-5).
+        db = DAL(DEFAULT_URI, check_reserved=["all"])
+        try:
+            db.define_table("evil_rows", Field("name"), Field("amount", "integer"))
+            db.evil_rows.insert(name="=cmd|'/c calc'!A1", amount=-5)
+            db.commit()
+            service = tools.Service()
+
+            @service.csv
+            def evil():
+                return db(db.evil_rows).select()
+
+            current.request = Storage(args=["evil"], vars=Storage())
+            current.response = Storage(headers={})
+            out = service.serve_csv()
+
+            self.assertIn("'=cmd", out)  # string formula neutralized
+            self.assertIn(",-5", out)  # genuine number preserved (NOT '-5)
+            self.assertNotIn("'-5", out)
+        finally:
+            db.evil_rows.drop()
+            db.close()
+
+
+class TestCsvSafeRows(unittest.TestCase):
+    def test_csv_safe_rows_is_type_aware(self):
+        from gluon.tools import csv_safe_rows
+
+        db = DAL(DEFAULT_URI, check_reserved=["all"])
+        try:
+            db.define_table("cell", Field("label"), Field("n", "integer"))
+            db.cell.insert(label="=cmd", n=-5)
+            db.commit()
+            rows = db(db.cell).select()
+            csv_safe_rows(rows)
+            rec = rows[0]
+            self.assertEqual(rec["label"], "'=cmd")  # string defused
+            self.assertEqual(rec["n"], -5)  # int preserved, still an int
+            self.assertIsInstance(rec["n"], int)
+            # re-applying is harmless (no double quoting)
+            csv_safe_rows(rows)
+            self.assertEqual(rows[0]["label"], "'=cmd")
+        finally:
+            db.cell.drop()
+            db.close()
+
 
 # TODO: class TestPluginManager(unittest.TestCase):
 

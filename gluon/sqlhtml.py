@@ -4323,6 +4323,16 @@ class SQLTABLE(TABLE):
 form_factory = SQLFORM.factory  # for backward compatibility, deprecated
 
 
+def _csv_safe_rows(rows):
+    # Neutralize CSV/formula injection (CWE-1236) on the typed Row values
+    # before they are serialized, so string cells are defused while numeric
+    # columns keep their type. Lazy import avoids a gluon.tools <-> sqlhtml
+    # import cycle.
+    from gluon.tools import csv_safe_rows
+
+    return csv_safe_rows(rows)
+
+
 class ExportClass(object):
     label = None
     file_ext = None
@@ -4398,6 +4408,7 @@ class ExporterTSV(ExportClass):
 
     def export(self):  # export TSV with field.represent
         if self.rows:
+            _csv_safe_rows(self.rows)
             s = io.StringIO()
             self.rows.export_to_csv_file(
                 s, represent=True, delimiter="\t", newline="\n"
@@ -4417,6 +4428,7 @@ class ExporterTSV_hidden(ExportClass):
 
     def export(self):
         if self.rows:
+            _csv_safe_rows(self.rows)
             s = io.StringIO()
             self.rows.export_to_csv_file(s, delimiter="\t", newline="\n")
             return s.getvalue()
@@ -4435,6 +4447,7 @@ class ExporterCSV(ExportClass):
 
     def export(self):  # export CSV with field.represent
         if self.rows:
+            _csv_safe_rows(self.rows)
             s = io.StringIO()
             self.rows.export_to_csv_file(s, represent=True)
             return s.getvalue()
@@ -4453,6 +4466,7 @@ class ExporterCSV_hidden(ExportClass):
 
     def export(self):
         if self.rows:
+            _csv_safe_rows(self.rows)
             return self.rows.as_csv()
         else:
             return ""

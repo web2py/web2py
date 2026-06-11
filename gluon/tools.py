@@ -204,6 +204,29 @@ def csv_safe(value):
     return value
 
 
+def csv_safe_rows(rows):
+    """Neutralize CSV/formula injection in a DAL ``Rows`` in place, before it
+    is serialized by ``Rows.export_to_csv_file()`` / ``as_csv()``.
+
+    Only string cells are passed through :func:`csv_safe`, so genuine numeric
+    and date columns keep their type and value (``csv_safe(-5)`` stays ``-5``).
+    Joined selects, whose records hold one per-table ``Row`` per joined table,
+    are handled one level deep. Re-applying is harmless (a quoted cell no
+    longer starts with a trigger). Returns *rows* for convenience.
+    """
+    for record in rows:
+        if not hasattr(record, "items"):
+            continue
+        for key, value in record.items():
+            if isinstance(value, str):
+                record[key] = csv_safe(value)
+            elif hasattr(value, "items"):  # nested per-table Row (joined select)
+                for k, v in value.items():
+                    if isinstance(v, str):
+                        value[k] = csv_safe(v)
+    return rows
+
+
 class Mail(object):
     """
     Class for configuring and sending emails with alternative text / html
@@ -5893,6 +5916,7 @@ class Service(object):
             )
             s = StringIO()
             if hasattr(r, "export_to_csv_file"):
+                csv_safe_rows(r)
                 r.export_to_csv_file(s)
             elif (
                 r
