@@ -95,11 +95,32 @@ def custom_json(o):
         raise TypeError(repr(o) + " is not JSON serializable")
 
 
+# A dict key is emitted as an XML element tag by xml_rec(). Replace only the
+# characters that let a key break out of its start tag -- '<', '>', '/' and
+# whitespace -- with '_', so an attacker-influenced key (e.g. "x><script>")
+# cannot close the tag or introduce attributes and inject markup. All other
+# characters are left untouched, which keeps existing output (including the
+# trailing-'_' self-closing TAG convention) unchanged for non-malicious keys.
+_REGEX_XML_TAG_BREAKOUT = re.compile(r"[<>/\s]")
+
+
+def _xml_safe_tag(key):
+    """Return *key* with XML start-tag breakout characters replaced by '_'.
+
+    Element values are already escaped via xmlescape(); this gives dict keys
+    used as element names comparable protection against markup injection. A
+    key containing no breakout character is returned unchanged.
+    """
+    return _REGEX_XML_TAG_BREAKOUT.sub("_", str(key))
+
+
 def xml_rec(value, key, quote=True):
     if hasattr(value, "custom_xml") and callable(value.custom_xml):
         return value.custom_xml()
     elif isinstance(value, (dict, Storage)):
-        return TAG[key](*[TAG[k](xml_rec(v, "", quote)) for k, v in value.items()])
+        return TAG[key](
+            *[TAG[_xml_safe_tag(k)](xml_rec(v, "", quote)) for k, v in value.items()]
+        )
     elif isinstance(value, list):
         return TAG[key](*[TAG.item(xml_rec(item, "", quote)) for item in value])
     elif hasattr(value, "as_list") and callable(value.as_list):

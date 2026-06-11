@@ -103,6 +103,37 @@ class TestSerializers(unittest.TestCase):
         self.assertEqual(len([ln for ln in out.split("\n") if ln.startswith("ATTENDEE")]), 0)
         self.assertIn("URL:http://x/1ATTENDEE:mailto:victim@example.com", out)
 
+    def testXMLNeutralizesMarkupInKeys(self):
+        # a dict key is emitted as an element tag; an attacker-influenced key
+        # must not be able to close the tag or add attributes and inject markup
+        out = xml({"x><script>alert(1)</script><y": "data"})
+        self.assertNotIn("<script", out)
+        self.assertNotIn("</script", out)
+        self.assertNotIn(">alert(1)<", out)
+
+    def testXMLNeutralizesAttributeInjectionInKeys(self):
+        # without surviving whitespace, a key cannot grow an event-handler attr
+        out = xml({"a onmouseover=alert(1) b": "v"})
+        self.assertNotIn(" onmouseover", out)
+
+    def testXMLNeutralizesMarkupInNestedKeys(self):
+        # the same protection must apply to keys at any depth
+        out = xml({"outer": {'q"><b on=1>': "v"}})
+        self.assertNotIn("<b on=1>", out)
+        self.assertNotIn('"><', out)
+
+    def testXMLPreservesExistingKeyBehaviour(self):
+        # keys with no breakout character are emitted byte-for-byte as before,
+        # including web2py's trailing-'_' self-closing TAG convention
+        self.assertEqual(
+            xml({"user_id": 1}),
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            "<document><user_id>1</user_id></document>",
+        )
+        self.assertIn("<created.on>x</created.on>", xml({"created.on": "x"}))
+        # trailing underscore still triggers <tag /> style (unchanged behaviour)
+        self.assertIn("<class />", xml({"class_": "x"}))
+
     def testJSON(self):
         # the main and documented "way" is to use the json() function
         # it has a few corner-cases that make json() be somewhat
