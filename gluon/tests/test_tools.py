@@ -1639,6 +1639,34 @@ class TestService(unittest.TestCase):
                     "unescaped formula cell: %r" % cell,
                 )
 
+    def test_serve_csv_rows_branch_neutralizes_formula_injection(self):
+        # a @service.csv function may return DAL Rows; those go through
+        # pydal's export_to_csv_file() and must be defused on the serialized
+        # text, while genuine numeric columns keep their value (not '-5).
+        db = DAL(DEFAULT_URI, check_reserved=["all"])
+        try:
+            db.define_table("evil_rows", Field("name"), Field("amount", "integer"))
+            db.evil_rows.insert(name="=cmd|'/c calc'!A1", amount=-5)
+            db.commit()
+
+            service = tools.Service()
+
+            @service.csv
+            def evil():
+                return db(db.evil_rows).select()
+
+            current.request = Storage(args=["evil"], vars=Storage())
+            current.response = Storage(headers={})
+
+            out = service.serve_csv()
+
+            self.assertIn("'=cmd", out)  # string formula neutralized
+            self.assertIn(",-5", out)  # genuine number preserved
+            self.assertNotIn("'-5", out)
+        finally:
+            db.evil_rows.drop()
+            db.close()
+
 
 # TODO: class TestPluginManager(unittest.TestCase):
 
