@@ -221,8 +221,9 @@ _re_hname = re.compile(_hname, re.ASCII)
 # In the slow-qs branch a backslash must be consumed by the escape
 # alternative (\\.) only; letting [^"] also match it makes the two
 # alternatives overlap, so an unterminated value full of backslashes
-# backtracks exponentially (ReDoS). [^"\\] keeps them disjoint.
-_value = r'"[^\\"]*"|%s|"(?:\\.|[^"\\])*"' % _token
+# backtracks exponentially (ReDoS). [^\\"] keeps them disjoint.
+# Backport of upstream defnull/multipart commit 30ad444 (1.4-dev).
+_value = r'"[^\\"]*"|%s|"(?:\\.|[^\\"])*"' % _token
 # A "; key=value" pair from content-disposition header
 _option = r"; *(%s) *= *(%s)" % (_hname, _value)
 _re_option = re.compile(_option)
