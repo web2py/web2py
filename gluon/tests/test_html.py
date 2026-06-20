@@ -1158,6 +1158,15 @@ class TestBareHelpers(unittest.TestCase):
         output = MARKMIN("[[link javascript:alert(1)]]").xml()
         self.assertIn("markmin_unsafe", output)
         self.assertNotIn("<a href=\"javascript:", output)
+
+        # Block other active-content URL schemes in explicit links.
+        output = MARKMIN("[[link data:text/html,<script>alert(1)</script>]]").xml()
+        self.assertIn("markmin_unsafe", output)
+        self.assertNotIn("<a href=\"data:", output)
+
+        output = MARKMIN("[[link vbscript:msgbox(1)]]").xml()
+        self.assertIn("markmin_unsafe", output)
+        self.assertNotIn("<a href=\"vbscript:", output)
         
         # Allow safe HTTP URLs
         output = MARKMIN("[[link http://example.com]]").xml()
@@ -1183,11 +1192,20 @@ class TestBareHelpers(unittest.TestCase):
         
         # javascript: with carriage return should be detected
         self.assertTrue(is_unsafe("java\rscript:alert(1)"))
+
+        # Other active-content schemes should be blocked too.
+        self.assertTrue(is_unsafe("vbscript:msgbox(1)"))
+        self.assertTrue(is_unsafe("data:text/html,<script>alert(1)</script>"))
+
+        # C0 controls should not bypass the scheme check.
+        self.assertTrue(is_unsafe("java\0script:alert(1)"))
+        self.assertTrue(is_unsafe("vb\x7fscript:msgbox(1)"))
         
         # Safe URLs should not be detected as unsafe
         self.assertFalse(is_unsafe("http://example.com"))
         self.assertFalse(is_unsafe("https://example.com"))
         self.assertFalse(is_unsafe("mailto:test@example.com"))
+        self.assertFalse(is_unsafe("/relative/path"))
 
     def test_MARKMIN_attribute_breakout_xss(self):
         # A double quote inside a link target/title/alt/anchor must be escaped,

@@ -715,13 +715,20 @@ def replace_components(text, env):
     text = regex_env2.sub(u2, text)
     return text
 
+
+_UNSAFE_URL_SCHEMES = {"data", "javascript", "vbscript"}
+
+
 def is_unsafe(url):
-    # Remove HTML5 whitespace: space, tab, newline, carriage return, form feed
-    # This prevents bypasses like java\nscript: or java\tscript:
-    url_cleaned = (url or "").lower()
-    for ws_char in (' ', '\t', '\n', '\r', '\f'):
-        url_cleaned = url_cleaned.replace(ws_char, '')
-    return url_cleaned.startswith("javascript:")
+    # Browsers strip ASCII C0 controls and spaces while processing URLs.
+    # Remove them before checking the scheme so values like java\0script:
+    # cannot bypass the dangerous-scheme check.
+    url_cleaned = "".join(
+        c for c in (url or "") if ord(c) > 0x20 and ord(c) != 0x7F
+    ).lower()
+    scheme, has_scheme, _ = url_cleaned.partition(":")
+    return has_scheme and scheme in _UNSAFE_URL_SCHEMES
+
 
 def autolinks_simple(url):
     """
