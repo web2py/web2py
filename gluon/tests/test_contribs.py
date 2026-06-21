@@ -93,3 +93,24 @@ class TestContribs(unittest.TestCase):
         with self.assertRaises(HTTP) as ctx:
             _resolve_pdf_image_path("/welcome/static/../../private/secret.txt", request)
         self.assertEqual(ctx.exception.status, 403)
+
+    def test_autolinks_escapes_url_in_markup(self):
+        from gluon.contrib import autolinks
+
+        # a url carrying a double quote must not be able to break out of the
+        # attribute / script context it gets dropped into
+        link = autolinks.expand_one('http://x.com/"onmouseover="alert(1)', {})
+        self.assertNotIn('"onmouseover="', link)
+        self.assertIn("&quot;", link)
+
+        img = autolinks.image('http://x.com/"onerror="alert(1).png')
+        self.assertNotIn('"onerror="', img)
+
+        comp = autolinks.web2py_component('http://x/"+alert(1)+"')
+        self.assertNotIn('"+alert(1)+"', comp)
+
+        # legitimate urls are left intact
+        self.assertIn(
+            'href="http://good.com/page"',
+            autolinks.expand_one("http://good.com/page", {"http://good.com/page": {}}),
+        )
