@@ -92,20 +92,20 @@ EMBED_MAPS = [
 
 
 def image(url):
-    return '<img src="%s" style="max-width:100%%"/>' % url
+    return '<img src="%s" style="max-width:100%%"/>' % html.escape(url, quote=True)
 
 
 def audio(url):
     return (
         '<audio controls="controls" style="max-width:100%%"><source src="%s" /></audio>'
-        % url
+        % html.escape(url, quote=True)
     )
 
 
 def video(url):
     return (
         '<video controls="controls" style="max-width:100%%"><source src="%s" /></video>'
-        % url
+        % html.escape(url, quote=True)
     )
 
 
@@ -120,7 +120,7 @@ def web2py_component(url):
     code = str(uuid.uuid4())
     return '<div id="%s"></div><script>\nweb2py_component("%s","%s");\n</script>' % (
         code,
-        url,
+        html.escape(url, quote=True),
         code,
     )
 
@@ -180,7 +180,8 @@ def extension(url):
 def expand_one(url, cdict):
     # try ombed but first check in cache
     if "@" in url and not "://" in url:
-        return '<a href="mailto:%s">%s</a>' % (url, url)
+        esc = html.escape(url, quote=True)
+        return '<a href="mailto:%s">%s</a>' % (esc, esc)
     if cdict and url in cdict:
         r = cdict[url]
     else:
@@ -201,7 +202,7 @@ def expand_one(url, cdict):
     if ext in EXTENSION_MAPS:
         return EXTENSION_MAPS[ext](url)
     # else regular link
-    return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
+    return '<a href="%(u)s">%(u)s</a>' % dict(u=html.escape(url, quote=True))
 
 
 def expand_html(html, cdict=None):
