@@ -323,7 +323,10 @@ def ldap_auth(
                     con.simple_bind_s(ldap_binddn, ldap_bindpw)
                     dn = "uid=" + username + "," + ldap_basedn
                     dn = con.search_s(
-                        ldap_basedn, ldap.SCOPE_SUBTREE, "(uid=%s)" % username, [""]
+                        ldap_basedn,
+                        ldap.SCOPE_SUBTREE,
+                        "(uid=%s)" % ldap.filter.escape_filter_chars(username),
+                        [""],
                     )[0][0]
                 else:
                     dn = "uid=" + username + "," + ldap_basedn
