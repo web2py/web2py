@@ -7,12 +7,19 @@ import pickle
 import unittest
 from datetime import datetime
 
-from gluon.contrib.redis_cache import RedisCache
-from gluon.contrib.redis_session import RedisSession
-from gluon.contrib.redis_utils import RConn
 from gluon.globals import Request, Response, Session, current
 from gluon.storage import Storage
 from gluon.utils import web2py_uuid
+
+try:
+    from gluon.contrib.redis_cache import RedisCache
+    from gluon.contrib.redis_session import RedisSession
+    from gluon.contrib.redis_utils import RConn
+    HAVE_REDIS = True
+except (ImportError, RuntimeError):
+    # The redis contrib modules raise at import time when the redis library
+    # is missing; skip the whole module instead of breaking the test suite.
+    HAVE_REDIS = False
 
 
 class TestRedis(unittest.TestCase):
@@ -20,6 +27,8 @@ class TestRedis(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        if not HAVE_REDIS:
+            raise unittest.SkipTest("Redis library not available")
         try:
             import redis
             redis.StrictRedis(host="localhost").ping()

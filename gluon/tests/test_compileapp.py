@@ -156,8 +156,28 @@ class TestPack(unittest.TestCase):
         self.assertNotIn("eval(", TEST_CODE)
 
     def test_check_new_version(self):
-        vert = check_new_version(global_settings.web2py_version, WEB2PY_VERSION_URL)
-        self.assertNotEqual(vert[0], -1)
+        # check_new_version normally performs a live network request to
+        # WEB2PY_VERSION_URL; mock urlopen so the test is deterministic and
+        # does not depend on the remote server being reachable.
+        myversion = "2.0.0-stable+timestamp.2020.01.01.00.00.00"
+        newer = "9.9.9-stable+timestamp.2099.01.01.00.00.00"
+        older = "1.0.0-stable+timestamp.2000.01.01.00.00.00"
+
+        with patch(
+            "gluon.admin.urllib.request.urlopen",
+            return_value=BytesIO(newer.encode("utf8")),
+        ):
+            state, version = check_new_version(myversion, WEB2PY_VERSION_URL)
+        self.assertEqual(state, True)
+        self.assertEqual(version, newer)
+
+        with patch(
+            "gluon.admin.urllib.request.urlopen",
+            return_value=BytesIO(older.encode("utf8")),
+        ):
+            state, version = check_new_version(myversion, WEB2PY_VERSION_URL)
+        self.assertEqual(state, False)
+        self.assertEqual(version, older)
 
     def test_admin_unzip_path_traversal(self):
         tmpdir = tempfile.mkdtemp()
