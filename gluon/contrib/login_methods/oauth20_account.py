@@ -17,6 +17,7 @@ from urllib import request as urllib2
 from urllib.parse import urlencode, parse_qs
 
 from gluon import HTTP, current, redirect
+from gluon.utils import compare, web2py_uuid
 
 
 class OAuthAccount(object):
@@ -150,6 +151,23 @@ class OAuthAccount(object):
                 refresh_token = current.session.token["refresh_token"]
 
         code = current.request.vars.code
+
+        if code:
+            # Honour the authorization code only if the state returned by the
+            # authorization server matches the one stored in the session when
+            # the flow started (RFC 6749 section 10.12). A missing or mismatched
+            # state means this redirect was not initiated by the current
+            # session, so the code must be rejected to prevent login CSRF.
+            expected_state = current.session.oauth_state
+            current.session.oauth_state = None  # single use
+            returned_state = current.request.vars.state
+            if (
+                not expected_state
+                or not returned_state
+                or not compare(str(expected_state), str(returned_state))
+            ):
+                current.session.token = None
+                return None
 
         if code or refresh_token:
             data = dict(
@@ -306,10 +324,19 @@ class OAuthAccount(object):
         token = self.accessToken()
         if not token:
             current.session.redirect_uri = self.__redirect_uri(next)
+            # OAuth 2.0 CSRF protection (RFC 6749 section 10.12): bind this
+            # authorization request to the user's session with an unguessable
+            # state value that the authorization server must echo back unchanged.
+            # Without it an attacker can deliver their own authorization code to
+            # the victim's redirect endpoint (login CSRF / code injection) and
+            # silently link the victim's session to the attacker's identity.
+            state = web2py_uuid()
+            current.session.oauth_state = state
             data = dict(
                 redirect_uri=current.session.redirect_uri,
                 response_type="code",
                 client_id=self.client_id,
+                state=state,
             )
             if self.args:
                 data.update(self.args)
