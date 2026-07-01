@@ -9,7 +9,13 @@ import unittest
 
 from gluon.html import URL
 from gluon.http import HTTP
-from gluon.rewrite import filter_err, filter_url, load, regex_filter_out
+from gluon.rewrite import (
+    filter_err,
+    filter_url,
+    load,
+    regex_filter_out,
+    try_redirect_on_error,
+)
 from gluon.settings import global_settings
 from gluon.storage import Storage
 
@@ -238,6 +244,22 @@ default_application = 'defapp'
         self.assertEqual(filter_err(200), 200)
         self.assertEqual(filter_err(399), 399)
         self.assertEqual(filter_err(400), 400)
+
+    def test_routes_onerror_encodes_request_url(self):
+        """
+        request.url comes from PATH_INFO and must be percent-encoded before
+        it is embedded in the error-redirect URL, like requested_uri already is.
+        """
+        load(data="routes_onerror=[('*/*', '/app/default/error')]")
+        request = Storage()
+        request.application = "app"
+        request.url = '/app/x"onmouseover="alert(1)'
+        request.env = Storage(request_uri="/app/x%22onmouseover%3D%22alert(1)")
+        result = try_redirect_on_error(HTTP(404), request, ticket="tkt")
+        location = result.headers["Location"]
+        self.assertIn("request_url=%2Fapp%2Fx%22onmouseover", location)
+        self.assertNotIn('"', location)
+        self.assertNotIn('"onmouseover="alert(1)', result.body)
 
     def test_routes_args(self):
         """

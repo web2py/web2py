@@ -281,7 +281,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                     status,
                     ticket,
                     quote_plus(request.env.request_uri),
-                    request.url,
+                    quote_plus(request.url),
                 )
                 if uri.startswith("http://") or uri.startswith("https://"):
                     # make up a response
@@ -323,7 +323,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                         status,
                         ticket,
                         quote_plus(request.env.request_uri),
-                        request.url,
+                        quote_plus(request.url),
                     )
                 else:
                     url = "%s?code=%s&ticket=%s&requested_uri=%s&request_url=%s" % (
@@ -331,7 +331,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                         status,
                         ticket,
                         quote_plus(request.env.request_uri),
-                        request.url,
+                        quote_plus(request.url),
                     )
                 return HTTP(
                     303,
