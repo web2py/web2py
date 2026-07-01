@@ -8,6 +8,7 @@ import sys
 
 try:
     import ldap
+    import ldap.dn
     import ldap.filter
 
     ldap.set_option(ldap.OPT_REFERRALS, 0)
@@ -307,7 +308,7 @@ def ldap_auth(
                 # OpenLDAP (CN)
                 if ldap_binddn and ldap_bindpw:
                     con.simple_bind_s(ldap_binddn, ldap_bindpw)
-                dn = "cn=" + username + "," + ldap_basedn
+                dn = "cn=" + ldap.dn.escape_dn_chars(username) + "," + ldap_basedn
                 con.simple_bind_s(dn, password)
                 if manage_user:
                     result = con.search_s(
@@ -321,7 +322,7 @@ def ldap_auth(
                 # OpenLDAP (UID)
                 if ldap_binddn and ldap_bindpw:
                     con.simple_bind_s(ldap_binddn, ldap_bindpw)
-                    dn = "uid=" + username + "," + ldap_basedn
+                    dn = "uid=" + ldap.dn.escape_dn_chars(username) + "," + ldap_basedn
                     dn = con.search_s(
                         ldap_basedn,
                         ldap.SCOPE_SUBTREE,
@@ -329,7 +330,7 @@ def ldap_auth(
                         [""],
                     )[0][0]
                 else:
-                    dn = "uid=" + username + "," + ldap_basedn
+                    dn = "uid=" + ldap.dn.escape_dn_chars(username) + "," + ldap_basedn
                 con.simple_bind_s(dn, password)
                 if manage_user:
                     result = con.search_s(
