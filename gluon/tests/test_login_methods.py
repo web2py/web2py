@@ -9,6 +9,10 @@ import importlib
 import sys
 import types
 import unittest
+from urllib.parse import quote as urllib_quote
+
+from gluon.globals import current
+from gluon.storage import Storage
 
 
 def _rfc4515_escape(value, escape_mode=0):
@@ -146,3 +150,66 @@ class TestLdapAuthFilterInjection(unittest.TestCase):
         self.assertEqual(bind_dn, "cn=%s,dc=x" % self.escape_dn(malicious))
         # ... so the injected RDN cannot appear unescaped
         self.assertNotIn("cn=evil,ou=Admins", bind_dn)
+
+
+class TestOutboundURLTokenEncoding(unittest.TestCase):
+    # loginradius_account / cas_auth build the outbound provider-validation URL
+    # by interpolating an attacker-supplied request value (token / ticket) into
+    # it. Without percent-encoding, "/", "&", "#" or "?" let the caller inject
+    # extra path or query into that request -- the same defect the sibling
+    # providers (janrain/rpx/loginza) already avoid via urlencode.
+    _MALICIOUS = "abc/../x?a=1&b=2#frag"
+
+    def test_loginradius_encodes_token(self):
+        mod = importlib.import_module(
+            "gluon.contrib.login_methods.loginradius_account"
+        )
+        captured = {}
+
+        def fake_fetch(url, **kwargs):
+            captured["url"] = url
+            return "{}"
+
+        orig = mod.fetch
+        mod.fetch = fake_fetch
+        try:
+            req = Storage(vars=Storage(token=self._MALICIOUS))
+            account = mod.LoginRadiusAccount(req, api_key="k", api_secret="s")
+            account.get_user()
+        finally:
+            mod.fetch = orig
+        expected = urllib_quote(self._MALICIOUS, safe="")
+        self.assertTrue(captured["url"].endswith("/" + expected))
+        self.assertNotIn(self._MALICIOUS, captured["url"])
+
+    def test_cas_encodes_ticket(self):
+        mod = importlib.import_module("gluon.contrib.login_methods.cas_auth")
+        captured = {}
+
+        class FakeResp(object):
+            def read(self):
+                return "no\n"
+
+        def fake_urlopen(url, *a, **k):
+            captured["url"] = url
+            return FakeResp()
+
+        orig = mod.urlopen
+        saved_request = getattr(current, "request", None)
+        mod.urlopen = fake_urlopen
+        current.request = Storage(vars=Storage(ticket=self._MALICIOUS))
+        try:
+            cas = mod.CasAuth.__new__(mod.CasAuth)
+            cas.cas_check_url = "https://cas.example/cas/validate"
+            cas.cas_login_url = "https://cas.example/cas/login"
+            cas.cas_my_url = "https://app.example/user/cas"
+            cas._CAS_login()
+        finally:
+            mod.urlopen = orig
+            if saved_request is None:
+                current.request = None
+            else:
+                current.request = saved_request
+        expected = urllib_quote(self._MALICIOUS, safe="")
+        self.assertIn("ticket=" + expected, captured["url"])
+        self.assertNotIn(self._MALICIOUS, captured["url"])
