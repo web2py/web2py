@@ -3653,6 +3653,15 @@ class Auth(AuthAPI):
 
         key = getarg(-1)
         table_user = self.table_user()
+        # registration_key also holds the reserved states "", "pending",
+        # "disabled" and "blocked". Only the random token issued at
+        # registration is a genuine verification key, so refuse these
+        # values here; otherwise a request for verify_email/disabled (or
+        # /blocked, /pending) would match such an account and clear its key,
+        # re-activating an account an administrator disabled or one still
+        # awaiting approval.
+        if not key or key in ("pending", "disabled", "blocked"):
+            redirect(self.settings.login_url)
         user = table_user(registration_key=key)
         if not user:
             redirect(self.settings.login_url)

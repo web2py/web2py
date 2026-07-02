@@ -452,6 +452,57 @@ class TestAuthJWT(unittest.TestCase):
         self.assertEqual(err.exception.status, 400)
 
 
+class TestAuthVerifyEmail(unittest.TestCase):
+    def setUp(self):
+        self.request = Request(env={})
+        self.request.application = "a"
+        self.request.controller = "c"
+        self.request.function = "f"
+        self.request.folder = "applications/admin"
+        self.response = Response()
+        self.session = Session()
+        self.T = TranslatorFactory("", "en")
+        self.session.connect(self.request, self.response)
+        current.request = self.request
+        current.response = self.response
+        current.session = self.session
+        current.T = self.T
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
+        self.auth = Auth(self.db)
+        self.auth.define_tables(username=True, signature=False)
+
+    def _verify_email_with_arg(self, arg):
+        from gluon.storage import List
+
+        self.request.args = List(["verify_email", arg])
+        try:
+            self.auth.verify_email()
+        except HTTP:
+            pass
+
+    def test_reserved_key_does_not_activate_account(self):
+        # a reserved registration_key must not be accepted as a
+        # verification token, otherwise verify_email/<state> would clear it
+        for state in ("disabled", "blocked", "pending"):
+            uid = self.db.auth_user.insert(
+                username="u_" + state, password="x", registration_key=state
+            )
+            self.db.commit()
+            self._verify_email_with_arg(state)
+            self.assertEqual(self.db.auth_user[uid].registration_key, state)
+
+    def test_valid_key_verifies_account(self):
+        from gluon.utils import web2py_uuid
+
+        key = web2py_uuid()
+        uid = self.db.auth_user.insert(
+            username="legit", password="x", registration_key=key
+        )
+        self.db.commit()
+        self._verify_email_with_arg(key)
+        self.assertEqual(self.db.auth_user[uid].registration_key, "")
+
+
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 # class TestAuth(unittest.TestCase):
 #
