@@ -10,6 +10,7 @@ Tinkered by Szabolcs Gyuris < szimszo n @ o regpreshaz dot eu>
 """
 import xml.dom.minidom as dom
 import xml.parsers.expat as expat
+from urllib.parse import quote as urllib_quote
 from urllib.request import urlopen
 
 from gluon import URL, current, redirect
@@ -108,10 +109,13 @@ class CasAuth(object):
         if not current.request.vars.ticket:
             redirect("%s?service=%s" % (self.cas_login_url, self.cas_my_url))
         else:
+            # ticket comes from the request; percent-encode it so it cannot
+            # inject extra parameters into the CAS validation request whose
+            # response is trusted to authenticate the user.
             url = "%s?service=%s&ticket=%s" % (
                 self.cas_check_url,
                 self.cas_my_url,
-                self.ticket,
+                urllib_quote(self.ticket, safe=""),
             )
             data = urlopen(url).read()
             if data.startswith("yes") or data.startswith("no"):

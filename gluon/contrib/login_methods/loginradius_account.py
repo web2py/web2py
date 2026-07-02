@@ -12,6 +12,7 @@
 
 import json
 import os
+from urllib.parse import quote as urllib_quote
 
 from gluon import *
 from gluon.storage import Storage
@@ -63,8 +64,14 @@ class LoginRadiusAccount(object):
         user = None
         if request.vars.token:
             try:
+                # token comes from the request; percent-encode it so it stays a
+                # single path segment and cannot inject extra path/query into
+                # the profile lookup below.
                 auth_url = (
-                    self.auth_base_url + self.api_secret + "/" + request.vars.token
+                    self.auth_base_url
+                    + self.api_secret
+                    + "/"
+                    + urllib_quote(request.vars.token, safe="")
                 )
                 json_data = fetch(
                     auth_url, headers={"User-Agent": "LoginRadius - Python - SDK"}
