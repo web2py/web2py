@@ -383,6 +383,37 @@ class TestSQLFORM(unittest.TestCase):
         grid_form = SQLFORM.grid(self.db.auth_user)
         self.assertEqual(grid_form.xml()[:4], "<div")
 
+    def test_grid_order_limited_to_sortable_columns(self):
+        # request.vars.order must be constrained to the grid's sortable
+        # columns. A crafted value must not sort by an undisplayed column
+        # (which leaks its ordering) nor reference an unrelated table (which
+        # raised an unhandled 500).
+        from gluon.globals import current
+
+        self.db.define_table(
+            "gitem",
+            Field("name"),
+            Field("secret", readable=False, writable=False),
+        )
+        self.db.gitem.insert(name="alpha", secret="zzz")
+        self.db.gitem.insert(name="bravo", secret="aaa")
+        self.db.commit()
+
+        def name_order(order):
+            current.request.vars.order = order
+            xml = SQLFORM.grid(self.db.gitem, sortable=True).xml()
+            return "alpha,bravo" if xml.find(">alpha<") < xml.find(">bravo<") else "bravo,alpha"
+
+        default = name_order("")
+        # sorting by the hidden readable=False column is refused
+        self.assertEqual(name_order("gitem.secret"), default)
+        # malformed and foreign-table order values are ignored, not fatal
+        self.assertEqual(name_order("boom"), default)
+        self.assertEqual(name_order("nosuchtable.x"), default)
+        # a real displayed column can still be sorted
+        self.assertEqual(name_order("~gitem.name"), "bravo,alpha")
+        current.request.vars.order = ""
+
     def test_smartgrid(self):
         smartgrid_form = SQLFORM.smartgrid(self.db.auth_user)
         self.assertEqual(smartgrid_form.xml()[:4], "<div")
