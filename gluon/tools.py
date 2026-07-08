@@ -7080,7 +7080,7 @@ class Wiki(object):
             return self.preview(self.get_renderer())
 
     def first_paragraph(self, page):
-        if not self.can_read(page):
+        if self.can_read(page):
             mm = (page.body or "").replace("\r", "")
             ps = [p for p in mm.split("\n\n") if not p.startswith("#") and p.strip()]
             if ps:

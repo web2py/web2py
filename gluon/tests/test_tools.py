@@ -25,7 +25,7 @@ from gluon.globals import Request, Response, Session
 from gluon.http import HTTP
 from gluon.languages import TranslatorFactory
 from gluon.storage import Storage
-from gluon.tools import (Auth, Expose, Mail, Recaptcha2, csv_safe,
+from gluon.tools import (Auth, Expose, Mail, Recaptcha2, Wiki, csv_safe,
                          csv_safe_text, prettydate, prevent_open_redirect)
 
 IS_IMAP = "imap" in DEFAULT_URI
@@ -501,6 +501,39 @@ class TestAuthVerifyEmail(unittest.TestCase):
         self.db.commit()
         self._verify_email_with_arg(key)
         self.assertEqual(self.db.auth_user[uid].registration_key, "")
+
+
+class TestWikiFirstParagraph(unittest.TestCase):
+    def _wiki(self, groups=None, user=None):
+        # build a Wiki without running __init__ (which needs a full
+        # request/db context); first_paragraph and can_read only touch
+        # settings and auth
+        wiki = Wiki.__new__(Wiki)
+        wiki.settings = Storage(manage_permissions=True, groups=groups or [])
+        wiki.auth = Storage(user=user)
+        return wiki
+
+    def _page(self, can_read):
+        return Storage(
+            body="teaser paragraph\n\n## heading\n\nmore body",
+            can_read=can_read,
+            can_edit=[],
+            created_by=0,
+        )
+
+    def test_unreadable_page_body_not_leaked_in_preview(self):
+        # an anonymous searcher must not receive the body of a page whose
+        # read access is restricted to a group they are not in
+        wiki = self._wiki()
+        page = self._page(can_read=["admins"])
+        self.assertFalse(wiki.can_read(page))
+        self.assertEqual(wiki.first_paragraph(page), "")
+
+    def test_readable_page_preview_is_returned(self):
+        wiki = self._wiki()
+        page = self._page(can_read=["everybody"])
+        self.assertTrue(wiki.can_read(page))
+        self.assertEqual(wiki.first_paragraph(page), "teaser paragraph")
 
 
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
