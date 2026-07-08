@@ -1577,7 +1577,7 @@ def render(
                 "["
                 + ",".join(
                     '<a href="#%s" class="%s">%s</a>' % (id_prefix + d, b, d)
-                    for d in local_html_escape(code).split(",")
+                    for d in local_html_escape(code, quote=True).split(",")
                 )
                 + "]"
             )
@@ -1602,7 +1602,7 @@ def render(
                 ),
             )
         elif b in ("c", "color") and p:
-            c = p.split(":")
+            c = local_html_escape(p, quote=True).split(":")
             fg = "color: %s;" % c[0] if c[0] else ""
             bg = "background-color: %s;" % c[1] if len(c) > 1 and c[1] else ""
             return '<span style="%s%s">%s</span>' % (
@@ -1624,7 +1624,7 @@ def render(
                 ),
             )
         cls = ' class="%s%s"' % (class_prefix, b) if b and b != "id" else ""
-        id = ' id="%s%s"' % (id_prefix, local_html_escape(p)) if p else ""
+        id = ' id="%s%s"' % (id_prefix, local_html_escape(p, quote=True)) if p else ""
         beg = code[:1] == "\n"
         end = [None, -1][code[-1:] == "\n"]
         if beg and end:

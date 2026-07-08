@@ -1263,6 +1263,44 @@ class TestBareHelpers(unittest.TestCase):
             output,
         )
 
+    def test_MARKMIN_code_meta_attribute_breakout_xss(self):
+        # The optional [id] part of a ``code``:cls[id] meta is captured as
+        # [^\]]*, so it can contain a double quote. That value ends up inside
+        # HTML attributes in three places of the meta/code rendering path
+        # (the <code> id, the colour <span> style, and the cite <a> href), so
+        # the quote must be escaped or it breaks out of the attribute and lets
+        # an attacker inject an event handler (XSS), just like the link/media
+        # paths already guard against.
+
+        # code block id attribute
+        output = MARKMIN('``hi``:cls[x" onmouseover="alert(1)]').xml()
+        self.assertNotIn('" onmouseover="alert(1)', output)
+        self.assertIn("&quot; onmouseover=&quot;alert(1)", output)
+
+        # colour span style attribute
+        output = MARKMIN('``hi``:c[red" onmouseover="alert(2)]').xml()
+        self.assertNotIn('" onmouseover="alert(2)', output)
+        self.assertIn("&quot; onmouseover=&quot;alert(2)", output)
+
+        # cite href attribute
+        output = MARKMIN('``x" onclick="alert(3)``:cite').xml()
+        self.assertNotIn('" onclick="alert(3)', output)
+        self.assertIn("&quot; onclick=&quot;alert(3)", output)
+
+        # legitimate metas keep rendering unchanged
+        self.assertIn(
+            '<code class="python" id="markmin_myid">hello</code>',
+            MARKMIN("``hello``:python[myid]").xml(),
+        )
+        self.assertIn(
+            '<span style="color: red;">red text</span>',
+            MARKMIN("``red text``:c[red]").xml(),
+        )
+        self.assertIn(
+            '<a href="#markmin_a" class="cite">a</a>',
+            MARKMIN("``a,b``:cite").xml(),
+        )
+
     def test_ASSIGNJS(self):
         # empty assignation
         self.assertEqual(ASSIGNJS().xml(), "")
