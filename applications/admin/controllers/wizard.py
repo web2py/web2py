@@ -47,7 +47,22 @@ def listify(x):
 
 
 def clean(name):
-    return re.sub('\W+', '_', name.strip().lower())
+    return re.sub(r'\W+', '_', name.strip().lower())
+
+
+def app_can_be_written(app):
+    if not MULTI_USER_MODE or is_manager():
+        return True
+    app_path = os.path.join(request.folder, '..', app)
+    if os.path.isdir(app_path):
+        return db(db.app.name == app)(db.app.owner == auth.user.id).count()
+    return not db(db.app.name == app)(db.app.owner != auth.user.id).count()
+
+
+def ensure_app_can_be_written(app):
+    if not app_can_be_written(app):
+        session.flash = 'App belongs already to other user'
+        redirect(URL('index'))
 
 
 def index():
@@ -59,9 +74,8 @@ def index():
     if form.accepts(request.vars):
         app = form.vars.name
         session.app['name'] = app
-        if MULTI_USER_MODE and db(db.app.name == app)(db.app.owner != auth.user.id).count():
-            session.flash = 'App belongs already to other user'
-        elif app in apps:
+        ensure_app_can_be_written(app)
+        if app in apps:
             meta = os.path.normpath(
                 os.path.join(os.path.normpath(request.folder),
                              '..', app, 'wizard.metadata'))
@@ -483,8 +497,9 @@ def create(options):
         redirect(URL('step6'))
     params = dict(session.app['params'])
     app = session.app['name']
+    ensure_app_can_be_written(app)
     if app_create(app, request, force=True, key=params['security_key']):
-        if MULTI_USER_MODE:
+        if MULTI_USER_MODE and not db(db.app.name == app).count():
             db.app.insert(name=app, owner=auth.user.id)
     else:
         session.flash = 'Failure to create application'

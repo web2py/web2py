@@ -111,6 +111,34 @@ class TestAppAdmin(unittest.TestCase):
             self.assertEqual(normalized, expected_str)
         return res
 
+    def prepare_multi_user_admin_env(self):
+        from gluon.fileutils import read_file
+        from gluon.restricted import compile2, restricted
+
+        env = self.env
+        request = env["request"]
+        request.folder = os.path.abspath("applications/admin")
+        env["MULTI_USER_MODE"] = True
+        env["is_manager"] = lambda: False
+        env["auth"].user = Storage(id=1, is_manager=False)
+        db = DAL(DEFAULT_URI)
+        db.define_table("app", Field("name"), Field("owner", "integer"))
+        env["db"] = db
+        db.app.insert(name="welcome", owner=1)
+        db.app.insert(name="admin", owner=2)
+        db.app.insert(name="ghost", owner=2)
+
+        def load_controller(controller):
+            filename = os.path.join(
+                request.folder, "controllers", "%s.py" % controller)
+            restricted(
+                compile2(read_file(filename), filename),
+                env,
+                layer=filename)
+            return env
+
+        return load_controller
+
     def _test_index(self):
         result = self.run_function()
         self.assertTrue("db" in result["databases"])
@@ -305,7 +333,7 @@ class TestAppAdmin(unittest.TestCase):
 
     def test_admin_file_manager_boundaries(self):
         """Test that admin file manager enforces app boundaries."""
-        from gluon.admin import join_app_path
+        from gluon.admin import apath, check_app_path, is_within_root, join_app_path
         from gluon.globals import Request
         from gluon.http import HTTP
         request = Request(env={})
@@ -321,6 +349,17 @@ class TestAppAdmin(unittest.TestCase):
         static_base = os.path.join(app_root, "static")
         static_res = join_app_path(request, "welcome", static_base, "js/app.js")
         self.assertTrue(static_res.endswith(os.path.join("welcome", "static", "js", "app.js")))
+
+        cross_app_path = apath("welcome/../admin/controllers/default.py", r=request)
+        normalized_cross_app_path = os.path.abspath(os.path.normpath(cross_app_path))
+        self.assertTrue(is_within_root(normalized_cross_app_path, web2py_apps_root))
+        self.assertRaises(
+            HTTP,
+            check_app_path,
+            request,
+            "welcome",
+            cross_app_path
+        )
 
         self.assertRaises(
             HTTP,
@@ -348,6 +387,26 @@ class TestAppAdmin(unittest.TestCase):
             os.path.join(app_root, "static"),
             "/tmp/pwn.py"
         )
+
+    def test_admin_wizard_blocks_cross_user_app_overwrite(self):
+        """Test that the wizard cannot overwrite another user's app."""
+        env = self.prepare_multi_user_admin_env()("wizard")
+        self.assertTrue(env["app_can_be_written"]("welcome"))
+        self.assertFalse(env["app_can_be_written"]("admin"))
+        self.assertFalse(env["app_can_be_written"]("ghost"))
+        self.assertTrue(env["app_can_be_written"]("brand_new"))
+
+    def test_pythonanywhere_blocks_cross_user_app_export(self):
+        """Test that PythonAnywhere deployment only sees owned apps."""
+        env = self.prepare_multi_user_admin_env()("pythonanywhere")
+        apps = env["list_authorized_apps"]()
+        self.assertIn("welcome", apps)
+        self.assertNotIn("admin", apps)
+        self.assertRaises(HTTP, env["authorized_app_path"], "admin")
+        self.assertRaises(HTTP, env["authorized_app_path"], "../admin")
+        self.assertTrue(
+            env["authorized_app_path"]("welcome").endswith(
+                os.path.join("applications", "welcome")))
 
     def test_safe_eval_expression_blocks_function_calls(self):
         """Test that safe_eval_expression blocks arbitrary function calls (RCE)"""
