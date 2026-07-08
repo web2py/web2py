@@ -420,7 +420,7 @@ class lazyT(object):
         return len(str(self))
 
     def xml(self):
-        return str(self) if self.M else xmlescape(str(self), quote=False)
+        return str(self) if self.M else xmlescape(str(self), quote=True)
 
     def encode(self, *a, **b):
         return str(self)

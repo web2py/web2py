@@ -12,7 +12,7 @@ import tempfile
 import unittest
 
 from gluon import languages
-from gluon.html import SPAN
+from gluon.html import INPUT, SPAN
 from gluon.storage import Messages
 
 MP_WORKING = 0
@@ -311,3 +311,12 @@ class TestHTMLTag(unittest.TestCase):
         elem = SPAN(T("Cannot be empty", language="ru"))
         self.assertEqual(elem.xml(), "<span>Пустое значение недопустимо</span>")
         self.assertEqual(elem.flatten(), "Пустое значение недопустимо")
+
+    def test_attribute_quote_escaping(self):
+        # A lazyT used as an attribute value must escape double quotes,
+        # otherwise a symbol carrying a '"' breaks out of the attribute.
+        T = languages.TranslatorFactory(self.langpath, self.http_accept_language)
+        payload = 'Bob" onmouseover="alert(1)'
+        elem = INPUT(_value=T("Hello %(name)s", dict(name=payload)))
+        self.assertNotIn('value="Hello Bob" onmouseover=', elem.xml())
+        self.assertIn("&quot;", elem.xml())
