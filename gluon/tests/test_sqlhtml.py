@@ -414,6 +414,34 @@ class TestSQLFORM(unittest.TestCase):
         self.assertEqual(name_order("~gitem.name"), "bravo,alpha")
         current.request.vars.order = ""
 
+    def test_grid_view_limited_to_own_tables(self):
+        # The view/edit/delete/new action must only reference a table the grid
+        # was built on. The table name is taken from the URL (request.args), and
+        # the "view" action is reachable without a signature for anonymous
+        # visitors, so an unchecked name lets anyone read a record of an
+        # unrelated table (e.g. auth_user) through a grid on a public table.
+        from gluon.globals import current
+        from gluon.storage import List
+
+        self.db.define_table("product", Field("name"))
+        self.db.product.insert(name="widget")
+        self.db.commit()
+
+        # anonymous visitor requesting /f/view/auth_user/1 on a grid over product
+        current.request.args = List(["view", "auth_user", "1"])
+        try:
+            xml = SQLFORM.grid(self.db.product).xml()
+        except HTTP as e:
+            self.assertEqual(e.status, 303)
+        else:
+            self.assertNotIn("user1@test.com", xml)
+
+        # a legitimate view of the grid's own table still renders
+        current.request.args = List(["view", "product", "1"])
+        xml = SQLFORM.grid(self.db.product).xml()
+        self.assertIn("widget", xml)
+        current.request.args = List([])
+
     def test_smartgrid(self):
         smartgrid_form = SQLFORM.smartgrid(self.db.auth_user)
         self.assertEqual(smartgrid_form.xml()[:4], "<div")
