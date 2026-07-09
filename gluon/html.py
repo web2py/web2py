@@ -2199,7 +2199,7 @@ class FORM(DIV):
             keyname = "_formkey[%s]" % formname
             formkeys = list(session.get(keyname, []))
             # check if user tampering with form and void CSRF
-            if not (formkey and formkeys and formkey in formkeys):
+            if not (formkey and formkeys and any(compare(formkey, k) for k in formkeys)):
                 status = False
             else:
                 session[keyname].remove(formkey)
