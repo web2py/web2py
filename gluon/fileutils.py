@@ -465,6 +465,48 @@ def set_session(request, session, other_application="admin"):
     storage.save_storage(session, session_filename)
 
 
+def _session_auth_user(session):
+    auth = session.get("auth")
+    if not auth:
+        return None
+    return auth.get("user")
+
+
+def _check_admin_app_ownership(request, session):
+    """Checks multi-user admin ownership before authorizing appadmin."""
+    if request.application == "admin":
+        return True
+
+    user = _session_auth_user(session)
+    if not user:
+        return True
+
+    user_id = user.get("id")
+    if user_id == 1 or user.get("is_manager"):
+        return True
+
+    db = None
+    try:
+        from gluon.dal import DAL
+
+        admin_db_folder = safe_path_join(up(request.folder), "admin", "databases")
+        db = DAL(
+            "sqlite://storage.sqlite",
+            folder=admin_db_folder,
+            auto_import=True,
+            migrate=False,
+        )
+        if "app" not in db.tables:
+            return False
+        query = (db.app.name == request.application) & (db.app.owner == user_id)
+        return bool(db(query).count())
+    except Exception:
+        return False
+    finally:
+        if db is not None:
+            db.close()
+
+
 def check_credentials(
     request, other_application="admin", expiration=60 * 60, gae_login=True
 ):
@@ -487,6 +529,8 @@ def check_credentials(
         dt = t0 - expiration
         s = get_session(request, other_application)
         r = s.authorized and s.last_time and s.last_time > dt
+        if r and other_application == "admin":
+            r = _check_admin_app_ownership(request, s)
         if r:
             s.last_time = t0
             set_session(request, s, other_application)
