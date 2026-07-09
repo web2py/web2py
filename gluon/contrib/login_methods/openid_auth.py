@@ -36,6 +36,7 @@ from datetime import datetime, timedelta
 
 from gluon import *
 from gluon.storage import Messages, Storage
+from gluon.tools import prevent_open_redirect
 
 try:
     import openid.consumer.consumer
@@ -209,7 +210,10 @@ class OpenIDAuth(object):
                             del current.session.w2popenid
                         current.session.flash = self.messages.flash_openid_associated
                         if nextvar in request.vars:
-                            redirect(request.vars[nextvar])
+                            redirect(
+                                prevent_open_redirect(request.vars[nextvar])
+                                or self.auth.settings.login_next
+                            )
                         redirect(self.auth.settings.login_next)
 
                     if nextvar not in request.vars:
