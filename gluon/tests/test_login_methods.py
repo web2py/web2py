@@ -42,9 +42,14 @@ def _make_fake_ldap(captured):
     ldap_mod.OPT_REFERRALS = 0
     ldap_mod.SCOPE_SUBTREE = 2
     ldap_mod.SCOPE_BASE = 0
-    ldap_mod.OPT_X_TLS_REQUIRE_CERT = 0
+    # distinct sentinels so the tests can tell the TLS options apart
+    ldap_mod.OPT_X_TLS_REQUIRE_CERT = 0x6006
     ldap_mod.OPT_X_TLS_NEVER = 0
-    ldap_mod.set_option = lambda *a, **k: None
+    ldap_mod.OPT_X_TLS_DEMAND = 2
+    ldap_mod.OPT_X_TLS_NEWCTX = 0x6008
+    ldap_mod.set_option = lambda *a, **k: captured.setdefault(
+        "global_set_option", []
+    ).append(tuple(a))
 
     class LDAPError(Exception):
         pass
@@ -56,7 +61,13 @@ def _make_fake_ldap(captured):
     ldap_mod.INVALID_CREDENTIALS = INVALID_CREDENTIALS
 
     class FakeCon(object):
+        def set_option(self, *a):
+            captured.setdefault("conn_set_option", []).append(tuple(a))
+
         def simple_bind_s(self, dn, pw):
+            captured.setdefault("binds", []).append((dn, pw))
+
+        def bind_s(self, dn, pw):
             captured.setdefault("binds", []).append((dn, pw))
 
         def search_s(self, base, scope, filterstr="(objectClass=*)", attrs=None):
@@ -213,3 +224,56 @@ class TestOutboundURLTokenEncoding(unittest.TestCase):
         expected = urllib_quote(self._MALICIOUS, safe="")
         self.assertIn("ticket=" + expected, captured["url"])
         self.assertNotIn(self._MALICIOUS, captured["url"])
+
+
+class TestFreeIPATLSVerification(unittest.TestCase):
+    # freeipa_auth opened its ldaps bind with TLS certificate verification
+    # disabled (OPT_X_TLS_REQUIRE_CERT -> OPT_X_TLS_NEVER) and, worse, set it
+    # through a process-wide ldap.set_option() at import time, silently
+    # downgrading certificate checking for every python-ldap user in the
+    # process (a coexisting ldap_auth included). Verification must be on by
+    # default and, when a self-signed cert genuinely has to be accepted,
+    # disabled only on the freeipa connection.
+    _MODNAME = "gluon.contrib.login_methods.freeipa_auth"
+
+    def setUp(self):
+        self.captured = {}
+        self._saved = {
+            k: sys.modules.get(k)
+            for k in ("ldap", "ldap.filter", "ldap.dn", self._MODNAME)
+        }
+        ldap_mod, filter_mod, dn_mod = _make_fake_ldap(self.captured)
+        sys.modules["ldap"] = ldap_mod
+        sys.modules["ldap.filter"] = filter_mod
+        sys.modules["ldap.dn"] = dn_mod
+        sys.modules.pop(self._MODNAME, None)
+        self.ldap = ldap_mod
+        self.mod = importlib.import_module(self._MODNAME)
+        self._never = (ldap_mod.OPT_X_TLS_REQUIRE_CERT, ldap_mod.OPT_X_TLS_NEVER)
+
+    def tearDown(self):
+        for k, v in self._saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+        sys.modules.pop(self._MODNAME, None)
+
+    def test_import_does_not_touch_global_tls_policy(self):
+        self.assertNotIn("global_set_option", self.captured)
+
+    def test_default_verifies_certificate(self):
+        auth = self.mod.freeipa_auth("ipa.example", "dc=x", "admins")
+        auth("alice", "pw")
+        # neither the connection nor the whole process gets verification off
+        self.assertNotIn(self._never, self.captured.get("conn_set_option", []))
+        self.assertNotIn("global_set_option", self.captured)
+
+    def test_self_signed_opt_in_is_scoped_to_the_connection(self):
+        auth = self.mod.freeipa_auth(
+            "ipa.example", "dc=x", "admins", self_signed_certificate=True
+        )
+        auth("alice", "pw")
+        self.assertIn(self._never, self.captured.get("conn_set_option", []))
+        # opting in must still not leak into the process-wide policy
+        self.assertNotIn("global_set_option", self.captured)
