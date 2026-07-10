@@ -139,6 +139,46 @@ class TestAppAdmin(unittest.TestCase):
 
         return load_controller
 
+    def make_multi_user_appadmin_request(self, application, user_id=2, is_manager=False):
+        import shutil
+        import tempfile
+        import time
+
+        from gluon.dal import DAL
+        from gluon.globals import Request
+        from gluon.storage import save_storage
+
+        root = tempfile.mkdtemp(prefix="web2py-appadmin-")
+        self.addCleanup(shutil.rmtree, root)
+        apps = os.path.join(root, "applications")
+        admin_sessions = os.path.join(apps, "admin", "sessions")
+        admin_databases = os.path.join(apps, "admin", "databases")
+        os.makedirs(admin_sessions)
+        os.makedirs(admin_databases)
+        os.makedirs(os.path.join(apps, "owned"))
+        os.makedirs(os.path.join(apps, "victim"))
+
+        db = DAL("sqlite://storage.sqlite", folder=admin_databases)
+        db.define_table("app", Field("name"), Field("owner", "integer"))
+        db.app.insert(name="owned", owner=2)
+        db.app.insert(name="victim", owner=3)
+        db.commit()
+        db.close()
+
+        session_id = "session"
+        admin_session = Storage(authorized=True, last_time=time.time())
+        if user_id is not None:
+            admin_session.auth = Storage(user=Storage(id=user_id, is_manager=is_manager))
+        save_storage(admin_session, os.path.join(admin_sessions, session_id))
+
+        request = Request(env={})
+        request.application = application
+        request.folder = os.path.join(apps, application)
+        request.cookies["session_id_admin"] = session_id
+        request.env.web2py_runtime_gae = False
+
+        return request
+
     def _test_index(self):
         result = self.run_function()
         self.assertTrue("db" in result["databases"])
@@ -387,6 +427,26 @@ class TestAppAdmin(unittest.TestCase):
             os.path.join(app_root, "static"),
             "/tmp/pwn.py"
         )
+
+    def test_appadmin_rejects_unowned_app_in_multi_user_mode(self):
+        """Test appadmin enforces app ownership for multi-user admin sessions."""
+        request = self.make_multi_user_appadmin_request("victim")
+        self.assertFalse(self.original_check_credentials(request))
+
+    def test_appadmin_allows_owned_app_in_multi_user_mode(self):
+        """Test appadmin still works for the current admin user's apps."""
+        request = self.make_multi_user_appadmin_request("owned")
+        self.assertTrue(self.original_check_credentials(request))
+
+    def test_appadmin_allows_manager_in_multi_user_mode(self):
+        """Test managers can still use appadmin across apps."""
+        request = self.make_multi_user_appadmin_request("victim", is_manager=True)
+        self.assertTrue(self.original_check_credentials(request))
+
+    def test_appadmin_allows_global_admin_session_without_multi_user_auth(self):
+        """Test global admin-password sessions still work outside multi-user auth."""
+        request = self.make_multi_user_appadmin_request("victim", user_id=None)
+        self.assertTrue(self.original_check_credentials(request))
 
     def test_admin_wizard_blocks_cross_user_app_overwrite(self):
         """Test that the wizard cannot overwrite another user's app."""
