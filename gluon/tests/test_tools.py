@@ -876,6 +876,26 @@ class TestAuth(unittest.TestCase):
         self.current.request.vars._next = "next_test"
         self.assertEqual(self.auth.get_vars_next(), "next_test")
 
+    def test_cas_logout_open_redirect(self):
+        from gluon.storage import List
+
+        # the CAS provider redirects to `service` after logout; a service on a
+        # host outside the allowlist must not be usable as a redirect target
+        self.current.request.args = List(["cas", "logout"])
+        self.current.request.vars.service = "https://evil.example/"
+        self.myassertRaisesRegex(HTTP, "403*", self.auth)
+
+        # a service on an allowed host (cas_domains) still redirects there
+        self.current.session.auth = None
+        host = self.auth.settings.cas_domains[0]
+        allowed = "https://%s/a/default/user/login" % host
+        self.current.request.args = List(["cas", "logout"])
+        self.current.request.vars.service = allowed
+        with self.assertRaises(HTTP) as cm:
+            self.auth()
+        self.assertEqual(cm.exception.status, 303)
+        self.assertEqual(cm.exception.headers["Location"], allowed)
+
     # TODO: def test_navbar(self):
     # TODO: def test___get_migrate(self):
 

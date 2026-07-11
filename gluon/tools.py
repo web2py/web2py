@@ -2117,7 +2117,12 @@ class Auth(AuthAPI):
             ):
                 return self.cas_validate(version=3, proxy=True)
             elif args(1) == self.settings.cas_actions["logout"]:
-                return self.logout(next=request.vars.service or DEFAULT)
+                incoming_service = request.vars.service
+                if incoming_service is not None and not self._is_allowed_cas_service(
+                    incoming_service
+                ):
+                    raise HTTP(403, "service not allowed")
+                return self.logout(next=incoming_service or DEFAULT)
         else:
             raise HTTP(404)
 
