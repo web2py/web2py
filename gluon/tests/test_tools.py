@@ -536,6 +536,57 @@ class TestWikiFirstParagraph(unittest.TestCase):
         self.assertEqual(wiki.first_paragraph(page), "teaser paragraph")
 
 
+class TestWikiSearchSerialization(unittest.TestCase):
+    # the rendered (html/load) search path withholds restricted page bodies
+    # via first_paragraph, but the serialized path (any other extension, e.g.
+    # .json) returned as_dict() for every matched page. as_dict() carries the
+    # full body, so an unauthorised searcher could read restricted pages.
+    def setUp(self):
+        self.request = Request(env={})
+        self.request.application = "a"
+        self.request.controller = "c"
+        self.request.function = "f"
+        self.request.folder = "applications/admin"
+        self.response = Response()
+        self.session = Session()
+        self.T = TranslatorFactory("", "en")
+        self.session.connect(self.request, self.response)
+        current.request = self.request
+        current.response = self.response
+        current.session = self.session
+        current.T = self.T
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
+        self.auth = Auth(self.db)
+        self.auth.define_tables(username=True, signature=False)
+        self.wiki = Wiki(self.auth, manage_permissions=True)
+
+    def _add_page(self, slug, body, can_read):
+        pid = self.db.wiki_page.insert(
+            slug=slug,
+            title="secret topic %s" % slug,
+            body=body,
+            can_read=can_read,
+            can_edit=["admins"],
+            tags=["shared"],
+        )
+        self.db.wiki_tag.insert(name="shared", wiki_page=pid)
+        return pid
+
+    def test_restricted_body_not_leaked_on_json_path(self):
+        # anonymous searcher, manage_permissions on, restrict_search off
+        self._add_page("public", "PUBLIC BODY", ["everybody"])
+        self._add_page("restricted", "RESTRICTED SECRET BODY", ["admins"])
+        self.db.commit()
+        self.request.extension = "json"
+        result = self.wiki.search(
+            query=self.db.wiki_page.title.contains("secret topic"),
+            cloud=False,
+        )
+        bodies = [row.get("body") for row in result["content"]]
+        self.assertIn("PUBLIC BODY", bodies)
+        self.assertNotIn("RESTRICTED SECRET BODY", bodies)
+
+
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 # class TestAuth(unittest.TestCase):
 #

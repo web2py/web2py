@@ -7558,7 +7558,11 @@ class Wiki(object):
                 content.append(DIV(_class="w2p_wiki_pages", *items))
             else:
                 cloud = False
-                content = [p.wiki_page.as_dict() for p in pages]
+                content = [
+                    p.wiki_page.as_dict()
+                    for p in pages
+                    if self.can_read(p.wiki_page)
+                ]
         elif cloud:
             content.append(self.cloud()["content"])
         if request.extension == "load":
