@@ -354,6 +354,17 @@ class TestBareHelpers(unittest.TestCase):
             "data to be pickle",
         )
 
+    def test_XML_pickle_stores_plain_text_not_marshal(self):
+        # XML must pickle its text directly. Marshalling it routed the pickled
+        # bytes into marshal.loads inside XML_unpickle, which
+        # gluon.restricted.TicketStorage whitelists in its SafeUnpickler
+        # allow-list, exposing crafted ticket data to an unsafe deserializer.
+        reducer, args = XML_pickle(XML("<b>hi</b>"))
+        self.assertIs(reducer, XML_unpickle)
+        self.assertIsInstance(args[0], str)
+        self.assertEqual(args, ("<b>hi</b>",))
+        self.assertEqual(str(XML_unpickle(args[0])), "<b>hi</b>")
+
     def test_DIV(self):
         # Empty DIV()
         self.assertEqual(DIV().xml(), "<div></div>")

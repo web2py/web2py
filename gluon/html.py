@@ -15,7 +15,6 @@ import copy
 import copyreg
 import functools
 import itertools
-import marshal
 import os
 import pickle
 import re
@@ -756,11 +755,11 @@ class XML(XmlComponent):
 
 
 def XML_unpickle(data):
-    return XML(marshal.loads(data))
+    return XML(data)
 
 
 def XML_pickle(data):
-    return XML_unpickle, (marshal.dumps(str(data)),)
+    return XML_unpickle, (str(data),)
 
 
 copyreg.pickle(XML, XML_pickle, XML_unpickle)
