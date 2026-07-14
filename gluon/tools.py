@@ -7095,6 +7095,24 @@ class Wiki(object):
     def fix_hostname(self, body):
         return (body or "").replace("://HOSTNAME", "://%s" % self.host)
 
+    def _template_body(self, from_template, title_guess):
+        # Body used to pre-fill the editor when creating a new page. A template
+        # id is only honoured when the requester is allowed to read that page,
+        # otherwise the edit form would hand back the body of an arbitrary
+        # (possibly access-restricted) page. create() constrains from_template
+        # to settings.templates, but _edit is reachable with a raw id in args.
+        default = "## %s\n\npage content" % title_guess
+        try:
+            template_id = int(from_template)
+        except (TypeError, ValueError):
+            return default
+        if template_id <= 0:
+            return default
+        template_page = self.auth.db.wiki_page(id=template_id)
+        if template_page and self.can_read(template_page):
+            return template_page.body
+        return default
+
     def read(self, slug, force_render=False):
         if slug in "_cloud":
             return self.cloud()
@@ -7159,12 +7177,8 @@ class Wiki(object):
                     "- Menu Item > @////index\n- - Submenu > http://web2py.com"
                 )
             else:
-                db.wiki_page.body.default = (
-                    db(db.wiki_page.id == from_template)
-                    .select(db.wiki_page.body)[0]
-                    .body
-                    if int(from_template) > 0
-                    else "## %s\n\npage content" % title_guess
+                db.wiki_page.body.default = self._template_body(
+                    from_template, title_guess
                 )
         vars = current.request.post_vars
         if vars.body:
