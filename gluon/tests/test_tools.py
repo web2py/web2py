@@ -536,6 +536,41 @@ class TestWikiFirstParagraph(unittest.TestCase):
         self.assertEqual(wiki.first_paragraph(page), "teaser paragraph")
 
 
+class TestWikiTemplateBody(unittest.TestCase):
+    # _edit is reachable as /wiki/_edit/<newslug>/<id> with a raw page id, so
+    # the template pre-fill must honour can_read; otherwise a wiki_author could
+    # read the body of any restricted page by using it as a "template".
+    def _wiki(self, groups=None, user=None, pages=None):
+        wiki = Wiki.__new__(Wiki)
+        wiki.settings = Storage(manage_permissions=True, groups=groups or [])
+        pages = pages or {}
+        db = Storage(wiki_page=lambda id: pages.get(id))
+        wiki.auth = Storage(user=user, db=db)
+        return wiki
+
+    def _page(self, can_read):
+        return Storage(body="secret body", can_read=can_read, can_edit=[], created_by=0)
+
+    def test_unreadable_template_body_not_leaked(self):
+        page = self._page(can_read=["admins"])
+        wiki = self._wiki(pages={7: page})
+        self.assertFalse(wiki.can_read(page))
+        self.assertEqual(wiki._template_body(7, "Slug"), "## Slug\n\npage content")
+
+    def test_readable_template_body_is_used(self):
+        page = self._page(can_read=["everybody"])
+        wiki = self._wiki(pages={7: page})
+        self.assertEqual(wiki._template_body(7, "Slug"), "secret body")
+
+    def test_no_template_returns_default(self):
+        wiki = self._wiki()
+        self.assertEqual(wiki._template_body(0, "Slug"), "## Slug\n\npage content")
+
+    def test_missing_template_returns_default(self):
+        wiki = self._wiki(pages={})
+        self.assertEqual(wiki._template_body(99, "Slug"), "## Slug\n\npage content")
+
+
 class TestWikiSearchSerialization(unittest.TestCase):
     # the rendered (html/load) search path withholds restricted page bodies
     # via first_paragraph, but the serialized path (any other extension, e.g.
