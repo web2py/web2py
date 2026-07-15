@@ -162,10 +162,15 @@ class Collection(object):
         if len(self.request.args) > 1:
             vars.id = self.request.args[1]
 
-        fieldnames = table.fields
+        # only fields the policy exposes may be filtered/ordered on. These are
+        # the same fields table2queries() advertises as searchable; the request
+        # must not reach beyond them to non-exposed columns (e.g. password),
+        # otherwise the items_found count and _orderby leak those values.
+        fieldnames = self.table_policy.get("fields", table.fields)
         queries = [table]
         limitby = [0, self.MAXITEMS + 1]
         orderby = "id"
+        orderby_from_vars = False
         for key, value in vars.items():
             if key == "_offset":
                 limitby[0] = int(value)  # MAY FAIL
@@ -173,6 +178,7 @@ class Collection(object):
                 limitby[1] = int(value) + 1  # MAY FAIL
             elif key == "_orderby":
                 orderby = value
+                orderby_from_vars = True
             elif key in fieldnames:
                 queries.append(table[key] == value)
             elif (
@@ -201,8 +207,13 @@ class Collection(object):
         query = (
             reduce(lambda a, b: a & b, queries[1:]) if len(queries) > 1 else queries[0]
         )
+        orderby_names = orderby.split(",")
+        if orderby_from_vars:
+            for f in orderby_names:
+                if (f[1:] if f[:1] == "~" else f) not in fieldnames:
+                    raise ValueError("Invalid Query")
         orderby = [
-            table[f] if f[0] != "~" else ~table[f[1:]] for f in orderby.split(",")
+            table[f] if f[0] != "~" else ~table[f[1:]] for f in orderby_names
         ]
         return (query, limitby, orderby)
 

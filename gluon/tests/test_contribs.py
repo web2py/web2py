@@ -114,3 +114,45 @@ class TestContribs(unittest.TestCase):
             'href="http://good.com/page"',
             autolinks.expand_one("http://good.com/page", {"http://good.com/page": {}}),
         )
+
+    def test_hypermedia_query_respects_policy_fields(self):
+        from gluon.dal import DAL, Field
+        from gluon.contrib.hypermedia import Collection
+
+        class Args(list):
+            def __call__(self, i, default=None):
+                try:
+                    return self[i]
+                except IndexError:
+                    return default
+
+        db = DAL("sqlite:memory")
+        try:
+            db.define_table("thing", Field("name"), Field("secret"))
+            db.thing.insert(name="alice", secret="TOPSECRET")
+            db.commit()
+
+            col = Collection(db)
+            col.request = Storage(args=Args(["thing"]))
+            # policy exposes id and name only; secret must stay hidden
+            col.table_policy = {"query": None, "fields": ["id", "name"]}
+
+            # a filter on the non-exposed column leaks it through items_found
+            for op in ("secret", "secret.startswith", "secret.contains"):
+                with self.assertRaises(ValueError):
+                    col.request2query(db.thing, Storage({op: "TOP"}))
+            # ordering by a non-exposed column is also refused
+            with self.assertRaises(ValueError):
+                col.request2query(db.thing, Storage({"_orderby": "secret"}))
+
+            # exposed fields keep working
+            query, _, _ = col.request2query(db.thing, Storage({"name": "alice"}))
+            self.assertEqual(db(query).count(), 1)
+            col.request2query(db.thing, Storage({"_orderby": "name"}))
+
+            # a policy that declares no field list is unchanged (all columns)
+            col.table_policy = {"query": None}
+            query, _, _ = col.request2query(db.thing, Storage({"secret": "TOPSECRET"}))
+            self.assertEqual(db(query).count(), 1)
+        finally:
+            db.close()
