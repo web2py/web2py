@@ -1748,6 +1748,121 @@ class TestAuthHostHeaderPoisoning(unittest.TestCase):
         self.assertNotIn("attacker.example", str(link))
 
 
+class TestAuthTwoFactor(unittest.TestCase):
+    """
+    Regression tests for the second challenge in Auth.login().
+
+    A two_factor_methods / two_factor_onvalidation callback that returns
+    None leaves session.auth_two_factor unset, and the code check used to
+    compare the submitted value against str(None). Submitting the literal
+    string "None" then passed the second factor (CWE-287).
+    """
+
+    def _set_post(self, request, **kw):
+        request._get_vars = Storage()
+        request._post_vars = Storage(kw)
+        request._vars = Storage(kw)
+
+    def _make_auth(self):
+        request = Request(env={})
+        request.application = "a"
+        request.controller = "c"
+        request.function = "f"
+        request.folder = "applications/admin"
+        request.env.request_method = "POST"
+        response = Response()
+        session = Session()
+        session.connect(request, response)
+        current.request = request
+        current.response = response
+        current.session = session
+        current.T = TranslatorFactory("", "en")
+        db = DAL(DEFAULT_URI, check_reserved=["all"])
+        auth = Auth(db)
+        auth.define_tables(username=True, signature=False)
+        auth.settings.registration_requires_verification = False
+        auth.settings.registration_requires_approval = False
+        auth.register_bare(
+            first_name="Bart",
+            last_name="Simpson",
+            username="bart",
+            email="bart@simpson.com",
+            password="bart_password",
+        )
+        auth.csrf_prevention = False
+        auth.settings.auth_two_factor_enabled = True
+        self._db = db
+        return auth, request, session
+
+    def _first_factor(self, auth, request):
+        self._set_post(
+            request,
+            username="bart",
+            password="bart_password",
+            _formname="login",
+        )
+        auth.login(next="/")
+
+    def _second_factor(self, auth, request, code):
+        self._set_post(request, authentication_code=code, _formname="login")
+        try:
+            auth.login(next="/")
+        except HTTP:
+            pass  # redirect to next on success
+        return auth.is_logged_in()
+
+    def tearDown(self):
+        try:
+            db = getattr(self, "_db", None)
+            if db is not None:
+                for t in (
+                    "auth_cas",
+                    "auth_event",
+                    "auth_membership",
+                    "auth_permission",
+                    "auth_group",
+                    "auth_user",
+                ):
+                    if t in db:
+                        db[t].drop()
+        except Exception:
+            pass
+
+    def test_two_factor_method_returning_none_rejects_none_literal(self):
+        # An external OTP client owns the code, so two_factor_methods
+        # returns None -- no code is issued for this session.
+        auth, request, session = self._make_auth()
+        auth.settings.two_factor_methods = [lambda user, code: None]
+        self._first_factor(auth, request)
+        self.assertIsNotNone(session.auth_two_factor_user)
+        self.assertIsNone(session.auth_two_factor)
+        self.assertFalse(self._second_factor(auth, request, "None"))
+
+    def test_onvalidation_returning_none_rejects_none_literal(self):
+        # The framework issued a real code, but the onvalidation callback
+        # overwrites it with its None return value on a failed check.
+        auth, request, session = self._make_auth()
+        auth.settings.mailer = Storage(send=lambda **kw: True)
+        auth.settings.two_factor_onvalidation = [lambda user, otp: None]
+        self._first_factor(auth, request)
+        self.assertIsNotNone(session.auth_two_factor_user)
+        self.assertFalse(self._second_factor(auth, request, "None"))
+
+    def test_valid_code_still_accepted(self):
+        auth, request, session = self._make_auth()
+        auth.settings.two_factor_methods = [lambda user, code: "123456"]
+        self._first_factor(auth, request)
+        self.assertEqual(session.auth_two_factor, "123456")
+        self.assertTrue(self._second_factor(auth, request, "123456"))
+        self.assertEqual(auth.user.username, "bart")
+
+    def test_wrong_code_still_rejected(self):
+        auth, request, session = self._make_auth()
+        auth.settings.two_factor_methods = [lambda user, code: "123456"]
+        self._first_factor(auth, request)
+        self.assertFalse(self._second_factor(auth, request, "654321"))
+
+
 # TODO: class TestCrud(unittest.TestCase):
 # It deprecated so far from a priority
 
