@@ -133,7 +133,11 @@ def stream_file_or_304_or_206(
                 raise HTTP(404)
         headers["Content-Length"] = str(fsize)
         bytes = None
-    if request and request.env.web2py_use_wsgi_file_wrapper:
+    # only hand a bare file object to the wsgi file wrapper for full-content
+    # responses (bytes is None). On a 206 the wrapper streams the seeked file to
+    # EOF, ignoring the range length, so the body would exceed the advertised
+    # Content-Length; fall back to the bounded streamer in that case.
+    if request and request.env.web2py_use_wsgi_file_wrapper and bytes is None:
         wrapped = request.env.wsgi_file_wrapper(stream, chunk_size)
     else:
         wrapped = streamer(stream, chunk_size=chunk_size, bytes=bytes)
