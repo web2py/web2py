@@ -638,6 +638,57 @@ class testResponse(unittest.TestCase):
             if os.path.exists(path):
                 os.remove(path)
 
+    def test_stream_file_range_wsgi_file_wrapper(self):
+        # A 206 must not exceed the advertised Content-Length even when a
+        # wsgi.file_wrapper is used: the wrapper streams the seeked file to EOF,
+        # so the callee has to bound the body itself for partial responses.
+        class FileWrapper(object):
+            def __init__(self, filelike, blksize=8192):
+                self.filelike = filelike
+                self.blksize = blksize
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                data = self.filelike.read(self.blksize)
+                if data:
+                    return data
+                self.filelike.close()
+                raise StopIteration
+
+        fd, path = tempfile.mkstemp()
+        try:
+            os.write(fd, b"0123456789")
+            os.close(fd)
+            request = Request(env={})
+            request.env.http_if_modified_since = None
+            request.env.http_accept_encoding = ""
+            request.env.web2py_use_wsgi_file_wrapper = True
+            request.env.wsgi_file_wrapper = FileWrapper
+
+            request.env.http_range = "bytes=0-4"
+            with self.assertRaises(HTTP) as ctx:
+                stream_file_or_304_or_206(path, request=request, headers={})
+            self.assertEqual(ctx.exception.status, 206)
+            self.assertEqual(ctx.exception.headers.get("Content-Length"), "5")
+            self.assertEqual(b"".join(ctx.exception.body), b"01234")
+
+            # A full-content (200) response still goes through the wrapper.
+            request.env.http_range = None
+            with self.assertRaises(HTTP) as ctx:
+                stream_file_or_304_or_206(path, request=request, headers={})
+            self.assertEqual(ctx.exception.status, 200)
+            self.assertEqual(ctx.exception.headers.get("Content-Length"), "10")
+            self.assertEqual(b"".join(ctx.exception.body), b"0123456789")
+        finally:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+            if os.path.exists(path):
+                os.remove(path)
+
     def test_include_meta(self):
         response = Response()
         response.meta["web2py"] = "web2py"
