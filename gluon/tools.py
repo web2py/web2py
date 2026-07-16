@@ -3343,7 +3343,15 @@ class Auth(AuthAPI):
                         else:
                             break
 
-                if form.vars["authentication_code"] == str(session.auth_two_factor):
+                # A None expected code means no code was ever issued for this
+                # session, or a two_factor_methods/two_factor_onvalidation
+                # callback signalled failure by returning None. str(None) is
+                # the guessable literal "None", so never accept a submitted
+                # code against it.
+                expected_code = session.auth_two_factor
+                if expected_code is not None and form.vars[
+                    "authentication_code"
+                ] == str(expected_code):
                     # Handle the case when the two-factor form has been successfully validated
                     # and the user was previously stored (the current user should be None because
                     # in this case, the previous username/password login form should not be displayed.
