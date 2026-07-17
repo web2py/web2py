@@ -760,7 +760,8 @@ class testSessionCheckClient(unittest.TestCase):
         global_settings.db_sessions.discard("a")
 
     def tearDown(self):
-        shutil.rmtree(self.tmpdir)
+        # Windows can't unlink an open/locked session file; ignore cleanup errors.
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
         global_settings.db_sessions.discard("a")
 
     def test_file_session_from_other_client_is_not_loaded(self):
