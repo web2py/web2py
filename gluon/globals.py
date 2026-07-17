@@ -1278,7 +1278,7 @@ class Session(Storage):
                             "sessions",
                             response.session_id,
                         )
-                        oc = response.session_filename.split("/")[-1].split("-")[0]
+                        oc = os.path.basename(response.session_filename).split("-")[0]
                         if check_client and response.session_client != oc:
                             raise Exception("cookie attack")
                         response.session_file = recfile.open(
