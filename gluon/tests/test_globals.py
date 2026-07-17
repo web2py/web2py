@@ -8,12 +8,17 @@
 
 import re
 import os
+import shutil
 import tempfile
 import unittest
+from http.cookies import SimpleCookie
 from io import BytesIO
+
+from pydal import DAL
 
 from gluon.html import XML, URL
 from gluon.globals import Request, Response, Session
+from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.rewrite import regex_url_in
 from gluon.streamer import stream_file_or_304_or_206
@@ -715,6 +720,90 @@ class testResponse(unittest.TestCase):
         self.assertEqual(
             response.body.getvalue(), '\n<meta name="description" content="<b>bold</b>" />\n'
         )
+
+
+class testSessionCheckClient(unittest.TestCase):
+    """check_client=True must reject a session replayed from another client."""
+
+    def _request(self, client):
+        request = Request(env={})
+        request.application = "a"
+        request.controller = "c"
+        request.function = "f"
+        request.folder = self.folder
+        request.client = client
+        request.is_local = False
+        return request
+
+    def _connect(self, client, session_id=None, db=None):
+        from gluon.globals import current
+
+        request = self._request(client)
+        if session_id:
+            cookie = SimpleCookie()
+            cookie["session_id_a"] = session_id
+            request.cookies = cookie
+        response = Response()
+        session = Session()
+        current.request = request
+        current.response = response
+        current.session = session
+        session.connect(request, response, db=db, check_client=True)
+        return request, response, session
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.folder = os.path.join(self.tmpdir, "applications", "a")
+        os.makedirs(os.path.join(self.folder, "sessions"))
+        # connect() registers db-backed apps here; a leftover entry would make
+        # the file-based tests take the db branch
+        global_settings.db_sessions.discard("a")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+        global_settings.db_sessions.discard("a")
+
+    def test_file_session_from_other_client_is_not_loaded(self):
+        request, response, session = self._connect("1.1.1.1")
+        session.auth = "victim"
+        session._try_store_in_cookie_or_file(request, response)
+
+        _, response2, session2 = self._connect(
+            "9.9.9.9", session_id=response.session_id
+        )
+        self.assertIsNone(session2.get("auth"))
+        self.assertTrue(response2.session_new)
+
+    def test_file_session_from_same_client_is_loaded(self):
+        request, response, session = self._connect("1.1.1.1")
+        session.auth = "victim"
+        session._try_store_in_cookie_or_file(request, response)
+
+        _, _, session2 = self._connect("1.1.1.1", session_id=response.session_id)
+        self.assertEqual(session2.get("auth"), "victim")
+
+    def test_db_session_from_other_client_is_not_loaded(self):
+        db = DAL("sqlite:memory")
+        request, response, session = self._connect("1.1.1.1", db=db)
+        session.auth = "victim"
+        session._try_store_in_db(request, response)
+
+        _, response2, session2 = self._connect(
+            "9.9.9.9", session_id=response.session_id, db=db
+        )
+        self.assertIsNone(session2.get("auth"))
+        self.assertTrue(response2.session_new)
+
+    def test_db_session_from_same_client_is_loaded(self):
+        db = DAL("sqlite:memory")
+        request, response, session = self._connect("1.1.1.1", db=db)
+        session.auth = "victim"
+        session._try_store_in_db(request, response)
+
+        _, _, session2 = self._connect(
+            "1.1.1.1", session_id=response.session_id, db=db
+        )
+        self.assertEqual(session2.get("auth"), "victim")
 
 
 class testFileUpload(unittest.TestCase):
