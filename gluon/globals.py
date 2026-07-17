@@ -1278,6 +1278,9 @@ class Session(Storage):
                             "sessions",
                             response.session_id,
                         )
+                        oc = response.session_filename.split("/")[-1].split("-")[0]
+                        if check_client and response.session_client != oc:
+                            raise Exception("cookie attack")
                         response.session_file = recfile.open(
                             response.session_filename, "rb+"
                         )
@@ -1293,9 +1296,6 @@ class Session(Storage):
                         )
                         self.update(session_data)
                         response.session_file.seek(0)
-                        oc = response.session_filename.split("/")[-1].split("-")[0]
-                        if check_client and response.session_client != oc:
-                            raise Exception("cookie attack")
                     except Exception:
                         response.session_id = None
             if not response.session_id:
@@ -1352,6 +1352,9 @@ class Session(Storage):
                 if record_id:
                     row = table(record_id, unique_key=unique_key)
                     # Make sure the session data exists in the database
+                    if row and check_client:
+                        if row.client_ip != response.session_client:
+                            row = None
                     if row:
                         # rows[0].update_record(locked=True)
                         # Unpickle the data
