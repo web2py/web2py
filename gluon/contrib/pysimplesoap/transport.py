@@ -125,7 +125,10 @@ else:
             if httplib2.__version__ >= "0.3.0":
                 kwargs["timeout"] = timeout
             if httplib2.__version__ >= "0.7.0":
-                kwargs["disable_ssl_certificate_validation"] = cacert is None
+                # cacert selects an additional CA bundle; when it is not given
+                # httplib2 falls back to its own trust store, so verification
+                # stays on either way.
+                kwargs["disable_ssl_certificate_validation"] = False
                 kwargs["ca_certs"] = cacert
             httplib2.Http.__init__(self, **kwargs)
 
@@ -151,17 +154,16 @@ class urllib2Transport(TransportBase):
             raise RuntimeError("timeout is not supported with urllib2 transport")
         if proxy:
             raise RuntimeError("proxy is not supported with urllib2 transport")
-        if cacert:
-            raise RuntimeError("cacert is not support with urllib2 transport")
 
         handlers = []
 
         if (sys.version_info[0] == 2 and sys.version_info >= (2, 7, 9)) or (
             sys.version_info[0] == 3 and sys.version_info >= (3, 2, 0)
         ):
-            context = ssl.create_default_context()
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
+            # cacert, when given, is an extra CA bundle to trust; the default
+            # context already verifies the chain and the hostname against the
+            # system trust store.
+            context = ssl.create_default_context(cafile=cacert)
             handlers.append(urllib2.HTTPSHandler(context=context))
 
         if sessions:
@@ -184,6 +186,7 @@ class urllib2Transport(TransportBase):
 
 _http_connectors["urllib2"] = urllib2Transport
 _http_facilities.setdefault("sessions", []).append("urllib2")
+_http_facilities.setdefault("cacert", []).append("urllib2")
 
 if sys.version_info >= (2, 6):
     _http_facilities.setdefault("timeout", []).append("urllib2")
@@ -226,8 +229,8 @@ else:
             # c.setopt(pycurl.HEADERFUNCTION, self.header)
             if self.cacert:
                 c.setopt(c.CAINFO, self.cacert)
-            c.setopt(pycurl.SSL_VERIFYPEER, self.cacert and 1 or 0)
-            c.setopt(pycurl.SSL_VERIFYHOST, self.cacert and 2 or 0)
+            c.setopt(pycurl.SSL_VERIFYPEER, 1)
+            c.setopt(pycurl.SSL_VERIFYHOST, 2)
             c.setopt(pycurl.CONNECTTIMEOUT, self.timeout)
             c.setopt(pycurl.TIMEOUT, self.timeout)
             if method == "POST":
