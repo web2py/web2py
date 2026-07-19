@@ -3,8 +3,11 @@
 
 """ Unit tests for contribs """
 
+import hashlib
+import hmac
 import os
 import unittest
+from urllib.parse import urlencode
 
 from gluon import HTTP
 from gluon.contrib.generics import _resolve_pdf_image_path
@@ -12,6 +15,20 @@ from gluon.contrib import fpdf as fpdf
 from gluon.contrib import pyfpdf as pyfpdf
 from gluon.contrib.appconfig import AppConfig
 from gluon.storage import Storage
+
+try:
+    import tornado.testing
+    import tornado.web
+
+    from gluon.contrib import websocket_messaging
+
+    HAVE_TORNADO = True
+    _AsyncHTTPTestCase = tornado.testing.AsyncHTTPTestCase
+except ImportError:
+    # websocket_messaging needs tornado; skip its tests instead of
+    # breaking the suite when the optional dependency is missing.
+    HAVE_TORNADO = False
+    _AsyncHTTPTestCase = unittest.TestCase
 
 
 def setUpModule():
@@ -156,3 +173,60 @@ class TestContribs(unittest.TestCase):
             self.assertEqual(db(query).count(), 1)
         finally:
             db.close()
+
+
+@unittest.skipUnless(HAVE_TORNADO, "tornado is not installed")
+class TestWebsocketMessaging(_AsyncHTTPTestCase):
+    """Tests the hmac gate of the websocket_messaging broadcast server"""
+
+    hmac_key = "topsecret"
+
+    def get_app(self):
+        self.received = []
+        websocket_messaging.hmac_key = self.hmac_key
+        websocket_messaging.listeners.clear()
+        websocket_messaging.tokens.clear()
+        # stand in for a subscribed websocket client
+        websocket_messaging.listeners["default"] = [self]
+        return tornado.web.Application(
+            [
+                (r"/", websocket_messaging.PostHandler),
+                (r"/token", websocket_messaging.TokenHandler),
+            ]
+        )
+
+    def write_message(self, message):
+        self.received.append(message)
+
+    def post(self, path, **kwargs):
+        kwargs.setdefault("group", "default")
+        return self.fetch(path, method="POST", body=urlencode(kwargs)).code
+
+    def sign(self, message):
+        return hmac.new(
+            self.hmac_key.encode(), message.encode(), hashlib.md5
+        ).hexdigest()
+
+    def test_post_rejects_wrong_signature(self):
+        self.assertEqual(self.post("/", message="spoofed", signature="wrong"), 401)
+        self.assertEqual(self.received, [])
+
+    def test_post_rejects_missing_signature(self):
+        self.assertEqual(self.post("/", message="spoofed"), 401)
+        self.assertEqual(self.received, [])
+
+    def test_post_accepts_valid_signature(self):
+        self.assertEqual(
+            self.post("/", message="hello", signature=self.sign("hello")), 200
+        )
+        self.assertEqual(self.received, ["hello"])
+
+    def test_token_rejects_wrong_signature(self):
+        self.assertEqual(self.post("/token", message="mine", signature="wrong"), 401)
+        self.assertEqual(dict(websocket_messaging.tokens), {})
+
+    def test_token_accepts_valid_signature(self):
+        self.assertEqual(
+            self.post("/token", message="mine", signature=self.sign("mine")), 200
+        )
+        self.assertEqual(dict(websocket_messaging.tokens), {"mine": None})

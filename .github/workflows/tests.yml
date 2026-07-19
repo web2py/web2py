@@ -64,7 +64,7 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install coverage codecov redis
+        run: pip install coverage codecov redis tornado
 
       - name: Create MySQL database
         run: mysql -h 127.0.0.1 -u root -e 'CREATE DATABASE pydal;'
