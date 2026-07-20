@@ -123,7 +123,7 @@ class PostHandler(tornado.web.RequestHandler):
 
     def post(self):
         if hmac_key and not "signature" in self.request.arguments:
-            self.send_error(401)
+            return self.send_error(401)
         if "message" in self.request.arguments:
             message = self.request.arguments["message"][0].decode(encoding="UTF-8")
             group = self.request.arguments.get("group", ["default"])[0].decode(
@@ -131,12 +131,14 @@ class PostHandler(tornado.web.RequestHandler):
             )
             print("%s:MESSAGE to %s:%s" % (time.time(), group, message))
             if hmac_key:
-                signature = self.request.arguments["signature"][0]
+                signature = self.request.arguments["signature"][0].decode(
+                    encoding="UTF-8"
+                )
                 actual_signature = hmac.new(
                     hmac_key.encode(), message.encode(), hashlib.md5
                 ).hexdigest()
                 if not gluon.utils.compare(signature, actual_signature):
-                    self.send_error(401)
+                    return self.send_error(401)
             for client in listeners.get(group, []):
                 client.write_message(message)
 
@@ -149,17 +151,19 @@ class TokenHandler(tornado.web.RequestHandler):
     """
 
     def post(self):
-        if hmac_key and not "message" in self.request.arguments:
-            self.send_error(401)
+        if hmac_key and not "signature" in self.request.arguments:
+            return self.send_error(401)
         if "message" in self.request.arguments:
-            message = self.request.arguments["message"][0]
+            message = self.request.arguments["message"][0].decode(encoding="UTF-8")
             if hmac_key:
-                signature = self.request.arguments["signature"][0]
+                signature = self.request.arguments["signature"][0].decode(
+                    encoding="UTF-8"
+                )
                 actual_signature = hmac.new(
                     hmac_key.encode(), message.encode(), hashlib.md5
                 ).hexdigest()
                 if not gluon.utils.compare(signature, actual_signature):
-                    self.send_error(401)
+                    return self.send_error(401)
             tokens[message] = None
 
 
@@ -174,8 +178,9 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
         self.name = name or "anonymous"
         # only authorized parties can join
         if DistributeHandler.tokens:
-            if not self.token in tokens or not token[self.token] is None:
+            if not self.token in tokens or not tokens[self.token] is None:
                 self.close()
+                return
             else:
                 tokens[self.token] = self
         if not self.group in listeners:
