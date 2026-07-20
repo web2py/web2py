@@ -21,7 +21,7 @@ from gluon.languages import findT
 
 
 def read_dict_aux(filename):
-    lang_text = open(filename, "r").read().replace("\r\n", "\n")
+    lang_text = open(filename, "r", encoding="utf-8").read().replace("\r\n", "\n")
     try:
         return safe_eval(lang_text) or {}
     except Exception:
@@ -68,7 +68,7 @@ def update_languages(cwd, default_lang):
             for phrase in i18n:
                 if phrase in default:
                     new_dict[phrase] = i18n[phrase]
-            write_file(open(os.path.join(cwd, "languages", lang), "w"), new_dict)
+            write_file(open(os.path.join(cwd, "languages", lang), "w", encoding="utf-8"), new_dict)
             print(lang)
 
 
