@@ -503,6 +503,56 @@ class TestAuthVerifyEmail(unittest.TestCase):
         self.assertEqual(self.db.auth_user[uid].registration_key, "")
 
 
+class TestAuthTokenExpiry(unittest.TestCase):
+    def setUp(self):
+        self.request = Request(env={})
+        self.request.application = "a"
+        self.request.controller = "c"
+        self.request.function = "f"
+        self.request.folder = "applications/admin"
+        self.response = Response()
+        self.session = Session()
+        self.T = TranslatorFactory("", "en")
+        self.session.connect(self.request, self.response)
+        current.request = self.request
+        current.response = self.response
+        current.session = self.session
+        current.T = self.T
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
+        self.auth = Auth(self.db)
+        self.auth.define_tables(username=True, signature=False, enable_tokens=True)
+        self.uid = self.db.auth_user.insert(username="victim", password="x")
+
+    def _login_with(self, token):
+        self.auth.user = None
+        self.session.auth = None
+        self.request.env.http_web2py_user_token = token
+        self.request.vars._token = None
+        self.auth.requires_login_or_token()
+        return self.auth.user
+
+    def test_expired_token_is_rejected(self):
+        self.db.auth_token.insert(
+            user_id=self.uid,
+            token="expired",
+            expires_on=datetime.datetime(2000, 1, 1),
+        )
+        self.db.commit()
+        self.assertEqual(self._login_with("expired"), None)
+
+    def test_missing_token_does_not_match_null_row(self):
+        # token is None when neither the header nor _token is sent, which
+        # makes the lookup a "token IS NULL" query
+        self.db.auth_token.insert(user_id=self.uid, token=None)
+        self.db.commit()
+        self.assertEqual(self._login_with(None), None)
+
+    def test_valid_token_logs_user_in(self):
+        self.db.auth_token.insert(user_id=self.uid, token="live")
+        self.db.commit()
+        self.assertEqual(self._login_with("live").username, "victim")
+
+
 class TestWikiFirstParagraph(unittest.TestCase):
     def _wiki(self, groups=None, user=None):
         # build a Wiki without running __init__ (which needs a full

@@ -6,6 +6,7 @@
 import hashlib
 import hmac
 import os
+import shutil
 import unittest
 from urllib.parse import urlencode
 
@@ -173,6 +174,87 @@ class TestContribs(unittest.TestCase):
             self.assertEqual(db(query).count(), 1)
         finally:
             db.close()
+
+
+class TestPySimpleSoapTransport(unittest.TestCase):
+    """Tests the TLS handling of the pysimplesoap transports"""
+
+    def _serve_https(self, common_name):
+        """Serve one HTTPS request with a throwaway self-signed certificate."""
+        import http.server
+        import ssl
+        import subprocess
+        import tempfile
+        import threading
+
+        tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmpdir, True)
+        cert = os.path.join(tmpdir, "cert.pem")
+        key = os.path.join(tmpdir, "key.pem")
+        try:
+            subprocess.check_call(
+                [
+                    "openssl",
+                    "req",
+                    "-x509",
+                    "-newkey",
+                    "rsa:2048",
+                    "-keyout",
+                    key,
+                    "-out",
+                    cert,
+                    "-days",
+                    "1",
+                    "-nodes",
+                    "-subj",
+                    "/CN=%s" % common_name,
+                    "-addext",
+                    "subjectAltName=DNS:%s,IP:127.0.0.1" % common_name,
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            self.skipTest("openssl is not available")
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Length", "2")
+                self.end_headers()
+                self.wfile.write(b"ok")
+
+            def log_message(self, *args):
+                pass
+
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(cert, key)
+        server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        return cert, server.server_address[1]
+
+    def test_untrusted_certificate_is_refused(self):
+        """An unknown self-signed certificate must not be accepted"""
+        from gluon.contrib.pysimplesoap.transport import get_Http
+
+        _, port = self._serve_https("localhost")
+        http_transport = get_Http()(timeout=5)
+        with self.assertRaises(Exception):
+            http_transport.request("https://localhost:%d/" % port, "GET", None, {})
+
+    def test_certificate_trusted_through_cacert_is_accepted(self):
+        """A certificate signed by the supplied cacert bundle still works"""
+        from gluon.contrib.pysimplesoap.transport import get_Http
+
+        cert, port = self._serve_https("localhost")
+        http_transport = get_Http()(timeout=5, cacert=cert)
+        _, content = http_transport.request(
+            "https://localhost:%d/" % port, "GET", None, {}
+        )
+        self.assertEqual(content, b"ok")
 
 
 @unittest.skipUnless(HAVE_TORNADO, "tornado is not installed")
