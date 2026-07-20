@@ -45,7 +45,7 @@ def safe_eval(text):
 
 def write_file(file, contents):
     file.write("# -*- coding: utf-8 -*-\n{\n")
-    for key in sorted(contents, key=lambds x: x.lower()):
+    for key in sorted(contents, key=lambda x: x.casefold()):
         file.write("%s: %s,\n" % (repr(key), repr(contents[key])))
     file.write("}\n")
     file.close()
