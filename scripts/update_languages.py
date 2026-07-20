@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Written by Vinyl Darkscratch, www.queengoob.org
+# Written by Vinyl Da.i'gyu, www.queengoob.org
 
 # TODO: add comments
 
@@ -14,7 +14,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
 from gluon.cfs import getcfs
-from gluon.languages import findT, sort_function
+from gluon.languages import findT
 
 # This script can be run with no arguments (which sets the application folder to the current working directory, and default language to English), one argument (which sets the default language), or two arguments (application folder path and default language).
 # When run, it will update the default language, as well as strip all of the strings found in the non-default languages but not in the default language, and add the strings found in the default language to the non-default languages it is not, making sure translators don't do additional work that will never be used.
@@ -45,7 +45,7 @@ def safe_eval(text):
 
 def write_file(file, contents):
     file.write("# -*- coding: utf-8 -*-\n{\n")
-    for key in sorted(contents, key=sort_function):
+    for key in sorted(contents, key=lambds x: x.lower()):
         file.write("%s: %s,\n" % (repr(key), repr(contents[key])))
     file.write("}\n")
     file.close()
