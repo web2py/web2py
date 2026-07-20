@@ -50,6 +50,8 @@ import uuid
 from json import loads
 from urllib.parse import quote as urllib_quote
 
+from gluon.contrib.markmin.markmin2html import is_unsafe
+
 try:
     from BeautifulSoup import BeautifulSoup, Comment
 
@@ -178,6 +180,12 @@ def extension(url):
 
 
 def expand_one(url, cdict):
+    # markmin's regex_auto matches any "scheme://..." token, so javascript:,
+    # vbscript: and data: urls reach here when Wiki installs this as the
+    # autolinks callback. Refuse them the way autolinks_simple does, before
+    # any branch below drops the url into an href or src.
+    if is_unsafe(url):
+        return '<span class="markmin_unsafe">%s</span>' % html.escape(url, quote=True)
     # try ombed but first check in cache
     if "@" in url and not "://" in url:
         esc = html.escape(url, quote=True)

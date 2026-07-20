@@ -133,6 +133,30 @@ class TestContribs(unittest.TestCase):
             autolinks.expand_one("http://good.com/page", {"http://good.com/page": {}}),
         )
 
+    def test_autolinks_rejects_unsafe_url_schemes(self):
+        from gluon.contrib import autolinks
+        from gluon.contrib.markmin.markmin2html import render
+
+        # markmin's regex_auto matches any "scheme://..." token, so a wiki page
+        # body can reach expand_one with a script-bearing scheme
+        payload = "javascript://x%0alocation=name"
+        self.assertIn("markmin_unsafe", autolinks.expand_one(payload, {}))
+        self.assertNotIn("href=", autolinks.expand_one(payload, {}))
+        self.assertIn("markmin_unsafe", autolinks.expand_one("vbscript://x", {}))
+
+        # same result whether markmin autolinks itself or Wiki delegates to
+        # expand_one
+        rendered = render(
+            payload, autolinks=lambda link: autolinks.expand_one(link, {})
+        )
+        self.assertNotIn("href=", rendered)
+
+        # http(s) urls still get linked
+        self.assertIn(
+            'href="http://good.com/page"',
+            autolinks.expand_one("http://good.com/page", {"http://good.com/page": {}}),
+        )
+
     def test_hypermedia_query_respects_policy_fields(self):
         from gluon.dal import DAL, Field
         from gluon.contrib.hypermedia import Collection
