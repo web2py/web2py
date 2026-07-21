@@ -1042,9 +1042,23 @@ class AuthAPI(object):
 
         # Finally verify the password
         passfield = settings.password_field
+        stored_password = user[passfield]
+        # Accounts created without a local password (register_bare with no
+        # password, or a user provisioned by an alternate login method, which
+        # stores None in this field) have nothing to compare against. The
+        # validator below returns its input unchanged when it errors, so an
+        # empty or null candidate would come back as None/'' and compare equal
+        # to the stored value. Auth.login_bare refuses such accounts for the
+        # same reason.
+        if not stored_password:
+            return {
+                "errors": {passfield: self.messages.invalid_password},
+                "message": self.messages.invalid_login,
+                "user": None,
+            }
         password = table_user[passfield].validate(kwargs.get(passfield, ""), None)[0]
 
-        if password == user[passfield]:
+        if password == stored_password:
             self.login_user(user)
             session.auth.expiration = (
                 kwargs.get("remember_me", False)

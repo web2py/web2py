@@ -57,6 +57,29 @@ class TestAuthAPI(unittest.TestCase):
         result = self.auth.login(**{"username": "BarT", "password": "bart_password"})
         self.assertTrue(self.auth.is_logged_in())
 
+    def test_login_without_stored_password(self):
+        # users provisioned by an alternate login method (or by register_bare
+        # with no password) have no local password and must not be reachable
+        for stored in (None, ""):
+            uid = self.auth.table_user().insert(
+                first_name="Maggie",
+                last_name="Simpson",
+                username="maggie%s" % (stored is None),
+                email="maggie%s@simpson.com" % (stored is None),
+                password=stored,
+                registration_key="",
+            )
+            self.db.commit()
+            for candidate in (None, ""):
+                result = self.auth.login(
+                    **{
+                        "username": self.auth.table_user()[uid].username,
+                        "password": candidate,
+                    }
+                )
+                self.assertTrue(result["errors"] is not None)
+                self.assertFalse(self.auth.is_logged_in())
+
     def test_logout(self):
         self.auth.login(**{"username": "bart", "password": "bart_password"})
         self.assertTrue(self.auth.is_logged_in())
