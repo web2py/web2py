@@ -89,6 +89,33 @@ class TestRedis(unittest.TestCase):
         data_from_db = db(table.id == record_id).select()[0]
         self.assertDictEqual(Storage(dd), data_from_db, "get the updated value")
 
+    def test_0_redis_session_unique_key(self):
+        """A session is only returned when the unique_key matches"""
+        db = self.db
+        Field = db.Field
+        db.define_table(
+            self.tname,
+            Field("locked", "boolean", default=False),
+            Field("client_ip", length=64),
+            Field("created_datetime", "datetime", default=datetime.now().isoformat()),
+            Field("modified_datetime", "datetime"),
+            Field("unique_key", length=64),
+            Field("session_data", "blob"),
+        )
+        table = db[self.tname]
+        unique_key = web2py_uuid()
+        record_id = table.insert(
+            locked=0,
+            client_ip="127.0.0.1",
+            modified_datetime=datetime.now().isoformat(),
+            unique_key=unique_key,
+            session_data=pickle.dumps({"secret": 1}, pickle.HIGHEST_PROTOCOL),
+        )
+        self.assertTrue(table(record_id, unique_key=unique_key))
+        self.assertFalse(table(record_id, unique_key=web2py_uuid()))
+        # a cookie of the form "<record_id>:" carries an empty unique_key
+        self.assertFalse(table(record_id, unique_key=""))
+
     def test_1_redis_delete(self):
         """Redis session get and delete sessions"""
         db = self.db
