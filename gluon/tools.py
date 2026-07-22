@@ -7625,6 +7625,11 @@ class Wiki(object):
         return dict(content=DIV(_class="w2p_cloud", *items))
 
     def preview(self, render):
+        # previewing renders whatever is posted (body, tags and, with more than
+        # one engine configured, the engine itself), so it needs the same
+        # authoring permission as the edit and create forms it belongs to
+        if not self.can_edit():
+            return self.not_authorized()
         request = current.request
         # FIXME: This is an ugly hack to ensure a default render
         # engine if not specified (with multiple render engines)

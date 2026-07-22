@@ -621,6 +621,43 @@ class TestWikiTemplateBody(unittest.TestCase):
         self.assertEqual(wiki._template_body(99, "Slug"), "## Slug\n\npage content")
 
 
+class TestWikiPreview(unittest.TestCase):
+    # /wiki/_preview renders whatever is posted, and with more than one render
+    # engine configured the engine is taken from the same post vars, so asking
+    # for the html one echoes the posted body back as markup. It needs the same
+    # authoring permission as the edit and create forms it belongs to.
+    def _wiki(self, groups=None, user=None):
+        wiki = Wiki.__new__(Wiki)
+        wiki.settings = Storage(
+            manage_permissions=True,
+            groups=groups or [],
+            render={"rst": lambda page: page.body},
+            extra={},
+        )
+        wiki.auth = Storage(user=user, settings=Storage(login_url="/a/c/login"))
+        wiki.env = {}
+        return wiki
+
+    def _post(self, body, render):
+        request = Request(env={})
+        request.application = "a"
+        request.controller = "c"
+        request.function = "f"
+        request.folder = "applications/welcome"
+        request.post_vars.update(body=body, render=render, tags=None)
+        current.request = request
+
+    def test_anonymous_preview_is_refused(self):
+        wiki = self._wiki()
+        self._post("<script>alert(1)</script>", "html")
+        self.assertRaises(HTTP, wiki.preview, wiki.get_renderer())
+
+    def test_author_preview_still_renders(self):
+        wiki = self._wiki(groups=["wiki_author"], user=Storage(id=1))
+        self._post("<b>hello</b>", "html")
+        self.assertIn("<b>hello</b>", wiki.preview(wiki.get_renderer()))
+
+
 class TestWikiSearchSerialization(unittest.TestCase):
     # the rendered (html/load) search path withholds restricted page bodies
     # via first_paragraph, but the serialized path (any other extension, e.g.
