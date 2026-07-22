@@ -15,6 +15,7 @@ from gluon import current
 from gluon.contrib.redis_utils import (acquire_lock, register_release_lock,
                                        release_lock)
 from gluon.storage import Storage
+from gluon.utils import compare
 
 logger = logging.getLogger("web2py.session.redis")
 
@@ -233,9 +234,10 @@ class MockQuery(object):
                 acquire_lock(self.db.r_server, key + ":lock", self.value, 2)
             rtn = {k.decode(): v for k, v in self.db.r_server.hgetall(key).items()}
             if rtn:
-                if self.unique_key:
+                if self.unique_key is not None:
                     # make sure the id and unique_key are correct
-                    if rtn["unique_key"].decode() == self.unique_key:
+                    stored_key = rtn.get("unique_key", b"").decode()
+                    if compare(stored_key, self.unique_key):
                         rtn["update_record"] = self.update  # update record support
                     else:
                         rtn = None
