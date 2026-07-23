@@ -8,6 +8,7 @@ import hmac
 import os
 import shutil
 import unittest
+from unittest.mock import patch
 from urllib.parse import urlencode
 
 from gluon import HTTP
@@ -43,6 +44,20 @@ def tearDownModule():
 
 class TestContribs(unittest.TestCase):
     """Tests the contrib package"""
+
+    def test_pam_authentication_requires_account_approval(self):
+        from gluon.contrib import pam
+
+        with patch.object(pam, "PAM_START", return_value=0), patch.object(
+            pam, "PAM_AUTHENTICATE", return_value=0
+        ), patch.object(pam, "PAM_ACCT_MGMT", return_value=7) as account_check:
+            self.assertFalse(pam.authenticate(b"expired-user", b"password"))
+            account_check.assert_called_once()
+
+        with patch.object(pam, "PAM_START", return_value=0), patch.object(
+            pam, "PAM_AUTHENTICATE", return_value=0
+        ), patch.object(pam, "PAM_ACCT_MGMT", return_value=0):
+            self.assertTrue(pam.authenticate(b"active-user", b"password"))
 
     def test_fpdf(self):
         """Basic PDF test and sanity checks"""
