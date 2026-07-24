@@ -64,7 +64,7 @@ def custom_importer(name, globals={}, locals=None, fromlist=(), level=_DEFAULT_L
         try:
             return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
         except ImportError as e:
-            if e.name != name:
+            if e.name != name.split('.')[0]:
                 raise e
             pass
         except KeyError:
