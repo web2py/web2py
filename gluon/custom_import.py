@@ -63,7 +63,11 @@ def custom_importer(name, globals={}, locals=None, fromlist=(), level=_DEFAULT_L
         # absolute import from application code
         try:
             return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
-        except (ImportError, KeyError):
+        except ImportError as e:
+            if e.name != name:
+                raise e
+            pass
+        except KeyError:
             pass
         if current.request._custom_import_track_changes:
             base_importer = TRACK_IMPORTER
