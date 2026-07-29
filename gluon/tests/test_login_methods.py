@@ -80,7 +80,9 @@ def _make_fake_ldap(captured):
         def start_tls_s(self):
             pass
 
-    ldap_mod.initialize = lambda uri: FakeCon()
+    ldap_mod.initialize = lambda uri: (
+        captured.setdefault("initialized", []).append(uri) or FakeCon()
+    )
 
     filter_mod = types.ModuleType("ldap.filter")
     filter_mod.escape_filter_chars = _rfc4515_escape
@@ -92,7 +94,7 @@ def _make_fake_ldap(captured):
     return ldap_mod, filter_mod, dn_mod
 
 
-class TestLdapAuthFilterInjection(unittest.TestCase):
+class TestLdapAuthSecurity(unittest.TestCase):
     # gluon.contrib.login_methods.ldap_auth builds LDAP search filters from the
     # attacker-supplied login name. In "uid" mode (with a service bind_dn) the
     # username was interpolated into "(uid=%s)" without escaping, allowing LDAP
@@ -161,6 +163,17 @@ class TestLdapAuthFilterInjection(unittest.TestCase):
         self.assertEqual(bind_dn, "cn=%s,dc=x" % self.escape_dn(malicious))
         # ... so the injected RDN cannot appear unescaped
         self.assertNotIn("cn=evil,ou=Admins", bind_dn)
+
+    def test_invalid_mode_fails_closed(self):
+        auth = self.mod.ldap_auth(
+            mode="invalid",
+            server="ldap.example",
+            base_dn="dc=x",
+            manage_user=False,
+        )
+
+        self.assertFalse(auth("alice", "pw"))
+        self.assertNotIn("initialized", self.captured)
 
 
 class TestOutboundURLTokenEncoding(unittest.TestCase):

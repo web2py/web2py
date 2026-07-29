@@ -211,6 +211,17 @@ def ldap_auth(
         group_mapping=group_mapping,
         db=db,
     ):
+        if ldap_mode not in (
+            "ad",
+            "domino",
+            "cn",
+            "uid",
+            "company",
+            "uid_r",
+            "custom",
+        ):
+            logger.error("unsupported LDAP authentication mode: %s", ldap_mode)
+            return False
         if password == "":  # http://tools.ietf.org/html/rfc4513#section-5.1.2
             logger.warning("blank password not allowed")
             return False
