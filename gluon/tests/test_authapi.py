@@ -220,3 +220,23 @@ class TestAuthAPI(unittest.TestCase):
         lisa_id = result["user"]["id"]
         result = self.auth.verify_key(key=result["user"]["key"])
         self.assertEqual(self.auth.table_user()[lisa_id].registration_key, "pending")
+
+    def test_verify_key_rejects_reserved_states(self):
+        # registration_key doubles as a status column: "disabled"/"blocked"
+        # accounts and accounts still "pending" approval are refused by login().
+        # verify_key must not treat these reserved values as a verification key,
+        # otherwise passing key="disabled" matches such an account and clears
+        # the key, silently re-activating it.
+        for state in ("disabled", "blocked", "pending"):
+            uid = self.auth.table_user().insert(
+                first_name="Moe",
+                last_name="Szyslak",
+                username="moe_%s" % state,
+                email="moe_%s@simpson.com" % state,
+                password="moe_password",
+                registration_key=state,
+            )
+            self.db.commit()
+            result = self.auth.verify_key(key=state)
+            self.assertTrue(result["errors"] is not None)
+            self.assertEqual(self.auth.table_user()[uid].registration_key, state)
