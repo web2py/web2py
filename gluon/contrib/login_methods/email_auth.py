@@ -1,5 +1,6 @@
 import logging
 import smtplib
+import ssl
 
 
 def email_auth(server="smtp.gmail.com:587", domain="@gmail.com", tls_mode=None):
@@ -26,7 +27,7 @@ def email_auth(server="smtp.gmail.com:587", domain="@gmail.com", tls_mode=None):
             server = smtplib.SMTP(host, port)
             server.ehlo()
             if tls_mode:
-                server.starttls()
+                server.starttls(context=ssl.create_default_context())
                 server.ehlo()
             server.login(email, password)
             server.quit()
