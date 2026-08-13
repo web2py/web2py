@@ -6,6 +6,7 @@ Unit tests for gluon.contrib.login_methods
 """
 
 import importlib
+import ssl
 import sys
 import types
 import unittest
@@ -290,3 +291,75 @@ class TestFreeIPATLSVerification(unittest.TestCase):
         self.assertIn(self._never, self.captured.get("conn_set_option", []))
         # opting in must still not leak into the process-wide policy
         self.assertNotIn("global_set_option", self.captured)
+
+
+def _make_fake_smtplib(captured):
+    """Minimal fake ``smtplib`` recording the context passed to starttls and
+    the credentials handed to login, so email_auth can be driven without a
+    real SMTP server."""
+    import ssl as _ssl
+
+    class SMTPException(Exception):
+        pass
+
+    class SMTP(object):
+        def __init__(self, host, port, *a, **k):
+            captured["server"] = (host, port)
+
+        def ehlo(self, *a, **k):
+            pass
+
+        def starttls(self, *a, **k):
+            captured.setdefault("starttls_calls", []).append(k.get("context"))
+
+        def login(self, email, password):
+            captured["login"] = (email, password)
+
+        def sendmail(self, *a, **k):
+            return {}
+
+        def quit(self):
+            pass
+
+    fake = types.ModuleType("smtplib")
+    fake.SMTP = SMTP
+    fake.SMTPException = SMTPException
+    fake._ssl = _ssl
+    return fake
+
+
+class TestEmailAuthTLSVerification(unittest.TestCase):
+    # email_auth authenticates by binding to the user's own mail provider with
+    # their real password. It called smtplib.SMTP.starttls() with no context,
+    # so the TLS layer used ssl._create_stdlib_context() (check_hostname=False,
+    # verify_mode=CERT_NONE) and never validated the server certificate: an
+    # on-path attacker presenting a forged cert captured the credentials.
+    _MODNAME = "gluon.contrib.login_methods.email_auth"
+
+    def setUp(self):
+        self.captured = {}
+        self.mod = importlib.import_module(self._MODNAME)
+        self._saved_smtplib = self.mod.smtplib
+        self.mod.smtplib = _make_fake_smtplib(self.captured)
+
+    def tearDown(self):
+        self.mod.smtplib = self._saved_smtplib
+
+    def test_starttls_uses_verifying_context(self):
+        auth = self.mod.email_auth("smtp.gmail.com:587", "@gmail.com")
+        self.assertTrue(auth("victim@gmail.com", "s3cret"))
+        contexts = self.captured.get("starttls_calls", [])
+        self.assertEqual(len(contexts), 1)
+        ctx = contexts[0]
+        self.assertIsInstance(ctx, ssl.SSLContext)
+        self.assertTrue(ctx.check_hostname)
+        self.assertEqual(ctx.verify_mode, ssl.CERT_REQUIRED)
+
+    def test_valid_login_still_succeeds(self):
+        auth = self.mod.email_auth("smtp.gmail.com:587", "@gmail.com")
+        self.assertTrue(auth("victim@gmail.com", "s3cret"))
+        self.assertEqual(self.captured.get("login"), ("victim@gmail.com", "s3cret"))
+
+
+if __name__ == "__main__":
+    unittest.main()
