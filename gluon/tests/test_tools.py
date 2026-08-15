@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import smtplib
+import ssl
 import sys
 import tempfile
 import unittest
@@ -61,11 +62,16 @@ class TestMail(unittest.TestCase):
         inbox = []
         users = {}
 
+        last = None
+
         def __init__(self, address, port, **kwargs):
             self.address = address
             self.port = port
             self.has_quit = False
             self.tls = False
+            self.tls_context = None
+            self.init_kwargs = kwargs
+            TestMail.DummySMTP.last = self
 
         def login(self, username, password):
             if username not in self.users or self.users[username] != password:
@@ -82,8 +88,14 @@ class TestMail(unittest.TestCase):
         def ehlo(self, hostname=None):
             pass
 
-        def starttls(self):
+        def starttls(self, *args, **kwargs):
             self.tls = True
+            # Mail.send now hands a context in. Record it instead of dropping
+            # it: without the parameter this raised a TypeError, which
+            # Mail.send swallows, so every test here would have gone silently
+            # false rather than failing.
+            self.tls_context = kwargs.get("context")
+            TestMail.DummySMTP.last = self
 
     def setUp(self):
         self.original_SMTP = smtplib.SMTP
@@ -198,6 +210,59 @@ class TestMail(unittest.TestCase):
             )
         )
         TestMail.DummySMTP.inbox.pop()
+
+    # Mail.send talks to the relay the operator configured and authenticates to
+    # it with settings.login. It called starttls() and SMTP_SSL() without a
+    # context, so the TLS layer used ssl._create_stdlib_context()
+    # (check_hostname=False, verify_mode=CERT_NONE) and never checked the server
+    # certificate: an on-path attacker presenting a forged one read the
+    # credentials and everything the framework mails, password reset links
+    # included.
+
+    def _send_one(self, mail):
+        return mail.send(
+            to=["somebody@example.com"],
+            subject="hello",
+            reply_to="us@example.com",
+            message="world",
+        )
+
+    def test_starttls_uses_verifying_context(self):
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        mail.settings.tls = True
+        self.assertTrue(self._send_one(mail))
+        TestMail.DummySMTP.inbox.pop()
+        ctx = TestMail.DummySMTP.last.tls_context
+        self.assertIsInstance(ctx, ssl.SSLContext)
+        self.assertTrue(ctx.check_hostname)
+        self.assertEqual(ctx.verify_mode, ssl.CERT_REQUIRED)
+
+    def test_ssl_uses_verifying_context(self):
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        mail.settings.ssl = True
+        self.assertTrue(self._send_one(mail))
+        TestMail.DummySMTP.inbox.pop()
+        ctx = TestMail.DummySMTP.last.init_kwargs.get("context")
+        self.assertIsInstance(ctx, ssl.SSLContext)
+        self.assertTrue(ctx.check_hostname)
+        self.assertEqual(ctx.verify_mode, ssl.CERT_REQUIRED)
+
+    def test_self_signed_certificate_opts_out(self):
+        # The escape hatch for a relay with a self-signed certificate, same
+        # opt-in as ldap_auth and freeipa_auth. It has to keep working, and it
+        # has to be the only way to get the old behaviour back.
+        mail = Mail()
+        mail.settings.server = "smtp.example.com:25"
+        mail.settings.sender = "you@example.com"
+        mail.settings.tls = True
+        mail.settings.self_signed_certificate = True
+        self.assertTrue(self._send_one(mail))
+        TestMail.DummySMTP.inbox.pop()
+        self.assertIsNone(TestMail.DummySMTP.last.tls_context)
 
     def test_tls(self):
         mail = Mail()

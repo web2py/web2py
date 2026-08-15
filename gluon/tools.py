@@ -27,6 +27,7 @@ import random
 import re
 import secrets
 import smtplib
+import ssl
 import sys
 import time
 import traceback
@@ -255,6 +256,10 @@ class Mail(object):
                               the messages with can be a file name /
                               string or a list of file names /
                               strings (PEM format)
+        self_signed_certificate: skip verification of the mail server
+                              certificate, for a relay that presents a
+                              self-signed one. Same opt-in as ldap_auth
+                              and freeipa_auth. Defaults to False
 
     Examples:
         Create Mail object with authentication data for remote server::
@@ -354,6 +359,9 @@ class Mail(object):
         settings.x509_nocerts = False
         settings.x509_crypt_certfiles = None
         settings.debug = False
+        # Skip verification of the mail server certificate, for a relay that
+        # presents a self-signed one. Same opt-in as ldap_auth and freeipa_auth.
+        settings.self_signed_certificate = False
         settings.lock_keys = True
         self.result = {}
         self.error = None
@@ -936,13 +944,25 @@ class Mail(object):
             else:
                 smtp_args = self.settings.server.split(":")
                 kwargs = dict(timeout=self.settings.timeout)
+                # Without a context, smtplib falls back to
+                # ssl._create_stdlib_context(), which sets check_hostname=False
+                # and verify_mode=CERT_NONE. Both the implicit TLS branch below
+                # and starttls() were unverified, so the login credentials and
+                # the message went to whatever certificate the peer presented.
+                context = (
+                    None
+                    if self.settings.self_signed_certificate
+                    else ssl.create_default_context()
+                )
                 func = smtplib.SMTP_SSL if self.settings.ssl else smtplib.SMTP
+                if self.settings.ssl:
+                    kwargs["context"] = context
                 server = remote_server or func(*smtp_args, **kwargs)
                 try:
                     if not remote_server:
                         if self.settings.tls and not self.settings.ssl:
                             server.ehlo(self.settings.hostname)
-                            server.starttls()
+                            server.starttls(context=context)
                             server.ehlo(self.settings.hostname)
                         if self.settings.login:
                             server.login(*self.settings.login.split(":", 1))
