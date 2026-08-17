@@ -5,7 +5,9 @@
 
 import unittest
 
+from gluon.globals import current
 from gluon.http import HTTP, content_disposition_header, defined_status, redirect
+from gluon.storage import Storage
 
 
 class TestHTTP(unittest.TestCase):
@@ -94,3 +96,34 @@ class TestRedirect(unittest.TestCase):
         e = self._redirect_http("/app/default/index")
         self.assertEqual(e.headers["Location"], "/app/default/index")
         self.assertIn('<a href="/app/default/index">here</a>', e.body)
+
+    def _redirect_client_side(self, location):
+        current.request = Storage(ajax=True)
+        try:
+            redirect(location, client_side=True)
+        except HTTP as e:
+            return e
+        finally:
+            current.request = None
+        self.fail("redirect did not raise HTTP")
+
+    def test_redirect_client_side_rejects_script_schemes(self):
+        # web2py.js assigns web2py-redirect-location to window.location, so a
+        # javascript:/vbscript:/data: value there is client-side code execution.
+        for payload in (
+            "javascript:alert(document.cookie)",
+            "vbscript:msgbox(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "java\tscript:alert(1)",
+        ):
+            e = self._redirect_client_side(payload)
+            self.assertEqual(e.headers["web2py-redirect-location"], "/")
+
+    def test_redirect_client_side_preserves_benign_location(self):
+        e = self._redirect_client_side("/app/default/index")
+        self.assertEqual(e.headers["web2py-redirect-location"], "/app/default/index")
+
+    def test_redirect_rejects_script_scheme_in_location_header(self):
+        e = self._redirect_http("javascript:alert(1)")
+        self.assertEqual(e.headers["Location"], "/")
+        self.assertNotIn("javascript:", e.body)
