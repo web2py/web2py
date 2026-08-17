@@ -72,6 +72,23 @@ defined_status = {
 regex_status = re.compile(r"^\d{3} [0-9A-Z ]+$")
 regex_header_newlines = re.compile(r"[\r\n]")
 
+# URL schemes that run script when the value is assigned to window.location
+# (the client_side branch of redirect() emits web2py-redirect-location, which
+# web2py.js assigns to window.location) or opened from a Location header on
+# legacy browsers. They are never valid redirect targets.
+_UNSAFE_REDIRECT_SCHEMES = frozenset(("javascript", "vbscript", "data"))
+
+
+def _is_unsafe_redirect(location):
+    # Strip ASCII control characters and spaces the way browsers do before
+    # resolving a URL, so values like "java\tscript:..." cannot slip a
+    # dangerous scheme past the check.
+    cleaned = "".join(
+        c for c in location if ord(c) > 0x20 and ord(c) != 0x7F
+    ).lower()
+    scheme, has_scheme, _ = cleaned.partition(":")
+    return bool(has_scheme) and scheme in _UNSAFE_REDIRECT_SCHEMES
+
 
 class HTTP(Exception):
     """Raises an HTTP response
@@ -186,6 +203,10 @@ def redirect(location="", how=303, client_side=False, headers=None):
     if location:
         from gluon.globals import current
 
+        if _is_unsafe_redirect(location):
+            # Refuse a script-executing scheme instead of handing it to
+            # window.location; fall back to the root path.
+            location = "/"
         loc = location.replace("\r", "%0D").replace("\n", "%0A")
         if client_side and current.request.ajax:
             headers["web2py-redirect-location"] = loc
