@@ -176,6 +176,25 @@ class TestLdapAuthSecurity(unittest.TestCase):
         self.assertFalse(auth("alice", "pw"))
         self.assertNotIn("initialized", self.captured)
 
+    def test_blank_password_rejected_before_bind(self):
+        # RFC 4513 5.1.2: a bind with a valid DN but an empty password is an
+        # unauthenticated bind that many servers accept as success, so the
+        # blank-password guard must fire before any bind. It only compared the
+        # password against "", so a None password (e.g. a request var that was
+        # never sent, forwarded through login_bare) slipped past and reached an
+        # unauthenticated bind, authenticating the account without a password.
+        auth = self.mod.ldap_auth(
+            mode="uid",
+            server="ldap.example",
+            base_dn="dc=x",
+            manage_user=False,
+        )
+        for blank in (None, "", b""):
+            self.captured.clear()
+            self.assertFalse(auth("alice", blank))
+            self.assertNotIn("binds", self.captured)
+            self.assertNotIn("initialized", self.captured)
+
 
 class TestOutboundURLTokenEncoding(unittest.TestCase):
     # loginradius_account / cas_auth build the outbound provider-validation URL
@@ -359,6 +378,54 @@ class TestEmailAuthTLSVerification(unittest.TestCase):
         auth = self.mod.email_auth("smtp.gmail.com:587", "@gmail.com")
         self.assertTrue(auth("victim@gmail.com", "s3cret"))
         self.assertEqual(self.captured.get("login"), ("victim@gmail.com", "s3cret"))
+
+
+class TestFreeIPAAuthSecurity(unittest.TestCase):
+    # freeipa_auth binds as "uid=<username>,cn=users,<basedn>" with the
+    # submitted password. Its blank-credential guard only compared against "",
+    # so a None password reached bind_s() as an RFC 4513 5.1.2 unauthenticated
+    # bind and logged the account in without a password.
+    _MODNAME = "gluon.contrib.login_methods.freeipa_auth"
+
+    def setUp(self):
+        self.captured = {}
+        self._saved = {
+            k: sys.modules.get(k)
+            for k in ("ldap", "ldap.filter", "ldap.dn", self._MODNAME)
+        }
+        ldap_mod, filter_mod, dn_mod = _make_fake_ldap(self.captured)
+        sys.modules["ldap"] = ldap_mod
+        sys.modules["ldap.filter"] = filter_mod
+        sys.modules["ldap.dn"] = dn_mod
+        sys.modules.pop(self._MODNAME, None)
+        self.mod = importlib.import_module(self._MODNAME)
+
+    def tearDown(self):
+        for k, v in self._saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+        sys.modules.pop(self._MODNAME, None)
+
+    def test_blank_password_rejected_before_bind(self):
+        auth = self.mod.freeipa_auth(
+            server="ipa.example", basedn="dc=x", group="admins"
+        )
+        for blank in (None, "", b""):
+            self.captured.clear()
+            self.assertFalse(auth("alice", blank))
+            self.assertNotIn("binds", self.captured)
+            self.assertNotIn("initialized", self.captured)
+
+    def test_valid_login_still_succeeds(self):
+        auth = self.mod.freeipa_auth(
+            server="ipa.example", basedn="dc=x", group="admins"
+        )
+        self.assertTrue(auth("alice", "s3cret"))
+        self.assertEqual(
+            self.captured.get("binds"), [("uid=alice,cn=users,dc=x", "s3cret")]
+        )
 
 
 if __name__ == "__main__":

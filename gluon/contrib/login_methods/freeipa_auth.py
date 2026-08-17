@@ -23,7 +23,7 @@ def freeipa_auth(server, basedn, group, self_signed_certificate=False):
     logger = logging.getLogger("web2py.auth.freeipa_auth")
 
     def freeipa_auth_aux(username, password):
-        if password == "" or username == "":
+        if not password or not username:
             logger.warning("blank username / password not allowed")
             return False
 
