@@ -222,7 +222,7 @@ def ldap_auth(
         ):
             logger.error("unsupported LDAP authentication mode: %s", ldap_mode)
             return False
-        if password == "":  # http://tools.ietf.org/html/rfc4513#section-5.1.2
+        if not password:  # http://tools.ietf.org/html/rfc4513#section-5.1.2
             logger.warning("blank password not allowed")
             return False
         logger.debug(
