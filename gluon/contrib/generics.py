@@ -55,6 +55,12 @@ def _resolve_pdf_image_path(path, request):
             return safe_path_join(request.folder, "static", relative_static_path)
         except ValueError:
             raise HTTP(403, "invalid static path")
+    # The image is fetched server-side from the app's own host, so only a
+    # same-origin absolute path is meaningful here. A value that does not
+    # begin with a single "/" would attach to the host and move the fetch to
+    # another server, e.g. "@internal:8080/x" -> "http://host@internal:8080/x".
+    if not path.startswith("/") or path.startswith("//"):
+        raise HTTP(403, "invalid image path")
     return "http%s://%s%s" % (
         request.is_https and "s" or "",
         request.env.http_host,
