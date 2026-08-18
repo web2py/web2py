@@ -618,6 +618,44 @@ class TestAuthTokenExpiry(unittest.TestCase):
         self.assertEqual(self._login_with("live").username, "victim")
 
 
+class TestManageTokens(unittest.TestCase):
+    # manage_tokens grids the whole auth_token table, so any logged-in user
+    # could read every other user's bearer token from the listing and replay
+    # it via requires_login_or_token. The grid must be scoped to the caller.
+    def setUp(self):
+        self.request = Request(env={})
+        self.request.application = "a"
+        self.request.controller = "c"
+        self.request.function = "f"
+        self.request.folder = "applications/admin"
+        self.response = Response()
+        self.session = Session()
+        self.T = TranslatorFactory("", "en")
+        self.session.connect(self.request, self.response)
+        current.request = self.request
+        current.response = self.response
+        current.session = self.session
+        current.T = self.T
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
+        self.auth = Auth(self.db)
+        self.auth.define_tables(username=True, signature=False, enable_tokens=True)
+        self.uid1 = self.db.auth_user.insert(username="alice", password="x")
+        self.uid2 = self.db.auth_user.insert(username="bob", password="x")
+        self.db.auth_token.insert(user_id=self.uid1, token="alice-token")
+        self.db.auth_token.insert(user_id=self.uid2, token="bob-secret-token")
+        self.db.commit()
+
+    def test_manage_tokens_hides_other_users_tokens(self):
+        from gluon.storage import List
+
+        self.auth.login_user(self.db.auth_user(self.uid1))
+        # /user/manage_tokens lands on the grid's own listing level
+        self.request.args = List(["manage_tokens"])
+        html = str(self.auth.manage_tokens())
+        self.assertIn("alice-token", html)
+        self.assertNotIn("bob-secret-token", html)
+
+
 class TestWikiFirstParagraph(unittest.TestCase):
     def _wiki(self, groups=None, user=None):
         # build a Wiki without running __init__ (which needs a full

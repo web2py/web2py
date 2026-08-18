@@ -4077,7 +4077,9 @@ class Auth(AuthAPI):
         table_token.token.writable = False
         if current.request.args(1) == "new":
             table_token.token.readable = False
-        form = SQLFORM.grid(table_token, args=["manage_tokens"])
+        form = SQLFORM.grid(
+            table_token.user_id == self.user.id, args=["manage_tokens"]
+        )
         return form
 
     def reset_password(
