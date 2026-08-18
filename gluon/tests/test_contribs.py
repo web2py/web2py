@@ -127,6 +127,38 @@ class TestContribs(unittest.TestCase):
             _resolve_pdf_image_path("/welcome/static/../../private/secret.txt", request)
         self.assertEqual(ctx.exception.status, 403)
 
+    def test_pdf_image_map_allows_same_origin_path(self):
+        request = Storage(
+            {
+                "application": "welcome",
+                "folder": os.path.join("applications", "welcome"),
+                "is_https": False,
+                "env": Storage({"http_host": "example.com"}),
+            }
+        )
+        result = _resolve_pdf_image_path("/welcome/default/download/logo.png", request)
+        self.assertEqual(result, "http://example.com/welcome/default/download/logo.png")
+
+    def test_pdf_image_map_rejects_cross_host_fetch(self):
+        request = Storage(
+            {
+                "application": "welcome",
+                "folder": os.path.join("applications", "welcome"),
+                "is_https": False,
+                "env": Storage({"http_host": "example.com:8000"}),
+            }
+        )
+        # "@internal:8080/x" would build http://example.com:8000@internal:8080/x,
+        # i.e. the server-side fetch would connect to internal:8080.
+        for path in (
+            "@internal:8080/logo.png",
+            "evil.example/logo.png",
+            "//evil/logo.png",
+        ):
+            with self.assertRaises(HTTP) as ctx:
+                _resolve_pdf_image_path(path, request)
+            self.assertEqual(ctx.exception.status, 403)
+
     def test_autolinks_escapes_url_in_markup(self):
         from gluon.contrib import autolinks
 
