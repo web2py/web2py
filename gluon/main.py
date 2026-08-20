@@ -13,8 +13,8 @@ import datetime
 import gc
 import http
 import os
-import random
 import re
+import secrets
 import signal
 import socket
 import string
@@ -608,8 +608,8 @@ def save_password(password, port):
     password_file = abspath("parameters_%i.py" % port)
     if password == "<random>":
         # make up a new password
-        chars = string.letters + string.digits
-        password = "".join([random.choice(chars) for _ in range(8)])
+        chars = string.ascii_letters + string.digits
+        password = "".join([secrets.choice(chars) for _ in range(8)])
         cpassword = CRYPT()(password)[0]
         print("******************* IMPORTANT!!! ************************")
         print('your admin password is "%s"' % password)
