@@ -11,6 +11,25 @@ import io
 
 service = Service(globals())
 
+
+def _safe_apath(path):
+    """Resolve ``path`` inside the web2py tree and refuse anything escaping it.
+
+    read_file/write_file/hash_file/list_files take the path straight from the
+    JSON-RPC caller. apath() rejects neither an absolute path nor a chain of
+    ../ segments that climbs past the tree, so the following open()/listdir()
+    would reach arbitrary host files. Contain to the applications and deposit
+    roots, the same guard default.py's safe_open() applies.
+    """
+    resolved = os.path.abspath(os.path.normpath(apath(path, r=request)))
+    apps_root = os.path.abspath(up(request.folder))
+    deposit_root = os.path.join(up(apps_root), 'deposit')
+    if not any(is_within_root(resolved, root)
+               for root in (apps_root, deposit_root)):
+        raise HTTP(403)
+    return resolved
+
+
 @service.jsonrpc
 def login():
     "dummy function to test credentials"
@@ -27,14 +46,14 @@ def list_apps():
 
 @service.jsonrpc
 def list_files(app, pattern='.*\.py$'):
-    files = listdir(apath('%s/' % app, r=request), pattern)
+    files = listdir(_safe_apath('%s/' % app), pattern)
     return [x.replace('\\', '/') for x in files]
 
 
 @service.jsonrpc
 def read_file(filename, b64=False):
     """ Visualize object code """
-    f = open(apath(filename, r=request), "rb")
+    f = open(_safe_apath(filename), "rb")
     try:
         data = f.read()
         if not b64:
@@ -48,7 +67,7 @@ def read_file(filename, b64=False):
 
 @service.jsonrpc
 def write_file(filename, data, b64=False):
-    f = open(apath(filename, r=request), "wb")
+    f = open(_safe_apath(filename), "wb")
     try:
         if not b64:
             data = data.replace('\r\n', '\n').strip() + '\n'
@@ -63,7 +82,7 @@ def write_file(filename, data, b64=False):
 def hash_file(filename):
     data = read_file(filename)
     file_hash = md5_hash(data)
-    path = apath(filename, r=request)
+    path = _safe_apath(filename)
     saved_on = os.stat(path)[stat.ST_MTIME]
     size = os.path.getsize(path)
     return dict(saved_on=saved_on, file_hash=file_hash, size=size)
