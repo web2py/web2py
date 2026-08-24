@@ -128,6 +128,15 @@ template_mapping_csp = {
 
 CSP_DIRECTIVE = re.compile(r"^[A-Za-z0-9-]+$")
 CSP_DIRECTIVE_TOKEN = re.compile(r"^[\x21-\x2B\x2D-\x3A\x3C-\x7E]+$")
+# Applied by Response.enable_csp() unless the caller or an already-set header
+# provides the directive. base-uri and form-action are a document and a
+# navigation directive, so neither falls back to default-src; object-src does
+# fall back, but only as far as default-src's 'self'.
+CSP_SECURE_DEFAULTS = (
+    ("base-uri", ("'self'",)),
+    ("form-action", ("'self'",)),
+    ("object-src", ("'none'",)),
+)
 CSP_STANDARD_DIRECTIVES = frozenset(
     (
         "base-uri",
@@ -698,6 +707,10 @@ class Response(Storage):
         n = self.nonce
         merge("script-src", ["'self'", "'nonce-%s'" % n])
         merge("style-src", ["'self'", "'nonce-%s'" % n])
+        supplied = set(k.replace("_", "-") for k in policies)
+        for directive, sources in CSP_SECURE_DEFAULTS:
+            if directive not in p and directive not in supplied:
+                merge(directive, sources)
         for k, v in policies.items():
             merge(k.replace("_", "-"), v)
 
