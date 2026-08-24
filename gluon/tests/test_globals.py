@@ -382,6 +382,53 @@ class testResponse(unittest.TestCase):
         self.assertIn("sandbox allow-scripts allow-same-origin", csp)
         self.assertIn("upgrade-insecure-requests", csp)
 
+    @staticmethod
+    def _csp_directive(csp, name):
+        for directive in csp.split(";"):
+            bits = directive.split()
+            if bits and bits[0] == name:
+                return " ".join(bits[1:])
+        return None
+
+    def test_enable_csp_sets_directives_without_default_src_fallback(self):
+        # base-uri and form-action do not fall back to default-src, so a nonce
+        # policy that omits them still permits an injected <base> to retarget
+        # every relative URL, including FORM's default action="#".
+        response = Response()
+        response.enable_csp()
+        csp = response.headers["Content-Security-Policy"]
+        self.assertEqual("'self'", self._csp_directive(csp, "base-uri"))
+        self.assertEqual("'self'", self._csp_directive(csp, "form-action"))
+        self.assertEqual("'none'", self._csp_directive(csp, "object-src"))
+        self.assertEqual("'self'", self._csp_directive(csp, "default-src"))
+        self.assertEqual(
+            "'self' 'nonce-%s'" % response.nonce,
+            self._csp_directive(csp, "script-src"),
+        )
+
+    def test_enable_csp_defaults_do_not_override_caller(self):
+        response = Response()
+        response.enable_csp(base_uri="'none'", form_action="https://pay.example")
+        csp = response.headers["Content-Security-Policy"]
+        self.assertEqual("'none'", self._csp_directive(csp, "base-uri"))
+        self.assertEqual(
+            "https://pay.example", self._csp_directive(csp, "form-action")
+        )
+        # a directive the caller did not mention still gets its default
+        self.assertEqual("'none'", self._csp_directive(csp, "object-src"))
+
+    def test_enable_csp_defaults_do_not_override_existing_header(self):
+        response = Response()
+        response.headers["Content-Security-Policy"] = "base-uri https://cdn.example"
+        response.enable_csp()
+        csp = response.headers["Content-Security-Policy"]
+        # merge() appends, so a missing guard shows up as the default tacked on
+        # the end of the caller's value, not in front of it.
+        self.assertEqual(
+            "https://cdn.example", self._csp_directive(csp, "base-uri")
+        )
+        self.assertEqual("'self'", self._csp_directive(csp, "form-action"))
+
     def test_enable_csp_accepts_existing_policy_lists(self):
         response = Response()
         response.headers["Content-Security-Policy"] = (
