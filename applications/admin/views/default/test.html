@@ -9,7 +9,7 @@
   <h3>Testing controller "{{=controller}}"... <blink>please wait!</blink></h3>
 </div>
 
-<script><!--
+<script nonce="{{=response.nonce}}"><!--
 ajax('{{=URL(a=app,c=controller[:-3],f='_TEST')}}',[],'output_{{=controller[:-3]}}');
 //--></script>
 {{pass}}

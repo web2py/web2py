@@ -81,7 +81,7 @@ def file_create_form(location, anchor=None, helptext=""):
 <script src="{{=js_url}}/ajax_editor.js"></script>
 <link rel="stylesheet" href="{{=css_url}}/typeahead.js-bootstrap.css">
 <link rel="stylesheet" href="{{=css_url}}/web2py-codemirror.css">
-<script type="text/javascript">
+<script type="text/javascript" nonce="{{=response.nonce}}">
 var current_font_incr = 0; // Default font-size, 0 means isn't set
 $(document).on('shown click', 'a[data-toggle="tab"]', function (e, lineno) {
     var tab_id = $(this).attr('href');
@@ -239,7 +239,7 @@ $(document).on('click', 'a.font_button', function (e) {
         	  {{=file_create_form('%s/' % app, '')}}
         	</div>          			  			
       	      </div>
-      	      <script>jQuery('#form').slideToggle()</script>
+      	      <script nonce="{{=response.nonce}}">jQuery('#form').slideToggle()</script>
     	    </div>
     	    <br />            
             <div id="files_menu">
@@ -278,7 +278,7 @@ $(document).on('click', 'a.font_button', function (e) {
 </div>
 </div>
 
-<script>
+<script nonce="{{=response.nonce}}">
     $(document).on('click', '#window_todo li a', function (e) {
         $(this).find('i').toggleClass('icon-chevron-right');
         $(this).find('i').toggleClass('icon-chevron-down');
@@ -294,7 +294,7 @@ $(document).on('click', 'a.font_button', function (e) {
     });
 </script>
 {{end}}
-<script>
+<script nonce="{{=response.nonce}}">
 $(document).ready(function() {
     var filesMenu = $('#files');
     var ow = filesMenu.outerWidth();
@@ -310,7 +310,7 @@ $(document).ready(function() {
 <!-- Typeahead scripts here so the page load faster -->
 <script src="{{=URL('static', 'js/typeahead.min.js')}}"></script>
 <script src="{{=URL('static', 'js/hogan-2.0.0.js')}}"></script>
-<script>
+<script nonce="{{=response.nonce}}">
     $('.typeahead-tw').typeahead({
         name: 'files',
         local:{{from gluon.serializers import json}}{{=XML(json(auto_complete_list))}},

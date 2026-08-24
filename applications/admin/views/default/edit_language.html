@@ -1,5 +1,5 @@
 {{extend 'layout.html'}}
-<script>
+<script nonce="{{=response.nonce}}">
 function delkey(id) {
   jQuery('#'+id).hide();
   jQuery('#'+id+' INPUT').val(String.fromCharCode(127));

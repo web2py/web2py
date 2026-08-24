@@ -45,7 +45,7 @@
 		<div class="controls"><button type="submit" class="disabled btn btn-primary">{{=T('Save')}}</button></div>
 	</div>
 </form>
-<script>
+<script nonce="{{=response.nonce}}">
 $.web2py.trap_form("{{=URL('default', 'edit', args=request.args, vars={'settings':True})}}", "editor_settings");
 $("#editor_settings_form").on('change', 'select, input', function (e) {
 	$("#editor_settings_form button[type=submit]").removeClass('disabled');

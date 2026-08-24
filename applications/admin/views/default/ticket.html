@@ -125,7 +125,7 @@
 {{except Exception as e:}}
 <!-- this should not happen, just in case... (cannot output normal hmtl as we don't know current open tags) -->
 {{import traceback;tb=traceback.format_exc().replace("\n","\\n") }}
-<script language='javascript'>alert("Exception during snapshot rendering: {{=tb}} ");</script>
+<script language='javascript' nonce="{{=response.nonce}}">alert("Exception during snapshot rendering: {{=tb}} ");</script>
 {{pass}}
 {{pass}}
 

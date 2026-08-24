@@ -119,7 +119,7 @@ frm_trs = form.elements('tr')
     </div>
 </div>
   
-<script type="text/javascript">
+<script type="text/javascript" nonce="{{=response.nonce}}">
     jQuery(document).ready(function() {
         jQuery('.sourcecode').hide();
         jQuery("#trck_breakpoints thead tr th:first input[type=checkbox]").click(function() {

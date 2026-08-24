@@ -669,9 +669,21 @@ class Response(Storage):
             self["nonce"] = web2py_uuid()
         return self["nonce"]
 
-    def enable_csp(self, **policies):
+    def enable_csp(self, report_only=False, **policies):
+        """Emit a per-request nonce-based Content-Security-Policy header.
+
+        With report_only=True the policy goes out as
+        Content-Security-Policy-Report-Only, so violations are reported by the
+        browser without being blocked. Nonces are still emitted, otherwise the
+        report would not describe what enforcement is going to do.
+        """
         self._csp_enabled = True
-        existing = self.headers.get("Content-Security-Policy")
+        header = (
+            "Content-Security-Policy-Report-Only"
+            if report_only
+            else "Content-Security-Policy"
+        )
+        existing = self.headers.get(header)
         p = {}
         if existing:
             for policy in _split_serialized_csp_list(existing):
@@ -701,7 +713,7 @@ class Response(Storage):
         for k, v in policies.items():
             merge(k.replace("_", "-"), v)
 
-        self.headers["Content-Security-Policy"] = "; ".join(
+        self.headers[header] = "; ".join(
             "%s %s" % (k, " ".join(v)) for k, v in p.items()
         )
 

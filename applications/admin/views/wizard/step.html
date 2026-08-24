@@ -78,7 +78,7 @@
 				<div class="controls"><button type="submit" class="btn">{{=T('Submit')}}</button></div>
 			{{=form.custom.end}}
 		</div>
-		<script>
+		<script nonce="{{=response.nonce}}">
 			jQuery(function(){
 				var t=jQuery('#no_table_layout_theme');
 				t.change(function(){
@@ -175,7 +175,7 @@
 		</div>
 	</div> <!-- /wizard form -->
 </div>
-<script type="text/javascript">
+<script type="text/javascript" nonce="{{=response.nonce}}">
 	//jQuery(document).ready(function() {
 		//jQuery(":input:visible:enabled:first").focus();
 	//});

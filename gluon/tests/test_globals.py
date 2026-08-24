@@ -16,8 +16,8 @@ from io import BytesIO
 
 from pydal import DAL
 
-from gluon.html import XML, URL
-from gluon.globals import Request, Response, Session
+from gluon.html import XML, URL, SCRIPT
+from gluon.globals import current, Request, Response, Session
 from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.rewrite import regex_url_in
@@ -381,6 +381,44 @@ class testResponse(unittest.TestCase):
         self.assertIn("report-to csp-endpoint", csp)
         self.assertIn("sandbox allow-scripts allow-same-origin", csp)
         self.assertIn("upgrade-insecure-requests", csp)
+
+    def test_enable_csp_report_only_uses_the_report_only_header(self):
+        response = Response()
+        response.enable_csp(report_only=True)
+        self.assertIn("Content-Security-Policy-Report-Only", response.headers)
+        self.assertNotIn("Content-Security-Policy", response.headers)
+        csp = response.headers["Content-Security-Policy-Report-Only"]
+        self.assertIn("default-src 'self'", csp)
+        self.assertIn("'nonce-%s'" % response.nonce, csp)
+
+    def test_enable_csp_report_only_still_emits_nonces(self):
+        # report-only is only useful if the page renders the same nonces it
+        # would render under enforcement, otherwise the report describes a
+        # policy nobody intends to ship.
+        response = Response()
+        current.response = response
+        response.enable_csp(report_only=True)
+        rendered = SCRIPT("var x = 1;").xml()
+        self.assertIn('nonce="%s"' % response.nonce, rendered)
+        self.assertIn(
+            "'nonce-%s'" % response.nonce,
+            response.headers["Content-Security-Policy-Report-Only"],
+        )
+
+    def test_enable_csp_report_only_reads_its_own_existing_header(self):
+        response = Response()
+        response.headers["Content-Security-Policy-Report-Only"] = "img-src 'self'"
+        response.enable_csp(report_only=True)
+        csp = response.headers["Content-Security-Policy-Report-Only"]
+        self.assertIn("img-src 'self'", csp)
+        self.assertIn("script-src", csp)
+        self.assertNotIn("Content-Security-Policy", response.headers)
+
+    def test_enable_csp_enforcing_is_unchanged_by_default(self):
+        response = Response()
+        response.enable_csp()
+        self.assertIn("Content-Security-Policy", response.headers)
+        self.assertNotIn("Content-Security-Policy-Report-Only", response.headers)
 
     def test_enable_csp_accepts_existing_policy_lists(self):
         response = Response()

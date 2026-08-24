@@ -191,3 +191,32 @@ elif session.authorized and \
 if request.controller == 'appadmin' and DEMO_MODE:
     session.flash = 'Appadmin disabled in demo mode'
     redirect(URL('default', 'sites'))
+
+
+# ###########################################################
+# ## Content-Security-Policy
+# ##
+# ## Report-only, deliberately. admin's views still use inline
+# ## event handler attributes (onclick=, onchange=, ...) and
+# ## inline style= attributes. A nonce covers neither, so
+# ## enforcing today would stop those handlers firing.
+# ## Report-only changes nothing for the user and makes the
+# ## browser list exactly what is left to convert.
+# ##
+# ## Nonces are emitted either way: response.files and the
+# ## SCRIPT()/STYLE() helpers read _csp_enabled, so the reports
+# ## describe what enforcement would really do. Once the inline
+# ## handlers and style attributes are gone, drop report_only.
+# ##
+# ## img-src allows data: because the bundled CodeMirror theme
+# ## (static/css/web2py-codemirror.css) loads data:image/png
+# ## sprites. Two off-origin images are expected to show up in
+# ## the reports and are left to be dealt with separately:
+# ## views/default/plugins.html:10 (web2pyslices.com thumbnails)
+# ## and views/wizard/step.html:88 (placehold.it fallback).
+# ###########################################################
+
+response.enable_csp(
+    report_only=True,
+    img_src=["'self'", "data:"],
+)
