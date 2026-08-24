@@ -25,3 +25,4 @@ from .test_storage import *
 from .test_tools import *
 from .test_utils import *
 from .test_web import *
+from .test_webservices import *
