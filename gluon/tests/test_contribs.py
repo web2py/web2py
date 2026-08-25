@@ -246,6 +246,59 @@ class TestContribs(unittest.TestCase):
         finally:
             db.close()
 
+    def test_hypermedia_write_respects_policy_fields(self):
+        from gluon import current
+        from gluon.dal import DAL, Field
+        from gluon.contrib.hypermedia import Collection
+        from gluon.globals import Request, Response
+
+        class Args(list):
+            def __call__(self, i, default=None):
+                try:
+                    return self[i]
+                except IndexError:
+                    return default
+
+        request = Request(env={"HTTP_HOST": "example.com"})
+        request.application, request.controller, request.function = "app", "d", "api"
+        current.request = request
+        current.response = Response()
+
+        db = DAL("sqlite:memory")
+        try:
+            db.define_table("thing", Field("name"), Field("owner"))
+
+            # the policy only permits writing "name"; "owner" must stay protected,
+            # matching what table2template advertises as post_writable/put_writable
+            policies = {"thing": {"POST": {"query": None, "fields": ["name"]}}}
+
+            forwarded = {}
+
+            def spy(**fields):
+                forwarded.clear()
+                forwarded.update(fields)
+                return Storage(id=1, errors={})
+
+            db.thing.validate_and_insert = spy
+
+            req = Storage()
+            req.args = Args(["thing"])
+            req.env = Storage(
+                request_method="POST",
+                content_type="application/x-www-form-urlencoded",
+            )
+            req.get_vars = Storage()
+            req.post_vars = Storage(name="alice", owner="attacker")
+            req.vars = req.post_vars
+
+            Collection(db).process(req, current.response, policies)
+
+            # the non-policy column must never reach validate_and_insert
+            self.assertNotIn("owner", forwarded)
+            self.assertEqual(forwarded, {"name": "alice"})
+        finally:
+            db.close()
+
 
 class TestPySimpleSoapTransport(unittest.TestCase):
     """Tests the TLS handling of the pysimplesoap transports"""

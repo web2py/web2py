@@ -353,8 +353,11 @@ class Collection(object):
                     (query, limitby, orderby) = self.request2query(
                         table, request.get_vars
                     )
+                    allowed = self.table_policy.get("fields", table.fields)
                     fields = filter(
-                        lambda fn_value: table[fn_value[0]].writable, data.items()
+                        lambda fn_value: fn_value[0] in allowed
+                        and table[fn_value[0]].writable,
+                        data.items(),
                     )
                     res = db(query).validate_and_update(**dict(fields))  # MAY FAIL
                     if res.errors:
@@ -370,8 +373,11 @@ class Collection(object):
             else:  # create
                 # ADD validate fields and return error
                 try:
+                    allowed = self.table_policy.get("fields", table.fields)
                     fields = filter(
-                        lambda fn_value1: table[fn_value1[0]].writable, data.items()
+                        lambda fn_value1: fn_value1[0] in allowed
+                        and table[fn_value1[0]].writable,
+                        data.items(),
                     )
                     res = table.validate_and_insert(**dict(fields))  # MAY FAIL
                     if res.errors:
