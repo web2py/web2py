@@ -128,6 +128,15 @@ template_mapping_csp = {
 
 CSP_DIRECTIVE = re.compile(r"^[A-Za-z0-9-]+$")
 CSP_DIRECTIVE_TOKEN = re.compile(r"^[\x21-\x2B\x2D-\x3A\x3C-\x7E]+$")
+# Applied by Response.enable_csp() unless the caller or an already-set header
+# provides the directive. base-uri and form-action are a document and a
+# navigation directive, so neither falls back to default-src; object-src does
+# fall back, but only as far as default-src's 'self'.
+CSP_SECURE_DEFAULTS = (
+    ("base-uri", ("'self'",)),
+    ("form-action", ("'self'",)),
+    ("object-src", ("'none'",)),
+)
 CSP_STANDARD_DIRECTIVES = frozenset(
     (
         "base-uri",
@@ -195,7 +204,11 @@ def _split_serialized_csp_list(serialized):
     start = 0
     for match in re.finditer(r",([\t\n\f\r ]*)([A-Za-z0-9-]+)", serialized):
         directive = match.group(2)
-        if match.group(1) or directive in CSP_STANDARD_DIRECTIVES or "-" in directive:
+        if (
+            match.group(1)
+            or directive.lower() in CSP_STANDARD_DIRECTIVES
+            or "-" in directive
+        ):
             policies.append(serialized[start : match.start()].strip())
             start = match.end(1)
     policies.append(serialized[start:].strip())
@@ -693,10 +706,12 @@ class Response(Storage):
                         continue
                     bits = directive.split()
                     if bits:
-                        _validate_csp_directive(bits[0])
-                        p[bits[0]] = _normalize_csp_tokens(bits[1:])
+                        directive = bits[0].lower()
+                        _validate_csp_directive(directive)
+                        p[directive] = _normalize_csp_tokens(bits[1:])
 
         def merge(directive, sources):
+            directive = directive.replace("_", "-").lower()
             _validate_csp_directive(directive)
             sources = _normalize_csp_tokens(sources)
             if directive not in p:
@@ -710,8 +725,12 @@ class Response(Storage):
         n = self.nonce
         merge("script-src", ["'self'", "'nonce-%s'" % n])
         merge("style-src", ["'self'", "'nonce-%s'" % n])
+        supplied = set(k.replace("_", "-").lower() for k in policies)
+        for directive, sources in CSP_SECURE_DEFAULTS:
+            if directive not in p and directive not in supplied:
+                merge(directive, sources)
         for k, v in policies.items():
-            merge(k.replace("_", "-"), v)
+            merge(k, v)
 
         self.headers[header] = "; ".join(
             "%s %s" % (k, " ".join(v)) for k, v in p.items()
