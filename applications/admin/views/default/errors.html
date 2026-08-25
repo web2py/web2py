@@ -47,9 +47,15 @@ pass}}
                             <td class="cbcentered"><input type="checkbox" name="delete_{{=e['hash']}}" /></td>
                             <td>{{=e['count']}}</td>
                             <td>{{=e['causer']}}</td>
+                            {{if e.get('unreadable'):}}
+                            <td>{{=e['last_line']}}</td>
+                            <td>{{=e['ticket']}}</td>
+                            {{else:}}
                             <td>{{=A(e['last_line'],_href="#",_onclick="collapse('%s');return false;"%e['hash'])}}</td>
                             <td>+&nbsp;{{=A(T('details'),_href=URL(base_url,args=[app,e['ticket']]))}}</td>
+                            {{pass}}
                         </tr>
+                        {{if not e.get('unreadable'):}}
                         <tr id="{{=e['hash']}}" class="traceback">
                             <td colspan="5">
                                 <div class="ticket_code">
@@ -57,6 +63,7 @@ pass}}
                                 </div>
                             </td>
                         </tr>
+                        {{pass}}
                         {{pass}}
                     </tbody>
                 </table>

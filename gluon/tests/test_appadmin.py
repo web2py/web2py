@@ -428,6 +428,101 @@ class TestAppAdmin(unittest.TestCase):
             "/tmp/pwn.py"
         )
 
+    def test_errors_lists_unreadable_legacy_xml_ticket(self):
+        import marshal
+        import pickle
+        import tempfile
+
+        from gluon.globals import Request, Response, Session, current
+
+        class LegacyXML:
+            def __reduce__(self):
+                from gluon.html import XML_unpickle
+
+                return XML_unpickle, (marshal.dumps("<b>legacy</b>"),)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            load_controller = self.prepare_multi_user_admin_env()
+            self.env["is_mobile"] = False
+            self.env["DEMO_MODE"] = False
+            self.env["is_gae"] = False
+            self.env["FILTER_APPS"] = None
+            self.env["listdir"] = fileutils.listdir
+            load_controller("default")
+            app_folder = os.path.join(temporary_directory, "applications", "admin")
+            errors_folder = os.path.join(app_folder, "errors")
+            os.makedirs(errors_folder)
+
+            valid_ticket = {
+                "traceback": "ValueError: valid ticket",
+                "layer": "model.py",
+                "snapshot": {},
+            }
+            valid_ticket_id = "a" * 32
+            legacy_ticket_id = "b" * 32
+            with open(
+                os.path.join(errors_folder, valid_ticket_id), "wb"
+            ) as ticket_file:
+                pickle.dump(valid_ticket, ticket_file, pickle.HIGHEST_PROTOCOL)
+            with open(
+                os.path.join(errors_folder, legacy_ticket_id), "wb"
+            ) as ticket_file:
+                pickle.dump(
+                    {
+                        "traceback": "ValueError: legacy ticket",
+                        "layer": "model.py",
+                        "snapshot": {"request": LegacyXML()},
+                    },
+                    ticket_file,
+                    pickle.HIGHEST_PROTOCOL,
+                )
+
+            request = Request(env={})
+            request.application = "admin"
+            request.controller = "default"
+            request.function = "errors"
+            request.folder = app_folder
+            request.args = List(["admin", "new"])
+            request._vars = Storage()
+            request.env.http_host = "127.0.0.1:8000"
+            request.env.remote_addr = "127.0.0.1"
+            request.client = request.env.remote_addr
+            request.is_local = True
+            response = Response()
+            session = Session()
+            session.connect(request, response)
+            current.request = request
+            current.response = response
+            current.session = session
+
+            environment = self.env
+            environment.update(
+                request=request,
+                response=response,
+                session=session,
+                current=current,
+                MULTI_USER_MODE=False,
+                is_gae=False,
+            )
+            result = environment["errors"]()
+            self.assertEqual(len(result["errors"]), 2)
+            errors_by_ticket = {error["ticket"]: error for error in result["errors"]}
+            self.assertFalse(errors_by_ticket[valid_ticket_id].get("unreadable"))
+            self.assertTrue(errors_by_ticket[legacy_ticket_id]["unreadable"])
+            self.assertEqual(
+                errors_by_ticket[legacy_ticket_id]["last_line"],
+                "Ticket could not be decoded",
+            )
+
+            request._vars = Storage(
+                {"delete_%s" % errors_by_ticket[legacy_ticket_id]["hash"]: "on"}
+            )
+            result = environment["errors"]()
+            self.assertEqual(
+                [error["ticket"] for error in result["errors"]], [valid_ticket_id]
+            )
+            self.assertFalse(os.path.exists(os.path.join(errors_folder, legacy_ticket_id)))
+
     def test_appadmin_rejects_unowned_app_in_multi_user_mode(self):
         """Test appadmin enforces app ownership for multi-user admin sessions."""
         request = self.make_multi_user_appadmin_request("victim")
