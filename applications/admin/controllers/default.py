@@ -1646,7 +1646,27 @@ def errors():
                     error = safe_load(fullpath_file, allowed_classes=TicketStorage.TICKET_ALLOWED_CLASSES)
                 finally:
                     fullpath_file.close()
-            except (IOError, pickle.UnpicklingError, EOFError):
+            except (
+                IOError,
+                pickle.UnpicklingError,
+                EOFError,
+                TypeError,
+                UnicodeError,
+            ):
+                unreadable_hash = hashlib.md5(
+                    ("unreadable:" + fn).encode("utf8")
+                ).hexdigest()
+                if unreadable_hash in delete_hashes:
+                    os.unlink(fullpath)
+                else:
+                    hash2error[unreadable_hash] = dict(
+                        count=1,
+                        causer=T("Unreadable ticket"),
+                        last_line=T("Ticket could not be decoded"),
+                        hash=unreadable_hash,
+                        ticket=fn,
+                        unreadable=True,
+                    )
                 continue
 
             hash = hashlib.md5(error['traceback'].encode("utf8")).hexdigest()
