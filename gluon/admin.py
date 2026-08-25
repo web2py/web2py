@@ -81,6 +81,19 @@ def apath(path="", r=None):
     return os.path.join(opath, path).replace("\\", "/")
 
 
+def safe_path(request, path):
+    resolved = os.path.abspath(os.path.normpath(path))
+    apps_root = os.path.abspath(up(request.folder))
+    deposit_root = os.path.join(up(apps_root), "deposit")
+    if not any(is_within_root(resolved, root) for root in (apps_root, deposit_root)):
+        raise HTTP(403)
+    return resolved
+
+
+def safe_apath(path="", r=None):
+    return safe_path(r, apath(path, r))
+
+
 def is_within_root(path, root):
     return path == root or path.startswith(root + os.sep)
 
