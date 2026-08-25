@@ -429,6 +429,44 @@ class testResponse(unittest.TestCase):
         )
         self.assertEqual("'self'", self._csp_directive(csp, "form-action"))
 
+    def test_enable_csp_directives_are_case_insensitive(self):
+        response = Response()
+        response.enable_csp(
+            **{
+                "BASE_URI": "https://cdn.example",
+                "Form_Action": "https://pay.example",
+                "OBJECT_SRC": "'self'",
+            }
+        )
+        csp = response.headers["Content-Security-Policy"]
+        self.assertEqual(
+            "https://cdn.example", self._csp_directive(csp, "base-uri")
+        )
+        self.assertEqual(
+            "https://pay.example", self._csp_directive(csp, "form-action")
+        )
+        self.assertEqual("'self'", self._csp_directive(csp, "object-src"))
+
+        response = Response()
+        response.headers["Content-Security-Policy"] = (
+            "BASE-URI https://cdn.example; Form-Action https://pay.example; "
+            "OBJECT-SRC 'self'"
+        )
+        response.enable_csp()
+        csp = response.headers["Content-Security-Policy"]
+        self.assertEqual(
+            "https://cdn.example", self._csp_directive(csp, "base-uri")
+        )
+        self.assertEqual(
+            "https://pay.example", self._csp_directive(csp, "form-action")
+        )
+        self.assertEqual("'self'", self._csp_directive(csp, "object-src"))
+
+        response = Response()
+        response.headers["Content-Security-Policy"] = "BASE_URI https://cdn.example"
+        with self.assertRaises(ValueError):
+            response.enable_csp()
+
     def test_enable_csp_accepts_existing_policy_lists(self):
         response = Response()
         response.headers["Content-Security-Policy"] = (
