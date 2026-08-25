@@ -15,7 +15,7 @@
 <p class="help span7 alert alert-block alert-warning">{{=T('ATTENTION: Login requires a secure (HTTPS) connection or running on localhost.')}}</p>
 {{pass}}
 </div>
-<script type="text/javascript">
+<script type="text/javascript" nonce="{{=response.nonce}}">
 	jQuery(document).ready(function(){
 		jQuery("#password").focus();
 	});

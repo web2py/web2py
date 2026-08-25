@@ -113,7 +113,7 @@
 
     <script src="{{=URL('static', 'js/autoscroll.js')}}"></script>
 
-    <script type="text/javascript">
+    <script type="text/javascript" nonce="{{=response.nonce}}">
     var bShellScrolling=0
     jQuery(document).ready(function(){
       // jQuery('#statement').focus();  // not usefull most times... 

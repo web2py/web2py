@@ -3,7 +3,7 @@
 
 {{block sectionclass}}errors{{end}}
 
-<style>
+<style nonce="{{=response.nonce}}">
 table.sortable {
   border-spacing:0px;
 }
@@ -24,7 +24,7 @@ a.unavailable {
 }
 </style>
 
-<script language="JavaScript">
+<script language="JavaScript" nonce="{{=response.nonce}}">
   function check(){
     for (var i = 0; i < document.myform.elements.length; i++) {
         var e = document.myform.elements[i];

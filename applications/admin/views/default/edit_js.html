@@ -41,7 +41,7 @@
 </div>
 
     <textarea style=" height:100%; direction:ltr;" id="textarea_{{=id}}" class="input-block-level" name="data" >{{=data}}</textarea>
-    <script>
+    <script nonce="{{=response.nonce}}">
     var editor = CodeMirror.fromTextArea(document.getElementById("textarea_{{=id}}"),{
     {{if filetype=='html':}}
         mode : "text/html",

@@ -86,7 +86,7 @@
     <p id="check_version" class="row-buttons">
       {{if session.check_version:}}
         {{=T('Checking for upgrades...')}}
-        <script>ajax('{{=URL('check_version')}}',[],'check_version');</script>
+        <script nonce="{{=response.nonce}}">ajax('{{=URL('check_version')}}',[],'check_version');</script>
         {{session.check_version=False}}
       {{else:}}
         {{=button("javascript:ajax('"+URL('check_version')+"',[],'check_version')", T('Check for upgrades'))}}

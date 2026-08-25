@@ -1,5 +1,5 @@
 {{extend 'default.mobile/layout.html'}}
-<script>
+<script nonce="{{=response.nonce}}">
 var current_theme = "{{=editor_settings['theme']}}";  //Default theme
 var current_editor = "{{=editor_settings['editor']}}";  //Default editor
 {{if editor_settings['closetag'] == 'true':}}

@@ -110,7 +110,7 @@ pass}}
         {{ pass }}
     </form><!-- /errorform -->
 </div>
-<script type="text/javascript">
+<script type="text/javascript" nonce="{{=response.nonce}}">
     jQuery(document).ready(function() {
         jQuery('.traceback').hide();
         jQuery("#trck_errors thead tr th:first input[type=checkbox]").click(function() {

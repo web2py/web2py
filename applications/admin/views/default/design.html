@@ -467,7 +467,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
       </div>
 </div>
 
-<script>
+<script nonce="{{=response.nonce}}">
 function filter_files() {
       if(jQuery('#search').val()){
         jQuery.getJSON('{{=URL('search',args=request.args)}}?keywords='+escape(jQuery('#search').val()),null,function(data, textStatus, xhr){

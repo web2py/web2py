@@ -74,13 +74,13 @@
         <!-- BS JAVASCRIPT
         ====================== -->
         <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
-        <script type="text/javascript">
+        <script type="text/javascript" nonce="{{=response.nonce}}">
             jQuery(document).ready(function(){
                 jQuery("[rel=tooltip]").tooltip();
                 jQuery(":input").attr("autocomplete","off");
             });
         </script>
-        <script>
+        <script nonce="{{=response.nonce}}">
             // ====================
             // upload input mask
             // ====================

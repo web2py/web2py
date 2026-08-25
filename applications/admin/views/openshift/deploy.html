@@ -1,8 +1,8 @@
 {{extend 'layout.html'}}
-<script>$=jQuery</script>
+<script nonce="{{=response.nonce}}">$=jQuery</script>
 <link rel="stylesheet" type="text/css" href="{{=URL(r=request,c='static',f='css/jqueryMultiSelect.css')}}" />
 <script src="{{=URL(r=request,c='static',f='js/jqueryMultiSelect.js')}}"></script>
-<script>
+<script nonce="{{=response.nonce}}">
 function callback() {
   $.get('{{=URL(r=request,f='callback')}}','',function(data,status){ if(data!='<done/>') { $('#target').html($('#target').html()+data); callback(); } });
 }
