@@ -73,6 +73,5 @@ class TestWebservicesPathContainment(unittest.TestCase):
             if os.path.exists(escaped):
                 os.unlink(escaped)
 
-
 if __name__ == "__main__":
     unittest.main()
