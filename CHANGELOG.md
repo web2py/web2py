@@ -24,12 +24,13 @@ Breaking change:
   `auth.settings.host` or an allowlist in `auth.settings.host_names`;
   otherwise an `HTTP 500` is raised.
 
-CSP is now used by the software that ships with web2py. `enable_csp()` accepts
-`report_only=True`, which sends `Content-Security-Policy-Report-Only` so a browser
-reports violations without blocking them, and the bundled `admin` application turns
-that on for every request. Nonces are emitted in report-only mode too, so the reports
-describe what enforcement would do. admin's remaining inline `on*=` handlers and
-`style=` attributes are what stop it enforcing today.
+The bundled `admin` application now uses CSP in report-only mode.
+`enable_csp()` accepts `report_only=True`, which sends
+`Content-Security-Policy-Report-Only` so a browser reports violations without
+blocking them. Other applications must opt in explicitly. Nonces are emitted
+in report-only mode too, so the reports describe what enforcement would do.
+admin's remaining inline `on*=` handlers and `style=` attributes are what stop
+it enforcing today.
 
 Other security fixes in this range:
 
