@@ -151,8 +151,12 @@ class Collection(object):
             if hasattr(field, "regexp_validator"):
                 info["regexp"] = field.regexp_validator
             info["required"] = field.required
-            info["post_writable"] = field.name in policies["POST"].get("fields", fields)
-            info["put_writable"] = field.name in policies["PUT"].get("fields", fields)
+            info["post_writable"] = field.writable and field.name in policies[
+                "POST"
+            ].get("fields", fields)
+            info["put_writable"] = field.writable and field.name in policies[
+                "PUT"
+            ].get("fields", fields)
             info["options"] = {}  # FIX THIS
             data.append(info)
         return {"data": data}
@@ -353,13 +357,16 @@ class Collection(object):
                     (query, limitby, orderby) = self.request2query(
                         table, request.get_vars
                     )
+                    allowed = self.table_policy.get("fields", table.fields)
                     fields = filter(
-                        lambda fn_value: table[fn_value[0]].writable, data.items()
+                        lambda fn_value: fn_value[0] in allowed
+                        and table[fn_value[0]].writable,
+                        data.items(),
                     )
                     res = db(query).validate_and_update(**dict(fields))  # MAY FAIL
-                    if res.errors:
+                    if res["errors"]:
                         return self.error(
-                            400, "BAD REQUEST", "Validation Error", res.errors
+                            400, "BAD REQUEST", "Validation Error", res["errors"]
                         )
                     else:
                         response.status = 200
@@ -370,18 +377,21 @@ class Collection(object):
             else:  # create
                 # ADD validate fields and return error
                 try:
+                    allowed = self.table_policy.get("fields", table.fields)
                     fields = filter(
-                        lambda fn_value1: table[fn_value1[0]].writable, data.items()
+                        lambda fn_value1: fn_value1[0] in allowed
+                        and table[fn_value1[0]].writable,
+                        data.items(),
                     )
                     res = table.validate_and_insert(**dict(fields))  # MAY FAIL
-                    if res.errors:
+                    if res["errors"]:
                         return self.error(
-                            400, "BAD REQUEST", "Validation Error", res.errors
+                            400, "BAD REQUEST", "Validation Error", res["errors"]
                         )
                     else:
                         response.status = 201
                         response.headers["location"] = URL(
-                            args=(tablename, res.id), scheme=True
+                            args=(tablename, res["id"]), scheme=True
                         )
                         return ""
                 except SyntaxError as e:  # Exception,e:

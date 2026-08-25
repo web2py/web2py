@@ -246,6 +246,171 @@ class TestContribs(unittest.TestCase):
         finally:
             db.close()
 
+    def test_hypermedia_write_respects_policy_fields(self):
+        from gluon import current
+        from gluon.dal import DAL, Field
+        from gluon.contrib.hypermedia import Collection
+        from gluon.globals import Request, Response
+
+        class Args(list):
+            def __call__(self, i, default=None):
+                try:
+                    return self[i]
+                except IndexError:
+                    return default
+
+        request = Request(env={"HTTP_HOST": "example.com"})
+        request.application, request.controller, request.function = "app", "d", "api"
+        current.request = request
+        current.response = Response()
+
+        db = DAL("sqlite:memory")
+        try:
+            db.define_table("thing", Field("name"), Field("owner"))
+
+            # the policy only permits writing "name"; "owner" must stay protected,
+            # matching what table2template advertises as post_writable/put_writable
+            policies = {"thing": {"POST": {"query": None, "fields": ["name"]}}}
+
+            forwarded = {}
+
+            def insert_spy(**fields):
+                forwarded.clear()
+                forwarded.update(fields)
+                return Storage(id=1, errors={})
+
+            db.thing.validate_and_insert = insert_spy
+
+            req = Storage()
+            req.args = Args(["thing"])
+            req.env = Storage(
+                request_method="POST",
+                content_type="application/x-www-form-urlencoded",
+            )
+            req.get_vars = Storage()
+            req.post_vars = Storage(name="alice", owner="attacker")
+            req.vars = req.post_vars
+
+            Collection(db).process(req, current.response, policies)
+
+            # The non-policy column must never reach validate_and_insert.
+            self.assertNotIn("owner", forwarded)
+            self.assertEqual(forwarded, {"name": "alice"})
+
+            # The policy filter is also applied to update payloads.
+            update_forwarded = {}
+
+            def update_spy(self, **fields):
+                update_forwarded.update(fields)
+                return Storage(errors={})
+
+            from pydal.objects import Set
+
+            req.args = Args(["thing", "1"])
+            req.env.request_method = "PUT"
+            req.get_vars = Storage()
+            req.post_vars = Storage(name="updated", owner="attacker")
+            req.vars = req.post_vars
+            update_policy = {
+                "thing": {"PUT": {"query": None, "fields": ["id", "name"]}}
+            }
+            original_validate_and_update = Set.validate_and_update
+            Set.validate_and_update = update_spy
+            try:
+                Collection(db).process(req, current.response, update_policy)
+            finally:
+                Set.validate_and_update = original_validate_and_update
+
+            # The non-policy column must never reach validate_and_update.
+            self.assertNotIn("owner", update_forwarded)
+            self.assertEqual(update_forwarded, {"name": "updated"})
+
+        finally:
+            db.close()
+
+    def test_hypermedia_write_handles_dal_result_dicts(self):
+        from gluon import current
+        from gluon.contrib.hypermedia import Collection
+        from gluon.dal import DAL, Field
+        from gluon.globals import Request, Response
+
+        class Args(list):
+            def __call__(self, i, default=None):
+                try:
+                    return self[i]
+                except IndexError:
+                    return default
+
+        request = Storage(
+            args=Args(["thing"]),
+            env=Storage(
+                request_method="POST",
+                content_type="application/x-www-form-urlencoded",
+            ),
+            get_vars=Storage(),
+            post_vars=Storage(name="alice", owner="attacker"),
+            vars=Storage(name="alice", owner="attacker"),
+        )
+        response = Response()
+        current.request = Request(env={"HTTP_HOST": "example.com"})
+        current.request.application = "app"
+        current.request.controller = "d"
+        current.request.function = "api"
+
+        db = DAL("sqlite:memory")
+        try:
+            db.define_table("thing", Field("name"), Field("owner"))
+            policies = {"thing": {"POST": {"query": None, "fields": ["name"]}}}
+            Collection(db).process(request, response, policies)
+            inserted = db.thing(name="alice")
+            self.assertTrue(inserted)
+            self.assertIsNone(inserted.owner)
+            self.assertEqual(response.status, 201)
+
+            request.args = Args(["thing", str(inserted.id)])
+            request.env.request_method = "PUT"
+            request.get_vars = Storage()
+            request.post_vars = Storage(name="updated", owner="attacker")
+            request.vars = request.post_vars
+            Collection(db).process(
+                request,
+                response,
+                {"thing": {"PUT": {"query": None, "fields": ["id", "name"]}}},
+            )
+            updated = db.thing[inserted.id]
+            self.assertEqual(updated.name, "updated")
+            self.assertIsNone(updated.owner)
+            self.assertEqual(response.status, 200)
+        finally:
+            db.close()
+
+    def test_hypermedia_template_respects_field_writable(self):
+        from gluon.contrib.hypermedia import Collection
+        from gluon.dal import DAL, Field
+
+        db = DAL("sqlite:memory")
+        try:
+            db.define_table("thing", Field("name"), Field("owner", writable=False))
+            policies = {
+                "thing": {
+                    "GET": {"fields": ["name", "owner"]},
+                    "POST": {"fields": ["name", "owner"]},
+                    "PUT": {"fields": ["name", "owner"]},
+                }
+            }
+            collection = Collection(db)
+            collection.policies = policies
+            collection.table_policy = policies["thing"]["GET"]
+            template = collection.table2template(db.thing)
+            fields = {item["name"]: item for item in template["data"]}
+
+            self.assertTrue(fields["name"]["post_writable"])
+            self.assertTrue(fields["name"]["put_writable"])
+            self.assertFalse(fields["owner"]["post_writable"])
+            self.assertFalse(fields["owner"]["put_writable"])
+        finally:
+            db.close()
+
 
 class TestPySimpleSoapTransport(unittest.TestCase):
     """Tests the TLS handling of the pysimplesoap transports"""
