@@ -337,6 +337,15 @@ class CronParserTest(unittest.TestCase):
         )
         self.assertEqual(CronParser._rangetolist("0-60/7", "min"),
                          [0, 7, 14, 21, 28, 35, 42, 49, 56])
+        # A range whose *start* is already past the field's maximum. This is the
+        # branch where the arithmetic below would otherwise go negative: with
+        # min_=70 and limit=60, the first out-of-range multiple of step_ works
+        # out to 60, giving range(70, 61) -- empty. An empty list is still
+        # rejected, but by "no values" rather than by _sanitycheck seeing an
+        # out-of-range one, so keep the single out-of-range value instead.
+        self.assertEqual(CronParser._rangetolist("70-99999999/1", "min"), [70])
+        itr = CronParser("70-99999999/1 * * * *", base)
+        self.assertRaises(ValueError, itr.next)
 
     def testLastDayOfMonth(self):
         base = datetime.datetime(2015, 9, 4)
