@@ -8,6 +8,7 @@ import glob
 import os
 import shutil
 import sys
+import tracemalloc
 import unittest
 
 from gluon.dal import DAL
@@ -310,6 +311,32 @@ class CronParserTest(unittest.TestCase):
         self.assertRaises(ValueError, itr.next)
         itr = CronParser("* * * *", base)
         self.assertRaises(ValueError, itr.next)
+
+    def test_hugerange(self):
+        # A range's upper end is taken from the expression, so an out-of-range
+        # one used to be expanded in full before being rejected: "0-99999999/1"
+        # built 100 million integers (~4 GB, ~40 s) only to fail _sanitycheck.
+        # The expression must still be rejected, and rejecting it must not
+        # allocate a list proportional to the number in the expression.
+        base = datetime.datetime(2013, 3, 4, 0, 0)
+        itr = CronParser("0-99999999/1 * * * *", base)
+        tracemalloc.start()
+        try:
+            self.assertRaises(ValueError, itr.next)
+            peak = tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+        # Asserting only ValueError would pass without the fix, because the
+        # unbounded version also raises -- just after the allocation. 100
+        # million ints need gigabytes, so any small ceiling separates the two.
+        self.assertLess(peak, 1024 * 1024)
+        # Values within the field's range keep their exact previous meaning,
+        # including a step that lands beyond the end of the range.
+        self.assertEqual(
+            CronParser._rangetolist("0-59/15", "min"), [0, 15, 30, 45]
+        )
+        self.assertEqual(CronParser._rangetolist("0-60/7", "min"),
+                         [0, 7, 14, 21, 28, 35, 42, 49, 56])
 
     def testLastDayOfMonth(self):
         base = datetime.datetime(2015, 9, 4)
