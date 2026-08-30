@@ -8,6 +8,7 @@ import glob
 import os
 import shutil
 import sys
+import tracemalloc
 import unittest
 
 from gluon.dal import DAL
@@ -309,6 +310,41 @@ class CronParserTest(unittest.TestCase):
         itr = CronParser("* * * * * *", base)
         self.assertRaises(ValueError, itr.next)
         itr = CronParser("* * * *", base)
+        self.assertRaises(ValueError, itr.next)
+
+    def test_hugerange(self):
+        # A range's upper end is taken from the expression, so an out-of-range
+        # one used to be expanded in full before being rejected: "0-99999999/1"
+        # built 100 million integers (~4 GB, ~40 s) only to fail _sanitycheck.
+        # The expression must still be rejected, and rejecting it must not
+        # allocate a list proportional to the number in the expression.
+        base = datetime.datetime(2013, 3, 4, 0, 0)
+        itr = CronParser("0-99999999/1 * * * *", base)
+        tracemalloc.start()
+        try:
+            self.assertRaises(ValueError, itr.next)
+            peak = tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+        # Asserting only ValueError would pass without the fix, because the
+        # unbounded version also raises -- just after the allocation. 100
+        # million ints need gigabytes, so any small ceiling separates the two.
+        self.assertLess(peak, 1024 * 1024)
+        # Values within the field's range keep their exact previous meaning,
+        # including a step that lands beyond the end of the range.
+        self.assertEqual(
+            CronParser._rangetolist("0-59/15", "min"), [0, 15, 30, 45]
+        )
+        self.assertEqual(CronParser._rangetolist("0-60/7", "min"),
+                         [0, 7, 14, 21, 28, 35, 42, 49, 56])
+        # A range whose *start* is already past the field's maximum. This is the
+        # branch where the arithmetic below would otherwise go negative: with
+        # min_=70 and limit=60, the first out-of-range multiple of step_ works
+        # out to 60, giving range(70, 61) -- empty. An empty list is still
+        # rejected, but by "no values" rather than by _sanitycheck seeing an
+        # out-of-range one, so keep the single out-of-range value instead.
+        self.assertEqual(CronParser._rangetolist("70-99999999/1", "min"), [70])
+        itr = CronParser("70-99999999/1 * * * *", base)
         self.assertRaises(ValueError, itr.next)
 
     def testLastDayOfMonth(self):
