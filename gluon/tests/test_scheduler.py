@@ -568,8 +568,10 @@ class TestsForSchedulerAPIs(BaseTestScheduler):
         s = Scheduler(self.db)
         fname = "foo"
         watch = s.queue_task(fname, task_name="watch")
-        # queuing a task returns id, errors, uuid
-        self.assertEqual(set(watch.keys()), set(["id", "uuid", "errors"]))
+        # queuing a task returns at least id, errors, uuid; the underlying
+        # validate_and_insert() may add keys (e.g. "success"), so don't
+        # assert on an exact key set
+        self.assertTrue(set(["id", "uuid", "errors"]) <= set(watch.keys()))
         # queueing nothing isn't allowed
         self.assertRaises(TypeError, s.queue_task, *[])
         # passing pargs and pvars wrongly

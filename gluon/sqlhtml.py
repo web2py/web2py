@@ -24,7 +24,7 @@ from urllib.parse import quote as urllib_quote
 from urllib.parse import unquote as urllib_unquote
 from urllib.parse import urlencode
 
-from pydal.adapters.base import CALLABLETYPES
+from pydal.backend_base import CALLABLETYPES
 from pydal.base import DEFAULT
 from pydal.default_validators import default_validators
 from pydal.helpers.classes import Reference, SQLCustomType
