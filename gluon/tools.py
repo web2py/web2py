@@ -4655,21 +4655,25 @@ class Auth(AuthAPI):
             table_user = self.table_user()
             from gluon.settings import global_settings
 
+            now = request.now
             if global_settings.web2py_runtime_gae:
                 row = table_token(token=token)
-                if row:
+                if row and row.expires_on and row.expires_on > now:
                     user = table_user(row.user_id)
             else:
                 row = (
                     self.db(table_token.token == token)(
-                        table_user.id == table_token.user_id
-                    )
+                        table_token.expires_on > now
+                    )(table_user.id == table_token.user_id)
                     .select()
                     .first()
                 )
                 if row:
                     user = row[table_user._tablename]
-            if user:
+            # a token is only as good as the account behind it: honor the
+            # same registration_key states that login_bare() refuses, so
+            # blocking or disabling a user also revokes its tokens
+            if user and not (user.registration_key or "").strip():
                 self.login_user(user)
         return self.requires(True, otherwise=otherwise)
 

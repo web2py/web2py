@@ -1451,6 +1451,144 @@ class TestAuth(unittest.TestCase):
     # End Auth test
 
 
+class TestAuthTokenLogin(unittest.TestCase):
+    """
+    Regression tests for Auth.requires_login_or_token().
+
+    A token is an alternative to a password, not a way around it, so it
+    has to honor the same account state login_bare() honors: a user with
+    a non-blank registration_key (pending/disabled/blocked/verifying) is
+    refused, which means blocking a user also revokes its tokens. The
+    token must also be unexpired -- auth_token.expires_on was defined but
+    never enforced, so any token was valid forever.
+    """
+
+    INELIGIBLE_KEYS = (
+        "disabled",
+        "blocked",
+        "pending",
+        "pending-approval",
+        "verification-key",
+    )
+
+    def setUp(self):
+        self._make_env()
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
+        auth = Auth(self.db)
+        auth.define_tables(username=True, signature=False, enable_tokens=True)
+        self.uid = self.db.auth_user.insert(
+            first_name="Bart",
+            last_name="Simpson",
+            username="bart",
+            email="bart@simpson.com",
+            password="bart_password",
+            registration_key="",
+        )
+        # a group to check that a refused token loads no permissions either
+        group_id = self.db.auth_group.insert(role="admin")
+        self.db.auth_membership.insert(user_id=self.uid, group_id=group_id)
+        self.db.commit()
+
+    def _make_env(self):
+        """A brand new request/session, i.e. an unauthenticated caller."""
+        request = Request(env={})
+        request.application = "a"
+        request.controller = "c"
+        request.function = "f"
+        request.folder = "applications/admin"
+        response = Response()
+        session = Session()
+        session.connect(request, response)
+        current.request = request
+        current.response = response
+        current.session = session
+        current.T = TranslatorFactory("", "en")
+        return request
+
+    def _add_token(self, token, expires_on=None):
+        kwargs = {"user_id": self.uid, "token": token}
+        if expires_on is not None:
+            kwargs["expires_on"] = expires_on
+        self.db.auth_token.insert(**kwargs)
+        self.db.commit()
+
+    def _set_registration_key(self, registration_key):
+        self.db.auth_user[self.uid].update_record(
+            registration_key=registration_key
+        )
+        self.db.commit()
+
+    def _login_with(self, token, gae=False):
+        """Authenticate from a clean session; returns the Auth instance."""
+        from gluon.settings import global_settings
+
+        request = self._make_env()
+        request.vars._token = token
+        auth = Auth(self.db)
+        auth.settings.enable_tokens = True
+        previous_gae = global_settings.web2py_runtime_gae
+        global_settings.web2py_runtime_gae = gae
+        try:
+            auth.requires_login_or_token()
+        finally:
+            global_settings.web2py_runtime_gae = previous_gae
+        return auth
+
+    def _assert_denied(self, auth):
+        """A refused token starts no session and loads no groups."""
+        self.assertIsNone(auth.user)
+        self.assertFalse(auth.user_groups)
+
+    def test_valid_token_logs_the_user_in(self):
+        self._add_token("live")
+        for gae in (False, True):
+            with self.subTest(gae=gae):
+                auth = self._login_with("live", gae=gae)
+                self.assertEqual(auth.user.username, "bart")
+                self.assertEqual(list(auth.user_groups.values()), ["admin"])
+
+    def test_unknown_token_is_refused(self):
+        self._add_token("live")
+        for gae in (False, True):
+            with self.subTest(gae=gae):
+                self._assert_denied(self._login_with("nosuchtoken", gae=gae))
+
+    def test_expired_token_is_refused(self):
+        self._add_token("stale", expires_on=datetime.datetime(2000, 1, 1))
+        for gae in (False, True):
+            with self.subTest(gae=gae):
+                self._assert_denied(self._login_with("stale", gae=gae))
+
+    def test_token_is_refused_for_ineligible_registration_key(self):
+        # login_bare() refuses these states; a token must not bypass them
+        for gae in (False, True):
+            for registration_key in self.INELIGIBLE_KEYS:
+                with self.subTest(gae=gae, registration_key=registration_key):
+                    token = "%s-%s" % (registration_key, gae)
+                    self._add_token(token)
+                    self._set_registration_key(registration_key)
+                    self._assert_denied(self._login_with(token, gae=gae))
+
+    def test_blank_registration_key_still_allows_token_login(self):
+        # the states login_bare() accepts must keep working
+        for gae in (False, True):
+            for index, registration_key in enumerate((None, "", "   ")):
+                with self.subTest(gae=gae, registration_key=registration_key):
+                    token = "blank-%s-%s" % (index, gae)
+                    self._add_token(token)
+                    self._set_registration_key(registration_key)
+                    auth = self._login_with(token, gae=gae)
+                    self.assertEqual(auth.user.username, "bart")
+
+    def test_blocking_a_user_revokes_an_already_issued_token(self):
+        # the reported case: a token issued while the account was healthy
+        # must stop working the moment the account is disabled
+        self._add_token("issued-before")
+        self.assertEqual(self._login_with("issued-before").user.username, "bart")
+        self._set_registration_key("disabled")
+        self._assert_denied(self._login_with("issued-before"))
+
+
 class TestAuthHostHeaderPoisoning(unittest.TestCase):
     """
     Regression tests for Host-header poisoning in Auth.url(scheme=True).
