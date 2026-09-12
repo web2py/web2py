@@ -251,6 +251,7 @@ class CronParser(object):
                 s = s.replace("*", "1-12", 1)
             elif period == "dow":
                 s = s.replace("*", "0-6", 1)
+        ranges_max = dict(min=59, hr=23, mon=12, dom=31, dow=7)
         match = re.match(r"(\d+)-(\d+)/(\d+)", s)
         if match:
             max_ = int(match.group(2)) + 1
@@ -258,11 +259,25 @@ class CronParser(object):
         else:
             match = re.match(r"(\d+)/(\d+)", s)
             if match:
-                ranges_max = dict(min=59, hr=23, mon=12, dom=31, dow=7)
                 max_ = ranges_max[period] + 1
                 step_ = int(match.group(2))
         if match:
             min_ = int(match.group(1))
+            # The upper end of an explicit "min-max/step" range comes straight
+            # from the cron expression, so a short line can ask for a very long
+            # list: "0-99999999/1 * * * *" builds 100 million integers (~4 GB,
+            # ~40 s) before _sanitycheck rejects it for containing values above
+            # 59.  Stop generating once one out-of-range value is present: that
+            # single value is all _sanitycheck needs to reject the expression,
+            # and expressions that stay in range are unaffected.
+            limit = ranges_max[period] + 1
+            if max_ > limit:
+                if min_ >= limit:
+                    max_ = min(max_, min_ + 1)
+                else:
+                    # first multiple of step_ at or above the limit
+                    first_bad = min_ + -(-(limit - min_) // step_) * step_
+                    max_ = min(max_, first_bad + 1)
             retval = list(range(min_, max_, step_))
         else:
             retval = []
