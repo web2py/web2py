@@ -259,6 +259,137 @@ class TestAppAdmin(unittest.TestCase):
             print(traceback.format_exc())
             self.fail("Could not make the view")
 
+    def test_select_table_route_uses_table_default(self):
+        request = self.env["request"]
+        request.args = List(["db", "auth_user"])
+        request.env.query_string = ""
+        result = self.run_function()
+        self.assertEqual(result["query"], "db.auth_user.id>0")
+
+    def test_import_csv_binary_upload(self):
+        import io
+
+        request = self.env["request"]
+        request.function = "select"
+        request.args = List(["db", "auth_user"])
+        request.env.query_string = "query=db.auth_user.id>0"
+        self.run_function()
+        self.env["db"].define_table("csv_users", Field("name"), Field("email"))
+        self.env["db"].define_table("csv_text_users", Field("name"), Field("email"))
+
+        csv_file = io.BytesIO(
+            b"csv_users.id,csv_users.name,csv_users.email\n"
+            b"1,Alpha,alpha@example.com\n"
+            b"2,Beta,beta@example.com\n"
+        )
+        self.env["import_csv"](self.env["db"].csv_users, csv_file)
+
+        self.assertEqual(self.env["db"](self.env["db"].csv_users).count(), 2)
+
+        text_file = io.StringIO(
+            "csv_text_users.id,csv_text_users.name,csv_text_users.email\n"
+            "1,Gamma,gamma@example.com\n"
+        )
+        text_file.read(10)
+        self.env["import_csv"](self.env["db"].csv_text_users, text_file)
+
+        self.assertEqual(self.env["db"](self.env["db"].csv_text_users).count(), 1)
+
+    def test_post_form_builder(self):
+        request = self.env["request"]
+        request.function = "select"
+        request.args = List(["db"])
+        request.env.query_string = "query=db.auth_user.id>0"
+        self.run_function()
+
+        form = self.env["post_form"](
+            "/welcome/appadmin/select/db",
+            "next 100 rows",
+            start=100,
+            query="db.auth_user.id>0",
+        )
+        form_html = form.xml()
+        self.assertIn('method="post"', form_html)
+        self.assertIn('name="start"', form_html)
+        self.assertIn('name="query"', form_html)
+        self.assertIn('value="db.auth_user.id&gt;0"', form_html)
+
+    def test_appadmin_sqltable_sort_forms(self):
+        request = self.env["request"]
+        request.function = "select"
+        request.args = List(["db", "auth_user"])
+        request.env.query_string = (
+            "query=db.auth_user.id>0&orderby=auth_user.email"
+        )
+        result = self.run_function()
+        self.env.update(result)
+        table = self.env["appadmin_sqltable"](
+            result["rows"], lambda field, kind, table: "#", "", result["query"]
+        )
+        table_html = table.xml()
+        self.assertIn('method="post"', table_html)
+        self.assertIn('name="query"', table_html)
+        self.assertIn('/welcome/appadmin/select/db/auth_user?orderby=', table_html)
+        self.assertNotIn("&amp;query=", table_html)
+
+        sorted_table = self.env["appadmin_sqltable"](
+            result["rows"], lambda field, kind, table: "#", "", result["query"],
+            result["orderby"]
+        )
+        self.assertIn('orderby=~auth_user.email', sorted_table.xml())
+
+    def test_select_orderby_changes_row_order(self):
+        self.env["db"].auth_user.insert(
+            first_name="Z", last_name="Z", username="z", email="z@example.com"
+        )
+        self.env["db"].auth_user.insert(
+            first_name="A", last_name="A", username="a", email="a@example.com"
+        )
+        request = self.env["request"]
+        request.args = List(["db"])
+        for orderby, expected in (
+            ("auth_user.email", ["a@example.com", "user1@test.com", "z@example.com"]),
+            ("~auth_user.email", ["z@example.com", "user1@test.com", "a@example.com"]),
+        ):
+            request._vars = Storage(
+                query="db.auth_user.id>0", orderby=orderby
+            )
+            result = self.run_function()
+            self.assertEqual([row.email for row in result["rows"]], expected)
+
+    def test_select_second_page_returns_rows(self):
+        for index in range(101):
+            self.env["db"].auth_user.insert(
+                first_name="User",
+                last_name=str(index),
+                username="user%s" % index,
+                email="user%s@example.com" % index,
+            )
+        request = self.env["request"]
+        request.args = List(["db", "auth_user"])
+        request._vars = Storage(
+            query="db.auth_user.id>0",
+            start="100",
+        )
+        result = self.run_function()
+        self.assertEqual(result["start"], 100)
+        self.assertEqual(len(result["rows"]), 2)
+        self.assertEqual([row.id for row in result["rows"]], [101, 102])
+
+    def test_normalize_orderby(self):
+        request = self.env["request"]
+        request.function = "select"
+        request.args = List(["db"])
+        self.run_function()
+
+        normalize_orderby = self.env["normalize_orderby"]
+        normalized, expression = normalize_orderby("db", "auth_user.email")
+        self.assertEqual(normalized, "auth_user.email")
+        self.assertIn("auth_user.email", str(expression).replace('"', ''))
+        self.assertIn("auth_user.id", str(expression).replace('"', ''))
+        self.assertEqual(normalize_orderby("db", "not_allowed"), (None, None))
+        self.assertEqual(normalize_orderby("db", ["auth_user.email"]), (None, None))
+
     def test_safe_eval_dict_handles_commas(self):
         self.assertEqual(
             utils.safe_eval_dict('foo="hello world", bar="hello, world"'),

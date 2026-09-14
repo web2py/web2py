@@ -554,6 +554,13 @@ class TestSQLTABLE(unittest.TestCase):
         sqltable = SQLTABLE(rows)
         self.assertEqual(sqltable.xml()[:7], "<table>")
 
+    def test_SQLTABLE_default_sorting(self):
+        rows = self.db(self.db.auth_user.id > 0).select(self.db.auth_user.ALL)
+        query = "db.auth_user.id>0"
+
+        default_html = SQLTABLE(rows, orderby=True, query=query).xml()
+        self.assertIn("?orderby=auth_user.id&amp;query=db.auth_user.id&gt;0", default_html)
+
 
 # class TestExportClass(unittest.TestCase):
 #     def test___init__(self):
