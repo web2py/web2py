@@ -5129,6 +5129,12 @@ class Crud(object):  # pragma: no cover
             log = self.messages["update_log"]
         if deletable is DEFAULT:
             deletable = self.settings.update_deletable
+        if (
+            deletable
+            and record_id
+            and not self.has_permission("delete", table, record_id)
+        ):
+            deletable = False
         if message is DEFAULT:
             message = self.messages.record_updated
         if "hidden" not in attributes:
@@ -5423,6 +5429,8 @@ class Crud(object):  # pragma: no cover
         db = self.db
         if not (isinstance(table, Table) or table in db.tables):
             raise HTTP(404)
+        if not self.has_permission("select", table):
+            redirect(self.settings.auth.settings.on_failed_authorization)
         attributes = {}
         for key in ("orderby", "groupby", "left", "distinct", "limitby", "cache"):
             if key in args:

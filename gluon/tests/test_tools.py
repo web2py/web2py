@@ -26,7 +26,7 @@ from gluon.globals import Request, Response, Session
 from gluon.http import HTTP
 from gluon.languages import TranslatorFactory
 from gluon.storage import Storage
-from gluon.tools import (Auth, Expose, Mail, Recaptcha2, Wiki, csv_safe,
+from gluon.tools import (Auth, Crud, Expose, Mail, Recaptcha2, Wiki, csv_safe,
                          csv_safe_text, prettydate, prevent_open_redirect)
 
 IS_IMAP = "imap" in DEFAULT_URI
@@ -2191,8 +2191,70 @@ class TestAuthTwoFactor(unittest.TestCase):
         self.assertFalse(self._second_factor(auth, request, "654321"))
 
 
-# TODO: class TestCrud(unittest.TestCase):
-# It deprecated so far from a priority
+class TestCrud(unittest.TestCase):
+    # With crud.settings.auth set every Crud action is gated by the
+    # permission for the operation it performs. search ran its query with no
+    # check at all, and the update form deleted the record with only the
+    # update permission, which Crud.delete itself refuses.
+    def setUp(self):
+        self.request = Request(env={})
+        self.request.application = "a"
+        self.request.controller = "c"
+        self.request.function = "f"
+        self.request.folder = "applications/admin"
+        self.response = Response()
+        self.session = Session()
+        self.session.connect(self.request, self.response)
+        current.request = self.request
+        current.response = self.response
+        current.session = self.session
+        current.T = TranslatorFactory("", "en")
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
+        self.auth = Auth(self.db)
+        self.auth.define_tables(username=True, signature=False)
+        self.db.define_table("t_crud", Field("name"))
+        self.record_id = self.db.t_crud.insert(name="keep")
+        uid = self.db.auth_user.insert(username="alice", password="x")
+        self.auth.login_user(self.db.auth_user(uid))
+        self.group_id = self.auth.add_group("editors")
+        self.auth.add_membership(self.group_id, uid)
+        self.auth.add_permission(self.group_id, "update", "t_crud", self.record_id)
+        self.crud = Crud(self.db)
+        self.crud.settings.auth = self.auth
+
+    def _post_update(self, **extra):
+        formname = "t_crud/%s" % self.record_id
+        # the first call renders the form and issues its formkey
+        self.crud.update(self.db.t_crud, self.record_id)
+        formkey = self.session["_formkey[%s]" % formname][-1]
+        post = dict(
+            _formname=formname,
+            _formkey=formkey,
+            id=str(self.record_id),
+            name="keep",
+            **extra
+        )
+        self.request._get_vars = Storage()
+        self.request._post_vars = Storage(post)
+        self.request._vars = Storage(post)
+        return self.crud.update(self.db.t_crud, self.record_id)
+
+    def test_search_requires_select_permission(self):
+        with self.assertRaises(HTTP):
+            self.crud.search(self.db.t_crud)
+        self.auth.add_permission(self.group_id, "select", "t_crud", 0)
+        form, results = self.crud.search(self.db.t_crud)
+        self.assertIn("chkname", str(form))
+
+    def test_update_form_does_not_delete_without_delete_permission(self):
+        form = self._post_update(delete_this_record="on")
+        self.assertNotIn("delete_this_record", str(form))
+        self.assertEqual(self.db(self.db.t_crud).count(), 1)
+
+    def test_update_form_deletes_with_delete_permission(self):
+        self.auth.add_permission(self.group_id, "delete", "t_crud", self.record_id)
+        form = self._post_update(delete_this_record="on")
+        self.assertEqual(self.db(self.db.t_crud).count(), 0)
 
 
 class TestService(unittest.TestCase):
