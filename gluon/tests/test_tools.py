@@ -2222,10 +2222,10 @@ class TestCrud(unittest.TestCase):
         self.crud = Crud(self.db)
         self.crud.settings.auth = self.auth
 
-    def _post_update(self, **extra):
+    def _post_update(self, ondelete=None, **extra):
         formname = "t_crud/%s" % self.record_id
         # the first call renders the form and issues its formkey
-        self.crud.update(self.db.t_crud, self.record_id)
+        self.crud.update(self.db.t_crud, self.record_id, ondelete=ondelete)
         formkey = self.session["_formkey[%s]" % formname][-1]
         post = dict(
             _formname=formname,
@@ -2237,7 +2237,7 @@ class TestCrud(unittest.TestCase):
         self.request._get_vars = Storage()
         self.request._post_vars = Storage(post)
         self.request._vars = Storage(post)
-        return self.crud.update(self.db.t_crud, self.record_id)
+        return self.crud.update(self.db.t_crud, self.record_id, ondelete=ondelete)
 
     def test_search_requires_select_permission(self):
         with self.assertRaises(HTTP):
@@ -2247,8 +2247,14 @@ class TestCrud(unittest.TestCase):
         self.assertIn("chkname", str(form))
 
     def test_update_form_does_not_delete_without_delete_permission(self):
-        form = self._post_update(delete_this_record="on")
+        deleted = []
+        form = self._post_update(
+            ondelete=lambda form, table: deleted.append((form, table)),
+            delete_this_record="on",
+        )
         self.assertNotIn("delete_this_record", str(form))
+        self.assertFalse(self.crud.deleted)
+        self.assertEqual(deleted, [])
         self.assertEqual(self.db(self.db.t_crud).count(), 1)
 
     def test_update_form_deletes_with_delete_permission(self):

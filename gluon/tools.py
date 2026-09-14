@@ -5201,7 +5201,7 @@ class Crud(object):  # pragma: no cover
             response.flash = message
             if log:
                 self.log_event(log, form.vars)
-            if request.vars.delete_this_record:
+            if request.vars.delete_this_record and deletable:
                 self.deleted = True
                 message = self.messages.record_deleted
                 callback(ondelete, form, table._tablename)
