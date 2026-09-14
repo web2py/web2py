@@ -75,8 +75,8 @@
       {{=T('"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN')}}</p>
     <br/><br/>
     <h4>{{=T("%s selected", nrows)}}</h4>
-    {{if start>0:}}{{=post_form(URL('select', args=request.args[0]), T('previous %s rows') % step, start=start-step, query=query, orderby=orderby or '')}}{{pass}}
-    {{if stop<nrows:}}{{=post_form(URL('select', args=request.args[0]), T('next %s rows') % step, start=start+step, query=query, orderby=orderby or '')}}{{pass}}
+    {{if start>0:}}{{=post_form(URL('select', args=request.args[:2]), T('previous %s rows') % step, start=start-step, query=query, orderby=orderby or '')}}{{pass}}
+    {{if stop<nrows:}}{{=post_form(URL('select', args=request.args[:2]), T('next %s rows') % step, start=start+step, query=query, orderby=orderby or '')}}{{pass}}
     {{if rows:}}
        <div style="overflow:auto; width:80%;">
        {{linkto = lambda f, t, r: URL('update', args=[request.args[0], r, f]) if f else "#"}}

@@ -357,6 +357,25 @@ class TestAppAdmin(unittest.TestCase):
             result = self.run_function()
             self.assertEqual([row.email for row in result["rows"]], expected)
 
+    def test_select_second_page_returns_rows(self):
+        for index in range(101):
+            self.env["db"].auth_user.insert(
+                first_name="User",
+                last_name=str(index),
+                username="user%s" % index,
+                email="user%s@example.com" % index,
+            )
+        request = self.env["request"]
+        request.args = List(["db", "auth_user"])
+        request._vars = Storage(
+            query="db.auth_user.id>0",
+            start="100",
+        )
+        result = self.run_function()
+        self.assertEqual(result["start"], 100)
+        self.assertEqual(len(result["rows"]), 2)
+        self.assertEqual([row.id for row in result["rows"]], [101, 102])
+
     def test_normalize_orderby(self):
         request = self.env["request"]
         request.function = "select"
