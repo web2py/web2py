@@ -8,6 +8,19 @@
     jQuery('table.sortable tbody tr:even').addClass('even');
 });
 //--></script>
+<style nonce="{{=response.nonce}}">
+  table.sortable .sqltable-sort-form {
+    display: inline;
+  }
+  table.sortable .sqltable-sort-form input[type="submit"] {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #08c;
+    font: inherit;
+    cursor: pointer;
+  }
+</style>
 
 <div class="row">
   <div class="col-md-12">
@@ -24,23 +37,9 @@
         <table class="table table-striped">
           {{for db in sorted(databases):}}
             {{for table in databases[db].tables:}}
-              {{qry='%s.%s.id>0'%(db,table)}}
-              {{tbl=databases[db][table]}}
-              {{if hasattr(tbl,'_primarykey'):}}
-                {{if tbl._primarykey:}}
-                    {{firstkey=tbl[tbl._primarykey[0]]}}
-                    {{if firstkey.type in ['string','text']:}}
-                      {{qry='%s.%s.%s!=""'%(db,table,firstkey.name)}}
-                    {{else:}}
-                      {{qry='%s.%s.%s>0'%(db,table,firstkey.name)}}
-                    {{pass}}
-                {{else:}}
-                     {{qry=''}}
-                {{pass}}
-              {{pass}}
           <tr>
             <th style="font-size: 1.75em;">
-              &raquo; {{=A("%s.%s" % (db,table),_href=URL('select',args=[db],vars=dict(query=qry)))}}
+              &raquo; {{=A("%s.%s" % (db,table),_href=URL('select',args=[db, table]))}}
             </th>
             <td>
               {{=A(str(T('New Record')),_href=URL('insert',args=[db,table]),_class="btn btn-primary")}}
@@ -76,19 +75,19 @@
       {{=T('"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN')}}</p>
     <br/><br/>
     <h4>{{=T("%s selected", nrows)}}</h4>
-    {{if start>0:}}{{=A(T('previous %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start-step)),_class="btn btn-primary")}}{{pass}}
-    {{if stop<nrows:}}{{=A(T('next %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start+step)),_class="btn btn-primary")}}{{pass}}
+    {{if start>0:}}{{=post_form(URL('select', args=request.args[0]), T('previous %s rows') % step, start=start-step, query=query, orderby=orderby or '')}}{{pass}}
+    {{if stop<nrows:}}{{=post_form(URL('select', args=request.args[0]), T('next %s rows') % step, start=start+step, query=query, orderby=orderby or '')}}{{pass}}
     {{if rows:}}
        <div style="overflow:auto; width:80%;">
        {{linkto = lambda f, t, r: URL('update', args=[request.args[0], r, f]) if f else "#"}}
        {{upload=URL('download',args=request.args[0])}}
-       {{=SQLTABLE(rows,linkto,upload,orderby=True,query=query,_class='table table-striped table-bordered sortable')}}
+      {{=appadmin_sqltable(rows,linkto,upload,query,orderby,_class='table table-striped table-bordered sortable')}}
        </div>
     {{pass}}
     <br/><br/>
     <hr />
     <h3>{{=T("Import/Export")}}</h3><br/>
-    <a href="{{=URL('csv',args=request.args[0],vars=dict(query=query))}}" class="btn btn-primary">{{=T("export as csv file")}}</a>
+    {{=post_form(URL('csv', args=request.args[0]), T("export as csv file"), form_class='export-form', query=query, orderby=orderby or '')}}
   {{=formcsv or ''}}
 
 {{elif request.function=='insert':}}
@@ -98,9 +97,9 @@
       {{dbname=request.args[0]}}
       {{tablename=request.args[1]}}
       {{cond = table[fieldname].type in ['string','text'] and '!=""' or '>0'}}
-      {{=T("Table")}} {{=A(tablename,_href=URL('select',args=dbname,vars=dict(query='%s.%s.%s%s'%(dbname,tablename,fieldname,cond))))}}
+      {{=T("Table")}} {{=A(tablename,_href=URL('select',args=[dbname, tablename]))}}
     {{else:}}
-      {{=T("Table")}} {{=A(request.args[1],_href=URL('select',args=request.args[0],vars=dict(query='%s.%s.id>0'%tuple(request.args[:2]))))}}
+      {{=T("Table")}} {{=A(request.args[1],_href=URL('select',args=request.args[:2]))}}
     {{pass}}
   </h2>
   <h3>{{=T("New Record")}}</h3><br/>
@@ -112,10 +111,10 @@
       {{dbname=request.args[0]}}
       {{tablename=request.args[1]}}
       {{cond = table[fieldname].type in ['string','text'] and '!=""' or '>0'}}
-      {{=T("Table")}} {{=A(tablename,_href=URL('select',args=dbname,vars=dict(query='%s.%s.%s%s'%(dbname,tablename,fieldname,cond))))}}
+      {{=T("Table")}} {{=A(tablename,_href=URL('select',args=[dbname, tablename]))}}
       {{=T("Record")}} {{=A('%s=%s'%request.vars.items()[0],_href=URL('update',args=request.args[:2],vars=request.vars))}}
     {{else:}}
-      {{=T("Table")}} {{=A(request.args[1],_href=URL('select',args=request.args[0],vars=dict(query='%s.%s.id>0'%tuple(request.args[:2]))))}}
+      {{=T("Table")}} {{=A(request.args[1],_href=URL('select',args=request.args[:2]))}}
       {{=T("Record id")}} {{=A(request.args[2],_href=URL('update',args=request.args[:3]))}}
     {{pass}}
   </h2>

@@ -167,14 +167,94 @@ def csv():
     query = get_query(request)
     if not query:
         return None
+    _, orderby_expression = normalize_orderby(request.args[0], request.vars.orderby)
     response.headers['Content-disposition'] = content_disposition_header(
         '%s_%s.csv' % tuple(request.vars.query.split('.')[:2])
     )
+    if orderby_expression:
+        return str(db(query, ignore_common_filters=True).select(orderby=orderby_expression))
     return str(db(query, ignore_common_filters=True).select())
 
 
 def import_csv(table, file):
-    table.import_from_csv_file(file)
+    import io
+
+    file.seek(0)
+    is_binary = isinstance(file.read(0), bytes)
+    file.seek(0)
+    if is_binary:
+        with io.TextIOWrapper(file, encoding='utf-8-sig', newline='') as text_file:
+            table.import_from_csv_file(text_file)
+    else:
+        table.import_from_csv_file(file)
+
+
+def post_form(action, label, form_class='pagination-form', **fields):
+    inputs = [INPUT(_type='hidden', _name=name, _value=value)
+              for name, value in fields.items()]
+    inputs.append(INPUT(_type='submit', _value=label, _class='btn btn-primary'))
+    return FORM(*inputs, _action=action, _method='post',
+                _style='display:inline;', _class=form_class)
+
+
+def normalize_orderby(dbname, value, table_name=None):
+    descending = isinstance(value, str) and value.startswith('~')
+    if not isinstance(value, str) or not value:
+        field = None
+    else:
+        field = value[1:] if descending else value
+    prefix = dbname + '.'
+    if field and field.startswith(prefix):
+        field = field[len(prefix):]
+    if not field and not table_name:
+        return None, None
+    table = databases[dbname].get(table_name) if table_name else None
+    if field:
+        table_name = field.split('.', 1)[0] if '.' in field else table_name
+        table = databases[dbname].get(table_name) if table_name else None
+    if not table:
+        return None, None
+    fields = table._primarykey if hasattr(table, '_primarykey') else [table._id.name]
+    if field:
+        normalized = ('~' if descending else '') + field
+        expression_text = ('~' if descending else '') + prefix + field
+    else:
+        normalized = None
+        expression_text = prefix + table_name + '.' + fields[0]
+    try:
+        expression = safe_eval_expression(expression_text, databases)
+        ordered_field = field.split('.', 1)[-1] if field else fields[0]
+        for field_name in fields:
+            tie_breaker = table[field_name]
+            if field_name != ordered_field:
+                expression = expression | tie_breaker
+    except Exception:
+        return None, None
+    return normalized, expression
+
+
+def sort_form(orderby, label, query):
+    return FORM(
+        INPUT(_type='hidden', _name='query', _value=query),
+        INPUT(_type='submit', _value=label),
+        _action=URL('select', args=request.args[:2],
+                    vars=dict(orderby=orderby)),
+        _method='post', _style='display:inline;', _class='sqltable-sort-form')
+
+
+def appadmin_sqltable(rows, linkto, upload, query, orderby=None, **attributes):
+    headers = {}
+    for column in rows.colnames:
+        field_name = column.split('.', 1)[-1]
+        next_orderby = column
+        if orderby in (field_name, column):
+            next_orderby = '~' + column
+        elif orderby in ('~' + field_name, '~' + column):
+            next_orderby = column
+        headers[column] = dict(
+            label=sort_form(next_orderby, column, query),
+            **{'class': '', 'width': '', 'selected': False, 'truncate': 16})
+    return SQLTABLE(rows, linkto, upload, headers=headers, **attributes)
 
 
 def select():
@@ -195,6 +275,9 @@ def select():
                                                    match.group('table'), match.group('field'),
                                                    match.group('value'))
     query = get_query(request)
+    if not query and not request.vars.query and request.args(1) in db.tables:
+        request.vars.query = query_by_table_type(request.args(1), db)
+        query = get_query(request)
     if request.vars.start:
         start = int(request.vars.start)
     else:
@@ -211,15 +294,8 @@ def select():
 
     table = None
     rows = []
-    orderby = request.vars.orderby
-    if orderby:
-        orderby = dbname + '.' + orderby
-        if orderby == session.last_orderby:
-            if orderby[0] == '~':
-                orderby = orderby[1:]
-            else:
-                orderby = '~' + orderby
-    session.last_orderby = orderby
+    orderby, orderby_expression = normalize_orderby(
+        dbname, request.vars.orderby, request.args(1))
     form = FORM(TABLE(TR(T('Query:'), '', INPUT(_style='width:400px',
                 _name='query', _value=request.vars.query or '', _class='form-control',
                 requires=IS_NOT_EMPTY(
@@ -253,10 +329,10 @@ def select():
                 fields = [db[table][name] for name in
                     ('id', 'uid', 'created', 'to',
                      'sender', 'subject')]
-            if orderby:
+            if orderby_expression:
                 rows = db(query, ignore_common_filters=True).select(
                               *fields, limitby=(start, stop),
-                              orderby=safe_eval_expression(orderby, databases))
+                              orderby=orderby_expression)
             else:
                 rows = db(query, ignore_common_filters=True).select(
                     *fields, limitby=(start, stop))
@@ -291,7 +367,10 @@ def select():
         step=step,
         nrows=nrows,
         rows=rows,
+        orderby=orderby,
         query=request.vars.query,
+        post_form=post_form,
+        appadmin_sqltable=appadmin_sqltable,
         formcsv=formcsv,
         tb=tb
     )
@@ -317,10 +396,8 @@ def update():
             2)).select().first()
 
     if not record:
-        qry = query_by_table_type(table, db)
         session.flash = T('record does not exist')
-        redirect(URL('select', args=request.args[:1],
-                     vars=dict(query=qry)))
+        redirect(URL('select', args=request.args[:2]))
 
     if keyed:
         for k in db[table]._primarykey:
@@ -330,14 +407,12 @@ def update():
         db[table], record, deletable=True, delete_label=T('Check to delete'),
         ignore_rw=ignore_rw and not keyed,
         linkto=URL('select',
-                   args=request.args[:1]), upload=URL(r=request,
-                                                      f='download', args=request.args[:1]))
+                   args=request.args[:2]), upload=URL(r=request,
+                                                      f='download', args=request.args[:2]))
 
     if form.accepts(request.vars, session):
         session.flash = T('done!')
-        qry = query_by_table_type(table, db)
-        redirect(URL('select', args=request.args[:1],
-                 vars=dict(query=qry)))
+        redirect(URL('select', args=request.args[:2]))
     return dict(form=form, table=db[table])
 
 
