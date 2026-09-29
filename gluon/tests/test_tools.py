@@ -811,6 +811,21 @@ class TestWikiSearchSerialization(unittest.TestCase):
         self.assertIn("PUBLIC BODY", bodies)
         self.assertNotIn("RESTRICTED SECRET BODY", bodies)
 
+    def test_restricted_page_not_listed_on_html_path(self):
+        # same searcher, but the html/load listing: the title and slug of a
+        # page the requester cannot read must not appear there either
+        self._add_page("public", "PUBLIC BODY", ["everybody"])
+        self._add_page("restricted", "RESTRICTED SECRET BODY", ["admins"])
+        self.db.commit()
+        self.request.extension = "html"
+        result = self.wiki.search(
+            query=self.db.wiki_page.title.contains("secret topic"),
+            cloud=False,
+        )
+        html = str(result["content"])
+        self.assertIn("secret topic public", html)
+        self.assertNotIn("secret topic restricted", html)
+
 
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 # class TestAuth(unittest.TestCase):

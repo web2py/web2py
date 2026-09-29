@@ -7590,6 +7590,11 @@ class Wiki(object):
                 ),
             )
             if request.extension in ("html", "load"):
+                # the serialized branch below drops pages the requester cannot
+                # read; the html/load listing must do the same, otherwise the
+                # title, slug and tags of a can_read restricted page are shown
+                # to a user who is not allowed to read it
+                pages = [p for p in pages if self.can_read(p.wiki_page)]
                 if not pages:
                     content.append(DIV(current.T("No results"), _class="w2p_wiki_form"))
 
