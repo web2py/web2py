@@ -1503,7 +1503,16 @@ class Session(Storage):
     def _set_cookie_security_attrs(self, scookies):
         if self.get("httponly_cookies", True):
             scookies["HttpOnly"] = True
-        if self._secure:
+        # Mark the session cookie Secure whenever it is served over HTTPS, even
+        # if the application never called session.secure()/requires_https().
+        # Without it a session established over TLS is still transmitted on any
+        # plaintext http:// request to the same host, leaking the session id and
+        # data to a network attacker (CWE-614). HttpOnly and SameSite are
+        # already defaulted on; Secure was the one confidentiality flag left
+        # opt-in. It stays off over plain HTTP so http:// development keeps
+        # working.
+        request = getattr(current, "request", None)
+        if self._secure or (request is not None and request.is_https):
             scookies["secure"] = True
         if self._same_site is None:
             # Using SameSite Lax Mode is the default
