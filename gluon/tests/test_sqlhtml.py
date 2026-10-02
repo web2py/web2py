@@ -442,6 +442,56 @@ class TestSQLFORM(unittest.TestCase):
         self.assertIn("widget", xml)
         current.request.args = List([])
 
+    def test_grid_actions_limited_to_grid_query(self):
+        # view/edit/delete resolve the record by primary key from request.args
+        # but must also honour the grid's own constraining query. A grid built
+        # on a filtered query (e.g. only the visible rows) otherwise lets anyone
+        # read, edit or delete a row the filter excludes by changing the id in
+        # the URL. The "view" action is reachable without a signature for
+        # anonymous visitors, so this leaks filtered-out records to the public.
+        from gluon.globals import current
+        from gluon.storage import List
+
+        self.db.define_table(
+            "article", Field("title"), Field("visible", "boolean")
+        )
+        public_id = self.db.article.insert(title="public", visible=True)
+        draft_id = self.db.article.insert(title="SECRET-draft", visible=False)
+        self.db.commit()
+        public_grid = self.db.article.visible == True
+
+        # anonymous view of a filtered-out record is refused and does not leak it
+        current.request.args = List(["view", "article", str(draft_id)])
+        try:
+            xml = SQLFORM.grid(public_grid).xml()
+        except HTTP as e:
+            self.assertEqual(e.status, 303)
+        else:
+            self.assertNotIn("SECRET-draft", xml)
+
+        # a record inside the grid's query is still viewable
+        current.request.args = List(["view", "article", str(public_id)])
+        xml = SQLFORM.grid(public_grid).xml()
+        self.assertIn("public", xml)
+
+        # editing a filtered-out record is refused
+        current.request.args = List(["edit", "article", str(draft_id)])
+        try:
+            xml = SQLFORM.grid(public_grid).xml()
+        except HTTP as e:
+            self.assertEqual(e.status, 303)
+        else:
+            self.assertNotIn("SECRET-draft", xml)
+
+        # deleting a filtered-out record is refused and leaves the row in place
+        current.request.args = List(["delete", "article", str(draft_id)])
+        try:
+            SQLFORM.grid(public_grid).xml()
+        except HTTP as e:
+            self.assertEqual(e.status, 303)
+        self.assertTrue(self.db.article(draft_id) is not None)
+        current.request.args = List([])
+
     def test_smartgrid(self):
         smartgrid_form = SQLFORM.smartgrid(self.db.auth_user)
         self.assertEqual(smartgrid_form.xml()[:4], "<div")
