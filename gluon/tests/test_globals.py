@@ -560,6 +560,35 @@ class testResponse(unittest.TestCase):
         cookie = str(current.response.cookies)
         self.assertTrue("secure" in cookie.lower())
 
+    def test_cookies_secure_over_https(self):
+        # Over HTTPS the session cookie is marked Secure automatically, even
+        # without an explicit session.secure() call.
+        current = setup_clean_session()
+        current.request.is_https = True
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue("secure" in cookie.lower())
+
+        # Over plain HTTP it is not, so http:// development is unaffected.
+        current = setup_clean_session()
+        current.request.is_https = False
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue("secure" not in cookie.lower())
+
+    def test_cookie_session_data_cookie_gets_secure_over_https(self):
+        # The session-data cookie (cookie-backed sessions) is likewise marked
+        # Secure over HTTPS without an explicit session.secure() call.
+        current = setup_clean_cookie_session()
+        current.request.is_https = True
+        current.session.user_id = 1
+        current.session._try_store_in_cookie_or_file(current.request, current.response)
+        current.session._fixup_before_save()
+        cookie = str(
+            current.response.cookies[current.response.session_data_name]
+        ).lower()
+        self.assertIn("secure", cookie)
+
     def test_cookies_httponly(self):
         current = setup_clean_session()
         current.session._fixup_before_save()
