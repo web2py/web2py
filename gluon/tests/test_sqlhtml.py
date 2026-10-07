@@ -447,8 +447,9 @@ class TestSQLFORM(unittest.TestCase):
         # but must also honour the grid's own constraining query. A grid built
         # on a filtered query (e.g. only the visible rows) otherwise lets anyone
         # read, edit or delete a row the filter excludes by changing the id in
-        # the URL. The "view" action is reachable without a signature for
-        # anonymous visitors, so this leaks filtered-out records to the public.
+        # the URL. user_signature=False (as the wiki's own grids use) so that
+        # all three actions are reachable without a logged in user and the
+        # query scoping is the only thing refusing the out-of-filter record.
         from gluon.globals import current
         from gluon.storage import List
 
@@ -460,36 +461,45 @@ class TestSQLFORM(unittest.TestCase):
         self.db.commit()
         public_grid = self.db.article.visible == True
 
-        # anonymous view of a filtered-out record is refused and does not leak it
-        current.request.args = List(["view", "article", str(draft_id)])
+        def action(name, record_id):
+            current.request.args = List([name, "article", str(record_id)])
+            return SQLFORM.grid(public_grid, user_signature=False).xml()
+
+        # viewing a filtered-out record is refused and does not leak it
         try:
-            xml = SQLFORM.grid(public_grid).xml()
+            xml = action("view", draft_id)
         except HTTP as e:
             self.assertEqual(e.status, 303)
         else:
             self.assertNotIn("SECRET-draft", xml)
 
         # a record inside the grid's query is still viewable
-        current.request.args = List(["view", "article", str(public_id)])
-        xml = SQLFORM.grid(public_grid).xml()
-        self.assertIn("public", xml)
+        self.assertIn("public", action("view", public_id))
 
-        # editing a filtered-out record is refused
-        current.request.args = List(["edit", "article", str(draft_id)])
+        # editing a filtered-out record is refused and does not leak it
         try:
-            xml = SQLFORM.grid(public_grid).xml()
+            xml = action("edit", draft_id)
         except HTTP as e:
             self.assertEqual(e.status, 303)
         else:
             self.assertNotIn("SECRET-draft", xml)
 
+        # a record inside the grid's query is still editable
+        self.assertIn("public", action("edit", public_id))
+
         # deleting a filtered-out record is refused and leaves the row in place
-        current.request.args = List(["delete", "article", str(draft_id)])
         try:
-            SQLFORM.grid(public_grid).xml()
+            action("delete", draft_id)
         except HTTP as e:
             self.assertEqual(e.status, 303)
         self.assertTrue(self.db.article(draft_id) is not None)
+
+        # deleting a record inside the grid's query still goes through
+        try:
+            action("delete", public_id)
+        except HTTP as e:
+            self.assertEqual(e.status, 303)
+        self.assertTrue(self.db.article(public_id) is None)
         current.request.args = List([])
 
     def test_smartgrid(self):
