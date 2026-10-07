@@ -34,6 +34,19 @@ class X509Auth(object):
         self.request = current.request
         self.ssl_client_raw_cert = self.request.env.ssl_client_raw_cert
 
+        # Only trust a client certificate the TLS terminator actually
+        # verified. ssl_client_verify is SSL_CLIENT_VERIFY as exported by the
+        # web server (Apache mod_ssl, nginx, ...) and is "SUCCESS" only when
+        # the certificate chained to a configured CA. Under
+        # "SSLVerifyClient optional_no_ca" (or a front proxy that forwards the
+        # certificate without validating it) an unverified, self-signed
+        # certificate is still placed in the environment; without this gate a
+        # client could present a certificate with an arbitrary CN and be
+        # logged in as that identity. Fail closed when verification is not
+        # confirmed so get_user() returns None.
+        if self.request.env.ssl_client_verify != "SUCCESS":
+            self.ssl_client_raw_cert = None
+
         # rebuild the certificate passed by the env
         # this is double work, but it is the only way
         # since we cannot access the web server ssl engine directly

@@ -428,5 +428,98 @@ class TestFreeIPAAuthSecurity(unittest.TestCase):
         )
 
 
+def _make_fake_m2crypto():
+    """Minimal fake ``M2Crypto`` so x509_auth can be imported and exercised
+    without the real (C-extension) dependency or a live TLS handshake."""
+
+    class _Data(object):
+        def as_text(self):
+            return "admin"
+
+    class _Entry(object):
+        def get_data(self):
+            return _Data()
+
+    class _Subject(object):
+        def __init__(self):
+            self.nid = {
+                "CN": 13,
+                "commonName": 13,
+                "givenName": 99,
+                "surname": 100,
+                "Email": 48,
+                "emailAddress": 48,
+            }
+
+        def get_entries_by_nid(self, nid):
+            return [_Entry()]
+
+    class _Cert(object):
+        def get_serial_number(self):
+            return 0x1234
+
+        def get_subject(self):
+            return _Subject()
+
+    class _X509(object):
+        FORMAT_PEM = 1
+
+        @staticmethod
+        def load_cert_string(data, fmt):
+            return _Cert()
+
+    mod = types.ModuleType("M2Crypto")
+    mod.X509 = _X509
+    return mod
+
+
+class TestX509AuthCertVerification(unittest.TestCase):
+    # x509_auth logs a user in from the client certificate placed in the
+    # request environment. It only checked that a parseable certificate was
+    # present, never that the TLS terminator verified it, so under
+    # "SSLVerifyClient optional_no_ca" (or a proxy forwarding the cert without
+    # validating it) a self-signed certificate with an arbitrary CN was trusted
+    # as a real identity.
+    _MODNAME = "gluon.contrib.login_methods.x509_auth"
+    _RAW_CERT = "-----BEGIN CERTIFICATE-----\nFAKE\n-----END CERTIFICATE-----"
+
+    def setUp(self):
+        self._saved = {k: sys.modules.get(k) for k in ("M2Crypto", self._MODNAME)}
+        sys.modules["M2Crypto"] = _make_fake_m2crypto()
+        sys.modules.pop(self._MODNAME, None)
+        self.mod = importlib.import_module(self._MODNAME)
+        self._saved_request = getattr(current, "request", None)
+
+    def tearDown(self):
+        for k, v in self._saved.items():
+            if v is None:
+                sys.modules.pop(k, None)
+            else:
+                sys.modules[k] = v
+        sys.modules.pop(self._MODNAME, None)
+        if self._saved_request is not None:
+            current.request = self._saved_request
+
+    def _set_request(self, verify):
+        current.request = Storage(
+            env=Storage(
+                ssl_client_raw_cert=self._RAW_CERT,
+                ssl_client_verify=verify,
+                ssl_client_serial=None,
+            )
+        )
+
+    def test_unverified_certificate_is_rejected(self):
+        for verify in ("NONE", "GENEROUS", "FAILED:self signed certificate", None):
+            self._set_request(verify)
+            self.assertIsNone(self.mod.X509Auth().get_user())
+
+    def test_verified_certificate_still_authenticates(self):
+        self._set_request("SUCCESS")
+        user = self.mod.X509Auth().get_user()
+        self.assertIsNotNone(user)
+        self.assertEqual(user["username"], "admin")
+
+
 if __name__ == "__main__":
     unittest.main()
