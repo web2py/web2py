@@ -3,6 +3,7 @@
 
 """ Unit tests for redis """
 
+import json
 import pickle
 import unittest
 from datetime import datetime
@@ -12,8 +13,9 @@ from gluon.storage import Storage
 from gluon.utils import web2py_uuid
 
 try:
-    from gluon.contrib.redis_cache import RedisCache
+    from gluon.contrib.redis_cache import RedisCache, RedisClient
     from gluon.contrib.redis_session import RedisSession
+    from gluon.contrib.redis_scheduler import RScheduler
     from gluon.contrib.redis_utils import RConn
     HAVE_REDIS = True
 except (ImportError, RuntimeError):
@@ -54,6 +56,85 @@ class TestRedis(unittest.TestCase):
         self.db = RedisSession(redis_conn=rconn, session_expiry=False)
         self.tname = "testtablename"
         return current
+
+    @staticmethod
+    def redis_text(value):
+        return value.decode() if isinstance(value, bytes) else value
+
+    def test_redis_cache_stores_value_and_expiry(self):
+        redis = RConn(host="localhost")
+        application = "cache_test_%s" % web2py_uuid()
+        cache = RedisClient(redis_conn=redis, application=application)
+        key = cache.__keyFormat__("value")
+        bucket_set = cache.cache_set_key
+
+        try:
+            self.assertEqual(
+                cache.cache_it(key, lambda: "cached value", 60), "cached value"
+            )
+
+            self.assertEqual(pickle.loads(redis.get(key)), "cached value")
+            self.assertGreater(redis.ttl(key), 0)
+            self.assertLessEqual(redis.ttl(key), 60)
+
+            buckets = redis.smembers(bucket_set)
+            self.assertTrue(buckets)
+            bucket = next(iter(buckets))
+            cached_keys = {
+                self.redis_text(value) for value in redis.smembers(bucket)
+            }
+            self.assertIn(key, cached_keys)
+        finally:
+            buckets = redis.smembers(bucket_set)
+            if buckets:
+                redis.delete(*buckets)
+            redis.delete(key, bucket_set)
+
+    def test_inner_send_heartbeat_registers_worker_state(self):
+        redis = RConn(host="localhost")
+        application = "scheduler_test_%s" % web2py_uuid()
+        worker_name = "worker-%s" % web2py_uuid()
+
+        scheduler = RScheduler.__new__(RScheduler)
+        scheduler._application = application
+        scheduler.r_server = redis
+        scheduler.worker_name = worker_name
+        scheduler.group_names = ["default"]
+        scheduler.heartbeat = 30
+        scheduler.w_stats = Storage(status="IDLE", sleep=0)
+        scheduler.now = lambda: datetime.now()
+
+        prefix = "w2p:rsched:%s:" % application
+        status_key = "%sworker_status:%s" % (prefix, worker_name)
+        status_keyset = "%sworker_statuses" % prefix
+        all_keys = "%sallkeys" % prefix
+
+        try:
+            with redis.pipeline() as pipe:
+                pipe.watch("SEND_HEARTBEAT")
+                scheduler.inner_send_heartbeat(1, pipe)
+                pipe.execute()
+
+            status = {
+                self.redis_text(key): self.redis_text(value)
+                for key, value in redis.hgetall(status_key).items()
+            }
+            self.assertEqual(status["status"], "ACTIVE")
+            self.assertEqual(status["worker_name"], worker_name)
+            self.assertTrue(status["first_heartbeat"])
+            self.assertEqual(status["first_heartbeat"], status["last_heartbeat"])
+            self.assertEqual(json.loads(status["group_names"]), ["default"])
+            self.assertIn(
+                status_key,
+                {self.redis_text(value) for value in redis.smembers(status_keyset)},
+            )
+            self.assertEqual(scheduler.w_stats.status, "ACTIVE")
+            self.assertEqual(scheduler.w_stats.sleep, 30)
+        finally:
+            tracked_keys = redis.smembers(all_keys)
+            if tracked_keys:
+                redis.delete(*tracked_keys)
+            redis.delete(all_keys)
 
     def test_0_redis_session(self):
         """Basic redis read-write"""
