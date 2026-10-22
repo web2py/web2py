@@ -3046,3 +3046,51 @@ class TestCASServiceAllowlist(unittest.TestCase):
         self.assertIn("authenticationFailure", body)
         # And the stored ticket must have been purged.
         self.assertIsNone(table(ticket=ticket))
+
+    def _cas_validate_ticket(self, service, ticket):
+        self.request.vars.clear()
+        self.request.vars.service = service
+        self.request.vars.ticket = ticket
+        with self.assertRaises(HTTP) as ctx:
+            self.auth.cas_validate(version=2)
+        body = ctx.exception.body
+        if isinstance(body, bytes):
+            body = body.decode("utf8")
+        return body
+
+    def test_cas_validate_requires_matching_service(self):
+        # A ticket issued for one relying party must not validate for another,
+        # otherwise whoever receives it can replay it to log in elsewhere.
+        user_id = self.db.auth_user.insert(
+            username="alice", email="alice@example.com", password="x"
+        )
+        table = self.auth.table_cas()
+        ticket = "ST-test-ticket-service-a"
+        table.insert(
+            service="https://cas.example.com/a/default/user/login",
+            user_id=user_id,
+            ticket=ticket,
+            created_on=self.request.now,
+            renew=False,
+        )
+        self.db.commit()
+        body = self._cas_validate_ticket(
+            "https://cas.example.com/b/default/user/login", ticket
+        )
+        self.assertIn("authenticationFailure", body)
+        self.assertNotIn("alice", body)
+        self.assertIsNone(table(ticket=ticket))
+
+        table.insert(
+            service="https://cas.example.com/a/default/user/login",
+            user_id=user_id,
+            ticket=ticket,
+            created_on=self.request.now,
+            renew=False,
+        )
+        self.db.commit()
+        body = self._cas_validate_ticket(
+            "https://cas.example.com/a/default/user/login", ticket
+        )
+        self.assertIn("authenticationSuccess", body)
+        self.assertIn("alice", body)
