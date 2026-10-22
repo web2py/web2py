@@ -213,14 +213,14 @@ class RedisClient(object):
         value_ = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
         if time_expire == 0:
             time_expire = 1
-        self.r_server.setex(key, time_expire, value_)
+        self.r_server.set(key, value_, ex=time_expire)
         # print '%s will expire on %s: it goes in bucket %s' % (key, time.ctime(expire_at))
         # print 'that will expire on %s' % (bucket_key, time.ctime(((expire_at / 60) + 1) * 60))
         p = self.r_server.pipeline()
         # add bucket to the fixed set
         p.sadd(cache_set_key, bucket_key)
         # sets the key
-        p.setex(key, time_expire, value_)
+        p.set(key, value_, ex=time_expire)
         # add the key to the bucket
         p.sadd(bucket_key, key)
         # expire the bucket properly
