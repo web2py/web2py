@@ -2898,6 +2898,11 @@ class Auth(AuthAPI):
             # ticket was minted, or ticket forged in an older version).
             row.delete_record()
             row = None
+        if row and request.vars.service != row.service:
+            # A ticket is only valid for the service it was issued to, and
+            # a failed validation spends it.
+            row.delete_record()
+            row = None
         if row:
             userfield = (
                 self.settings.login_userfield or "username"
