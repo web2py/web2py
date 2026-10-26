@@ -2737,8 +2737,9 @@ class Auth(AuthAPI):
             ) and password == user[settings.passfield]:
                 self.login_user(user)
                 return user
-        else:
-            # user not in database try other login methods
+        elif not user or not (user.registration_key or "").strip():
+            # user not in database try other login methods, but never for
+            # an account that is pending, disabled or blocked
             for login_method in self.settings.login_methods:
                 if login_method != self and login_method(username, password):
                     self.user = user
@@ -3222,6 +3223,9 @@ class Auth(AuthAPI):
                     user = self.get_or_create_user(
                         table_user._filter_fields(cas_user), settings.update_fields
                     )
+                    if user and (user.registration_key or "").strip():
+                        # the account is pending, disabled or blocked here
+                        raise HTTP(403, self.messages.login_disabled)
                 elif hasattr(cas, "login_form"):
                     return cas.login_form()
                 else:
