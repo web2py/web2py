@@ -14,6 +14,7 @@ import smtplib
 import ssl
 import sys
 import tempfile
+import time
 import unittest
 
 DEFAULT_URI = os.getenv("DB", "sqlite:memory")
@@ -567,6 +568,77 @@ class TestAuthVerifyEmail(unittest.TestCase):
         self.db.commit()
         self._verify_email_with_arg(key)
         self.assertEqual(self.db.auth_user[uid].registration_key, "")
+
+
+class TestAuthConfirmRegistration(unittest.TestCase):
+    def setUp(self):
+        self.request = Request(env={})
+        self.request.application = "a"
+        self.request.controller = "c"
+        self.request.function = "f"
+        self.request.folder = "applications/admin"
+        self.response = Response()
+        self.session = Session()
+        self.T = TranslatorFactory("", "en")
+        self.session.connect(self.request, self.response)
+        current.request = self.request
+        current.response = self.response
+        current.session = self.session
+        current.T = self.T
+        self.db = DAL(DEFAULT_URI, check_reserved=["all"])
+        self.auth = Auth(self.db)
+        self.auth.define_tables(username=True, signature=False)
+        self.auth.settings.prevent_password_reset_attacks = False
+        self.auth.settings.login_after_password_change = False
+
+    def _confirm(self, key):
+        # render the form, then submit it with the formkey it issued
+        self.request._vars = Storage(key=key)
+        self.request._post_vars = Storage()
+        try:
+            self.auth.confirm_registration()
+        except HTTP:
+            return
+        formkey = self.session["_formkey[no_table/create]"][-1]
+        self.request._post_vars = Storage(
+            first_name="a",
+            last_name="b",
+            new_password="Secret123!",
+            new_password2="Secret123!",
+            _formname="no_table/create",
+            _formkey=formkey,
+        )
+        self.request._vars = Storage(self.request._post_vars, key=key)
+        try:
+            self.auth.confirm_registration()
+        except HTTP:
+            pass
+
+    def test_reset_key_does_not_reactivate_account(self):
+        # confirm_registration looks the user up by reset_password_key and
+        # clears registration_key, so it must refuse the same account states
+        # reset_password refuses
+        for state in ("disabled", "blocked", "pending"):
+            key = "%d-%s" % (time.time(), state)
+            uid = self.db.auth_user.insert(
+                username="u_" + state,
+                password="x",
+                registration_key=state,
+                reset_password_key=key,
+            )
+            self.db.commit()
+            self._confirm(key)
+            self.assertEqual(self.db.auth_user[uid].registration_key, state)
+
+    def test_valid_key_confirms_registration(self):
+        key = "%d-legit" % time.time()
+        uid = self.db.auth_user.insert(
+            username="legit", password="x", reset_password_key=key
+        )
+        self.db.commit()
+        self._confirm(key)
+        self.assertEqual(self.db.auth_user[uid].reset_password_key, "")
+        self.assertEqual(self.db.auth_user[uid].first_name, "a")
 
 
 class TestAuthTokenExpiry(unittest.TestCase):

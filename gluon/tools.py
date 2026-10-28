@@ -3957,6 +3957,14 @@ class Auth(AuthAPI):
         except Exception as e:
             session.flash = self.messages.invalid_reset_password
             redirect(next, client_side=self.settings.client_side)
+
+        key = user.registration_key
+        if key in ("pending", "disabled", "blocked") or (key or "").startswith(
+            "pending"
+        ):
+            session.flash = self.messages.registration_pending
+            redirect(next, client_side=self.settings.client_side)
+
         passfield = self.settings.password_field
         form = SQLFORM.factory(
             Field("first_name", label="First Name", required=True),
