@@ -7,7 +7,11 @@
 
 import base64
 import os
+import shutil
+import tempfile
+import time
 import unittest
+from unittest import mock
 
 from gluon.fileutils import read_file as _read_source
 from gluon.http import HTTP
@@ -72,6 +76,61 @@ class TestWebservicesPathContainment(unittest.TestCase):
         finally:
             if os.path.exists(escaped):
                 os.unlink(escaped)
+
+
+class TestWebservicesLoginLockout(unittest.TestCase):
+    def setUp(self):
+        from gluon.validators import CRYPT
+
+        self.root = tempfile.mkdtemp()
+        self.folder = os.path.join(self.root, "applications", "admin")
+        os.makedirs(os.path.join(self.folder, "private"))
+        with open(os.path.join(self.root, "parameters_8000.py"), "w") as f:
+            f.write('password="%s"\n' % CRYPT()("secret")[0])
+        self.deny_file = os.path.join(self.folder, "private", "hosts.deny")
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def run_access(self, password):
+        from gluon.compileapp import build_environment
+        from gluon.globals import Request, Response, Session
+
+        request = Request(env={})
+        request.application = "admin"
+        request.controller = "webservices"
+        request.function = "call"
+        request.folder = self.folder
+        request.env.server_port = "8000"
+        request.env.remote_addr = "203.0.113.10"
+        request.client = request.env.remote_addr
+        request.is_https = True
+        request.env.http_authorization = "Basic " + base64.b64encode(
+            ("admin:" + password).encode("utf8")).decode("ascii")
+        env = build_environment(request, Response(), Session())
+        env.update(DEMO_MODE=False, MULTI_USER_MODE=False, EXPIRATION=3600,
+                   restricted=restricted)
+        filename = os.path.abspath(
+            os.path.join("applications", "admin", "models", "access.py"))
+        with mock.patch("time.sleep"):
+            restricted(compile2(_read_source(filename), filename), env,
+                       layer=filename)
+
+    def test_failed_logins_are_recorded(self):
+        for i in range(3):
+            with self.assertRaises(HTTP):
+                self.run_access("wrong")
+        with open(self.deny_file) as f:
+            self.assertTrue(f.read().startswith("203.0.113.10 3 "))
+        self.run_access("secret")
+
+    def test_locked_out_client_is_refused(self):
+        with open(self.deny_file, "w") as f:
+            f.write("203.0.113.10 5 %i\n" % int(time.time()))
+        with self.assertRaises(HTTP) as ctx:
+            self.run_access("secret")
+        self.assertEqual(ctx.exception.status, 403)
+
 
 if __name__ == "__main__":
     unittest.main()
