@@ -92,7 +92,7 @@ class TestWebservicesLoginLockout(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.root)
 
-    def run_access(self, password):
+    def run_access(self, password, multi_user_mode=False, crypt=None):
         from gluon.compileapp import build_environment
         from gluon.globals import Request, Response, Session
 
@@ -108,18 +108,20 @@ class TestWebservicesLoginLockout(unittest.TestCase):
         request.env.http_authorization = "Basic " + base64.b64encode(
             ("admin:" + password).encode("utf8")).decode("ascii")
         env = build_environment(request, Response(), Session())
-        env.update(DEMO_MODE=False, MULTI_USER_MODE=False, EXPIRATION=3600,
+        env.update(DEMO_MODE=False, MULTI_USER_MODE=multi_user_mode, EXPIRATION=3600,
                    restricted=restricted)
+        if crypt is not None:
+            env["CRYPT"] = crypt
         filename = os.path.abspath(
             os.path.join("applications", "admin", "models", "access.py"))
-        with mock.patch("time.sleep"):
-            restricted(compile2(_read_source(filename), filename), env,
-                       layer=filename)
+        restricted(compile2(_read_source(filename), filename), env,
+                   layer=filename)
 
     def test_failed_logins_are_recorded(self):
-        for i in range(3):
-            with self.assertRaises(HTTP):
-                self.run_access("wrong")
+        with mock.patch("time.sleep"):
+            for i in range(3):
+                with self.assertRaises(HTTP):
+                    self.run_access("wrong")
         with open(self.deny_file) as f:
             self.assertTrue(f.read().startswith("203.0.113.10 3 "))
         self.run_access("secret")
@@ -127,9 +129,21 @@ class TestWebservicesLoginLockout(unittest.TestCase):
     def test_locked_out_client_is_refused(self):
         with open(self.deny_file, "w") as f:
             f.write("203.0.113.10 5 %i\n" % int(time.time()))
-        with self.assertRaises(HTTP) as ctx:
-            self.run_access("secret")
+        with mock.patch("time.sleep") as sleep:
+            with self.assertRaises(HTTP) as ctx:
+                self.run_access("secret")
         self.assertEqual(ctx.exception.status, 403)
+        sleep.assert_called_once_with(2 ** 5)
+
+    def test_multi_user_mode_rejects_without_verifying_password(self):
+        crypt = mock.Mock(side_effect=AssertionError("password was verified"))
+        with mock.patch("time.sleep") as sleep:
+            with self.assertRaises(HTTP) as ctx:
+                self.run_access("secret", multi_user_mode=True, crypt=crypt)
+        self.assertEqual(ctx.exception.status, 403)
+        crypt.assert_not_called()
+        sleep.assert_not_called()
+        self.assertFalse(os.path.exists(self.deny_file))
 
 
 if __name__ == "__main__":
