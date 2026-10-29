@@ -162,12 +162,18 @@ if DEMO_MODE:
     session.forget()
 
 if request.controller == "webservices":
+    if MULTI_USER_MODE:
+        raise HTTP(403, "Not authorized")
     basic = request.env.http_authorization
     if not basic or not basic[:6].lower() == 'basic ':
         raise HTTP(401, "Wrong credentials")
+    if failed_login_count() >= allowed_number_of_attempts:
+        time.sleep(2 ** allowed_number_of_attempts)
+        raise HTTP(403)
     (username, password) = base64.b64decode(basic[6:]).decode('utf-8').split(':')
-    if not verify_password(password) or MULTI_USER_MODE:
-        time.sleep(10)
+    authorized = verify_password(password)
+    login_record(authorized)
+    if not authorized:
         raise HTTP(403, "Not authorized")
 elif not session.authorized and not \
     (request.controller + '/' + request.function in
