@@ -103,6 +103,7 @@ except ImportError:
 
 import codecs
 import optparse
+from html import unescape as _html_unescape
 from random import randint, random
 
 # ---- Python version compat
@@ -1133,16 +1134,25 @@ class Markdown(object):
             is_html_markup = not is_html_markup
         return "".join(escaped)
 
+    # a "<" that a browser starts a tag or a comment with
+    _tag_open_re = re.compile(r"<(?=[a-z!?])", re.I)
+
     def _hash_html_spans(self, text):
         # Used for safe_mode.
 
         def _is_auto_link(s):
+            if "<" in s[1:]:
+                # the auto-link alternative of the tokenizer runs to the
+                # first ">", so it can swallow a tag: "<ftp:[<script>"
+                return False
             if ":" in s and self._auto_link_re.match(s):
                 return True
             elif "@" in s and self._auto_email_link_re.match(s):
                 return True
             return False
 
+        lt_key = _hash_text("&lt;")
+        self.html_spans[lt_key] = "&lt;"
         tokens = []
         is_html_markup = False
         for token in self._sorta_html_tokenize_re.split(text):
@@ -1151,8 +1161,12 @@ class Markdown(object):
                 key = _hash_text(sanitized)
                 self.html_spans[key] = sanitized
                 tokens.append(key)
-            else:
+            elif is_html_markup:
                 tokens.append(token)
+            else:
+                # only complete tags are matched above, but a browser also
+                # opens one at "<img src=x onerror=alert(1)//" with no ">"
+                tokens.append(self._tag_open_re.sub(lt_key, token))
             is_html_markup = not is_html_markup
         return "".join(tokens)
 
@@ -1249,6 +1263,37 @@ class Markdown(object):
             url = self._strip_anglebrackets.sub(r"\1", url)
         return url, title, end_idx
 
+    def _unhash_attr(self, text):
+        # Code spans and, in safe_mode, escaped raw HTML are still hashes when
+        # a link is built and are only swapped back at the very end, after
+        # its url, title and alt were escaped. Their text is escaped already
+        # except for '"', which would close the attribute, so swap them in
+        # here with that escaped too.
+        if "md5-" not in text:
+            return text
+        hashes = [
+            (h, s) for s, h in self._escape_table.items() if s not in g_escape_table
+        ]
+        if self.safe_mode:
+            hashes.extend(self.html_spans.items())
+        for h, s in hashes:
+            if h in text:
+                s = s.replace('"', "&quot;")
+                s = s.replace("*", self._escape_table["*"])
+                text = text.replace(h, s.replace("_", self._escape_table["_"]))
+        return text
+
+    _safe_url_schemes = ("http", "https", "ftp", "mailto", "tel")
+    _url_scheme_re = re.compile(r"([a-z][a-z0-9+.-]*):", re.I)
+
+    def _is_safe_url(self, url):
+        # check the url as the browser reads it: character references in the
+        # attribute are decoded and control characters and spaces dropped,
+        # so "javascript&#58;..." or "java\tscript:..." are still javascript
+        url = re.sub(r"[\x00-\x20\x7f]", "", _html_unescape(url))
+        match = self._url_scheme_re.match(url)
+        return not match or match.group(1).lower() in self._safe_url_schemes
+
     def _do_links(self, text):
         """Turn Markdown link shortcuts into XHTML <a> and <img> tags.
 
@@ -1341,6 +1386,9 @@ class Markdown(object):
                     if is_img:
                         start_idx -= 1
 
+                    url = self._unhash_attr(_html_escape_url(url))
+                    if self.safe_mode and not is_img and not self._is_safe_url(url):
+                        url = "#"
                     # We've got to encode these to avoid conflicting
                     # with italics/bold.
                     url = url.replace("*", self._escape_table["*"]).replace(
@@ -1348,7 +1396,7 @@ class Markdown(object):
                     )
                     if title:
                         title_str = ' title="%s"' % (
-                            _xml_escape_attr(title)
+                            self._unhash_attr(_xml_escape_attr(title))
                             .replace("*", self._escape_table["*"])
                             .replace("_", self._escape_table["_"])
                         )
@@ -1357,8 +1405,8 @@ class Markdown(object):
                     if is_img:
                         img_class_str = self._html_class_str_from_tag("img")
                         result = '<img src="%s" alt="%s"%s%s%s' % (
-                            url.replace('"', "&quot;"),
-                            _xml_escape_attr(link_text),
+                            url,
+                            self._unhash_attr(_xml_escape_attr(link_text)),
                             title_str,
                             img_class_str,
                             self.empty_element_suffix,
@@ -1394,7 +1442,9 @@ class Markdown(object):
                     if not link_id:
                         link_id = link_text.lower()  # for links like [this][]
                     if link_id in self.urls:
-                        url = self.urls[link_id]
+                        url = self._unhash_attr(_html_escape_url(self.urls[link_id]))
+                        if self.safe_mode and not is_img and not self._is_safe_url(url):
+                            url = "#"
                         # We've got to encode these to avoid conflicting
                         # with italics/bold.
                         url = url.replace("*", self._escape_table["*"]).replace(
@@ -1403,7 +1453,7 @@ class Markdown(object):
                         title = self.titles.get(link_id)
                         if title:
                             title = (
-                                _xml_escape_attr(title)
+                                self._unhash_attr(_xml_escape_attr(title))
                                 .replace("*", self._escape_table["*"])
                                 .replace("_", self._escape_table["_"])
                             )
@@ -1413,8 +1463,8 @@ class Markdown(object):
                         if is_img:
                             img_class_str = self._html_class_str_from_tag("img")
                             result = '<img src="%s" alt="%s"%s%s%s' % (
-                                url.replace('"', "&quot;"),
-                                link_text.replace('"', "&quot;"),
+                                url,
+                                self._unhash_attr(link_text.replace('"', "&quot;")),
                                 title_str,
                                 img_class_str,
                                 self.empty_element_suffix,
@@ -2517,6 +2567,14 @@ def _xml_escape_attr(attr, skip_single_quote=True):
     if not skip_single_quote:
         escaped = escaped.replace("'", "&#39;")
     return escaped
+
+
+def _html_escape_url(url):
+    """Escape a url for use in a double-quoted tag attribute.
+
+    "&" is left to _encode_amps_and_angles, as for the rest of the text.
+    """
+    return url.replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _xml_encode_email_char_at_random(ch):

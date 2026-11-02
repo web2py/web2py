@@ -215,6 +215,53 @@ class TestContribs(unittest.TestCase):
             autolinks.expand_one("http://good.com/page", {"http://good.com/page": {}}),
         )
 
+    def test_markdown_wiki_safe_mode_keeps_markup_escaped(self):
+        from gluon.contrib.markdown import WIKI
+
+        def render(text):
+            return WIKI(text).xml()
+
+        # a tag with no closing ">" is not matched as a tag, so it was left raw
+        self.assertNotIn("<img", render("<img src=x onerror=alert(1)//"))
+        # ...as was a tag swallowed by something that looks like an auto-link
+        self.assertNotIn("<script", render("<ftp:[<script>alert(1);//]()>"))
+
+        # link urls, titles and alt text must not close their attribute,
+        # including through a code span that is only expanded later
+        for text in (
+            '[x](http://a.com/"onmouseover="alert(1))',
+            '[x]: http://a.com/"onmouseover="alert(1)\n\n[y][x]',
+            '![](`" onerror=alert(1)//`)',
+            '![`" onerror=alert(1)//`](a.png)',
+            '[x](http://a.com "t `" onmouseover=alert(1)` u")',
+        ):
+            out = render(text)
+            self.assertNotIn('"onmouseover=', out.replace(" ", ""))
+            self.assertNotIn('"onerror=', out.replace(" ", ""))
+
+        # script urls are not linked, however their scheme is spelled
+        for url in (
+            "javascript:alert(1)",
+            "JavaScript:alert(1)",
+            "javascript&#58;alert(1)",
+            "java&#115;cript:alert(1)",
+            "java\tscript:alert(1)",
+            "vbscript:msgbox(1)",
+        ):
+            self.assertIn('<a href="#">x</a>', render("[x](%s)" % url))
+            self.assertIn('<a href="#">x</a>', render("[x][1]\n\n[1]: %s" % url))
+
+        # ordinary markdown is unchanged
+        self.assertEqual(
+            render(
+                '[ok](http://good.com/page "t") and ![i](/static/a.png) '
+                "and <http://good.com/x> and a < b"
+            ),
+            '<p><a href="http://good.com/page" title="t">ok</a> and '
+            '<img src="/static/a.png" alt="i" /> and '
+            '<a href="http://good.com/x">http://good.com/x</a> and a &lt; b</p>\n',
+        )
+
     def test_hypermedia_query_respects_policy_fields(self):
         from gluon.dal import DAL, Field
         from gluon.contrib.hypermedia import Collection
