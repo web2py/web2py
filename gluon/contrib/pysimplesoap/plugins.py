@@ -13,8 +13,6 @@
 """Pythonic simple SOAP Client plugins"""
 
 
-from __future__ import unicode_literals
-
 import sys
 
 if sys.version > "3":

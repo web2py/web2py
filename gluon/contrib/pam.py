@@ -9,8 +9,6 @@ a user against the Pluggable Authentication Modules (PAM) on the system.
 
 Implemented using ctypes, so no compilation is necessary.
 """
-from __future__ import print_function
-
 __all__ = ["authenticate"]
 
 from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, c_char, c_char_p,

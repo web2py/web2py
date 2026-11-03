@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # created my Massimo Di Pierro
 # license MIT/BSD/GPL
-from __future__ import print_function
-
 import doctest
 import re
 from optparse import OptionParser

@@ -36,8 +36,6 @@ NOTE: They should be preceeded by web2py command line option "-A" to be passed t
 -x, --expiration : Expiration value for sessions without expiration (in seconds)
 """
 
-from __future__ import with_statement
-
 from gluon import current
 from gluon.storage import Storage
 

@@ -3,8 +3,6 @@
     Unit tests for running web2py
 """
 
-from __future__ import print_function
-
 import os
 import shutil
 import subprocess

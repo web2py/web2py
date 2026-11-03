@@ -28,8 +28,6 @@
 """
 An interactive, stateful AJAX shell that runs Python code on the server.
 """
-from __future__ import print_function
-
 import logging
 import pickle
 import sys

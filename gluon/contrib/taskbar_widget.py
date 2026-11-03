@@ -6,8 +6,6 @@
 # # 11/7/08
 # dual licensed under the web2py license (LGPL) and the Python license.
 
-from __future__ import print_function
-
 import base64
 import os
 import sys

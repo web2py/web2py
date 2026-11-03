@@ -14,8 +14,6 @@ Modifed by Massimo Di Pierro
 
 """
 
-from __future__ import print_function
-
 __all__ = ["AIM"]
 
 from operator import itemgetter

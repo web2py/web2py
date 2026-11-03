@@ -12,8 +12,6 @@
 
 """Pythonic simple SOAP Client implementation"""
 
-from __future__ import unicode_literals
-
 import sys
 
 if sys.version > "3":
