@@ -13,8 +13,6 @@
 # * NOTE: 'I' and 'D' destinations are disabled, and simply print to STDOUT  *
 # ****************************************************************************
 
-from __future__ import division, with_statement
-
 import errno
 import math
 import os

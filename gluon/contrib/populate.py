@@ -1,7 +1,5 @@
 # from web2py
 
-from __future__ import print_function
-
 import datetime
 import pickle
 import random

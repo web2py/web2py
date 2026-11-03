@@ -2,8 +2,6 @@
 BSD license -  created by Massimo Di Pierro
 """
 
-from __future__ import print_function
-
 import datetime
 import io
 from decimal import Decimal

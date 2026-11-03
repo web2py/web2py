@@ -34,8 +34,6 @@ Notice that options must be included into opt_map dictionary
 configuration file.
 """
 
-from __future__ import print_function
-
 __author__ = "Paolo Pastori"
 
 import argparse

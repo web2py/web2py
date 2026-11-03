@@ -10,8 +10,6 @@
 # for more details.
 
 "Pythonic simple JSON RPC Client implementation"
-from __future__ import print_function
-
 __author__ = "Mariano Reingart (reingart@gmail.com)"
 __copyright__ = "Copyright (C) 2011 Mariano Reingart"
 __license__ = "LGPL 3.0"

@@ -83,8 +83,6 @@ Acknowledgements:
 Tornado code inspired by http://thomas.pelletier.im/2010/08/websocket-tornado-redis/
 
 """
-from __future__ import print_function
-
 import hashlib
 import hmac
 import optparse

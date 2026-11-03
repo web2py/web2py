@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from binascii import hexlify
 from copy import deepcopy
 

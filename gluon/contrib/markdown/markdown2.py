@@ -3,8 +3,6 @@
 # Copyright (c) 2007-2008 ActiveState Corp.
 # License: MIT (http://www.opensource.org/licenses/mit-license.php)
 
-from __future__ import generators, print_function
-
 r"""A fast and complete Python implementation of Markdown.
 
 [from http://daringfireball.net/projects/markdown/]

@@ -3,8 +3,6 @@ Created by Massimo Di Pierro
 License BSD
 """
 
-from __future__ import print_function
-
 import os
 import os.path
 import re

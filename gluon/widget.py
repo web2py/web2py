@@ -10,8 +10,6 @@ GUI widget and services start function
 --------------------------------------
 """
 
-from __future__ import print_function
-
 import getpass
 import logging
 import math

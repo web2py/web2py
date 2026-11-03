@@ -16,8 +16,6 @@
 #
 # ******************************************************************************
 
-from __future__ import with_statement
-
 import re
 import warnings
 from struct import pack, unpack, unpack_from

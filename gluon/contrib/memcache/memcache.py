@@ -45,8 +45,6 @@ More detailed documentation is available in the L{Client} class.
 
 """
 
-from __future__ import print_function
-
 import binascii
 import os
 import pickle

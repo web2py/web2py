@@ -2,8 +2,6 @@
 
 "PDF Template Helper for FPDF.py"
 
-from __future__ import with_statement
-
 __author__ = "Mariano Reingart <reingart@gmail.com>"
 __copyright__ = "Copyright (C) 2010 Mariano Reingart"
 __license__ = "LGPL 3.0"

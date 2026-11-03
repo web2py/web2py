@@ -10,8 +10,6 @@ Background processes made simple
 ---------------------------------
 """
 
-from __future__ import print_function
-
 import builtins
 import datetime
 import logging
