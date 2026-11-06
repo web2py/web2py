@@ -654,6 +654,61 @@ class TestAppAdmin(unittest.TestCase):
             )
             self.assertFalse(os.path.exists(os.path.join(errors_folder, legacy_ticket_id)))
 
+    def test_edit_saves_only_for_ajax_requests(self):
+        """Test that is_mobile does not let a plain request save a file."""
+        import stat
+        import tempfile
+        import time
+
+        from gluon.globals import Request, Response, Session, current
+        from gluon.utils import md5_hash
+
+        load_controller = self.prepare_multi_user_admin_env()
+        self.env.update(is_mobile=False, DEMO_MODE=False, is_gae=False,
+                        FILTER_APPS=None, stat=stat, time=time, md5_hash=md5_hash)
+        load_controller("default")
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            apps = os.path.join(temporary_directory, "applications")
+            os.makedirs(os.path.join(apps, "admin"))
+            model = os.path.join(apps, "victim", "models", "db.py")
+            os.makedirs(os.path.dirname(model))
+            with open(model, "w") as model_file:
+                model_file.write("x = 1\n")
+
+            def edit(ajax, is_mobile):
+                request = Request(env={})
+                request.application = "admin"
+                request.controller = "default"
+                request.function = "edit"
+                request.folder = os.path.join(apps, "admin")
+                request.args = List(["victim", "models", "db.py"])
+                request._get_vars = Storage(data="x = 2\n", from_ajax="true")
+                request._post_vars = Storage()
+                request._vars = Storage(request._get_vars)
+                request.ajax = ajax
+                response = Response()
+                session = Session()
+                current.request = request
+                current.response = response
+                current.session = session
+                self.env.update(request=request, response=response,
+                                session=session, current=current,
+                                MULTI_USER_MODE=False, is_mobile=is_mobile)
+                return self.env["edit"]()
+
+            # a link carrying ?is_mobile=true turns is_mobile on in access.py
+            with self.assertRaises(HTTP) as ctx:
+                edit(ajax=False, is_mobile=True)
+            self.assertEqual(ctx.exception.status, 403)
+            with open(model) as model_file:
+                self.assertEqual(model_file.read(), "x = 1\n")
+
+            # the editor's own ajax save still works
+            edit(ajax=True, is_mobile=False)
+            with open(model) as model_file:
+                self.assertEqual(model_file.read(), "x = 2\n")
+
     def test_appadmin_rejects_unowned_app_in_multi_user_mode(self):
         """Test appadmin enforces app ownership for multi-user admin sessions."""
         request = self.make_multi_user_appadmin_request("victim")

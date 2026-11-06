@@ -658,6 +658,14 @@ def edit():
         response.title = T('Editing %s') % app
         return response.render('default/edit.html', dict(app=app, editor_settings=preferences))
 
+    # saving, reverting and storing preferences only happen through the
+    # editor's ajax calls. is_mobile is switched on by any request carrying
+    # is_mobile=true, so it must not let a plain (e.g. cross-site) request
+    # change files below
+    if not request.ajax and (request.post_vars or request.vars.data or
+                             'revert' in request.vars):
+        raise HTTP(403)
+
     # show settings tab and save prefernces
     if 'settings' in request.vars:
         if request.post_vars:  # save new preferences
