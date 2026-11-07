@@ -51,40 +51,68 @@ def pdflatex_from_html(html):
             return out
 
 
-def _pdf_same_origin(request):
+def _canonical_origin(origin):
     """
-    Return this application's own origin, e.g. "http://localhost:8000".
-
-    Built from the server's own configuration rather than from
-    request.env.http_host: the Host header is supplied by the client, so
-    deriving the authority from it lets a caller aim the server's image
-    fetches at any host it likes (SSRF).
+    Parse an origin such as "https://Example.com:8443/" and rebuild it as
+    "scheme://host[:port]", or return None when it is not a plain http(s)
+    origin. Credentials, paths, queries and fragments are not allowed: a
+    trusted origin names a host to connect to and nothing else.
     """
-    env = request.env
-    scheme = request.is_https and "https" or "http"
-    host = env.server_name or "127.0.0.1"
-    if ":" in host and not host.startswith("["):  # bare IPv6 literal
+    try:
+        parts = urlsplit(origin)
+        port = parts.port
+    except (TypeError, ValueError, AttributeError):
+        return None
+    scheme = (parts.scheme or "").lower()
+    host = parts.hostname
+    if scheme not in ("http", "https") or not host:
+        return None
+    if parts.username is not None or parts.password is not None:
+        return None
+    if parts.path not in ("", "/") or parts.query or parts.fragment:
+        return None
+    if ":" in host:  # IPv6 literal
         host = "[%s]" % host
-    port = str(env.server_port or "")
-    if port and port != (request.is_https and "443" or "80"):
-        return "%s://%s:%s" % (scheme, host, port)
-    return "%s://%s" % (scheme, host)
+    if port is None or port == {"http": 80, "https": 443}[scheme]:
+        return "%s://%s" % (scheme, host)
+    return "%s://%s:%d" % (scheme, host, port)
 
 
-def _resolve_pdf_image_path(path, request):
+def _trusted_pdf_image_origins(origins):
+    """
+    Normalize the application-supplied list of origins that PDF images may be
+    fetched from. Raises HTTP(500) on a malformed entry: that is a
+    configuration mistake, and failing loudly beats silently fetching from
+    somewhere unexpected.
+    """
+    if not origins:
+        return []
+    if isinstance(origins, str):
+        origins = [origins]
+    trusted = []
+    for origin in origins:
+        canonical = _canonical_origin(origin)
+        if canonical is None:
+            raise HTTP(500, "invalid PDF image origin %r" % (origin,))
+        trusted.append(canonical)
+    return trusted
+
+
+def _resolve_pdf_image_path(path, request, trusted_origins=None):
     """
     Map an <img src> from the rendered page onto something FPDF can load.
 
     * "/<app>/static/..." becomes a local file: no network access at all.
-    * An absolute http(s) URL is passed through. The page named a host
-      explicitly, so the server fetches it -- an application that renders
-      untrusted HTML has to restrict <img src> before converting to PDF.
-    * Any other rooted path is fetched from this application's own origin,
-      which is built from the server configuration and then verified, so a
-      crafted path cannot smuggle in a different authority (for instance
-      "@evil.example/x.jpg", where "@" turns the origin into userinfo).
+    * Everything else would be fetched by the server, so it is refused
+      unless the application named the origins it trusts
+      (``trusted_origins``). Nothing about the request is used to choose
+      the host: HTTP_HOST is supplied by the client, and several WSGI
+      servers (gunicorn, Apache with UseCanonicalName Off, ...) derive
+      SERVER_NAME / SERVER_PORT from it too.
+    * With trusted origins, a rooted path is fetched from the first one,
+      and an absolute http(s) URL is fetched only if its origin is listed.
     * Anything else -- a relative path, or a scheme such as file: or data:
-      -- is refused rather than guessed at.
+      -- is refused.
     """
     static_prefix = "/%s/static/" % request.application
     if path.startswith(static_prefix):
@@ -93,39 +121,54 @@ def _resolve_pdf_image_path(path, request):
             return safe_path_join(request.folder, "static", relative_static_path)
         except ValueError:
             raise HTTP(403, "invalid static path")
-    scheme = urlsplit(path).scheme.lower()
+    trusted = _trusted_pdf_image_origins(trusted_origins)
+    if not trusted:
+        raise HTTP(403, "PDF image source requires a trusted image origin")
+    try:
+        parts = urlsplit(path)
+    except ValueError:
+        raise HTTP(403, "invalid image source")
+    scheme = parts.scheme.lower()
     if scheme in ("http", "https"):
+        origin = _canonical_origin("%s://%s" % (scheme, parts.netloc))
+        if origin not in trusted:
+            raise HTTP(403, "PDF image origin not trusted")
         return path
-    # Anything else is fetched server-side from the app's own host, so only
-    # a same-origin absolute path is meaningful here. A value that does not
-    # begin with a single "/" would attach to the host and move the fetch to
-    # another server, e.g. "@internal:8080/x" -> "http://host@internal:8080/x".
+    # A value that does not begin with a single "/" would attach to the host
+    # and move the fetch to another server, e.g. "@internal:8080/x" ->
+    # "http://host@internal:8080/x".
     if scheme or not path.startswith("/") or path.startswith("//"):
         raise HTTP(403, "invalid image source")
-    origin = _pdf_same_origin(request)
-    url = origin + path
-    if urlsplit(url).netloc != urlsplit(origin).netloc:
+    url = trusted[0] + path
+    if _canonical_origin("%s://%s" % urlsplit(url)[:2]) != trusted[0]:
         raise HTTP(403, "invalid image path")
     return url
 
 
-class _SameHostRedirect(HTTPRedirectHandler):
+class _TrustedOriginRedirect(HTTPRedirectHandler):
     """
-    Follow a redirect only while it stays on the host that was asked for.
+    Follow a redirect only when it leads to a trusted origin.
 
-    Deciding which host to contact is the whole of the check above, and a
-    redirect hands that decision to whoever answers first: a same-origin
-    image would otherwise be bounced onto an address only the server can
-    reach. Redirects within one host (http to https, a moved path) are
-    ordinary and stay allowed.
+    Choosing which host to contact is the whole of the check above, and a
+    redirect hands that choice to whoever answers first: an image on a
+    trusted host would otherwise be bounced onto an address only the server
+    can reach.
     """
+
+    def __init__(self, trusted_origins):
+        self.trusted_origins = trusted_origins
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if urlsplit(newurl).netloc.lower() != urlsplit(req.full_url).netloc.lower():
+        try:
+            parts = urlsplit(newurl)
+            origin = _canonical_origin("%s://%s" % (parts.scheme, parts.netloc))
+        except ValueError:
+            origin = None
+        if origin is None or origin not in self.trusted_origins:
             raise HTTPError(
                 req.full_url,
                 code,
-                "PDF image cross-host redirect refused",
+                "PDF image redirect to untrusted origin refused",
                 headers,
                 fp,
             )
@@ -134,26 +177,41 @@ class _SameHostRedirect(HTTPRedirectHandler):
         )
 
 
-_pdf_image_opener = build_opener(_SameHostRedirect)
-
-
 class _PdfFPDF(FPDF, HTMLMixin):
-    """FPDF whose image fetches cannot be redirected onto another host."""
+    """FPDF whose image fetches cannot be redirected off the trusted origins."""
+
+    def __init__(self, *args, **kwargs):
+        self.trusted_image_origins = kwargs.pop("trusted_image_origins", [])
+        FPDF.__init__(self, *args, **kwargs)
 
     def load_resource(self, reason, filename):
         if reason == "image" and filename.startswith(("http://", "https://")):
-            return BytesIO(_pdf_image_opener.open(filename).read())
+            opener = build_opener(_TrustedOriginRedirect(self.trusted_image_origins))
+            return BytesIO(opener.open(filename).read())
         return FPDF.load_resource(self, reason, filename)
 
 
-def pyfpdf_from_html(html):
-    """Render html to PDF with the bundled FPDF; returns PDF bytes."""
+def pyfpdf_from_html(html, trusted_image_origins=None):
+    """
+    Render html to PDF with the bundled FPDF; returns PDF bytes.
+
+    Images under /<app>/static/ are read from disk. Any other image is
+    fetched over the network, and only from ``trusted_image_origins``
+    (a string or list such as ["https://myapp.example.com"]); when it is
+    not given, ``response.pdf_image_origins`` is used, so a controller can
+    enable it for the stock generic.pdf view. Without either, such images
+    are refused.
+    """
     request = current.request
+    if trusted_image_origins is None:
+        response = getattr(current, "response", None)
+        trusted_image_origins = getattr(response, "pdf_image_origins", None)
+    trusted = _trusted_pdf_image_origins(trusted_image_origins)
 
     def image_map(path):
-        return _resolve_pdf_image_path(path, request)
+        return _resolve_pdf_image_path(path, request, trusted)
 
-    pdf = _PdfFPDF()
+    pdf = _PdfFPDF(trusted_image_origins=trusted)
     pdf.add_page()
     # pyfpdf needs some attributes to render the table correctly:
     html = sanitize(
@@ -172,7 +230,7 @@ def pyfpdf_from_html(html):
     return pdf.output(dest="S")
 
 
-def pdf_from_html(html):
+def pdf_from_html(html, trusted_image_origins=None):
     """
     Serve html as a PDF. Raises HTTP(200) carrying the PDF bytes.
 
@@ -185,5 +243,5 @@ def pdf_from_html(html):
     if os.system("which pdflatex > /dev/null") == 0:
         pdf = pdflatex_from_html(html)
     else:
-        pdf = pyfpdf_from_html(html)
+        pdf = pyfpdf_from_html(html, trusted_image_origins)
     raise HTTP(200, pdf, **{"Content-Type": "application/pdf"})

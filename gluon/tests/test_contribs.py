@@ -15,8 +15,9 @@ from urllib.error import HTTPError
 from urllib.request import Request
 
 from gluon import HTTP, current
-from gluon.contrib.generics import (_pdf_same_origin, _SameHostRedirect,
-                                    _resolve_pdf_image_path, pdf_from_html,
+from gluon.contrib.generics import (_PdfFPDF, _resolve_pdf_image_path,
+                                    _trusted_pdf_image_origins,
+                                    _TrustedOriginRedirect, pdf_from_html,
                                     pyfpdf_from_html)
 from gluon.contrib import fpdf as fpdf
 from gluon.contrib import pyfpdf as pyfpdf
@@ -131,44 +132,6 @@ class TestContribs(unittest.TestCase):
         with self.assertRaises(HTTP) as ctx:
             _resolve_pdf_image_path("/welcome/static/../../private/secret.txt", request)
         self.assertEqual(ctx.exception.status, 403)
-
-    def test_pdf_image_map_allows_same_origin_path(self):
-        request = Storage(
-            {
-                "application": "welcome",
-                "folder": os.path.join("applications", "welcome"),
-                "is_https": False,
-                "env": Storage(
-                    {
-                        "http_host": "example.com",
-                        "server_name": "example.com",
-                        "server_port": "80",
-                    }
-                ),
-            }
-        )
-        result = _resolve_pdf_image_path("/welcome/default/download/logo.png", request)
-        self.assertEqual(result, "http://example.com/welcome/default/download/logo.png")
-
-    def test_pdf_image_map_rejects_cross_host_fetch(self):
-        request = Storage(
-            {
-                "application": "welcome",
-                "folder": os.path.join("applications", "welcome"),
-                "is_https": False,
-                "env": Storage({"http_host": "example.com:8000"}),
-            }
-        )
-        # "@internal:8080/x" would build http://example.com:8000@internal:8080/x,
-        # i.e. the server-side fetch would connect to internal:8080.
-        for path in (
-            "@internal:8080/logo.png",
-            "evil.example/logo.png",
-            "//evil/logo.png",
-        ):
-            with self.assertRaises(HTTP) as ctx:
-                _resolve_pdf_image_path(path, request)
-            self.assertEqual(ctx.exception.status, 403)
 
     def test_autolinks_escapes_url_in_markup(self):
         from gluon.contrib import autolinks
@@ -614,9 +577,12 @@ class TestPdfImageOrigin(unittest.TestCase):
 
     An <img> in the page being converted decides where the *server* makes
     an HTTP request, so the rules about which sources are acceptable are
-    security rules, not rendering ones. In particular the authority must
-    never come from the request: Host is supplied by the client.
+    security rules, not rendering ones. The authority must never come from
+    the request: HTTP_HOST is client supplied, and some WSGI servers derive
+    SERVER_NAME / SERVER_PORT from it as well.
     """
+
+    TRUSTED = ["http://app.internal:8000"]
 
     def _request(self, http_host="attacker.example:9999"):
         return Storage(
@@ -627,63 +593,149 @@ class TestPdfImageOrigin(unittest.TestCase):
                 "env": Storage(
                     {
                         "http_host": http_host,
-                        "server_name": "app.internal",
-                        "server_port": "8000",
+                        # as gunicorn would set them from the Host header
+                        "server_name": http_host.split(":")[0],
+                        "server_port": http_host.split(":")[-1],
                     }
                 ),
             }
         )
 
-    def test_same_origin_ignores_the_host_header(self):
-        # Host is client-supplied, so a rooted path must not be fetched
-        # from whatever host the caller names
+    def assertRefused(self, src, trusted=None):
+        with self.assertRaises(HTTP) as ctx:
+            _resolve_pdf_image_path(src, self._request(), trusted)
+        self.assertEqual(ctx.exception.status, 403, src)
+
+    def test_network_images_refused_without_trusted_origin(self):
+        # no trusted origin configured: nothing is fetched over the network,
+        # whatever Host / SERVER_NAME say
+        for src in (
+            "/welcome/default/download/logo.png",
+            "/metadata.jpg",
+            "http://169.254.169.254/latest/meta-data/x.jpg",
+            "https://cdn.example/a.png",
+        ):
+            with self.subTest(src=src):
+                self.assertRefused(src)
+
+    def test_rooted_path_uses_trusted_origin_not_request(self):
         request = self._request(http_host="127.0.0.1:31337")
-        self.assertEqual(_pdf_same_origin(request), "http://app.internal:8000")
+        url = _resolve_pdf_image_path("/metadata.jpg", request, self.TRUSTED)
+        self.assertEqual(url, "http://app.internal:8000/metadata.jpg")
+
+    def test_absolute_url_only_from_trusted_origin(self):
+        trusted = ["https://cdn.example", "http://app.internal:8000"]
+        request = self._request()
+        for url in ("https://cdn.example/a.png", "https://CDN.example:443/a.png"):
+            self.assertEqual(_resolve_pdf_image_path(url, request, trusted), url)
+        for url in (
+            "http://cdn.example/a.png",  # wrong scheme
+            "https://cdn.example:8443/a.png",  # wrong port
+            "http://127.0.0.1:31337/a.png",
+            "https://user@evil.example/a.png",
+        ):
+            with self.subTest(url=url):
+                self.assertRefused(url, trusted)
+
+    def test_authority_injection_paths_refused(self):
+        for src in (
+            "@internal:8080/logo.png",
+            "evil.example/logo.png",
+            "//evil/logo.png",
+            "file:///etc/passwd",
+            "data:image/png;base64,AAA",
+        ):
+            with self.subTest(src=src):
+                self.assertRefused(src, self.TRUSTED)
+
+    def test_trusted_origins_are_validated(self):
+        for bad in (
+            "ftp://example.com",
+            "http://user:pass@example.com",
+            "http://example.com/base",
+            "http://example.com/?a=b",
+            "http://example.com/#frag",
+            "http://:8080",
+            "http://example.com:notaport",
+            "//example.com",
+            "example.com",
+        ):
+            with self.subTest(origin=bad):
+                with self.assertRaises(HTTP) as ctx:
+                    _trusted_pdf_image_origins([bad])
+                self.assertEqual(ctx.exception.status, 500)
+
+    def test_trusted_origins_are_canonicalized(self):
         self.assertEqual(
-            _resolve_pdf_image_path("/metadata.jpg", request),
-            "http://app.internal:8000/metadata.jpg",
+            _trusted_pdf_image_origins(
+                ["https://Example.COM/", "http://host:80", "http://[::1]:8000"]
+            ),
+            ["https://example.com", "http://host", "http://[::1]:8000"],
+        )
+        self.assertEqual(
+            _trusted_pdf_image_origins("http://host:8080"), ["http://host:8080"]
         )
 
-    def test_same_origin_omits_the_default_port(self):
-        request = self._request()
-        request.env.server_port = "80"
-        self.assertEqual(_pdf_same_origin(request), "http://app.internal")
-        request.is_https = True
-        request.env.server_port = "443"
-        self.assertEqual(_pdf_same_origin(request), "https://app.internal")
-
-    def test_absolute_http_urls_are_passed_through(self):
-        # external images stay supported: the page named the host itself
-        request = self._request()
-        for url in ("http://cdn.example/a.png", "https://cdn.example/a.png"):
-            self.assertEqual(_resolve_pdf_image_path(url, request), url)
-
-    def test_other_schemes_are_refused(self):
-        request = self._request()
-        for src in ("file:///etc/passwd", "data:image/png;base64,AAA"):
-            with self.subTest(src=src):
-                with self.assertRaises(HTTP) as ctx:
-                    _resolve_pdf_image_path(src, request)
-                self.assertEqual(ctx.exception.status, 403)
-
-    def test_cross_host_redirect_is_refused(self):
-        # a redirect would otherwise hand the choice of host back to
-        # whoever answers first, re-opening the same SSRF
-        handler = _SameHostRedirect()
+    def test_redirect_to_untrusted_origin_is_refused(self):
+        handler = _TrustedOriginRedirect(["http://origin.example"])
         request = Request("http://origin.example/a.jpg")
         with self.assertRaises(HTTPError):
             handler.redirect_request(
                 request, None, 302, "Found", {}, "http://internal.example/b.jpg"
             )
 
-    def test_same_host_redirect_is_allowed(self):
-        # http -> https and moved paths on one host stay ordinary
-        handler = _SameHostRedirect()
+    def test_redirect_within_trusted_origins_is_allowed(self):
+        handler = _TrustedOriginRedirect(
+            ["http://origin.example", "https://origin.example"]
+        )
         request = Request("http://origin.example/a.jpg")
         redirected = handler.redirect_request(
             request, None, 302, "Found", {}, "https://origin.example/b.jpg"
         )
         self.assertIsNotNone(redirected)
+
+    def test_loader_does_not_follow_redirect_to_internal_host(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        internal_hits, origin_hits = [], []
+
+        class Internal(BaseHTTPRequestHandler):
+            def do_GET(self):
+                internal_hits.append(self.path)
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"\xff\xd8\xff\xe0secret")
+
+            def log_message(self, *args):
+                pass
+
+        class Origin(BaseHTTPRequestHandler):
+            def do_GET(self):
+                origin_hits.append(self.path)
+                self.send_response(302)
+                self.send_header(
+                    "Location", "http://127.0.0.1:%d/metadata.jpg" % internal_port
+                )
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        internal = ThreadingHTTPServer(("127.0.0.1", 0), Internal)
+        internal_port = internal.server_address[1]
+        origin = ThreadingHTTPServer(("127.0.0.1", 0), Origin)
+        origin_url = "http://127.0.0.1:%d" % origin.server_address[1]
+        for server in (internal, origin):
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            self.addCleanup(server.server_close)
+            self.addCleanup(server.shutdown)
+
+        pdf = _PdfFPDF(trusted_image_origins=[origin_url])
+        with self.assertRaises(HTTPError):
+            pdf.load_resource("image", origin_url + "/redirect.jpg")
+        self.assertEqual(origin_hits, ["/redirect.jpg"])
+        self.assertEqual(internal_hits, [])
 
 
 class TestPdfGeneration(unittest.TestCase):
