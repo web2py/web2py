@@ -49,6 +49,8 @@ function doClickSave() {
       $(currentTabID + " input[name='saved_on']").val()),
     prepareDataForSave('saved_on',
       $(currentTabID + " input[name='saved_on']").val()),
+    prepareDataForSave('token',
+      $(currentTabID + " input[name='token']").val()),
     prepareDataForSave('from_ajax', 'true')));
   // console.info(area.textarea.value);
   $(currentTabID + " input[name='saved_on']").attr('style',

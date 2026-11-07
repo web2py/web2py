@@ -19,7 +19,7 @@ from gluon.admin import check_app_path, is_within_root, join_app_path, safe_path
 from gluon.fileutils import abspath, read_file, write_file
 from gluon.http import content_disposition_header
 from gluon.restricted import safe_load, safe_loads, TicketStorage
-from gluon.utils import web2py_uuid
+from gluon.utils import compare, web2py_uuid
 from gluon.tools import Config, prevent_open_redirect
 from gluon.compileapp import find_exposed_functions
 from glob import glob
@@ -658,10 +658,22 @@ def edit():
         response.title = T('Editing %s') % app
         return response.render('default/edit.html', dict(app=app, editor_settings=preferences))
 
+    # Saving a file, reverting it, or saving preferences changes state, and
+    # saving a .py file is code execution, so require the session token: the
+    # admin session cookie alone does not prove the request came from the
+    # editor (a same-site page, or a browser without SameSite, can forge it).
+    if (('settings' in request.vars and request.post_vars)
+            or 'revert' in request.vars or request.vars.data is not None):
+        token = request.vars.token
+        if not (session.token and isinstance(token, str)
+                and compare(token, session.token)):
+            raise HTTP(403, 'invalid or missing token')
+
     # show settings tab and save prefernces
     if 'settings' in request.vars:
         if request.post_vars:  # save new preferences
-            post_vars = list(request.post_vars.items())
+            post_vars = [(k, v) for k, v in request.post_vars.items()
+                         if k != 'token']
             # Since unchecked checkbox are not serialized, we must set them as false by hand to store the correct preference in the settings
             post_vars += [(opt, 'false') for opt in preferences if opt not in request.post_vars]
             if config.save(post_vars):

@@ -4,6 +4,7 @@
 {{from gluon.serializers import json as js_arg  # JS literal, safe inside <script>}}
 
 <form action="{{=URL('edit', args=filename)}}" method="post" name="editform" id="editform" class="form-inline row-fluid">
+<input type="hidden" name="token" value="{{=session.token}}"/>
 <div class="span12 well well-small">
     <label class="">{{=T('Save file:')}}</label>
     <a value="save" title="{{=T('Save file: %s', filename)}}" href="#" name="save" onclick="return doClickSave();" class="icon saveicon" style="background-image: -webkit-linear-gradient(top,white,#E6E6E6);">{{=IMG(_src=URL('static', 'images/save_icon.png'), _alt=T('Save'))}}</a>
@@ -149,7 +150,7 @@
     <div class="editor-bar-bottom" style="margin-top:9px;">
         <a class="editbutton btn" href="{{=URL('edit', args=request.args, vars={'restore':True})}}" id="restore">{{=T('restore')}}</a>
         {{=T('currently saved or')}}
-        <a class="editbutton btn" href="{{=URL('edit', args=request.args, vars={'revert':True})}}" id="revert">{{=T('revert')}}</a>
+        <a class="editbutton btn" href="{{=URL('edit', args=request.args, vars={'revert':True, 'token':session.token})}}" id="revert">{{=T('revert')}}</a>
         {{=T('to  previous version.')}}
     </div>
     <br/>
