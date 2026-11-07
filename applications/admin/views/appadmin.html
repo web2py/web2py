@@ -1,5 +1,5 @@
 {{extend 'layout.html'}}
-<script nonce="{{=response.nonce}}"><!--
+<script><!--
     jQuery(document).ready(function(){
     jQuery("table.sortable tbody tr").mouseover( function() {
     jQuery(this).addClass("highlight"); }).mouseout( function() {
@@ -8,7 +8,7 @@
     jQuery('table.sortable tbody tr:even').addClass('even');
 });
 //--></script>
-<style nonce="{{=response.nonce}}">
+<style>
   table.sortable .sqltable-sort-form {
     display: inline;
   }
@@ -245,7 +245,7 @@
   {{else:}}    
     <div id="vis"></div>
       <link rel="stylesheet" href="{{=URL('admin','static','css/d3_graph.css')}}"/>
-      <script nonce="{{=response.nonce}}">
+      <script>
         // Define the d3 input data
         {{from gluon.serializers import json }}
         var nodes = {{=XML(json(nodes))}};
