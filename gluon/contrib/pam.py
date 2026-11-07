@@ -15,7 +15,8 @@ from ctypes import (CDLL, CFUNCTYPE, POINTER, Structure, c_char, c_char_p,
                     c_int, c_uint, c_void_p, cast, pointer, sizeof)
 from ctypes.util import find_library
 
-LIBPAM = CDLL(find_library("pam"))
+_LIBPAM_PATH = find_library("pam")
+LIBPAM = CDLL(_LIBPAM_PATH) if _LIBPAM_PATH else None
 LIBC = CDLL(find_library("c"))
 
 CALLOC = LIBC.calloc
@@ -78,17 +79,26 @@ class PamConv(Structure):
     _fields_ = [("conv", CONV_FUNC), ("appdata_ptr", c_void_p)]
 
 
-PAM_START = LIBPAM.pam_start
-PAM_START.restype = c_int
-PAM_START.argtypes = [c_char_p, c_char_p, POINTER(PamConv), POINTER(PamHandle)]
+def _pam_unavailable(*args):
+    # libpam could not be located: report failure (non-zero) so that
+    # authentication is always denied rather than crashing at import time
+    return -1
 
-PAM_AUTHENTICATE = LIBPAM.pam_authenticate
-PAM_AUTHENTICATE.restype = c_int
-PAM_AUTHENTICATE.argtypes = [PamHandle, c_int]
 
-PAM_ACCT_MGMT = LIBPAM.pam_acct_mgmt
-PAM_ACCT_MGMT.restype = c_int
-PAM_ACCT_MGMT.argtypes = [PamHandle, c_int]
+if LIBPAM is not None:
+    PAM_START = LIBPAM.pam_start
+    PAM_START.restype = c_int
+    PAM_START.argtypes = [c_char_p, c_char_p, POINTER(PamConv), POINTER(PamHandle)]
+
+    PAM_AUTHENTICATE = LIBPAM.pam_authenticate
+    PAM_AUTHENTICATE.restype = c_int
+    PAM_AUTHENTICATE.argtypes = [PamHandle, c_int]
+
+    PAM_ACCT_MGMT = LIBPAM.pam_acct_mgmt
+    PAM_ACCT_MGMT.restype = c_int
+    PAM_ACCT_MGMT.argtypes = [PamHandle, c_int]
+else:
+    PAM_START = PAM_AUTHENTICATE = PAM_ACCT_MGMT = _pam_unavailable
 
 
 def authenticate(username, password, service="login"):
