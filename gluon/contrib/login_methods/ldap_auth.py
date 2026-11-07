@@ -91,9 +91,14 @@ def ldap_auth(
 
     the custom_scope can be: base, onelevel, subtree.
 
-    If using secure ldaps:// pass secure=True and cert_path="..."
-    If ldap is using GnuTLS then you need cert_file="..." instead cert_path
-    because cert_path isn't implemented in GnuTLS :(
+    If using secure ldaps:// pass secure=True. The server certificate is
+    always verified (unless self_signed_certificate=True, which is insecure).
+    To trust a private CA (or a self-signed server certificate) pass
+    cacert_file="/path/to/ca.pem" or cacert_path="/path/to/ca_dir"
+    (cert_path is accepted as an alias of cacert_path).
+    If ldap is using GnuTLS use cacert_file because CA directories
+    aren't implemented in GnuTLS :(
+    cert_file and key_file are the client certificate and key, if required.
 
     To enable TLS, set tls=True:
 
@@ -695,30 +700,36 @@ def ldap_auth(
         if secure:
             if not ldap_port:
                 ldap_port = 636
-
-            if self_signed_certificate:
-                # NOTE : If you have a self-signed SSL Certificate pointing over "port=686" and "secure=True" alone
-                #        will not work, you need also to set "self_signed_certificate=True".
-                # Ref1: https://onemoretech.wordpress.com/2015/06/25/connecting-to-ldap-over-self-signed-tls-with-python/
-                # Ref2: http://bneijt.nl/blog/post/connecting-to-ldaps-with-self-signed-cert-using-python/
-                ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
-
-            if cacert_path:
-                ldap.set_option(ldap.OPT_X_TLS_CACERTDIR, cacert_path)
-
-            if cacert_file:
-                ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
-                ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, cacert_file)
-            if cert_file:
-                ldap.set_option(ldap.OPT_X_TLS_CERTFILE, cert_file)
-            if key_file:
-                ldap.set_option(ldap.OPT_X_TLS_KEYFILE, key_file)
-
             con = ldap.initialize("ldaps://" + ldap_server + ":" + str(ldap_port))
         else:
             if not ldap_port:
                 ldap_port = 389
             con = ldap.initialize("ldap://" + ldap_server + ":" + str(ldap_port))
+        if secure or tls:
+            # TLS options are set on the connection (not globally) so that one
+            # ldap_auth instance cannot weaken the verification of another.
+            if self_signed_certificate:
+                # NOTE : If you have a self-signed SSL Certificate pointing over "port=686" and "secure=True" alone
+                #        will not work, you need also to set "self_signed_certificate=True".
+                #        This DISABLES server certificate verification and is
+                #        vulnerable to man-in-the-middle attacks. Prefer passing
+                #        the self-signed certificate as cacert_file instead.
+                # Ref1: https://onemoretech.wordpress.com/2015/06/25/connecting-to-ldap-over-self-signed-tls-with-python/
+                # Ref2: http://bneijt.nl/blog/post/connecting-to-ldaps-with-self-signed-cert-using-python/
+                con.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
+            else:
+                # always verify the server certificate (CWE-295)
+                con.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_DEMAND)
+            if cacert_path or cert_path:
+                con.set_option(ldap.OPT_X_TLS_CACERTDIR, cacert_path or cert_path)
+            if cacert_file:
+                con.set_option(ldap.OPT_X_TLS_CACERTFILE, cacert_file)
+            if cert_file:
+                con.set_option(ldap.OPT_X_TLS_CERTFILE, cert_file)
+            if key_file:
+                con.set_option(ldap.OPT_X_TLS_KEYFILE, key_file)
+            # create a new TLS context so the options above take effect
+            con.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
         if tls:
             con.start_tls_s()
         return con
