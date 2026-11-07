@@ -1,6 +1,7 @@
 {{def shortcut(combo, description):
     return XML('<li><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
 }}
+{{from gluon.serializers import json as js_arg  # JS literal, safe inside <script>}}
 
 <form action="{{=URL('edit', args=filename)}}" method="post" name="editform" id="editform" class="form-inline row-fluid">
 <div class="span12 well well-small">
@@ -13,9 +14,8 @@
 {{if filetype=='python':}}
       {{=A(SPAN(T('toggle breakpoint')),
            _value="breakpoint", _name="breakpoint",
-           _onclick="return doToggleBreakpoint('%s','%s://%s%s',null);" % (filename,
-                request.env['wsgi_url_scheme'], request.env['http_host'],
-                URL(c='debug', f='toggle_breakpoint')),
+           _onclick="return doToggleBreakpoint(%s,%s,null);" % (
+                js_arg(filename), js_arg(URL(c='debug', f='toggle_breakpoint'))),
            _class="button special btn btn-inverse")}}
 {{pass}}
 {{if view_link:}}
@@ -71,9 +71,8 @@
         var info = cm.lineInfo(n);
         cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
         sel = {start: n, end: n, data: ''};
-        doToggleBreakpoint({{=XML("'%s','%s://%s%s'" % (filename,
-                             request.env['wsgi_url_scheme'], request.env['http_host'],
-                             URL(c='debug', f='toggle_breakpoint')))}}, sel);
+        doToggleBreakpoint({{=XML(js_arg(filename))}},
+                           {{=XML(js_arg(URL(c='debug', f='toggle_breakpoint')))}}, sel);
     });
     function makeMarker() {
         var marker = document.createElement("div");
@@ -126,9 +125,8 @@
         var hlLine = editor.addLineClass(0, "background", "activeline");
         window.mirror = editor; 	//backward compatibility
         set_font(editor, current_font_incr);
-        doListBreakpoints({{=XML("'%s','%s://%s%s'" % (filename,
-                request.env['wsgi_url_scheme'], request.env['http_host'],
-                URL(c='debug', f='list_breakpoints')))}}, editor);
+        doListBreakpoints({{=XML(js_arg(filename))}},
+                          {{=XML(js_arg(URL(c='debug', f='list_breakpoints')))}}, editor);
 
     // TODO move it in a separated file
     CodeMirror.defineExtension("centerOnCursor", function(limit) {
