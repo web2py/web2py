@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """ Unit tests for authapi """
+import datetime
 import os
 import unittest
 
@@ -79,6 +80,23 @@ class TestAuthAPI(unittest.TestCase):
                 )
                 self.assertTrue(result["errors"] is not None)
                 self.assertFalse(self.auth.is_logged_in())
+
+    def test_last_visit_is_refreshed(self):
+        # the session of an active user must not expire
+        self.auth.login(
+            **{"username": "bart", "password": "bart_password", "remember_me": True}
+        )
+        self.assertEqual(self.session.auth.expiration, 30 * 24 * 3600)
+        now = self.request.now
+        # a visit one hour ago is recent enough to not write the session again
+        recent = now - datetime.timedelta(hours=1)
+        self.session.auth.last_visit = recent
+        AuthAPI(self.db)
+        self.assertEqual(self.session.auth.last_visit, recent)
+        # more than a tenth of the expiration time, in whole days
+        self.session.auth.last_visit = now - datetime.timedelta(days=20)
+        self.assertTrue(AuthAPI(self.db).is_logged_in())
+        self.assertEqual(self.session.auth.last_visit, now)
 
     def test_logout(self):
         self.auth.login(**{"username": "bart", "password": "bart_password"})
