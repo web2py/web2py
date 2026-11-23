@@ -1176,6 +1176,21 @@ class TestAuth(unittest.TestCase):
             password="bart_password",
         )
 
+    def test_last_visit_is_refreshed(self):
+        # the session of an active user must not expire
+        self.auth.login_bare("bart", "bart_password")
+        self.session.auth.expiration = self.auth.settings.long_expiration
+        now = self.request.now
+        # a visit one hour ago is recent enough to not write the session again
+        recent = now - datetime.timedelta(hours=1)
+        self.session.auth.last_visit = recent
+        Auth(self.db)
+        self.assertEqual(self.session.auth.last_visit, recent)
+        # more than a tenth of the expiration time, in whole days
+        self.session.auth.last_visit = now - datetime.timedelta(days=20)
+        self.assertTrue(Auth(self.db).is_logged_in())
+        self.assertEqual(self.session.auth.last_visit, now)
+
     def test_assert_setup(self):
         self.assertTrue("auth_user" in self.db)
         self.assertTrue("auth_group" in self.db)
