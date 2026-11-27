@@ -165,6 +165,28 @@ def SAFEJSON(obj):
     return SafeString(serializers_json(obj))
 
 
+def _csp_enabled():
+    from gluon.globals import current
+
+    response = getattr(current, "response", None)
+    return bool(response and response._csp_enabled)
+
+
+def csp_handler(inline, **data):
+    """
+    Returns the attributes that bind an event handler to a helper.
+
+    `inline` holds the usual `_on*` attributes. A CSP nonce cannot cover an
+    inline handler, so once response.enable_csp() is called they are replaced
+    by one `data-w2p_<name>` attribute per item in `data`, and web2py.js binds
+    the behaviour with a delegated listener. The values are data (a URL, an
+    element id), never script.
+    """
+    if _csp_enabled():
+        return dict(("_data-w2p_" + name, value) for name, value in data.items())
+    return inline
+
+
 def call_as_list(f, *a, **b):
     if not isinstance(f, (list, tuple)):
         f = [f]
@@ -2416,6 +2438,15 @@ class FORM(DIV):
 
         return FORM.REDIRECT_JS % json(url)
 
+    @staticmethod
+    def _redirect_handler(url):
+        inline = dict(_onclick=FORM._redirect_js(url))
+        if url.startswith("javascript:"):
+            # script given by the application: a data attribute must not
+            # carry it, so it stays the inline handler it is
+            return inline
+        return csp_handler(inline, redirect=url)
+
     def add_button(self, value, url, _class=None):
         submit = self.element(_type="submit")
         _class = "%s w2p-form-button" % _class if _class else "w2p-form-button"
@@ -2423,7 +2454,7 @@ class FORM(DIV):
             TAG["button"](
                 value,
                 _class=_class,
-                _onclick=self._redirect_js(url),
+                **self._redirect_handler(url),
             )
         )
 
@@ -2434,7 +2465,7 @@ class FORM(DIV):
         if not hidden:
             hidden = {}
         inputs = [
-            INPUT(_type="button", _value=name, _onclick=FORM._redirect_js(link))
+            INPUT(_type="button", _value=name, **FORM._redirect_handler(link))
             for name, link in buttons.items()
         ]
         inputs += [
@@ -2671,7 +2702,14 @@ class MENU(DIV):
                     li = LI(name)
                 else:
                     li = LI(
-                        A(name, _href="#", _onclick="javascript:void(0);return false;")
+                        A(
+                            name,
+                            _href="#",
+                            **csp_handler(
+                                dict(_onclick="javascript:void(0);return false;"),
+                                void="true",
+                            ),
+                        )
                     )
                 if level == 0 and item == data[0]:
                     li["_class"] = self["li_first"]
@@ -2713,7 +2751,10 @@ class MENU(DIV):
                     self.serialize_mobile(
                         item[3], select, prefix=CAT(prefix, item[0], "/")
                     )
-        select["_onchange"] = "window.location=this.value"
+        # with CSP web2py.js redirects to the value of the selected option
+        select.attributes.update(
+            csp_handler(dict(_onchange="window.location=this.value"), redirect="")
+        )
         # avoid to wrap the select if no custom items are present
         html = (
             DIV(select, self.serialize(custom_items)) if len(custom_items) else select

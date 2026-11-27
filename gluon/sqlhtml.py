@@ -65,6 +65,7 @@ from gluon.html import (
     A,
     P,
     XmlComponent,
+    csp_handler,
     truncate_string,
 )
 from gluon.http import HTTP, content_disposition_header, redirect
@@ -950,9 +951,14 @@ class AutocompleteWidget(object):
             else:
                 record = self.db(self.fields[1] == value).select(self.fields[0]).first()
             attr["value"] = record and record[self.fields[0].name]
-            attr["_onblur"] = (
-                "jQuery('#%(div_id)s').delay(500).fadeOut('slow');"
-                % dict(div_id=div_id, u="F" + self.keyword)
+            attr.update(
+                csp_handler(
+                    dict(
+                        _onblur="jQuery('#%(div_id)s').delay(500).fadeOut('slow');"
+                        % dict(div_id=div_id, u="F" + self.keyword)
+                    ),
+                    autocomplete=div_id,
+                )
             )
             js = """
             (function($) {
@@ -1024,9 +1030,14 @@ class AutocompleteWidget(object):
             )
         else:
             attr["_name"] = field.name
-            attr["_onblur"] = (
-                "jQuery('#%(div_id)s').delay(500).fadeOut('slow');"
-                % dict(div_id=div_id, u="F" + self.keyword)
+            attr.update(
+                csp_handler(
+                    dict(
+                        _onblur="jQuery('#%(div_id)s').delay(500).fadeOut('slow');"
+                        % dict(div_id=div_id, u="F" + self.keyword)
+                    ),
+                    autocomplete=div_id,
+                )
             )
             js = """
             (function($) {
@@ -2508,27 +2519,39 @@ class SQLFORM(FORM):
                     _value=T("New Search"),
                     _class="btn btn-default",
                     _title=T("Start building a new search"),
-                    _onclick="%s_build_query('new','%s')" % (prefix, field),
+                    **csp_handler(
+                        dict(_onclick="%s_build_query('new','%s')" % (prefix, field)),
+                        query="%s new %s" % (prefix, field),
+                    ),
                 )
                 and_button = INPUT(
                     _type="button",
                     _value=T("+ And"),
                     _class="btn btn-default",
                     _title=T("Add this to the search as an AND term"),
-                    _onclick="%s_build_query('and','%s')" % (prefix, field),
+                    **csp_handler(
+                        dict(_onclick="%s_build_query('and','%s')" % (prefix, field)),
+                        query="%s and %s" % (prefix, field),
+                    ),
                 )
                 or_button = INPUT(
                     _type="button",
                     _value=T("+ Or"),
                     _class="btn btn-default",
                     _title=T("Add this to the search as an OR term"),
-                    _onclick="%s_build_query('or','%s')" % (prefix, field),
+                    **csp_handler(
+                        dict(_onclick="%s_build_query('or','%s')" % (prefix, field)),
+                        query="%s or %s" % (prefix, field),
+                    ),
                 )
                 close_button = INPUT(
                     _type="button",
                     _value=T("Close"),
                     _class="btn btn-default",
-                    _onclick="jQuery('#%s').slideUp()" % panel_id,
+                    **csp_handler(
+                        dict(_onclick="jQuery('#%s').slideUp()" % panel_id),
+                        query="%s close" % prefix,
+                    ),
                 )
 
                 criteria.append(
@@ -2549,11 +2572,16 @@ class SQLFORM(FORM):
             0,
             SELECT(
                 _id=fields_id,
-                _onchange="jQuery('.w2p_query_row').hide();jQuery('#%s_'+jQuery('#%s').val().replace('.','-')).show();"
-                % (field_id, fields_id),
                 _style="float:left",
                 _class="form-control",
                 *selectfields,
+                **csp_handler(
+                    dict(
+                        _onchange="jQuery('.w2p_query_row').hide();jQuery('#%s_'+jQuery('#%s').val().replace('.','-')).show();"
+                        % (field_id, fields_id)
+                    ),
+                    query="%s select" % prefix,
+                ),
             ),
         )
 
@@ -3238,11 +3266,16 @@ class SQLFORM(FORM):
                             _value=keywords,
                             _id=skeywords_id,
                             _class="form-control",
-                            _onfocus=(
-                                "jQuery('#%s').change();jQuery('#%s').slideDown();"
-                                % (spanel_id, sfields_id)
-                                if advanced_search
-                                else ""
+                            **csp_handler(
+                                dict(
+                                    _onfocus=(
+                                        "jQuery('#%s').change();jQuery('#%s').slideDown();"
+                                        % (spanel_id, sfields_id)
+                                        if advanced_search
+                                        else ""
+                                    )
+                                ),
+                                query="%s open" % prefix if advanced_search else None,
                             ),
                         ),
                         INPUT(
@@ -3254,7 +3287,10 @@ class SQLFORM(FORM):
                             _type="submit",
                             _value=T("Clear"),
                             _class="btn btn-default btn-secondary",
-                            _onclick="jQuery('#%s').val('');" % skeywords_id,
+                            **csp_handler(
+                                dict(_onclick="jQuery('#%s').val('');" % skeywords_id),
+                                query="%s clear" % prefix,
+                            ),
                         ),
                         *hidden_fields,
                         _method="GET",
@@ -3478,7 +3514,10 @@ class SQLFORM(FORM):
             for p in pages:
                 if p == page:
                     paginator.append(
-                        LI(A(p + 1, _onclick="return false"), _class="current")
+                        LI(
+                            A(p + 1, **csp_handler(dict(_onclick="return false"))),
+                            _class="current",
+                        )
                     )
                 else:
                     paginator.append(LI(self_link(p + 1, p)))

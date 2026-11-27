@@ -19,7 +19,7 @@ the corresponding views/defaut/map.html should be something like:
 
 """}}
   <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key={{=googlemap_key}}" type="text/javascript"></script>
-    <script type="text/javascript">
+    <script type="text/javascript"{{if response._csp_enabled:}} nonce="{{=response.nonce}}"{{pass}}>
     //<![CDATA[
     function load() {
       if (GBrowserIsCompatible()) {
@@ -66,4 +66,4 @@ the corresponding views/defaut/map.html should be something like:
     //]]>
     </script>
     <div id="map" style="width: 800px; height: 500px"></div>
-    <script>load();</script>
+    <script{{if response._csp_enabled:}} nonce="{{=response.nonce}}"{{pass}}>load();</script>

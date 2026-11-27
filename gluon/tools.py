@@ -62,6 +62,7 @@ from gluon.contrib.markmin.markmin2html import (
     replace_components,
 )
 from gluon.fileutils import check_credentials, read_file
+from gluon.html import csp_handler
 from gluon.storage import Messages, Settings, Storage, StorageList
 from gluon.utils import compare, csv_safe, csv_safe_text, web2py_uuid
 
@@ -7336,7 +7337,12 @@ class Wiki(object):
                 lambda row: A(
                     "copy into source",
                     _href="#",
-                    _onclick=script % (fragment(row.id, row)),
+                    **csp_handler(
+                        dict(_onclick=script % (fragment(row.id, row))),
+                        wiki_media=(
+                            fragment(row.id, row).flatten() if row.filename else ""
+                        ),
+                    ),
                 )
             ]
         content = SQLFORM.grid(

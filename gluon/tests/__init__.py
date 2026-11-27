@@ -6,6 +6,7 @@ from .test_compileapp import *
 from .test_contenttype import *
 from .test_contribs import *
 from .test_cron import *
+from .test_csp_handlers import *
 from .test_dal import *
 from .test_fileutils import *
 from .test_form import *

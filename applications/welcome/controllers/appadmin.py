@@ -708,7 +708,11 @@ def hooks():
     # Render
     ul_main = UL(_class='nav nav-list')
     for t in tables:
-        ul_main.append(A(t['name'], _onclick="collapse('a_%s')" % t['slug']))
+        if response._csp_enabled:
+            # no inline handler under CSP, web2py.js toggles the element with this id
+            ul_main.append(A(t['name'], **{'_data-w2p_toggle': 'a_%s' % t['slug']}))
+        else:
+            ul_main.append(A(t['name'], _onclick="collapse('a_%s')" % t['slug']))
         ul_t = UL(_class='nav nav-list', _id='a_%s' % t['slug'], _style='display:none')
         for op in t['method_hooks']:
             ul_t.append(LI(op['name']))

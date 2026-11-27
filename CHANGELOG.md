@@ -32,6 +32,13 @@ in report-only mode too, so the reports describe what enforcement would do.
 admin's remaining inline `on*=` handlers and `style=` attributes are what stop
 it enforcing today.
 
+With CSP enabled the helpers that used to render inline `on*=` handlers
+(`FORM.add_button`, `FORM.confirm`, `MENU`, `SQLFORM.grid`, the autocomplete
+widget, `response.toolbar`) and appadmin render `data-w2p_*`
+attributes instead, bound by listeners in `web2py.js`, and the inline blocks
+of welcome's views carry the nonce. An application that enables CSP needs the
+current `web2py.js`; without `enable_csp()` the output is unchanged.
+
 Other security fixes in this range:
 
 - Hardened ticket deserialization with the restricted unpickler
