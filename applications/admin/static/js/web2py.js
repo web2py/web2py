@@ -266,6 +266,53 @@
                     $(this).data('w2p_time', 1);
                 }
             });
+            /*
+             * Helpers render these attributes instead of inline on* handlers when
+             * response.enable_csp() is on, since a nonce cannot cover an inline
+             * handler. They hold data (a URL, an element id), never code.
+             */
+            doc.on('click', '[data-w2p_redirect]:not(select)', function (e) {
+                e.preventDefault();
+                window.location = $(this).attr('data-w2p_redirect');
+            });
+            doc.on('change', 'select[data-w2p_redirect]', function () {
+                window.location = this.value;
+            });
+            doc.on('click', 'a[data-w2p_void]', function (e) {
+                e.preventDefault();
+            });
+            doc.on('click', '[data-w2p_toggle]', function () {
+                web2py.collapse($(this).attr('data-w2p_toggle'));
+            });
+            doc.on('blur', 'input[data-w2p_autocomplete]', function () {
+                $('#' + $(this).attr('data-w2p_autocomplete')).delay(500).fadeOut('slow');
+            });
+            doc.on('click', 'a[data-w2p_wiki_media]', function (e) {
+                e.preventDefault();
+                var body = $('#wiki_page_body');
+                body.val(body.val() + $(this).attr('data-w2p_wiki_media'));
+            });
+            /* search of SQLFORM.grid: data-w2p_query="<prefix> <action> [<field>]" */
+            doc.on('focus change click', '[data-w2p_query]', function (e) {
+                var query = $(this).attr('data-w2p_query').split(' ');
+                var prefix = query[0],
+                    action = query[1];
+                var type = action == 'open' ? 'focusin' : action == 'select' ? 'change' : 'click';
+                if (e.type != type) return;
+                if (action == 'open') {
+                    $('#' + prefix + '_query_fields').change();
+                    $('#' + prefix + '_query_panel').slideDown();
+                } else if (action == 'select') {
+                    $('.w2p_query_row').hide();
+                    $('#' + prefix + '_field_' + $(this).val().replace('.', '-')).show();
+                } else if (action == 'close') {
+                    $('#' + prefix + '_query_panel').slideUp();
+                } else if (action == 'clear') {
+                    $('#' + prefix + '_keywords').val('');
+                } else if (action == 'new' || action == 'and' || action == 'or') {
+                    window[prefix + '_build_query'](action, query[2]);
+                }
+            });
             /* help preventing double form submission for normal form (not LOADed) */
             $(doc).on('submit', 'form', function (e) {
                 var submit_buttons = $(this).find(web2py.formInputClickSelector);

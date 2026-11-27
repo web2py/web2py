@@ -23,6 +23,7 @@ import json
 import time
 
 from gluon import *
+from gluon.html import csp_handler
 from gluon.storage import Storage
 from gluon.tools import fetch
 
@@ -99,16 +100,22 @@ class BrowserID(object):
         onclick = (
             "javascript:navigator.id.getVerifiedEmail(gotVerifiedEmail) ; return false"
         )
+        js = self.asertion_js
+        if current.response._csp_enabled:
+            # no inline handler: bind the click where gotVerifiedEmail is defined
+            js += """
+            jQuery('a.browserid').click(function(e){e.preventDefault();
+            navigator.id.getVerifiedEmail(gotVerifiedEmail);});"""
         form = DIV(
             SCRIPT(_src=self.browserid_js, _type="text/javascript"),
             SCRIPT(_src=self.crypto_js, _type="text/javascript"),
             A(
                 IMG(_src=self.browserid_button, _alt=self.prompt),
                 _href="#",
-                _onclick=onclick,
                 _class="browserid",
                 _title="Login With BrowserID",
+                **csp_handler(dict(_onclick=onclick)),
             ),
-            SCRIPT(self.asertion_js),
+            SCRIPT(js),
         )
         return form

@@ -1,5 +1,5 @@
 {{extend 'layout.html'}}
-<script><!--
+<script{{if response._csp_enabled:}} nonce="{{=response.nonce}}"{{pass}}><!--
     jQuery(document).ready(function(){
     jQuery("table.sortable tbody tr").mouseover( function() {
     jQuery(this).addClass("highlight"); }).mouseout( function() {
@@ -8,7 +8,7 @@
     jQuery('table.sortable tbody tr:even').addClass('even');
 });
 //--></script>
-<style>
+<style{{if response._csp_enabled:}} nonce="{{=response.nonce}}"{{pass}}>
   table.sortable .sqltable-sort-form {
     display: inline;
   }
@@ -160,7 +160,7 @@
       {{=T.M("Cache contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
               dict(hours=total['oldest'][0], min=total['oldest'][1], sec=total['oldest'][2]))}}
     </p>
-    {{=BUTTON(T('Cache Keys'), _onclick='jQuery("#all_keys").toggle().toggleClass( "w2p_hidden" );')}}
+    {{=BUTTON(T('Cache Keys'), **({'_data-w2p_toggle': 'all_keys'} if response._csp_enabled else {'_onclick': 'jQuery("#all_keys").toggle().toggleClass( "w2p_hidden" );'}))}}
     <div class="w2p_hidden" id="all_keys">
       {{=total['keys']}}
     </div>
@@ -188,7 +188,7 @@
       {{=T.M("RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
               dict(hours=ram['oldest'][0], min=ram['oldest'][1], sec=ram['oldest'][2]))}}
     </p>
-    {{=BUTTON(T('RAM Cache Keys'), _onclick='jQuery("#ram_keys").toggle().toggleClass( "w2p_hidden" );')}}
+    {{=BUTTON(T('RAM Cache Keys'), **({'_data-w2p_toggle': 'ram_keys'} if response._csp_enabled else {'_onclick': 'jQuery("#ram_keys").toggle().toggleClass( "w2p_hidden" );'}))}}
     <div class="w2p_hidden" id="ram_keys">
       {{=ram['keys']}}
     </div>
@@ -217,7 +217,7 @@
       {{=T.M("DISK contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
                 dict(hours=disk['oldest'][0], min=disk['oldest'][1], sec=disk['oldest'][2]))}}
       </p>
-      {{=BUTTON(T('Disk Cache Keys'), _onclick='jQuery("#disk_keys").toggle().toggleClass( "w2p_hidden" );')}}
+      {{=BUTTON(T('Disk Cache Keys'), **({'_data-w2p_toggle': 'disk_keys'} if response._csp_enabled else {'_onclick': 'jQuery("#disk_keys").toggle().toggleClass( "w2p_hidden" );'}))}}
       <div class="w2p_hidden" id="disk_keys">
       {{=disk['keys']}}
       </div>
@@ -245,7 +245,7 @@
   {{else:}}    
     <div id="vis"></div>
       <link rel="stylesheet" href="{{=URL('admin','static','css/d3_graph.css')}}"/>
-      <script>
+      <script{{if response._csp_enabled:}} nonce="{{=response.nonce}}"{{pass}}>
         // Define the d3 input data
         {{from gluon.serializers import json }}
         var nodes = {{=XML(json(nodes))}};

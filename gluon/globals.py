@@ -1073,7 +1073,7 @@ class Response(Storage):
         return handler(request, self, methods)
 
     def toolbar(self):
-        from gluon.html import BEAUTIFY, DIV, SCRIPT, TAG, A
+        from gluon.html import BEAUTIFY, DIV, SCRIPT, TAG, A, csp_handler
 
         BUTTON = TAG.button
         admin = URL(
@@ -1102,6 +1102,15 @@ class Response(Storage):
                 lazy=v["dbtables"]["lazy"] or "[no lazy tables]",
             )
         u = web2py_uuid()
+
+        def toggle(name, id):
+            return BUTTON(
+                name,
+                **csp_handler(
+                    dict(_onclick="jQuery('#%s').slideToggle()" % id), toggle=id
+                ),
+            )
+
         backtotop = A("Back to top", _href="#totop-%s" % u)
         # Convert lazy request.vars from property to Storage so they
         # will be displayed in the toolbar.
@@ -1112,12 +1121,17 @@ class Response(Storage):
             post_vars=current.request.post_vars,
         )
         return DIV(
-            BUTTON("design", _onclick="document.location='%s'" % admin),
-            BUTTON("request", _onclick="jQuery('#request-%s').slideToggle()" % u),
-            BUTTON("response", _onclick="jQuery('#response-%s').slideToggle()" % u),
-            BUTTON("session", _onclick="jQuery('#session-%s').slideToggle()" % u),
-            BUTTON("db tables", _onclick="jQuery('#db-tables-%s').slideToggle()" % u),
-            BUTTON("db stats", _onclick="jQuery('#db-stats-%s').slideToggle()" % u),
+            BUTTON(
+                "design",
+                **csp_handler(
+                    dict(_onclick="document.location='%s'" % admin), redirect=admin
+                ),
+            ),
+            toggle("request", "request-%s" % u),
+            toggle("response", "response-%s" % u),
+            toggle("session", "session-%s" % u),
+            toggle("db tables", "db-tables-%s" % u),
+            toggle("db stats", "db-stats-%s" % u),
             DIV(
                 BEAUTIFY(request),
                 backtotop,

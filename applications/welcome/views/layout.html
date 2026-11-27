@@ -121,7 +121,7 @@
     {{if response.google_analytics_id:}}
     <!-- Analytics ==================================== -->
     <script src="{{=URL('static','js/analytics.min.js')}}"></script>
-    <script type="text/javascript">
+    <script type="text/javascript"{{if response._csp_enabled:}} nonce="{{=response.nonce}}"{{pass}}>
       analytics.initialize({
       'Google Analytics':{trackingId:'{{=response.google_analytics_id}}'}
       });
